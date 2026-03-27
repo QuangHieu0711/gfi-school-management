@@ -268,10 +268,10 @@ th.mat-mdc-header-cell.text-right {
   src: url('/font/Roboto/Roboto-Bold.ttf') format('truetype');
 }
 :root {
-  --background-color: #007BB6;
+  --background-color: #3e8f97;
   --color_bg: #353535;
   --color_border: #d9d9d9;
-  --p-primary-color: #007BB6;
+  --p-primary-color: #3e8f97;
   --font_size_medium: 14px;
   --font_size_small: 14px;
   --color_text: #333333;
@@ -286,7 +286,7 @@ th.mat-mdc-header-cell.text-right {
    ========================= */
 .giaidoan-select-panel {
   background: rgba(44, 43, 43, 0.95) !important;
-  border: 1px solid #007BB6 !important;
+  border: 1px solid #3e8f97 !important;
   border-radius: 4px !important;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4) !important;
 }

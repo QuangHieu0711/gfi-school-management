@@ -1,0 +1,124 @@
+.login-page {
+  position: relative;
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  background: url('/config/login.png') center/cover no-repeat;
+}
+
+.login-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.login-card {
+  position: relative;
+  z-index: 1;
+  width: min(460px, calc(100vw - 32px));
+  padding: 26px 36px 28px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 24px 80px rgba(28, 45, 66, 0.18);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.login-logo {
+  width: 210px;
+  height: 122px;
+  object-fit: contain;
+  margin-bottom: 8px;
+}
+
+.login-title {
+  margin: 0 0 18px;
+  color: #1f2a37;
+  font-size: 1.85rem;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: 0.01em;
+  text-align: center;
+}
+
+.login-subtitle {
+  margin: 8px 0 22px;
+  color: #5f6b7a;
+  font-size: 0.95rem;
+  line-height: 1.45;
+  text-align: center;
+  max-width: 320px;
+}
+
+.login-form {
+  width: 100%;
+}
+
+.login-field {
+  width: 100%;
+  margin-bottom: 8px;
+}
+
+.login-submit {
+  width: 100%;
+  min-height: 48px;
+  margin-top: 2px;
+  border-radius: 10px;
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+.login-actions {
+  display: flex;
+  justify-content: center;
+  margin: 10px 0 0;
+}
+
+.forgot-password-button {
+  min-width: auto;
+  padding: 0;
+  color: #3e8f97;
+  font-size: 0.94rem;
+  font-weight: 700;
+}
+
+.forgot-password-button:hover {
+  background: transparent;
+  text-decoration: underline;
+}
+
+:host ::ng-deep .login-field .mdc-notched-outline__leading,
+:host ::ng-deep .login-field .mdc-notched-outline__notch,
+:host ::ng-deep .login-field .mdc-notched-outline__trailing {
+  border-color: #d3d9e2 !important;
+  border-width: 1px !important;
+}
+
+:host ::ng-deep .login-field:hover .mdc-notched-outline__leading,
+:host ::ng-deep .login-field:hover .mdc-notched-outline__notch,
+:host ::ng-deep .login-field:hover .mdc-notched-outline__trailing,
+:host ::ng-deep .login-field.mat-mdc-form-field-focus .mdc-notched-outline__leading,
+:host ::ng-deep .login-field.mat-mdc-form-field-focus .mdc-notched-outline__notch,
+:host ::ng-deep .login-field.mat-mdc-form-field-focus .mdc-notched-outline__trailing,
+:host ::ng-deep .login-field.mdc-text-field--focused .mdc-notched-outline__leading,
+:host ::ng-deep .login-field.mdc-text-field--focused .mdc-notched-outline__notch,
+:host ::ng-deep .login-field.mdc-text-field--focused .mdc-notched-outline__trailing,
+:host ::ng-deep .login-field.mat-form-field-invalid .mdc-notched-outline__leading,
+:host ::ng-deep .login-field.mat-form-field-invalid .mdc-notched-outline__notch,
+:host ::ng-deep .login-field.mat-form-field-invalid .mdc-notched-outline__trailing {
+  border-color: #d3d9e2 !important;
+  border-width: 1px !important;
+}
+
+:host ::ng-deep .login-field .mdc-text-field--outlined {
+  --mdc-outlined-text-field-outline-color: #d3d9e2;
+  --mdc-outlined-text-field-hover-outline-color: #d3d9e2;
+  --mdc-outlined-text-field-focus-outline-color: #d3d9e2;
+  --mdc-outlined-text-field-error-outline-color: #d3d9e2;
+  --mdc-outlined-text-field-error-focus-outline-color: #d3d9e2;
+  --mdc-outlined-text-field-error-hover-outline-color: #d3d9e2;
+  --mdc-outlined-text-field-caret-color: #3e8f97;
+  --mdc-outlined-text-field-focus-label-text-color: #667085;
+}

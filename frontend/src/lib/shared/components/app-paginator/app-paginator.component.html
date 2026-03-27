@@ -4,28 +4,28 @@
     <!-- Go to First -->
     <button
       matIconButton="text"
-      color="neutral"
+      color="primary"
       squared
       [matTooltip]="'table.paginator.first_page_label' | translate"
       [disabled]="pageIndex === 0"
       (click)="goToPage(0)">
       <app-icon
         icon="svg:first-page"
-        color="#ADADAD"
+        [color]="pageIndex === 0 ? '#ADADAD' : '#3e8f97'"
         [size]="16" />
     </button>
 
     <!-- Prev -->
     <button
       matIconButton="text"
-      color="neutral"
+      color="primary"
       squared
       [matTooltip]="'table.paginator.previous_page_label' | translate"
       [disabled]="pageIndex === 0"
       (click)="goToPage(pageIndex - 1)">
       <app-icon
         icon="svg:prev"
-        color="#ADADAD"
+        [color]="pageIndex === 0 ? '#ADADAD' : '#3e8f97'"
         [size]="16" />
     </button>
 
@@ -35,7 +35,7 @@
         <button
           class="!min-w-10 !w-10 !p-0"
           matButton="text"
-          color="info"
+          color="primary"
           (click)="onDotsClick($index)">
           ...
         </button>
@@ -44,14 +44,14 @@
           <button
             class="!min-w-10 !w-10 !p-0"
             matButton="filled"
-            color="info">
+            color="primary">
             {{ page + 1 }}
           </button>
         } @else {
           <button
             class="!min-w-10 !w-10 !p-0"
             matButton="text"
-            color="info"
+            color="primary"
             (click)="goToPage(page)">
             {{ page + 1 }}
           </button>
@@ -62,28 +62,28 @@
     <!-- Next -->
     <button
       matIconButton="text"
-      color="neutral"
+      color="primary"
       squared
       [matTooltip]="'table.paginator.next_page_label' | translate"
       [disabled]="pageIndex >= totalPages - 1"
       (click)="goToPage(pageIndex + 1)">
       <app-icon
         icon="svg:next"
-        color="#ADADAD"
+        [color]="pageIndex >= totalPages - 1 ? '#ADADAD' : '#3e8f97'"
         [size]="16" />
     </button>
 
     <!-- Go to Last -->
     <button
       matIconButton="text"
-      color="neutral"
+      color="primary"
       squared
       [matTooltip]="'table.paginator.last_page_label' | translate"
       [disabled]="pageIndex >= totalPages - 1"
       (click)="goToPage(totalPages - 1)">
       <app-icon
         icon="svg:last-page"
-        color="#ADADAD"
+        [color]="pageIndex >= totalPages - 1 ? '#ADADAD' : '#3e8f97'"
         [size]="16" />
     </button>
   </div>

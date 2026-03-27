@@ -1,20 +1,9 @@
-import { HttpParams } from '@angular/common/http';
 import { Injectable } from '@angular/core';
+import { Observable, of } from 'rxjs';
 import { FILE_API_ENDPOINT, FileDownloadRequest, FileUploadRequest } from '@model/file.model';
-import { ApiService } from '@service';
 
-/**
- * Handles file-related operations such as uploading and downloading.
- */
 @Injectable({ providedIn: 'root' })
 export class FileService {
-  constructor(readonly apiService: ApiService) {}
-
-  /**
-   * Triggers a browser download for a given Blob and filename.
-   * @param blob File content as Blob
-   * @param fileName Target filename for download
-   */
   downloadFile(blob: Blob, fileName: string) {
     const a = document.createElement('a');
     const url = window.URL.createObjectURL(blob);
@@ -25,30 +14,18 @@ export class FileService {
     window.URL.revokeObjectURL(url);
   }
 
-  /**
-   * Uploads one or more files to the backend via FormData.
-   * @param payload Upload request payload
-   */
-  uploadFileAsync(payload: FileUploadRequest) {
-    const formData = new FormData();
-
-    if (payload.id) formData.append('id', payload.id!);
-    if (payload.type) formData.append('type', payload.type!);
-    formData.append('file', payload.files[0]);
-    return this.apiService.postFile(FILE_API_ENDPOINT.UPLOAD, formData, { fileName: payload.files[0].name }, { apiHost: 'gis',routerHost: 'sys', });
+  uploadFileAsync(payload: FileUploadRequest): Observable<{ data: { fileName: string; endpoint: string } }> {
+    return of({
+      data: {
+        fileName: payload.files[0]?.name ?? 'local-file',
+        endpoint: FILE_API_ENDPOINT.UPLOAD,
+      },
+    });
   }
 
-  /**
-   * Downloads a file from the server with optional filtering parameters.
-   * @param payload Contains ID, fileId, and type for the download
-   */
-  downloadFileAsync(payload: FileDownloadRequest) {
-    const params = new HttpParams().set('id', payload.id).set('fileId', payload.fileId!).set('type', payload.type);
-    return this.apiService.get(FILE_API_ENDPOINT.DOWNLOAD, {
-      params,
-      responseType: 'blob',
-      routerHost: 'sys',
-    });
+  downloadFileAsync(payload: FileDownloadRequest): Observable<Blob> {
+    const content = `Local file stub\nid=${payload.id}\nfileId=${payload.fileId ?? ''}\ntype=${payload.type}`;
+    return of(new Blob([content], { type: 'text/plain' }));
   }
 
   getFileName() {
@@ -62,19 +39,20 @@ export class FileService {
     return `${hours}:${minutes}:${seconds}-${day}${month}${year}`;
   }
 
-  /**
-   * Downloads a file from the server with optional filtering parameters.
-   * @param payload Contains ID, fileId, and type for the download
-   */
-  getFileUrlAsync(fileName: string) {
-    return this.apiService.get<string>(FILE_API_ENDPOINT.DOWNLOAD, {
-      params: { fileName: encodeURIComponent(fileName) },
-      apiHost: 'gis',
-      routerHost: 'sys',
+  getFileUrlAsync(fileName: string): Observable<{ data: string }> {
+    return of({
+      data: `local-file://${encodeURIComponent(fileName)}`,
     });
   }
 
   downloadFileUrl(url: string) {
+    if (url.startsWith('local-file://')) {
+      const decoded = decodeURIComponent(url.replace('local-file://', ''));
+      const blob = new Blob([`Local stub for ${decoded}`], { type: 'text/plain' });
+      this.downloadFile(blob, decoded);
+      return;
+    }
+
     const a = document.createElement('a');
     a.href = url;
     document.body.appendChild(a);

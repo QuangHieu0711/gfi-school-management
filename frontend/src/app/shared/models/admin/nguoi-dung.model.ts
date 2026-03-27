@@ -47,7 +47,11 @@ export interface NguoiDungResponse extends TableDataSource {
   [NGUOI_DUNG_KEY.SDT]?: number;
   [NGUOI_DUNG_KEY.EMAIL]?: string;
   [NGUOI_DUNG_KEY.ROLEID]?: string;
+  [NGUOI_DUNG_KEY.NHOM_QUYEN_NAME]?: string;
   [NGUOI_DUNG_KEY.AVATAR]?: string;
+  [NGUOI_DUNG_KEY.UNITID]?: ID_TYPE;
+  [NGUOI_DUNG_KEY.TEN_DON_VI]?: string;
+  [NGUOI_DUNG_KEY.TEN_VIET_TAT]?: string;
   [NGUOI_DUNG_KEY.STATUS]: number;
 }
 
@@ -61,6 +65,8 @@ export interface NguoiDungFormRequest {
   [NGUOI_DUNG_KEY.MAT_KHAU]?: string;
   [NGUOI_DUNG_KEY.ROLEID]?: string;
   [NGUOI_DUNG_KEY.AVATAR]?: string;
+  [NGUOI_DUNG_KEY.UNITID]?: ID_TYPE;
+  [NGUOI_DUNG_KEY.STATUS]?: number;
 }
 
 export const NGUOI_DUNG_FORM = (requiredPassword = false) => [

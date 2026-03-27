@@ -6,7 +6,6 @@ import { MATERIAL_MODULE } from '@modules';
 import { RouterModule } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { IconComponent } from '@components/app-icon/app-icon.component';
-import { NAVIGATOR_ENDPOINT } from '@constant/navigator';
 // router is provided by base ComponentBaseAbstract via the injector
 
 @Component({
@@ -43,11 +42,6 @@ export class NavigatorCollapsedComponent extends ComponentBaseAbstract {
     // Map key -> module root (đảm bảo icon luôn sáng khi đang ở bất kỳ trang con)
     const rootByKey: Record<string, string> = {
       dashboard: '/',
-      taiLieuNguyenThuy: `/${NAVIGATOR_ENDPOINT.TAI_LIEU_NGUYEN_THUY.TAI_LIEU_NGUYEN_THUY}`,
-      baoCaoDiaChat: `/${NAVIGATOR_ENDPOINT.BAO_CAO_DIA_CHAT.BAO_CAO_DIA_CHAT}`,
-      deAnPhuongAn: `/${NAVIGATOR_ENDPOINT.DE_AN_PHUONG_AN.BASE_PATH}`,
-      dongCuaMo: `/${NAVIGATOR_ENDPOINT.DONG_CUA_MO.BASE_PATH}`,
-      quanTriTaiNguyen: `/${NAVIGATOR_ENDPOINT.QUAN_TRI_TAI_NGUYEN.BASE_PATH}`,
     };
 
     // Ưu tiên root theo key (đặc biệt fix cho QTTN)

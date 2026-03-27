@@ -1,0 +1,39 @@
+<div class="login-page">
+  <div class="login-overlay"></div>
+
+  <div class="login-card">
+    <img class="login-logo" [src]="logoUrl" alt="Logo login" />
+
+    <h1 class="login-title">Đăng nhập</h1>
+
+    <form [formGroup]="form" (ngSubmit)="submit()" class="login-form">
+      <mat-form-field appearance="outline" class="login-field">
+        <mat-icon matPrefix>person_outline</mat-icon>
+        <input matInput formControlName="username" placeholder="Tên đăng nhập" />
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="login-field">
+        <mat-icon matPrefix>lock_outline</mat-icon>
+        <input
+          matInput
+          type="password"
+          formControlName="password"
+          placeholder="Mật khẩu" />
+      </mat-form-field>
+
+      <button matButton="filled" color="primary" class="login-submit" type="submit">
+        Đăng nhập
+      </button>
+
+      <div class="login-actions">
+        <button
+          mat-button
+          type="button"
+          class="forgot-password-button"
+          (click)="openForgotPassword()">
+          Quên mật khẩu?
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

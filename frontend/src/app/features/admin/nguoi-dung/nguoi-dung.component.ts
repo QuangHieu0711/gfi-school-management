@@ -18,8 +18,7 @@ import {
 } from '@app/model/admin/nguoi-dung.model';
 import { DialogThemNguoiDungComponent } from './dialog-them-nguoi-dung/dialog-them-nguoi-dung.component';
 import { NguoiDungService } from '@app/service/admin/nguoi-dung.service';
-import { catchError, filter, forkJoin, map, of, take, tap } from 'rxjs';
-import { DonViService } from '@app/service/admin/don-vi.service';
+import { filter, take } from 'rxjs';
 import { IconComponent } from '@components/app-icon/app-icon.component';
 import { TYPE_FORM, TYPE_FORM_KEY } from '@constant/constant';
 import { defaultExportFileName, saveBlobAsFile } from '@utils/file-util';
@@ -78,7 +77,6 @@ export class NguoiDungComponent extends ComponentBaseAbstract {
   constructor(
     protected override injector: Injector,
     private readonly nguoiDungService: NguoiDungService,
-    private readonly donViService: DonViService,
     private readonly authService: AuthService,
     public permission: PermissionService
   ) {
@@ -322,30 +320,11 @@ export class NguoiDungComponent extends ComponentBaseAbstract {
         ],
       },
     ];
-    this.getListOptions();
-  }
 
-  getListOptions() {
-    forkJoin({
-      donVi: this.donViService.getAll().pipe(
-        map((res: any) => res?.data ?? []),
-        map((list: any[]) =>
-          list.map((item) => ({
-            value: item?.id,
-            label: item?.name ?? item?.id,
-          }))
-        ),
-        catchError(() => of([]))
-      ),
-    })
-      .pipe(
-        tap(({ donVi }) => {
-          this.findFormControl(this.$formItem, NGUOI_DUNG_KEY.UNITID).options =
-            donVi;
-          this.filterData();
-        })
-      )
-      .subscribe();
+    this.filterData({
+      pageIndex: 0,
+      pageSize: this.pageSize,
+    });
   }
 
   filterData(pageChangeEvent?: TableQueryEvent) {

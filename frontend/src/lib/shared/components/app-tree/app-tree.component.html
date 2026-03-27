@@ -2,23 +2,26 @@
   #tree
   [dataSource]="treeDataSource"
   [childrenAccessor]="childrenAccessor">
-  
+
   <mat-tree-node
     class="!min-h-8"
     *matTreeNodeDef="let node"
     matTreeNodePadding>
-    
-    <button
-      matIconButton
-      class="opacity-0"> 
-      <app-icon icon="chevron_right" />
-    </button>
+    <div class="tree-node-row">
+      <div class="tree-node-label">
+        @if (labelTemplate) {
+          <ng-container *ngTemplateOutlet="labelTemplate; context: { $implicit: node }"></ng-container>
+        } @else {
+          <p class="truncate w-full">{{ node.name }}</p>
+        }
+      </div>
 
-    @if (labelTemplate) {
-      <ng-container *ngTemplateOutlet="labelTemplate; context: { $implicit: node }"></ng-container>
-    } @else {
-      <p class="truncate w-full">{{ node.name }}</p>
-    }
+      <button
+        matIconButton
+        class="opacity-0 pointer-events-none">
+        <app-icon icon="chevron_right" />
+      </button>
+    </div>
   </mat-tree-node>
 
   <mat-tree-node
@@ -26,17 +29,20 @@
     *matTreeNodeDef="let node; when: hasChild"
     matTreeNodePadding
     matTreeNodeToggle>
-    
-    <button
-      matIconButton
-      matTreeNodeToggle>
-      <app-icon [icon]="tree.isExpanded(node) ? 'keyboard_arrow_down' : 'chevron_right'" />
-    </button>
+    <div class="tree-node-row">
+      <div class="tree-node-label">
+        @if (labelTemplate) {
+          <ng-container *ngTemplateOutlet="labelTemplate; context: { $implicit: node }"></ng-container>
+        } @else {
+          <p class="truncate w-full">{{ node.name }}</p>
+        }
+      </div>
 
-    @if (labelTemplate) {
-      <ng-container *ngTemplateOutlet="labelTemplate; context: { $implicit: node }"></ng-container>
-    } @else {
-      <p class="truncate w-full">{{ node.name }}</p>
-    }
+      <button
+        matIconButton
+        matTreeNodeToggle>
+        <app-icon [icon]="tree.isExpanded(node) ? 'keyboard_arrow_down' : 'chevron_right'" />
+      </button>
+    </div>
   </mat-tree-node>
 </mat-tree>

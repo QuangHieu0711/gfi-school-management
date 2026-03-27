@@ -140,11 +140,7 @@ import { Subject, distinctUntilChanged, filter, tap, takeUntil } from 'rxjs';
 import { Component, Injector } from '@angular/core';
 import { RouterModule, RouterOutlet } from '@angular/router';
 import { ISidebarItem } from '@model/menu.model';
-import {
-  ComponentBaseAbstract,
-  HeaderComponent,
-  NavigatorCollapsedComponent,
-} from '@layout';
+import { ComponentBaseAbstract, HeaderComponent } from '@layout';
 import { MATERIAL_MODULE } from '@modules';
 import { TreeComponent } from '@components/app-tree/app-tree.component';
 import { TreeNode } from '@model/tree.models';
@@ -162,7 +158,6 @@ import { ICurrentUser, UserRole } from '@model/auth.model';
     RouterOutlet,
     ...MATERIAL_MODULE,
     HeaderComponent,
-    NavigatorCollapsedComponent,
     TreeComponent,
     RouterModule,
     IconComponent,
@@ -175,6 +170,7 @@ export class LayoutComponent extends ComponentBaseAbstract {
   userInfo = getObsValue(this.store.select((state) => state.userInfo));
 
   private readonly TREE_MODULE_PREFIXES = [
+    '/Admin',
     '/tai-lieu-nguyen-thuy',
     '/bao-cao-dia-chat',
     '/de-an-phuong-an',
@@ -268,9 +264,8 @@ export class LayoutComponent extends ComponentBaseAbstract {
       //   this.treeDataSource = navigator ?? [];
       // });
       .subscribe((navigator) => {
-        if (navigator && navigator.length) {
-          this.treeDataSource = [...navigator];
-        }
+        this.treeDataSource =
+          navigator && navigator.length ? [...navigator] : [];
       });
   }
 
@@ -530,20 +525,27 @@ export class LayoutComponent extends ComponentBaseAbstract {
     return true;
   }
 
+  isTreeNodeActive(node: Record<string, any> | null | undefined): boolean {
+    if (!node) return false;
+
+    const nodeUrl = node['url'];
+    const nodeQueryParams = node['activeQueryParams'] ?? node['queryParams'];
+
+    if (
+      typeof nodeUrl === 'string' &&
+      this.isNodeActiveUrl(nodeUrl, nodeQueryParams)
+    ) {
+      return true;
+    }
+
+    const children = Array.isArray(node['children']) ? node['children'] : [];
+    return children.some((child) => this.isTreeNodeActive(child));
+  }
+
   getMenuByRole(userInfo: ICurrentUser): void {
     this.menu = this.resolveMenu(MENU, this.navigatorEndpoint).filter(
       (menuItem) =>
-        userInfo?.role?.rules?.some(
-          (rule) => rule.url === menuItem.url && rule.isView === 1
-        ) ||
-        menuItem.key === 'dashboard' ||
-        menuItem.key === 'baoCaoDiaChat' ||
-        menuItem.key === 'deAnPhuongAn' ||
-        menuItem.key === 'taiLieuNguyenThuy' ||
-        menuItem.key === 'quanTriTaiNguyen' ||
-        menuItem.key === 'duAnKhaiThac' ||
-        menuItem.key === 'dongCuaMo' ||
-        (menuItem.key === 'admin' && userInfo.role.name === UserRole.ADMIN)
+        menuItem.key === 'admin' && userInfo.role.name === UserRole.ADMIN
     );
   }
 }

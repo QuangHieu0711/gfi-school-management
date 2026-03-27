@@ -14,9 +14,6 @@ import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { NguoiDungService } from '@app/service/admin/nguoi-dung.service';
 import { ID_TYPE } from '@model/response.model';
 import { sha256 } from '@utils/utils';
-import { DonViService } from '@app/service/admin/don-vi.service';
-import { catchError, forkJoin, map, of, tap } from 'rxjs';
-import { NhomQuyenService } from '@app/service/admin/nhom-quyen.service';
 import { TYPE_FORM, TYPE_FORM_KEY } from '@constant/constant';
 import { PermissionService } from '../../../../../lib/core/services/permission.service';
 import { HttpErrorResponse } from '@angular/common/http';
@@ -37,8 +34,6 @@ export class DialogThemNguoiDungComponent extends ComponentBaseAbstract {
     protected override injector: Injector,
     private readonly dialogRef: MatDialogRef<DialogThemNguoiDungComponent>,
     private readonly nguoiDungService: NguoiDungService,
-    private readonly donViService: DonViService,
-    private readonly nhomQuyenService: NhomQuyenService,
     public permission: PermissionService,
     @Inject(MAT_DIALOG_DATA)
     public data: { type: TYPE_FORM_KEY; id?: ID_TYPE } = {
@@ -63,50 +58,9 @@ export class DialogThemNguoiDungComponent extends ComponentBaseAbstract {
         this.title = 'Thêm mới tài khoản';
         break;
     }
-    this.getListOptions();
     if (this.data.type !== this.TYPE_FORM.CREATE) {
       this.getDetail();
     }
-  }
-
-  getListOptions() {
-    forkJoin({
-      donVi: this.donViService.getAll().pipe(
-        map((res: any) => res?.data ?? []),
-        map((list: any[]) =>
-          list.map((item) => ({
-            value: item?.id,
-            label: item?.name ?? item?.id, // fallback nếu thiếu name
-          }))
-        ),
-        catchError(() => of([]))
-      ),
-
-      nhomQuyen: this.nhomQuyenService.getAll().pipe(
-        map((res: any) => res?.data?.items ?? []), // <-- lấy đúng items
-        map((items: any[]) =>
-          items.map((item) => ({
-            value: item?.id,
-            label: item?.name,
-          }))
-        ),
-        catchError(() => of([]))
-      ),
-    })
-      .pipe(
-        tap(({ donVi, nhomQuyen }) => {
-          this.findFormControl(this.$formItem, NGUOI_DUNG_KEY.UNITID).options =
-            donVi;
-          this.findFormControl(this.$formItem, NGUOI_DUNG_KEY.ROLEID).options =
-            nhomQuyen;
-          this.findFormControl(this.$formItem, NGUOI_DUNG_KEY.STATUS).options =
-            [
-              { value: 1, label: 'Đang hoạt động' },
-              { value: 0, label: 'Không hoạt động' },
-            ];
-        })
-      )
-      .subscribe();
   }
 
   getDetail() {

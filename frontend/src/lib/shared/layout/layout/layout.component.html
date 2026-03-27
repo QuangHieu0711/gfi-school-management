@@ -3,30 +3,11 @@
 
   <mat-sidenav-container
     class="sidenav-container !bg-white"
-    [class.open]="isExpanded"
     autosize>
-    <mat-sidenav
-      class="box-content border-r !rounded-[0]"
-      mode="side"
-      [disableClose]="true"
-      [opened]="true">
-      <mat-nav-list class="overflow-auto">
-        <app-navigator-collapsed-component [menu]="menu" />
-      </mat-nav-list>
-      <button
-        matIconButton="text"
-        color="primary"
-        class="collapse-button !absolute bottom-2 cursor-pointer"
-        (click)="isExpanded = !isExpanded">
-        <app-icon icon="menu_open" />
-      </button>
-    </mat-sidenav>
     <mat-sidenav-content>
       <div class="clear-margin-collapsing h-full">
         <div class="flex h-full">
-          <div
-            class="tree-wrapper relative h-full w-[437px] min-w-[437px]"
-            [class.close]="!isExpanded">
+          <div class="tree-wrapper relative h-full w-[437px] min-w-[437px]">
             <div
               class="tree-inner-navigator h-full w-full px-1 py-6 overflow-auto border-r border-solid border-neutral-250">
               <app-tree
@@ -49,7 +30,8 @@
   let-data>
   @if (data.url) {
     <a
-      class="flex items-center gap-2 nav-link cursor-pointer"
+      class="flex items-center gap-2 nav-link cursor-pointer tree-link"
+      [class.tree-link-active]="isTreeNodeActive(data)"
       tabindex="0"
       (click)="$event.stopPropagation(); $event.preventDefault(); goToUrl(data)"
       (keyup)="
@@ -60,24 +42,22 @@
         [icon]="data.icon" />
       <span
         class="node-text text-[#001F2D] font-semibold"
-        [class.active-nav]="
-          isNodeActiveUrl(
-            data.url,
-            data.activeQueryParams ?? data.queryParams
-          )
-        "
+        [class.active-nav]="isTreeNodeActive(data)"
         [matTooltip]="data.name"
         matTooltipPosition="right">
         {{ data.name }}
       </span>
     </a>
   } @else {
-    <span class="cursor-pointer flex items-center gap-2 nav-link">
+    <span
+      class="cursor-pointer flex items-center gap-2 nav-link tree-link"
+      [class.tree-link-active]="isTreeNodeActive(data)">
       <app-icon
         iconClass="grow shrink-0"
         [icon]="data.icon" />
       <span
         class="node-text text-[#001F2D] font-semibold"
+        [class.active-nav]="isTreeNodeActive(data)"
         [matTooltip]="data.name"
         matTooltipPosition="right">
         {{ data.name }}

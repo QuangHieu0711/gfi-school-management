@@ -1,9 +1,9 @@
-import { Component, inject } from '@angular/core';
+import { Component } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { ComponentBaseAbstract } from '@layout';
 import { NavigatorAction } from '@store/navigator';
-import { MenuItem, Rule } from './admin.interface';
-import { AuthService } from '@service';
+import { MenuItem } from './admin.interface';
+import { NAVIGATOR_ENDPOINT } from '@constant/navigator';
 
 @Component({
   selector: 'admin',
@@ -11,22 +11,12 @@ import { AuthService } from '@service';
   imports: [RouterOutlet],
 })
 export class AdminComponent extends ComponentBaseAbstract {
-  private authService = inject(AuthService);
-
   protected override componentInit(): void {
     this.loadDynamicMenu();
   }
 
   private loadDynamicMenu() {
-    const currentUser = this.authService.currentUser;
-
-    const rules: Rule[] = (currentUser?.role?.rules || []) as unknown as Rule[];
-
-    const viewableRules = rules.filter((r) => r.isView === 1);
-
-    viewableRules.sort((a, b) => (a.ordinal || 0) - (b.ordinal || 0));
-
-    const dynamicMenu = this.buildMenuTree(viewableRules);
+    const dynamicMenu = this.buildMenuTree();
 
     this.store.dispatch(
       NavigatorAction.Update({
@@ -36,70 +26,25 @@ export class AdminComponent extends ComponentBaseAbstract {
     );
   }
 
-  private buildMenuTree(rules: Rule[]): MenuItem[] {
-    const map = new Map<number, MenuItem>();
-    const roots: MenuItem[] = [];
-
-    rules.forEach((rule) => {
-      if (rule.moduleId === 0) {
-        return;
-      }
-      const cleanName = rule.name?.trim();
-      let cleanUrl = rule.url?.trim();
-      const cleanIcon = rule.icon?.trim() || 'timeline';
-
-      if (cleanUrl && cleanUrl !== '#' && !cleanUrl.startsWith('http')) {
-        if (!cleanUrl.startsWith('/')) {
-          cleanUrl = [
-            '/',
-            this.navigatorEndpoint.ADMIN.BASE_PATH,
-            cleanUrl,
-          ].join('/');
-        }
-      } else {
-        cleanUrl = '';
-      }
-
-      map.set(rule.moduleId, {
-        key: rule.moduleId.toString(),
-        name: cleanName,
-        icon: cleanIcon,
-        url: cleanUrl,
-        children: [],
+  private buildMenuTree(): MenuItem[] {
+    return [
+      {
+        key: 'nguoi-dung-root',
+        id: 'nguoi-dung-root',
+        name: 'Quản trị nguời dùng',
+        icon: 'group',
         expanded: true,
-      } as MenuItem);
-    });
-
-    // rules.forEach((rule) => {
-    //   const node = map.get(rule.moduleId);
-    //   if (node) {
-    //     if (rule.pid && map.has(rule.pid)) {
-    //       const parent = map.get(rule.pid);
-    //       parent?.children?.push(node);
-    //     } else {
-    //       roots.push(node);
-    //     }
-    //   }
-    //   // });
-    // });
-    rules.forEach((rule) => {
-      const node = map.get(rule.moduleId);
-      if (node) {
-        if (rule.pid && map.has(rule.pid)) {
-          const parent = map.get(rule.pid);
-          parent?.children?.push(node);
-        } else {
-          roots.push(node);
-        }
-      }
-    });
-    map.forEach((node) => {
-      if (node.children && node.children.length > 0) {
-        node.url = '';
-        node.expanded = true;
-      }
-    });
-
-    return roots;
+        children: [
+          {
+            key: 'nguoi-dung',
+            id: 'nguoi-dung',
+            parentId: 'nguoi-dung-root',
+            name: 'Quản lý tài khoản',
+            icon: 'person',
+            url: `/${NAVIGATOR_ENDPOINT.ADMIN.BASE_PATH}/${NAVIGATOR_ENDPOINT.ADMIN.NGUOI_DUNG.BASE_PATH}`,
+          } as MenuItem,
+        ],
+      } as MenuItem,
+    ];
   }
 }

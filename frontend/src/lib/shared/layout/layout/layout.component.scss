@@ -1,29 +1,31 @@
-@reference "tailwindcss";
-
 .wrapper {
   mat-sidenav-container {
     height: calc(100vh - var(--mat-toolbar-standard-height));
 
-    mat-sidenav {
-      transition: width 0.3s ease-in-out !important;
-      width: var(--menu-width-closed);
-      box-shadow: rgba(149, 157, 165, 0.2) 0px 8px 24px;
-
-      .collapse-button {
-        right: calc((var(--menu-width-closed) - 40px) / 2);
-      }
-
-      mat-nav-list {
-        height: calc(100% - 48px);
-      }
-    }
-
-    mat-sidenav-content {
-      margin-left: calc(var(--menu-width-closed) + 1px) !important;
-    }
-
     ::ng-deep {
       app-tree {
+        mat-tree {
+          background: transparent !important;
+        }
+
+        .tree-node-row {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          width: 100%;
+          min-height: 48px;
+          padding: 0 12px;
+          box-sizing: border-box;
+          transition: background-color 0.2s ease;
+        }
+
+        .tree-node-label {
+          flex: 1 1 auto;
+          min-width: 0;
+          display: flex;
+          align-items: center;
+        }
+
         mat-tree-node .node-text {
           display: inline-block;
           max-width: 280px;
@@ -34,9 +36,10 @@
         }
 
         mat-tree-node {
+          width: 100%;
           min-height: 40px;
           margin: 0 !important;
-
+          background: transparent !important;
           padding-left: 0 !important;
         }
 
@@ -46,45 +49,49 @@
         }
 
         mat-tree-node[aria-level='2'] {
-          padding-left: 20px !important;
+          padding-left: 0 !important;
         }
 
         mat-tree-node[aria-level='3'] {
-          padding-left: 40px !important;
+          padding-left: 0 !important;
         }
 
         mat-tree-node[aria-level='4'] {
-          padding-left: 60px !important;
+          padding-left: 0 !important;
         }
 
         mat-tree-node[aria-level='5'] {
-          padding-left: 80px !important;
+          padding-left: 0 !important;
         }
 
         mat-tree-node[aria-level='6'] {
-          padding-left: 100px !important;
+          padding-left: 0 !important;
         }
 
         mat-tree-node[aria-level='7'] {
-          padding-left: 120px !important;
+          padding-left: 0 !important;
         }
 
         mat-tree-node[aria-level='8'] {
-          padding-left: 140px !important;
+          padding-left: 0 !important;
         }
 
         mat-tree-node[aria-level='9'] {
-          padding-left: 160px !important;
+          padding-left: 0 !important;
         }
 
         button[mat-icon-button] {
           width: 24px !important;
           height: 24px !important;
           line-height: 24px !important;
-          margin-right: 6px !important;
+          margin-right: 0 !important;
           display: flex;
           align-items: center;
           justify-content: center;
+          background: transparent !important;
+          border-radius: 0 !important;
+          box-shadow: none !important;
+          color: #ffffff !important;
         }
 
         button[disabled] {
@@ -97,40 +104,47 @@
 
 .tree-wrapper {
   box-shadow: rgba(149, 157, 165, 0.2) 0px 8px 24px;
-  transition: all 0.3s ease-in-out !important;
-  margin-left: 0;
+  background-color: #3e8f97;
 
   .tree-inner-navigator {
     transform: translateX(0);
-    transition: all 0.3s ease-in-out !important;
-  }
-
-  &.close {
-    margin-left: -437px;
-    box-shadow: none;
-
-    .tree-inner-navigator {
-      transform: translateX(-100%);
-    }
+    background-color: #3e8f97;
   }
 }
 
 ::ng-deep {
-  mat-sidenav-container {
-    mat-sidenav .collapse-button mat-icon {
-      transition: transform 0.3s ease-in-out !important;
-      transform: rotateY(180deg);
-    }
+  .tree-link {
+    width: 100%;
+    min-height: 48px;
+    padding: 0;
+    border-radius: 0;
+    box-sizing: border-box;
+    color: #ffffff !important;
+    transition:
+      background-color 0.2s ease,
+      color 0.2s ease;
+  }
 
-    &.open .collapse-button mat-icon {
-      transform: rotateY(0deg) !important;
-    }
+  .tree-node-row:has(.tree-link-active) {
+    background-color: #6daeb4 !important;
+  }
+
+  app-tree mat-tree-node {
+    width: 100%;
+  }
+
+  .tree-link app-icon,
+  .tree-link .node-text,
+  .tree-link mat-icon,
+  .tree-node-row button mat-icon,
+  .tree-node-row button app-icon {
+    color: #ffffff !important;
   }
 
   .active-nav,
   .active-nav:focus,
   .active-nav:hover,
   .active-nav:active {
-    color: var(--color-info-500) !important;
+    color: #ffffff !important;
   }
 }

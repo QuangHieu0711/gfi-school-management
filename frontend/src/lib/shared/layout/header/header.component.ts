@@ -123,7 +123,7 @@
 //   }
 // }
 
-import { Component, DestroyRef, Injector, OnInit, inject } from '@angular/core';
+import { Component, Injector, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { IconComponent } from '@components/app-icon/app-icon.component';
 import { ComponentBaseAbstract } from '@layout';
@@ -133,13 +133,8 @@ import { AuthService } from '@service';
 import { MatDialog } from '@angular/material/dialog';
 import { UserProfileDialogComponent } from '@components/user-profile-dialog/user-profile-dialog.component';
 import { NotificationDetailDialogComponent } from './notification-detail-dialog/notification-detail-dialog.component';
-import { HeThongCanhBaoService } from '@app/service/admin/thong_bao.service';
-import {
-  HeThongCanhBaoFilterRequest,
-  HeThongCanhBaoResponse,
-} from '@app/model/admin/he-thong-canh-bao.model';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { catchError, interval, of, startWith, switchMap } from 'rxjs';
+import { Observable } from 'rxjs';
+import { ICurrentUser } from '@model/auth.model';
 
 interface HeaderNotificationItem {
   id: number;
@@ -167,10 +162,11 @@ interface HeaderNotificationItem {
   imports: [...MATERIAL_MODULE, TranslateModule, IconComponent, CommonModule],
 })
 export class HeaderComponent extends ComponentBaseAbstract implements OnInit {
-  private readonly destroyRef = inject(DestroyRef);
   private readonly notificationReadStorageKey = 'he_thong_canh_bao_read_ids';
-  private readonly notificationPollingMs = 1 * 60 * 1000; // 1 phút
   private previousUnreadCount = 0;
+  readonly brandLogoUrl = encodeURI(
+    'config/Hệ thống quản lý lớp học Tiểu học.png'
+  );
 
   /**
    * Nếu project bạn đang lưu user ở key khác thì thêm vào đây
@@ -190,113 +186,21 @@ export class HeaderComponent extends ComponentBaseAbstract implements OnInit {
   }
 
   // Thêm property để template có thể access user observable
-  get user$() {
+  get user$(): Observable<ICurrentUser | null> {
     return this.authService.currentUser$;
   }
 
   constructor(
     protected override injector: Injector,
     private readonly authService: AuthService,
-    private readonly matDialog: MatDialog,
-    private readonly heThongCanhBaoService: HeThongCanhBaoService
+    private readonly matDialog: MatDialog
   ) {
     super(injector);
-  }
-
-  override ngOnInit(): void {
-    this.startNotificationPolling();
-  }
-
-  private startNotificationPolling() {
-    interval(this.notificationPollingMs)
-      .pipe(
-        startWith(0),
-        switchMap(() => {
-          const objectId = this.getCurrentObjectId();
-
-          if (!objectId) {
-            this.notifications = [];
-            return of([]);
-          }
-
-          const payload: HeThongCanhBaoFilterRequest = {
-            pageSize: 10,
-            pageNow: 1,
-            filter: {
-              objectId,
-            },
-            exportType: '',
-          };
-
-          return this.heThongCanhBaoService
-            .filter(payload)
-            .pipe(catchError(() => of([])));
-        }),
-        takeUntilDestroyed(this.destroyRef)
-      )
-      .subscribe((response) => {
-        const items = this.extractItems(response);
-        const readIds = this.getReadNotificationIds();
-
-        this.notifications = items.map((item: any) => ({
-          id: item.id,
-          message: item.alertTitle || '',
-          content: item.alertContent || '',
-          creator: 'Hệ thống',
-          time: this.formatDateTime(item.createdTimeAt),
-          read: readIds.includes(item.id),
-          alertId: item.alertId,
-          alertType: item.alertType,
-          severity: item.severity,
-          objectType: item.objectType,
-          createdTimeAt: item.createdTimeAt,
-          expiryDate: item.expiryDate,
-          status: item.status,
-          sentFlag: item.sentFlag,
-          recipients: item.recipients,
-          sendMethod: item.sendMethod,
-        }));
-
-        // Kiểm tra nếu có thông báo mới chưa đọc
-        const currentUnreadCount = this.unreadCount;
-        if (currentUnreadCount > this.previousUnreadCount) {
-          const newNotifications = this.notifications.filter((n) => !n.read);
-          if (newNotifications.length > 0) {
-            const latestNotification = newNotifications[0];
-            // Hiển thị toast popup cho thông báo mới
-            this.toastr.info(
-              latestNotification.message,
-              'Thông báo mới',
-              {
-                timeOut: 5000,
-                positionClass: 'toast-top-right',
-              }
-            );
-          }
-        }
-        this.previousUnreadCount = currentUnreadCount;
-      });
   }
 
   /**
    * Hỗ trợ cả trường hợp ApiService unwrap data hoặc giữ nguyên response gốc
    */
-  private extractItems(response: unknown): HeThongCanhBaoResponse[] {
-    const res = response as {
-      data?: { items?: HeThongCanhBaoResponse[] };
-      items?: HeThongCanhBaoResponse[];
-    };
-
-    if (Array.isArray(res?.data?.items)) {
-      return res.data.items;
-    }
-
-    if (Array.isArray(res?.items)) {
-      return res.items;
-    }
-
-    return [];
-  }
 
   /**
    * Ưu tiên lấy từ authService.currentUser

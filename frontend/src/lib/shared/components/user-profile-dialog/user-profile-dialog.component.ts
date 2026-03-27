@@ -6,8 +6,6 @@ import { MatDialog } from '@angular/material/dialog';
 import { ICurrentUser } from '@model/auth.model';
 import { AuthService } from '@service';
 import { MATERIAL_MODULE } from '@modules';
-import { ChangePasswordDialogComponent } from '@features/change-password/change-password-dialog.component';
-
 interface UserDisplayInfo {
   username: string;
   email: string;
@@ -46,23 +44,23 @@ export class UserProfileDialogComponent {
     this.loadUserFromApi();
   }
 
-  openChangePassword(): void {
-    const changeRef = this.dialog.open(ChangePasswordDialogComponent, {
-      width: '480px',
-      data: { username: this.userDisplayInfo.username },
-    });
+  // openChangePassword(): void {
+  //   const changeRef = this.dialog.open(ChangePasswordDialogComponent, {
+  //     width: '480px',
+  //     data: { username: this.userDisplayInfo.username },
+  //   });
 
-    changeRef.afterClosed().subscribe((result) => {
-      if (result && result.saved) {
-        this.dialog.open(UserProfileDialogComponent, {
-          width: '600px',
-          data: this.userData,
-        });
-      }
-    });
+  //   changeRef.afterClosed().subscribe((result) => {
+  //     if (result && result.saved) {
+  //       this.dialog.open(UserProfileDialogComponent, {
+  //         width: '600px',
+  //         data: this.userData,
+  //       });
+  //     }
+  //   });
 
-    this.dialogRef.close();
-  }
+  //   this.dialogRef.close();
+  // }
 
   private loadUserFromApi(): void {
     this.isLoading = true;
