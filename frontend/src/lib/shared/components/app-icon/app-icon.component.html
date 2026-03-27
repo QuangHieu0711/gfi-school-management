@@ -1,0 +1,16 @@
+@switch (iconType) {
+  @case (ICONS_TYPE.SVG) {
+    <mat-icon
+      class="svg-icon"
+      [svgIcon]="iconName"
+      [ngClass]="computedClass"
+      [ngStyle]="computedStyle"></mat-icon>
+  }
+  @default {
+    <mat-icon
+      [ngClass]="computedClass"
+      [ngStyle]="computedStyle">
+      {{ iconName }}
+    </mat-icon>
+  }
+}

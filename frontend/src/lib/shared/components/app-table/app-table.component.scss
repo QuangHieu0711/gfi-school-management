@@ -1,0 +1,53 @@
+@reference "tailwindcss";
+
+.not-empty:not(:empty) {
+  @apply my-2;
+}
+
+::ng-deep {
+  .mtx-grid {
+    max-height: 706px;
+  }
+  .table-wrapper {
+    .mat-mdc-row {
+      @apply bg-white cursor-pointer;
+    }
+    .mat-mdc-header-row {
+      background-color: #e7f1f5 !important;
+    }
+    .mtx-grid .mat-mdc-table.mat-table-striped .mat-row-odd {
+      background-color: var(--color-neutral-100) !important;
+    }
+  }
+  mat-expansion-panel {
+    box-shadow: unset !important;
+    @apply relative !rounded-none;
+  }
+  .mat-expansion-panel-content {
+    @apply bg-white;
+  }
+  .mat-expansion-panel-body {
+    @apply relative !p-0;
+  }
+  mtx-grid {
+    @apply relative !rounded-lg !border-0;
+    .mtx-grid-main {
+      @apply rounded-lg !border !border-solid !border-[#EAEAEA] !overflow-hidden;
+      .mat-mdc-header-row {
+        @apply relative h-[48px];
+        th {
+          border-right: 1px solid var(--color-neutral-250) !important;
+          &:last-of-type {
+            border-right: 0 !important;
+          }
+        }
+      }
+      .mat-mdc-row {
+        @apply relative h-[60px];
+        .mat-mdc-cell {
+          @apply relative !border-0 !px-3;
+        }
+      }
+    }
+  }
+}

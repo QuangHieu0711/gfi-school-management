@@ -1,0 +1,120 @@
+<app-table
+  tableTitle="Quản lý tài khoản"
+  [pageIndex]="pageIndex"
+  [pageSize]="pageSize"
+  [total]="dataSourceTotal"
+  [tableConfig]="tableConfig"
+  [dataSource]="dataSource"
+  [tableColumns]="columns"
+  (queryChange)="filterData($event)">
+  <ng-container custom-buttons>
+    <div class="flex gap-2 items-center">
+      @if (permission.canAdd(permissionUrl)) {
+        <button
+          color="info"
+          matButton
+          [attr.matbutton]="matButton()"
+          class="btn-tight"
+          (click)="openDialog(TYPE_FORM.CREATE)">
+          <app-icon
+            icon="add_box"
+            [size]="18"
+            class="btn-icon" />
+          Thêm mới
+        </button>
+      }
+      @if (permission.canAdd(permissionUrl)) {
+        <button
+          class="btn-tight"
+          color="info"
+          matButton
+          [attr.matbutton]="matButton()"
+          (click)="import()">
+          <app-icon
+            class="btn-icon"
+            icon="upload"
+            [size]="18" />
+          Kết nạp
+        </button>
+      }
+      @if (permission.canView(permissionUrl)) {
+        <button
+          color="info"
+          matButton
+          [attr.matbutton]="matButton()"
+          class="btn-tight"
+          (click)="exportExcel()">
+          <app-icon
+            icon="file_download"
+            [size]="18"
+            class="btn-icon" />
+          Xuất Excel
+        </button>
+        <button
+          color="info"
+          matButton
+          [attr.matbutton]="matButton()"
+          class="btn-tight"
+          (click)="exportPdf()">
+          <app-icon
+            icon="file_download"
+            [size]="18"
+            class="btn-icon" />
+          Xuất PDF
+        </button>
+      }
+    </div>
+  </ng-container>
+  <ng-container filter-panel>
+    <app-form-control
+      [form]="form"
+      (submitEvent)="filterData()"
+      (resetEvent)="resetFilter()">
+      <div class="flex gap-2 items-center">
+        <app-text-control
+          [item]="findFormControl($formItem, key.TEN_NGUOI_DUNG)"
+          [form]="form"></app-text-control>
+        <app-multiselect-control
+          [item]="findFormControl($formItem, key.UNITID)"
+          [form]="form"></app-multiselect-control>
+        <app-select-control
+          [item]="findFormControl($formItem, key.STATUS)"
+          [form]="form"></app-select-control>
+        <div class="flex gap-1 items-center">
+          <button
+            color="dark"
+            matIconButton="text"
+            matTooltip="Tìm kiếm"
+            type="submit">
+            <app-icon
+              icon="svg:search"
+              color="#858585" />
+          </button>
+          <button
+            color="dark"
+            matIconButton="text"
+            matTooltip="Làm mới"
+            type="reset">
+            <app-icon
+              icon="svg:cached"
+              color="#858585" />
+          </button>
+        </div>
+      </div>
+    </app-form-control>
+  </ng-container>
+</app-table>
+
+<ng-template
+  #tenTaiKhoanTpl
+  let-row>
+  <a
+    tabindex="0"
+    class="cursor-pointer text-info-500"
+    (click)="openDialog(TYPE_FORM.DETAIL, row)"
+    (keydown.enter)="
+      $event.stopPropagation(); openDialog(TYPE_FORM.DETAIL, row)
+    ">
+    {{ row?.[key.TEN_TAI_KHOAN] }}
+  </a>
+</ng-template>

@@ -1,0 +1,13 @@
+<form
+  [formGroup]="form"
+  novalidate
+  (submit)="$event.preventDefault()"
+  (ngSubmit)="$event.preventDefault(); submit()"
+  (reset)="$event.preventDefault(); reset()">
+  <ng-content></ng-content>
+  <button
+    type="submit"
+    class="hidden">
+    Submit
+  </button>
+</form>

@@ -1,0 +1,28 @@
+<div class="dialog-wrapper">
+  <div
+    class="header flex justify-between items-center px-6 py-3"
+    [ngClass]="dialogTitleClass">
+    @if (dialogTitle) {
+      <h6
+        mat-dialog-title
+        class="!p-0 !text-lg !font-semibold !text-night-500 max-w-full">
+        <span class="block max-w-full truncate">{{ dialogTitle }}</span>
+        @if (dialogTitleCode) {
+          <span class="block">Mã {{ dialogTitleCode }}</span>
+        }
+      </h6>
+    } @else {
+      <ng-content select="[header-template]"></ng-content>
+    }
+  </div>
+  <mat-dialog-content class="!py-6 !px-[30px] border-t border-b border-solid border-neutral-150">
+    <div class="container">
+      <ng-content></ng-content>
+    </div>
+  </mat-dialog-content>
+  @if (dialogActionTemplate) {
+    <mat-dialog-actions align="end">
+      <ng-container *ngTemplateOutlet="dialogActionTemplate"></ng-container>
+    </mat-dialog-actions>
+  }
+</div>

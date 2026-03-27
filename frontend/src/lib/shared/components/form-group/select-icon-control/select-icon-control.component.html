@@ -1,0 +1,72 @@
+<div class="form-group">
+  @if (item.showLabel) {
+    <label class="block mb-0.5" [class.error]="isInvalidControl()" [for]="item.key">
+      {{ item.label }}
+      @if (isRequired()) {
+        <span class="control-required">*</span>
+      }
+    </label>
+  }
+
+  <div class="form-control select-control icon-select-wrapper" [class.disabled]="isDisabled()">
+    <mat-form-field appearance="outline" [formGroup]="form">
+      <mtx-select
+        class="icon-select"
+        [appendTo]="isInsideDialog ? '.mat-mdc-dialog-panel' : '.content-wrapper'"
+        [labelForId]="item.key"
+        appearance="outline"
+        [items]="iconConstant"
+        bindLabel="label"
+        bindValue="value"
+        [formControlName]="item.key"
+        [placeholder]="item.placeholder ?? ''"
+        [clearable]="item.clearable"
+        [multiple]="item.multiple"
+        [searchable]="true"
+        [virtualScroll]="false"
+        [trackByFn]="trackByIconFn"
+        [tabIndex]="item.tabIndex ?? 0"
+        [addTag]="false"
+        [addTagText]="'formControl.select.addTag' | translate"
+        [clearAllText]="'formControl.select.clearAll' | translate"
+        [notFoundText]="'formControl.select.notFound' | translate"
+        (change)="onChange($event)"
+        (focus)="onFocus($event)"
+        (blur)="onBlur($event)"
+        (focusout)="onFocusOut($event)">
+
+        <!-- Option template -->
+        <ng-template ng-option-tmp let-item="item">
+          <div class="icon-option-row">
+            <span class="icon-cell">
+              @if (getIconValue(item)) {
+                <app-icon [icon]="getIconValue(item)" />
+              }
+            </span>
+            <span class="icon-label">{{ getIconLabel(item) }}</span>
+          </div>
+        </ng-template>
+
+        <!-- Selected label template -->
+        <ng-template ng-label-tmp let-item="item">
+          <div class="icon-selected-row">
+            <span class="icon-cell">
+              @if (getIconValue(item)) {
+                <app-icon [icon]="getIconValue(item)" />
+              }
+            </span>
+            <span class="icon-label">{{ getIconLabel(item) }}</span>
+          </div>
+        </ng-template>
+      </mtx-select>
+
+      @if (item.hint && !isInvalidControl()) {
+        <mat-hint>{{ item.hint }}</mat-hint>
+      }
+
+      @if (isInvalidControl()) {
+        <mat-error>{{ getErrorMessage() }}</mat-error>
+      }
+    </mat-form-field>
+  </div>
+</div>

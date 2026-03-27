@@ -1,0 +1,20 @@
+@if (hasPermission) {
+  <ng-content></ng-content>
+} @else {
+  <div
+    class="flex flex-col items-center justify-center h-full min-h-[60vh] text-center p-8 bg-white rounded-lg shadow-sm border border-gray-100">
+    <!-- <mat-icon
+      style="font-size: 64px; height: 64px; width: 64px; color: #f44336"
+      class="mb-4 opacity-80">
+      block
+    </mat-icon> -->
+
+    <h2 class="text-2xl font-bold text-gray-800 mb-2">Truy cập bị từ chối</h2>
+    <p class="text-gray-500 text-lg">
+      Bạn không có quyền vào xem màn hình này.
+    </p>
+    <p class="text-gray-400 mt-1">
+      Vui lòng liên hệ Quản trị viên hệ thống để được cấp quyền.
+    </p>
+  </div>
+}

@@ -1,0 +1,18 @@
+<div class="dialog-wrapper success-dialog">
+  <mat-dialog-content class="!py-6 !flex flex-col items-center">
+    <h6 class="!p-0 !text-2xl mb-2 text-success-500">
+      {{ data.title }}
+    </h6>
+    <p class="text-[#333333]">{{ data.message }}</p>
+  </mat-dialog-content>
+  <mat-dialog-actions
+    align="center"
+    class="!pt-0">
+    <button
+      color="success"
+      matButton="filled"
+      (click)="onClose()">
+      {{ data.closeButtonText }}
+    </button>
+  </mat-dialog-actions>
+</div>

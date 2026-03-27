@@ -1,0 +1,6 @@
+@font-face {
+  font-family: 'CalciteWebCoreIcons';
+  src: url('/assets/arcgis/fonts/94aa531e-7746-4df0-bb6e-349891f2eda5.woff2')
+    format('woff2');
+}
+@import '/assets/arcgis/main.css';

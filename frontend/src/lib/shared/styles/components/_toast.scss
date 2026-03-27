@@ -1,0 +1,56 @@
+@reference "../theme.css";
+
+[toast-component] {
+  background-size: 32px !important;
+  box-shadow: none !important;
+  @apply relative !p-3 !pl-14 !pr-12 !rounded-lg border border-solid;
+  &.toast-success {
+    @apply bg-success-50 border-success-150 text-success-500;
+    background-image: url('/assets/images/check-circle.svg');
+  }
+  &.toast-error {
+    @apply bg-error-50 border-error-150 text-error-500;
+    background-image: url('/assets/images/cancel-circle.svg');
+  }
+  &.toast-info {
+    @apply bg-info-50 border-info-150 text-info-500;
+  }
+  &.toast-warning {
+    @apply bg-warning-50 border-warning-150 text-warning-500;
+  }
+
+  .toast-title {
+    @apply mb-1 font-semibold text-lg;
+  }
+  .toast-message {
+    @apply text-sm;
+  }
+  .toast-progress {
+    display: none;
+  }
+  .toast-close-button {
+    color: #858585;
+    @apply absolute w-6 h-6 top-[50%] right-3 -translate-y-[50%];
+    span {
+      @apply hidden w-6 h-6;
+    }
+    &::after {
+      content: 'close';
+      font-family: 'Material Symbols Outlined', sans-serif;
+      font-weight: normal;
+      font-style: normal;
+      font-size: 24px;
+      line-height: 1;
+      letter-spacing: normal;
+      text-transform: none;
+      display: inline-block;
+      white-space: nowrap;
+      word-wrap: normal;
+      direction: ltr;
+      font-feature-settings: 'liga';
+      -webkit-font-feature-settings: 'liga';
+      -webkit-font-smoothing: antialiased;
+      color: #858585;
+    }
+  }
+}

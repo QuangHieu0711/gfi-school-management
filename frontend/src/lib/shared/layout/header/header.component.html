@@ -1,0 +1,87 @@
+<!-- eslint-disable @angular-eslint/template/interactive-supports-focus -->
+<!-- eslint-disable @angular-eslint/template/click-events-have-key-events -->
+<mat-toolbar class="app-header !bg-primary-500 text-white">
+  <mat-toolbar-row>
+    <div class="logo text-white">
+      <img class="h-[48px] object-cover" src="assets/images/logo.svg" alt="Logo" />
+    </div>
+    <span class="flex-1"></span>
+    <div class="flex gap-0 items-center">
+      <button matIconButton="text" color="white" class="relative" [matMenuTriggerFor]="notificationMenu">
+        <app-icon icon="notifications" />
+        @if (unreadCount > 0) {
+        <span
+          class="absolute top-1 right-1 z-10 min-w-[18px] h-[18px] px-[3px] rounded-full bg-red-500 text-white text-[10px] font-bold leading-[18px] text-center pointer-events-none">
+          {{ unreadCount > 99 ? '99+' : unreadCount }}
+        </span>
+        }
+      </button>
+
+      <mat-menu #notificationMenu="matMenu" xPosition="before" class="notification-menu">
+        <div class="notification-panel" (click)="$event.stopPropagation()">
+          <div class="flex items-center justify-between px-4 py-3 border-b border-gray-200">
+            <span class="text-base font-semibold text-gray-800">Thông báo</span>
+            @if (unreadCount > 0) {
+            <button mat-button class="!text-xs !text-primary-500" (click)="markAllRead()">
+              Đánh dấu tất cả đã đọc
+            </button>
+            }
+          </div>
+          <div class="notification-list overflow-y-auto max-h-[400px]">
+            @if (notifications.length === 0) {
+            <div class="flex flex-col items-center justify-center py-10 text-gray-400">
+              <app-icon icon="notifications_none" iconClass="!text-4xl !mr-0" />
+              <span class="mt-2 text-sm">Không có thông báo nào</span>
+            </div>
+            }
+            @for (item of notifications; track item.id) {
+            <div
+              class="notification-item flex items-start gap-3 px-4 py-3 cursor-pointer border-b border-gray-100 hover:bg-gray-100 transition-colors"
+              [class.bg-blue-50]="!item.read" (click)="openDetail(item)">
+              <div class="shrink-0">
+                <span class="flex items-center justify-center w-9 h-9 rounded-full" [class.bg-primary-100]="!item.read"
+                  [class.bg-gray-100]="item.read">
+                  <app-icon icon="notifications"
+                    iconClass="!mr-0 !text-[20px] !w-5 !h-5 !leading-none flex items-center justify-center"
+                    [class.!text-primary-500]="!item.read" [class.!text-gray-400]="item.read" />
+                </span>
+              </div>
+              <div class="flex-1 min-w-0">
+                <p class="text-sm text-gray-800 leading-snug" [class.font-semibold]="!item.read"
+                  [class.font-normal]="item.read">
+                  {{ item.message }}
+                </p>
+                <span class="text-xs text-gray-400 mt-0.5 block">{{ item.time }}</span>
+              </div>
+              @if (!item.read) {
+              <span class="shrink-0 w-2 h-2 rounded-full bg-primary-500 mt-2"></span>
+              }
+            </div>
+            }
+          </div>
+        </div>
+      </mat-menu>
+      <button color="white" matButton="text" [matMenuTriggerFor]="menu">
+        <app-icon icon="account_circle" />
+        <ng-container *ngIf="user$ | async as user">
+          {{ user.username }}
+        </ng-container>
+      </button>
+    </div>
+
+    <mat-menu #menu="matMenu" xPosition="before">
+      <button mat-menu-item (click)="showUserProfile()">
+        <div class="flex items-center gap-3">
+          <app-icon icon="account_circle" iconClass="!mr-0" />
+          <span>{{ 'header.userinfo' | translate }}</span>
+        </div>
+      </button>
+      <button mat-menu-item (click)="logout()">
+        <div class="flex items-center gap-3">
+          <app-icon icon="logout" iconClass="!mr-0" />
+          <span>{{ 'header.logout' | translate }}</span>
+        </div>
+      </button>
+    </mat-menu>
+  </mat-toolbar-row>
+</mat-toolbar>

@@ -1,0 +1,6 @@
+<div class="flex flex-col gap-4">
+    @for (category of options(); track $index) {
+        <p-radiobutton class="m-2" [inputId]="category.id" name="category" [value]="category" [formControl]="ctrl" />
+        <label [for]="category.id" class="m-2">{{ category.name }}</label>
+    }
+</div>

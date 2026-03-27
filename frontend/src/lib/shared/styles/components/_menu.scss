@@ -1,0 +1,18 @@
+@reference "../theme.css";
+
+.cdk-overlay-connected-position-bounding-box {
+  .mat-mdc-menu-panel {
+    @apply bg-white rounded-2xl;
+    min-width: 150px;
+    max-width: 360px;
+    .mat-mdc-menu-item {
+      @apply rounded-lg;
+      &:hover {
+        @apply bg-info-100;
+      }
+    }
+    .mat-mdc-menu-content {
+      @apply p-3;
+    }
+  }
+}

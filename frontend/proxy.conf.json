@@ -1,0 +1,8 @@
+{
+  "/api": {
+    "target": "https://gateway-srv-dev.aequitas.dev/",
+    "secure": false,
+    "changeOrigin": true,
+    "logLevel": "debug"
+  }
+} 

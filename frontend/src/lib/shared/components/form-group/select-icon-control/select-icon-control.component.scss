@@ -1,0 +1,32 @@
+.icon-select-wrapper {
+  .icon-option-row,
+  .icon-selected-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 36px;
+    line-height: 1;
+    margin: 0;
+  }
+
+  .icon-cell {
+    width: 24px;
+    min-width: 24px;
+    height: 24px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: #334155;
+    flex-shrink: 0;
+    overflow: hidden;
+  }
+
+  .icon-label {
+    display: inline-block;
+    font-size: 14px;
+    color: #1f2937;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}

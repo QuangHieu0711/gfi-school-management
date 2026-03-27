@@ -1,0 +1,18 @@
+@if (isShowLabel()) {
+<div class="core-control-label">
+  {{labelName()}}
+</div>
+}
+
+@switch (type()) {
+@case ('textarea') {
+<div>Textarea control</div>
+}
+@case ('text') {
+<input type="text" [required]="required()" [placeholder]="placeholder()" pInputText [formControl]="ctrl" />
+}
+@case ('number') {
+<p-inputnumber [placeholder]="placeholder()" [formControl]="ctrl" mode="decimal" inputId="withoutgrouping"
+  [useGrouping]="false" [required]="required()" />
+}
+}

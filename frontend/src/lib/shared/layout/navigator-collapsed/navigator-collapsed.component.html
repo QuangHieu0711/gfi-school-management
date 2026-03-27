@@ -1,0 +1,19 @@
+@for (item of menu; track item.key) {
+	<a
+		mat-list-item
+		[ngClass]="['!p-0', '!rounded-[0]', '!cursor-pointer', 'nav-icon-link']"
+		[matTooltip]="item.label"
+		matTooltipPosition="right"
+		(click)="navigateItem(item)"
+		[class.active-link]="isPathActive(item)">
+		<div
+			class="icon mx-auto w-12 h-12 flex items-center justify-center rounded-xl">
+			<app-icon
+				iconClass="w-full m-0 text-center"
+				matListItemIcon
+				[icon]="item.icon!"
+				color="#001F2D" />
+		</div>
+	</a>
+}
+

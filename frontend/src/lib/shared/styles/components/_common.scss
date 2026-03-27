@@ -1,0 +1,38 @@
+@reference "../theme.css";
+
+// Common styles for the application
+// These styles are shared across components and pages
+// They include typography, layout, and utility classes
+// Box shadows
+.shadow {
+  box-shadow: rgba(149, 157, 165, 0.2) 0px 8px 24px !important;
+}
+
+// Tooltip styles
+// Ensure tooltips have a maximum width and allow text wrapping
+.mat-mdc-tooltip-surface {
+  max-width: 450px !important;
+  white-space: break-spaces !important; // allow wrapping
+  word-break: break-word;
+  text-align: left !important;
+}
+
+.cdk-overlay-container {
+  z-index: 1051 !important;
+
+  .mat-mdc-dialog-panel {
+    position: relative !important;
+  }
+}
+
+// Icon styles
+// Ensure icons are displayed inline and fit their content
+app-icon {
+  width: fit-content;
+  min-width: 24px;
+  height: fit-content;
+  min-height: 24px;
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+}

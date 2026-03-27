@@ -1,0 +1,59 @@
+<div class="form-group">
+  @if (item.showLabel) {
+    <label
+      class="block mb-0.5"
+      [class.error]="isInvalidControl()"
+      [for]="item.key">
+      {{ item.label }}
+      @if (isRequired()) {
+        <span class="control-required">*</span>
+      }
+    </label>
+  }
+  <div
+    class="form-control date-control"
+    [class.disabled]="isDisabled()">
+    <mat-form-field
+      appearance="outline"
+      [formGroup]="form">
+      <mtx-datetimepicker
+        #controlElement
+        mode="portrait"
+        [type]="item.dateType ?? 'date'"
+        [startView]="getStartView()">
+      </mtx-datetimepicker>
+      <input
+        matInput
+        [mtxDatetimepicker]="controlElement"
+        [formControlName]="item.key"
+        [id]="item.key"
+        [name]="item.key"
+        [placeholder]="item.placeholder ?? ''"
+        [readonly]="isReadOnly()"
+        [min]="minDate"
+        [max]="maxDate"
+        [tabIndex]="item.tabIndex ?? 0"
+        (dateChange)="onChangeDate($event)"
+        (focus)="onFocus($event)"
+        (blur)="onBlur($event)"
+        (focusout)="onFocusOut($event)" />
+      <mtx-datetimepicker-toggle
+        [for]="controlElement"
+        matSuffix>
+        <app-icon
+          mtxDatetimepickerToggleIcon
+          icon="svg:calendar"></app-icon>
+      </mtx-datetimepicker-toggle>
+
+      <!-- Hint -->
+      @if (item.hint && !isInvalidControl()) {
+        <mat-hint>{{ item.hint }}</mat-hint>
+      }
+
+      <!-- Error message -->
+      @if (isInvalidControl()) {
+        <mat-error>{{ getErrorMessage() }}</mat-error>
+      }
+    </mat-form-field>
+  </div>
+</div>

@@ -1,0 +1,71 @@
+<div class="form-group">
+  @if (item.showLabel) {
+    <label
+      class="block mb-0.5"
+      [class.error]="isInvalidControl() || isMaxLengthReached()"
+      [for]="item.key">
+      {{ item.label }}
+      @if (isRequired()) {
+        <span class="control-required">*</span>
+      }
+    </label>
+  }
+  <div
+    class="form-control"
+    [class.disabled]="isDisabled()">
+    <mat-form-field
+      [matTooltip]="getLabel()"
+      appearance="outline"
+      [formGroup]="form">
+      @if (dateFormat) {
+        <input
+          matInput
+          [value]="formattedValue"
+          [readonly]="true" />
+      } @else {
+        <input
+          #controlElement
+          matInput
+          [formControlName]="item.key"
+          [id]="item.key"
+          [name]="item.key"
+          [type]="item.type ?? 'text'"
+          [placeholder]="item.placeholder ?? ''"
+          [readonly]="isReadOnly()"
+          [attr.minlength]="item.minLength"
+          [attr.pattern]="item.pattern"
+          [autocomplete]="item.type === 'email' ? 'email' : 'off'"
+          [tabIndex]="item.tabIndex ?? 0"
+          (input)="onChange($event)"
+          (paste)="onPaste($event)"
+          (focus)="onFocus($event)"
+          (blur)="onBlur($event)"
+          (focusout)="onFocusOut($event)"
+          (input)="getControl()?.markAsTouched()" />
+      }
+
+      @if (item.iconPrefix) {
+        <app-icon
+          [icon]="item.iconPrefix"
+          [iconClass]="getIconColorClass()"
+          matIconPrefix />
+      }
+      @if (item.iconSuffix) {
+        <app-icon
+          [icon]="item.iconSuffix"
+          [iconClass]="getIconColorClass()"
+          matIconSuffix />
+      }
+
+      @if (item.hint && !isInvalidControl()) {
+        <mat-hint>{{ item.hint }}</mat-hint>
+      }
+
+      @if (isInvalidControl() && !suppressErrorMessage) {
+        <mat-error class="whitespace-pre-wrap">{{
+          getErrorMessage()
+        }}</mat-error>
+      }
+    </mat-form-field>
+  </div>
+</div>

@@ -1,0 +1,428 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+// import { Component, Injector } from '@angular/core';
+// import { CommonModule } from '@angular/common';
+// import { IconComponent } from '@components/app-icon/app-icon.component';
+// import { ComponentBaseAbstract } from '@layout';
+// import { MATERIAL_MODULE } from '@modules';
+// import { TranslateModule } from '@ngx-translate/core';
+// import { AuthService } from '@service';
+// import { MatDialog } from '@angular/material/dialog';
+// import { UserProfileDialogComponent } from '@components/user-profile-dialog/user-profile-dialog.component';
+// import { NotificationDetailDialogComponent } from './notification-detail-dialog/notification-detail-dialog.component';
+
+// @Component({
+//   selector: 'app-header-component',
+//   templateUrl: './header.component.html',
+//   styleUrls: ['./header.component.scss'],
+//   imports: [...MATERIAL_MODULE, TranslateModule, IconComponent, CommonModule],
+// })
+// export class HeaderComponent extends ComponentBaseAbstract {
+//   notifications: {
+//     id: number;
+//     message: string;
+//     content: string;
+//     creator: string;
+//     time: string;
+//     read: boolean;
+//   }[] = [
+//     {
+//       id: 1,
+//       message: 'Báo cáo địa chất "test BCDC0000000424ten" đã được phê duyệt.',
+//       content:
+//         'Báo cáo địa chất mã BCDC0000000424ten thuộc khu mỏ Tràng Bạch đã được hội đồng phê duyệt vào ngày 12/03/2026. Vui lòng kiểm tra và xác nhận.',
+//       creator: 'Nguyễn Văn A',
+//       time: '5 phút trước',
+//       read: false,
+//     },
+//     {
+//       id: 2,
+//       message: 'Phụ lục "Chất lượng than" có dữ liệu mới được kết nạp.',
+//       content:
+//         'Phụ lục Chất lượng than của báo cáo BCDC0000000424ten vừa được cập nhật dữ liệu mới từ file import. Tổng số bản ghi mới: 25.',
+//       creator: 'Trần Thị B',
+//       time: '1 giờ trước',
+//       read: false,
+//     },
+//     {
+//       id: 3,
+//       message: 'Tài khoản "user01" vừa đăng nhập.',
+//       content:
+//         'Tài khoản user01 đã đăng nhập vào hệ thống lúc 08:30 ngày 11/03/2026 từ địa chỉ IP 192.168.1.10.',
+//       creator: 'Hệ thống',
+//       time: 'Hôm qua',
+//       read: true,
+//     },
+//   ];
+
+//   get unreadCount(): number {
+//     return this.notifications.filter((n) => !n.read).length;
+//   }
+
+//   markRead(item: {
+//     id: number;
+//     message: string;
+//     content: string;
+//     creator: string;
+//     time: string;
+//     read: boolean;
+//   }) {
+//     item.read = true;
+//   }
+
+//   markAllRead() {
+//     this.notifications.forEach((n) => (n.read = true));
+//   }
+
+//   openDetail(item: {
+//     id: number;
+//     message: string;
+//     content: string;
+//     creator: string;
+//     time: string;
+//     read: boolean;
+//   }) {
+//     item.read = true;
+//     this.matDialog.open(NotificationDetailDialogComponent, {
+//       width: '520px',
+//       autoFocus: false,
+//       data: {
+//         message: item.message,
+//         content: item.content,
+//         creator: item.creator,
+//         time: item.time,
+//         read: item.read,
+//       },
+//     });
+//   }
+
+//   // Thêm property để template có thể access user observable
+//   get user$() {
+//     return this.authService.currentUser$;
+//   }
+
+//   constructor(
+//     protected override injector: Injector,
+//     private readonly authService: AuthService,
+//     private readonly matDialog: MatDialog
+//   ) {
+//     super(injector);
+//   }
+
+//   showUserProfile() {
+//     const userInfo = this.authService.currentUser;
+//     this.matDialog.open(UserProfileDialogComponent, {
+//       width: '600px',
+//       maxHeight: '80vh',
+//       autoFocus: false,
+//       data: userInfo, // Truyền user info vào dialog
+//     });
+//   }
+
+//   logout() {
+//     this.authService.logout();
+//   }
+// }
+
+import { Component, DestroyRef, Injector, OnInit, inject } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { IconComponent } from '@components/app-icon/app-icon.component';
+import { ComponentBaseAbstract } from '@layout';
+import { MATERIAL_MODULE } from '@modules';
+import { TranslateModule } from '@ngx-translate/core';
+import { AuthService } from '@service';
+import { MatDialog } from '@angular/material/dialog';
+import { UserProfileDialogComponent } from '@components/user-profile-dialog/user-profile-dialog.component';
+import { NotificationDetailDialogComponent } from './notification-detail-dialog/notification-detail-dialog.component';
+import { HeThongCanhBaoService } from '@app/service/admin/thong_bao.service';
+import {
+  HeThongCanhBaoFilterRequest,
+  HeThongCanhBaoResponse,
+} from '@app/model/admin/he-thong-canh-bao.model';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { catchError, interval, of, startWith, switchMap } from 'rxjs';
+
+interface HeaderNotificationItem {
+  id: number;
+  message: string;
+  content: string;
+  creator: string;
+  time: string;
+  read: boolean;
+  alertId?: string;
+  alertType?: string;
+  severity?: string;
+  objectType?: string;
+  createdTimeAt?: string;
+  expiryDate?: string;
+  status?: number;
+  sentFlag?: number;
+  recipients?: string;
+  sendMethod?: string;
+}
+
+@Component({
+  selector: 'app-header-component',
+  templateUrl: './header.component.html',
+  styleUrls: ['./header.component.scss'],
+  imports: [...MATERIAL_MODULE, TranslateModule, IconComponent, CommonModule],
+})
+export class HeaderComponent extends ComponentBaseAbstract implements OnInit {
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly notificationReadStorageKey = 'he_thong_canh_bao_read_ids';
+  private readonly notificationPollingMs = 1 * 60 * 1000; // 1 phút
+  private previousUnreadCount = 0;
+
+  /**
+   * Nếu project bạn đang lưu user ở key khác thì thêm vào đây
+   */
+  private readonly AUTH_STORAGE_KEYS = [
+    'currentUser',
+    'user',
+    'userInfo',
+    'auth',
+    'auth_user',
+  ];
+
+  notifications: HeaderNotificationItem[] = [];
+
+  get unreadCount(): number {
+    return this.notifications.filter((n) => !n.read).length;
+  }
+
+  // Thêm property để template có thể access user observable
+  get user$() {
+    return this.authService.currentUser$;
+  }
+
+  constructor(
+    protected override injector: Injector,
+    private readonly authService: AuthService,
+    private readonly matDialog: MatDialog,
+    private readonly heThongCanhBaoService: HeThongCanhBaoService
+  ) {
+    super(injector);
+  }
+
+  override ngOnInit(): void {
+    this.startNotificationPolling();
+  }
+
+  private startNotificationPolling() {
+    interval(this.notificationPollingMs)
+      .pipe(
+        startWith(0),
+        switchMap(() => {
+          const objectId = this.getCurrentObjectId();
+
+          if (!objectId) {
+            this.notifications = [];
+            return of([]);
+          }
+
+          const payload: HeThongCanhBaoFilterRequest = {
+            pageSize: 10,
+            pageNow: 1,
+            filter: {
+              objectId,
+            },
+            exportType: '',
+          };
+
+          return this.heThongCanhBaoService
+            .filter(payload)
+            .pipe(catchError(() => of([])));
+        }),
+        takeUntilDestroyed(this.destroyRef)
+      )
+      .subscribe((response) => {
+        const items = this.extractItems(response);
+        const readIds = this.getReadNotificationIds();
+
+        this.notifications = items.map((item: any) => ({
+          id: item.id,
+          message: item.alertTitle || '',
+          content: item.alertContent || '',
+          creator: 'Hệ thống',
+          time: this.formatDateTime(item.createdTimeAt),
+          read: readIds.includes(item.id),
+          alertId: item.alertId,
+          alertType: item.alertType,
+          severity: item.severity,
+          objectType: item.objectType,
+          createdTimeAt: item.createdTimeAt,
+          expiryDate: item.expiryDate,
+          status: item.status,
+          sentFlag: item.sentFlag,
+          recipients: item.recipients,
+          sendMethod: item.sendMethod,
+        }));
+
+        // Kiểm tra nếu có thông báo mới chưa đọc
+        const currentUnreadCount = this.unreadCount;
+        if (currentUnreadCount > this.previousUnreadCount) {
+          const newNotifications = this.notifications.filter((n) => !n.read);
+          if (newNotifications.length > 0) {
+            const latestNotification = newNotifications[0];
+            // Hiển thị toast popup cho thông báo mới
+            this.toastr.info(
+              latestNotification.message,
+              'Thông báo mới',
+              {
+                timeOut: 5000,
+                positionClass: 'toast-top-right',
+              }
+            );
+          }
+        }
+        this.previousUnreadCount = currentUnreadCount;
+      });
+  }
+
+  /**
+   * Hỗ trợ cả trường hợp ApiService unwrap data hoặc giữ nguyên response gốc
+   */
+  private extractItems(response: unknown): HeThongCanhBaoResponse[] {
+    const res = response as {
+      data?: { items?: HeThongCanhBaoResponse[] };
+      items?: HeThongCanhBaoResponse[];
+    };
+
+    if (Array.isArray(res?.data?.items)) {
+      return res.data.items;
+    }
+
+    if (Array.isArray(res?.items)) {
+      return res.items;
+    }
+
+    return [];
+  }
+
+  /**
+   * Ưu tiên lấy từ authService.currentUser
+   * Nếu chưa có thì fallback qua localStorage theo cấu trúc bạn gửi: parsed.data.id
+   */
+  private getCurrentObjectId(): string {
+    const authUserId = this.authService.currentUser?.id;
+    if (authUserId !== null && authUserId !== undefined) {
+      return String(authUserId);
+    }
+
+    for (const key of this.AUTH_STORAGE_KEYS) {
+      const raw = localStorage.getItem(key);
+      if (!raw) continue;
+
+      try {
+        const parsed = JSON.parse(raw);
+        const id =
+          parsed?.data?.id ??
+          parsed?.id ??
+          parsed?.user?.id ??
+          parsed?.currentUser?.id;
+
+        if (id !== null && id !== undefined && id !== '') {
+          return String(id);
+        }
+      } catch {
+        continue;
+      }
+    }
+
+    return '';
+  }
+
+  private formatDateTime(value?: string): string {
+    if (!value) return '';
+
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) {
+      return value;
+    }
+
+    return new Intl.DateTimeFormat('vi-VN', {
+      hour: '2-digit',
+      minute: '2-digit',
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+    }).format(date);
+  }
+
+  private getReadNotificationIds(): number[] {
+    const raw = localStorage.getItem(this.notificationReadStorageKey);
+    if (!raw) return [];
+
+    try {
+      const ids = JSON.parse(raw);
+      return Array.isArray(ids) ? ids.map(Number).filter(Boolean) : [];
+    } catch {
+      return [];
+    }
+  }
+
+  private saveReadNotificationIds(ids: number[]) {
+    const uniqueIds = Array.from(new Set(ids));
+    localStorage.setItem(
+      this.notificationReadStorageKey,
+      JSON.stringify(uniqueIds)
+    );
+  }
+
+  private addReadNotificationId(id: number) {
+    const ids = this.getReadNotificationIds();
+    if (ids.includes(id)) return;
+    this.saveReadNotificationIds([...ids, id]);
+  }
+
+  markRead(item: HeaderNotificationItem) {
+    item.read = true;
+    this.addReadNotificationId(item.id);
+  }
+
+  markAllRead() {
+    const allIds = this.notifications.map((n) => n.id);
+    this.saveReadNotificationIds(allIds);
+    this.notifications = this.notifications.map((n) => ({
+      ...n,
+      read: true,
+    }));
+  }
+
+  openDetail(item: HeaderNotificationItem) {
+    item.read = true;
+    this.addReadNotificationId(item.id);
+
+    this.matDialog.open(NotificationDetailDialogComponent, {
+      width: '520px',
+      autoFocus: false,
+      data: {
+        message: item.message,
+        content: item.content,
+        creator: item.creator,
+        time: item.time,
+        read: item.read,
+        alertId: item.alertId,
+        alertType: item.alertType,
+        severity: item.severity,
+        objectType: item.objectType,
+        expiryDate: item.expiryDate,
+        recipients: item.recipients,
+        sendMethod: item.sendMethod,
+      },
+    });
+  }
+
+  showUserProfile() {
+    const userInfo = this.authService.currentUser;
+    this.matDialog.open(UserProfileDialogComponent, {
+      width: '600px',
+      maxHeight: '80vh',
+      autoFocus: false,
+      data: userInfo,
+    });
+  }
+
+  logout() {
+    this.authService.logout();
+  }
+}

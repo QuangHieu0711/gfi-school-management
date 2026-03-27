@@ -1,0 +1,34 @@
+@reference "tailwindcss";
+
+::ng-deep {
+  .nav-backdrop {
+    & + .cdk-overlay-connected-position-bounding-box {
+      margin-left: 64px;
+      margin-top: -56px;
+    }
+    & ~ .cdk-overlay-connected-position-bounding-box .mat-mdc-menu-panel {
+      min-width: 300px;
+    }
+  }
+
+  mat-nav-list {
+    .nav-icon-link {
+      .mat-ripple-element {
+        background-color: transparent !important;
+      }
+
+      &.active-link .icon,
+      &.active-link:focus .icon,
+      &.active-link:hover .icon,
+      &.active-link:active .icon {
+        background-color: #ccebf9 !important;
+      }
+      &::before {
+        content: unset !important;
+      }
+      &:hover .icon {
+        background-color: var(--color-neutral-150) !important;
+      }
+    }
+  }
+}

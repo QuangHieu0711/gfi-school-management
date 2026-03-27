@@ -1,0 +1,12 @@
+<p-tree [value]="dataTree()" [(selection)]="nodeSelectedModel" #treeMenu (onNodeSelect)="nodeSelect($event)"
+    (onNodeUnselect)="nodeUnselect($event)" (onNodeExpand)="nodeExpand($event)" (onNodeCollapse)="nodeCollapse($event)"
+    (onNodeDrop)="nodeDrop($event)" [draggableNodes]="dragNode" [droppableNodes]="dropNode"
+    (onFilter)="treeFilter($event)">
+    <ng-template let-node pTemplate="default">
+        @if (hasTemplate()) {
+        <ng-container *ngTemplateOutlet="templateRef, context: {treenode: node}"></ng-container>
+        } @else {
+        <span>{{node.label}}</span>
+        }
+    </ng-template>
+</p-tree>

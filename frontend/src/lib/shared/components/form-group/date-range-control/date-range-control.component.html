@@ -1,0 +1,51 @@
+<div class="form-group">
+  @if (item.showLabel) {
+    <label
+      class="block mb-0.5"
+      [class.error]="isInvalidControl()"
+      [for]="item.key">
+      {{ item.label }}
+      @if (isRequired()) {
+        <span class="control-required">*</span>
+      }
+    </label>
+  }
+  <div
+    class="form-control date-control"
+    [class.disabled]="isDisabled()">
+    <mat-form-field
+      appearance="outline"
+      [formGroup]="form">
+      <mat-date-range-input [rangePicker]="picker" [separator]="rangeSeparator">
+        <input
+          matStartDate
+          [formControlName]="startDateKey"
+          [placeholder]="startPlaceholder"
+          [min]="minDate"
+          [max]="maxDate" />
+        <input
+          matEndDate
+          [formControlName]="endDateKey"
+          [placeholder]="endPlaceholder"
+          [min]="minDate"
+          [max]="maxDate" />
+      </mat-date-range-input>
+      <mat-datepicker-toggle matSuffix [for]="picker">
+        <app-icon
+          matDatepickerToggleIcon
+          icon="svg:calendar"></app-icon>
+      </mat-datepicker-toggle>
+      <mat-date-range-picker #picker></mat-date-range-picker>
+
+      @if (item.hint && !isInvalidControl()) {
+        <mat-hint>{{ item.hint }}</mat-hint>
+      }
+
+      @if (isInvalidControl()) {
+        @if (isRequired()) {
+          <mat-error>{{ item.label }} {{ 'COMMON.ERROR.REQUIRED' | translate }}</mat-error>
+        }
+      }
+    </mat-form-field>
+  </div>
+</div>

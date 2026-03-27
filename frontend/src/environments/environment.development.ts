@@ -1,0 +1,18 @@
+export const environment = {
+  key: 'tkv',
+  production: false,
+  staging: false,
+  // host_api: 'https://a25daop010csdltkv0525-dev-be-core.aequitas.dev/api',
+  gis_api: 'https://a25daop010csdltkv0525-dev-be-gis.aequitas.dev/api',
+  // gis_api: 'http://192.168.8.214:8002/api',
+  host_api: 'api',
+  auth: 'auth',
+  notification: 'notification',
+  sys: 'sys',
+  exploration: 'exploration',
+  mineclosure: 'mine-closure',
+  resource: 'resource',
+  original: 'original',
+  geological: 'geological',
+  miningProject: 'mining-project',
+};

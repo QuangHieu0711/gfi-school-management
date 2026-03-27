@@ -1,0 +1,82 @@
+<div class="form-group">
+  @if (item.showLabel) {
+    <label
+      class="block mb-0.5"
+      [class.error]="isInvalidControl()"
+      [for]="item.key">
+      {{ item.label }}
+      @if (isRequired()) {
+        <span class="control-required">*</span>
+      }
+    </label>
+  }
+  <div
+    class="form-control select-control"
+    [class.disabled]="isDisabled()">
+    <mat-form-field
+      [matTooltip]="getSelectedLabel()"
+      appearance="outline"
+      [formGroup]="form">
+      <mtx-select
+        appearance="outline"
+        [items]="item.options"
+        bindLabel="label"
+        bindValue="value"
+        [formControlName]="item.key"
+        [placeholder]="item.placeholder ?? ''"
+        [clearable]="item.clearable"
+        [multiple]="false"
+        [searchable]="true"
+        [virtualScroll]="true"
+        [trackByFn]="trackByFn"
+        [tabIndex]="item.tabIndex ?? 0"
+        [addTag]="item.addTag ?? false"
+        [addTagText]="'formControl.select.addTag' | translate"
+        [clearAllText]="'formControl.select.clearAll' | translate"
+        [notFoundText]="'formControl.select.notFound' | translate"
+        (change)="onChange($event)"
+        (focus)="onFocus($event)"
+        (blur)="onBlur($event)"
+        (focusout)="onFocusOut($event)">
+        <!-- Option template -->
+        <ng-template
+          ng-option-tmp
+          let-item="item">
+          <div
+            #clampEl
+            [matTooltip]="clampEl.scrollHeight - clampEl.offsetHeight > 2 ? item.label : undefined"
+            class="line-clamp-2 whitespace-normal p-4">
+            {{ item.label }}
+          </div>
+        </ng-template>
+
+        <!-- Label template -->
+        <ng-template
+          ng-label-tmp
+          let-item="item">
+          {{ item.label }}
+        </ng-template>
+
+        <!-- Not found template -->
+        <ng-template
+          ng-notfound-tmp
+          let-item="item">
+          <div class="p-4 text-sm text-neutral-500">
+            {{ 'formControl.select.notFound' | translate }}
+          </div>
+        </ng-template>
+      </mtx-select>
+
+      <!-- Hint -->
+      @if (item.hint && !isInvalidControl()) {
+        <mat-hint>{{ item.hint }}</mat-hint>
+      }
+
+      <!-- Error message -->
+      @if (isInvalidControl()) {
+        <mat-error>{{ getErrorMessage() }}</mat-error>
+      }
+    </mat-form-field>
+  </div>
+</div>
+

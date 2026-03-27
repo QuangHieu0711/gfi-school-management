@@ -1,0 +1,48 @@
+<h2 mat-dialog-title class="dialog-title">
+  {{ title }}
+</h2>
+
+<div mat-dialog-content class="dialog-content">
+  <div class="user-info-container">
+    <div class="info-item">
+      <span class="label">Tên tài khoản:</span>
+      <div class="value-box">{{ userDisplayInfo.username }}</div>
+    </div>
+
+    <div class="info-item">
+      <span class="label">Họ và tên:</span>
+      <div class="value-box">{{ userDisplayInfo.name }}</div>
+    </div>
+
+    <div class="info-item">
+      <span class="label">Tên Đơn vị:</span>
+      <div class="value-box">{{ userDisplayInfo.tenDonVi }}</div>
+    </div>
+
+    <div class="info-item">
+      <span class="label">Email:</span>
+      <div class="value-box">{{ userDisplayInfo.email }}</div>
+    </div>
+
+    <div class="info-item">
+      <span class="label">Nhóm quyền:</span>
+      <div class="value-box">{{ userDisplayInfo.role }}</div>
+    </div>
+  </div>
+</div>
+
+<div mat-dialog-actions class="dialog-actions" style="display: flex; justify-content: space-between;">
+  <button
+    color="info"
+    matButton="outlined"
+    (click)="openChangePassword()">
+    Đổi mật khẩu
+  </button>
+
+  <button
+    color="info"
+    matButton="outlined"
+    mat-dialog-close>
+    Đóng
+  </button>
+</div>

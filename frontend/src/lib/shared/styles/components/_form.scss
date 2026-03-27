@@ -1,0 +1,327 @@
+@reference "tailwindcss";
+
+.form-group {
+  .form-control {
+    min-height: 40px;
+    min-width: 298px;
+    .mat-mdc-form-field {
+      @apply flex;
+    }
+    &.disabled {
+      pointer-events: none;
+      .mat-mdc-text-field-wrapper {
+        @apply bg-neutral-50 text-neutral-800;
+      }
+      .ng-value,
+      .mdc-text-field--outlined.mdc-text-field--disabled
+        .mdc-text-field__input {
+        @apply relative !text-neutral-800;
+      }
+    }
+    .mat-mdc-text-field-wrapper {
+      @apply bg-white rounded-lg overflow-hidden;
+    }
+    .mat-mdc-form-field-infix {
+      @apply relative !min-h-[40px] !pt-2 !pb-2;
+    }
+    .mat-mdc-form-field-icon-prefix .mat-icon,
+    .mat-mdc-form-field-icon-suffix .mat-icon {
+      @apply px-3;
+      box-sizing: content-box;
+    }
+  }
+  .control-required {
+    color: var(--mat-form-field-error-text-color, var(--mat-sys-error));
+  }
+  .mat-mdc-form-field-hint-wrapper,
+  .mat-mdc-form-field-error-wrapper {
+    @apply p-0 !relative;
+  }
+  .mat-mdc-form-field-bottom-align::before {
+    content: unset;
+  }
+  .mat-mdc-form-field-hint,
+  .mat-mdc-form-field-error {
+    @apply h-[20px] leading-5 font-normal tracking-[0.025rem] text-xs;
+  }
+
+  // Placeholder styles
+  .form-control input::placeholder,
+  .form-control textarea::placeholder,
+  .select-control .ng-placeholder {
+    color: var(--color-neutral-450) !important;
+    font-size: 14px !important;
+  }
+
+  .form-control .mat-date-range-input-separator {
+    color: var(--color-neutral-450) !important;
+    padding: 0 6px;
+  }
+
+  // Textarea specific styles
+  .textarea-control {
+    height: unset;
+  }
+
+  // Checkbox control specific styles
+  .radio-control {
+    label {
+      @apply block;
+      &.error {
+        color: var(--mat-form-field-error-text-color, var(--mat-sys-error));
+      }
+    }
+    &.vertical,
+    &.horizontal {
+      .mtx-checkbox-group,
+      .mat-mdc-radio-group {
+        @apply flex flex-wrap;
+      }
+    }
+    &.vertical {
+      .mtx-checkbox-group,
+      .mat-mdc-radio-group {
+        @apply flex-col items-start;
+      }
+    }
+    &.horizontal {
+      .mtx-checkbox-group,
+      .mat-mdc-radio-group {
+        min-height: 56px;
+        @apply flex-row items-center;
+      }
+    }
+    .mdc-radio__outer-circle,
+    .mdc-checkbox__background {
+      @apply bg-white;
+    }
+    .mdc-label {
+      @apply block !font-semibold !text-neutral-450;
+    }
+    .mdc-checkbox__native-control ~ .mdc-checkbox__background {
+      @apply absolute !border-neutral-450;
+    }
+    .mdc-checkbox__native-control:enabled:checked ~ .mdc-checkbox__background,
+    .mdc-checkbox__native-control:enabled:indeterminate
+      ~ .mdc-checkbox__background {
+      @apply absolute !border-info-500 !bg-info-500;
+    }
+    .mat-mdc-checkbox-checked .mdc-label {
+      @apply block !font-semibold !text-info-500;
+    }
+  }
+
+  // Select control specific styles
+  .select-control {
+    .mat-mdc-form-field-infix {
+      min-width: 300px;
+      @apply relative !pt-4 !pb-4;
+      .ng-select {
+        @apply relative !pt-2 !pb-2;
+      }
+    }
+    .ng-arrow-wrapper {
+      width: 24px !important;
+      display: flex;
+      .ng-arrow {
+        /* Remove default triangle */
+        border: none !important;
+
+        /* Use a text caret */
+        width: 24px !important;
+        height: 24px !important;
+        transition: transform 0.2s ease;
+
+        &::after {
+          content: 'keyboard_arrow_down';
+          font-family: 'Material Symbols Outlined', sans-serif;
+          font-weight: normal;
+          font-style: normal;
+          font-size: 24px;
+          line-height: 1;
+          letter-spacing: normal;
+          text-transform: none;
+          display: inline-block;
+          white-space: nowrap;
+          word-wrap: normal;
+          direction: ltr;
+          font-feature-settings: 'liga';
+          -webkit-font-feature-settings: 'liga';
+          -webkit-font-smoothing: antialiased;
+          color: var(--color-neutral-500);
+        }
+      }
+    }
+    .ng-select.ng-select-opened .ng-arrow-wrapper .ng-arrow {
+      transform: rotate(180deg);
+      top: 0 !important;
+    }
+  }
+
+  // Tag control specific styles
+  .tag-control {
+    .tag {
+      @apply px-2 py-0.5 inline-flex;
+      [matchipremove] {
+        width: 24px;
+        &::after {
+          @apply absolute !p-0 w-6 h-6 top-3 left-3 bottom-0 right-0;
+        }
+      }
+    }
+    .mat-mdc-chip-action {
+      @apply relative !px-0;
+    }
+  }
+
+  // Date control specific styles
+  .date-control {
+    .mat-mdc-form-field-icon-prefix .mat-icon,
+    .mat-mdc-form-field-icon-suffix .mat-icon {
+      @apply px-0;
+      box-sizing: content-box;
+    }
+  }
+}
+ng-dropdown-panel {
+  background-color: var(--color-white) !important;
+  border-radius: 12px !important;
+  overflow: hidden !important;
+  .mat-mdc-checkbox {
+    @apply block;
+    .mdc-form-field {
+      @apply flex;
+      label {
+        @apply w-full;
+      }
+    }
+  }
+  .ng-option:hover,
+  .ng-option.ng-option-marked,
+  .ng-dropdown-header:hover,
+  .ng-option.ng-option-selected:hover {
+    background-color: var(--color-accent-50) !important;
+  }
+  .ng-option.ng-option-selected {
+    background-color: var(--color-white) !important;
+  }
+  .ng-dropdown-header,
+  .ng-option {
+    @apply relative !p-0;
+  }
+}
+
+// Datepicker control specific styles
+mtx-datetimepicker-content {
+  box-shadow: rgba(149, 157, 165, 0.2) 0px 8px 24px !important;
+  @apply relative !bg-white;
+
+  // Ensure day cells are visible in all dialogs/themes
+  .mat-calendar-table-header th,
+  .mat-calendar-body-label,
+  .mat-calendar-body-cell-content {
+    color: var(--color-dark-500) !important;
+    opacity: 1 !important;
+  }
+
+  .mat-calendar-body-disabled > .mat-calendar-body-cell-content {
+    color: var(--color-neutral-400) !important;
+  }
+
+  // Guard against calendar body being collapsed/hidden
+  .mat-calendar-body,
+  .mat-calendar-table {
+    display: table !important;
+    visibility: visible !important;
+  }
+
+  .mat-calendar-body-cell,
+  .mat-calendar-body-cell-content {
+    visibility: visible !important;
+  }
+}
+
+.mdc-switch {
+  width: 33px !important;
+  height: 21px !important;
+  .mdc-switch__track {
+    height: 21px !important;
+    &::before {
+      background-color: unset !important;
+      border-color: #858585 !important;
+      background: unset !important;
+      opacity: 1 !important;
+    }
+  }
+  .mdc-switch__handle {
+    width: 9px !important;
+    height: 9px !important;
+    &::before,
+    &::after {
+      background-color: #858585 !important;
+      background: #858585 !important;
+      opacity: 1 !important;
+    }
+    svg {
+      display: none !important;
+    }
+    .mdc-switch__ripple {
+      width: 36px !important;
+      height: 36px !important;
+    }
+  }
+  &.mdc-switch--checked {
+    .mdc-switch__track {
+      opacity: 1 !important;
+      &::after {
+        background-color: unset !important;
+        border-color: #009ae3 !important;
+        background: unset !important;
+        opacity: 1 !important;
+      }
+    }
+    .mdc-switch__handle {
+      &::before,
+      &::after {
+        background-color: #009ae3 !important;
+        background: #009ae3 !important;
+        opacity: 1 !important;
+      }
+    }
+    .mdc-switch__handle {
+      margin: 0 18px !important;
+    }
+  }
+}
+
+// Global styles for icon-select dropdown options (rendered in overlay portal)
+// These must be global because the dropdown panel is appended outside the component host
+.icon-option-row {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  min-height: 36px;
+  line-height: 1;
+  margin: 0;
+
+  .icon-cell {
+    width: 24px !important;
+    min-width: 24px !important;
+    height: 24px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    color: #334155;
+    flex-shrink: 0 !important;
+    overflow: hidden;
+  }
+
+  .icon-label {
+    display: inline-block;
+    font-size: 14px;
+    color: #1f2937;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}

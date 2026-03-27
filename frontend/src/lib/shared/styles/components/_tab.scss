@@ -1,0 +1,15 @@
+@reference "tailwindcss";
+
+.mat-mdc-tab-label-container {
+  @apply relative !border-0;
+}
+.mat-mdc-tab-labels {
+  @apply relative !inline-flex gap-4;
+}
+.mdc-tab {
+  @apply relative !p-0;
+}
+.mat-mdc-tab-body,
+.mat-mdc-tab-body-content {
+  overflow: visible !important;
+}

@@ -1,0 +1,1093 @@
+@reference "../theme.css";
+
+button[matbutton],
+button[maticonbutton] {
+  &[matbutton='filled'],
+  &[maticonbutton='filled'],
+  &.btn-filled {
+    &[color='primary'],
+    &.btn-color-primary {
+      @apply bg-primary-500 text-white;
+      .mat-ripple-element {
+        @apply opacity-20 !bg-primary-50;
+      }
+      .mat-mdc-button-persistent-ripple::before {
+        @apply bg-primary-950;
+      }
+    }
+    &[color='secondary'],
+    &.btn-color-secondary {
+      @apply bg-secondary-500 text-white;
+      .mat-ripple-element {
+        @apply opacity-20 !bg-secondary-50;
+      }
+      .mat-mdc-button-persistent-ripple::before {
+        @apply bg-secondary-950;
+      }
+    }
+    &[color='accent'],
+    &.btn-color-accent {
+      @apply bg-accent-500 text-white;
+      .mat-ripple-element {
+        @apply opacity-20 !bg-accent-50;
+      }
+      .mat-mdc-button-persistent-ripple::before {
+        @apply bg-accent-950;
+      }
+    }
+    &[color='neutral'],
+    &.btn-color-neutral {
+      @apply bg-neutral-500 text-white;
+      .mat-ripple-element {
+        @apply opacity-20 !bg-neutral-50;
+      }
+      .mat-mdc-button-persistent-ripple::before {
+        @apply bg-neutral-950;
+      }
+    }
+    &[color='info'],
+    &.btn-color-info {
+      @apply bg-info-500 text-white;
+      .mat-ripple-element {
+        @apply opacity-20 !bg-info-50;
+      }
+      .mat-mdc-button-persistent-ripple::before {
+        @apply bg-info-950;
+      }
+    }
+    &[color='success'],
+    &.btn-color-success {
+      @apply bg-success-500 text-white;
+      .mat-ripple-element {
+        @apply opacity-20 !bg-success-50;
+      }
+      .mat-mdc-button-persistent-ripple::before {
+        @apply bg-success-950;
+      }
+    }
+    &[color='error'],
+    &.btn-color-error {
+      @apply bg-error-500 text-white;
+      .mat-ripple-element {
+        @apply opacity-20 !bg-error-50;
+      }
+      .mat-mdc-button-persistent-ripple::before {
+        @apply bg-error-950;
+      }
+    }
+    &[color='warning'],
+    &.btn-color-warning {
+      @apply bg-warning-500 text-white;
+      .mat-ripple-element {
+        @apply opacity-20 !bg-warning-50;
+      }
+      .mat-mdc-button-persistent-ripple::before {
+        @apply bg-warning-950;
+      }
+    }
+    &[color='sakura'],
+    &.btn-color-sakura {
+      @apply bg-sakura-500 text-white;
+      .mat-ripple-element {
+        @apply opacity-20 !bg-sakura-50;
+      }
+      .mat-mdc-button-persistent-ripple::before {
+        @apply bg-sakura-950;
+      }
+    }
+    &[color='rose'],
+    &.btn-color-rose {
+      @apply bg-rose-500 text-white;
+      .mat-ripple-element {
+        @apply opacity-20 !bg-rose-50;
+      }
+      .mat-mdc-button-persistent-ripple::before {
+        @apply bg-rose-950;
+      }
+    }
+    &[color='yellow'],
+    &.btn-color-yellow {
+      @apply bg-yellow-500 text-white;
+      .mat-ripple-element {
+        @apply opacity-20 !bg-yellow-50;
+      }
+      .mat-mdc-button-persistent-ripple::before {
+        @apply bg-yellow-950;
+      }
+    }
+    &[color='green'],
+    &.btn-color-green {
+      @apply bg-green-500 text-white;
+      .mat-ripple-element {
+        @apply opacity-20 !bg-green-50;
+      }
+      .mat-mdc-button-persistent-ripple::before {
+        @apply bg-green-950;
+      }
+    }
+    &[color='teal'],
+    &.btn-color-teal {
+      @apply bg-teal-500 text-white;
+      .mat-ripple-element {
+        @apply opacity-20 !bg-teal-50;
+      }
+      .mat-mdc-button-persistent-ripple::before {
+        @apply bg-teal-950;
+      }
+    }
+    &[color='sky'],
+    &.btn-color-sky {
+      @apply bg-sky-500 text-white;
+      .mat-ripple-element {
+        @apply opacity-20 !bg-sky-50;
+      }
+      .mat-mdc-button-persistent-ripple::before {
+        @apply bg-sky-950;
+      }
+    }
+    &[color='indigo'],
+    &.btn-color-indigo {
+      @apply bg-indigo-500 text-white;
+      .mat-ripple-element {
+        @apply opacity-20 !bg-indigo-50;
+      }
+      .mat-mdc-button-persistent-ripple::before {
+        @apply bg-indigo-950;
+      }
+    }
+    &[color='navy'],
+    &.btn-color-navy {
+      @apply bg-navy-500 text-white;
+      .mat-ripple-element {
+        @apply opacity-20 !bg-navy-50;
+      }
+      .mat-mdc-button-persistent-ripple::before {
+        @apply bg-navy-950;
+      }
+    }
+    &[color='slate'],
+    &.btn-color-slate {
+      @apply bg-slate-500 text-white;
+      .mat-ripple-element {
+        @apply opacity-20 !bg-slate-50;
+      }
+      .mat-mdc-button-persistent-ripple::before {
+        @apply bg-slate-950;
+      }
+    }
+    &[color='metal'],
+    &.btn-color-metal {
+      @apply bg-metal-500 text-white;
+      .mat-ripple-element {
+        @apply opacity-20 !bg-metal-50;
+      }
+      .mat-mdc-button-persistent-ripple::before {
+        @apply bg-metal-950;
+      }
+    }
+    &[color='dark'],
+    &.btn-color-dark {
+      @apply bg-dark-500 text-white;
+      .mat-ripple-element {
+        @apply opacity-20 !bg-dark-50;
+      }
+      .mat-mdc-button-persistent-ripple::before {
+        @apply bg-dark-950;
+      }
+    }
+    &[color='light'],
+    &.btn-color-light {
+      @apply bg-light-500 text-white;
+      .mat-ripple-element {
+        @apply opacity-20 !bg-light-50;
+      }
+      .mat-mdc-button-persistent-ripple::before {
+        @apply bg-light-950;
+      }
+    }
+    &[color='white'],
+    &.btn-color-white {
+      @apply bg-white text-dark-500;
+      .mat-ripple-element {
+        @apply opacity-20 !bg-dark-500;
+      }
+      .mat-mdc-button-persistent-ripple::before {
+        @apply bg-dark-500;
+      }
+    }
+  }
+
+  &[matbutton='outlined'],
+  &[maticonbutton='outlined'],
+  &.btn-outlined {
+    &[color='primary'],
+    &.btn-color-primary {
+      @apply text-primary-500 border border-solid border-primary-500;
+      .mat-ripple-element {
+        @apply opacity-20 !bg-primary-500;
+      }
+      .mat-mdc-button-persistent-ripple::before {
+        @apply bg-primary-500;
+      }
+    }
+    &[color='secondary'],
+    &.btn-color-secondary {
+      @apply text-secondary-500 border border-solid border-secondary-500;
+      .mat-ripple-element {
+        @apply opacity-20 !bg-secondary-500;
+      }
+      .mat-mdc-button-persistent-ripple::before {
+        @apply bg-secondary-500;
+      }
+    }
+    &[color='accent'],
+    &.btn-color-accent {
+      @apply text-accent-500 border border-solid border-accent-500;
+      .mat-ripple-element {
+        @apply opacity-20 !bg-accent-500;
+      }
+      .mat-mdc-button-persistent-ripple::before {
+        @apply bg-accent-500;
+      }
+    }
+    &[color='neutral'],
+    &.btn-color-neutral {
+      @apply text-neutral-500 border border-solid border-neutral-500;
+      .mat-ripple-element {
+        @apply opacity-20 !bg-neutral-500;
+      }
+      .mat-mdc-button-persistent-ripple::before {
+        @apply bg-neutral-500;
+      }
+    }
+    &[color='info'],
+    &.btn-color-info {
+      @apply text-info-500 border border-solid border-info-500;
+      .mat-ripple-element {
+        @apply opacity-20 !bg-info-500;
+      }
+      .mat-mdc-button-persistent-ripple::before {
+        @apply bg-info-500;
+      }
+    }
+    &[color='success'],
+    &.btn-color-success {
+      @apply text-success-500 border border-solid border-success-500;
+      .mat-ripple-element {
+        @apply opacity-20 !bg-success-500;
+      }
+      .mat-mdc-button-persistent-ripple::before {
+        @apply bg-success-500;
+      }
+    }
+    &[color='error'],
+    &.btn-color-error {
+      @apply text-error-500 border border-solid border-error-500;
+      .mat-ripple-element {
+        @apply opacity-20 !bg-error-500;
+      }
+      .mat-mdc-button-persistent-ripple::before {
+        @apply bg-error-500;
+      }
+    }
+    &[color='warning'],
+    &.btn-color-warning {
+      @apply text-warning-500 border border-solid border-warning-500;
+      .mat-ripple-element {
+        @apply opacity-20 !bg-warning-500;
+      }
+      .mat-mdc-button-persistent-ripple::before {
+        @apply bg-warning-500;
+      }
+    }
+    &[color='sakura'],
+    &.btn-color-sakura {
+      @apply text-sakura-500 border border-solid border-sakura-500;
+      .mat-ripple-element {
+        @apply opacity-20 !bg-sakura-500;
+      }
+      .mat-mdc-button-persistent-ripple::before {
+        @apply bg-sakura-500;
+      }
+    }
+    &[color='rose'],
+    &.btn-color-rose {
+      @apply text-rose-500 border border-solid border-rose-500;
+      .mat-ripple-element {
+        @apply opacity-20 !bg-rose-500;
+      }
+      .mat-mdc-button-persistent-ripple::before {
+        @apply bg-rose-500;
+      }
+    }
+    &[color='yellow'],
+    &.btn-color-yellow {
+      @apply text-yellow-500 border border-solid border-yellow-500;
+      .mat-ripple-element {
+        @apply opacity-20 !bg-yellow-500;
+      }
+      .mat-mdc-button-persistent-ripple::before {
+        @apply bg-yellow-500;
+      }
+    }
+    &[color='green'],
+    &.btn-color-green {
+      @apply text-green-500 border border-solid border-green-500;
+      .mat-ripple-element {
+        @apply opacity-20 !bg-green-500;
+      }
+      .mat-mdc-button-persistent-ripple::before {
+        @apply bg-green-500;
+      }
+    }
+    &[color='teal'],
+    &.btn-color-teal {
+      @apply text-teal-500 border border-solid border-teal-500;
+      .mat-ripple-element {
+        @apply opacity-20 !bg-teal-500;
+      }
+      .mat-mdc-button-persistent-ripple::before {
+        @apply bg-teal-500;
+      }
+    }
+    &[color='sky'],
+    &.btn-color-sky {
+      @apply text-sky-500 border border-solid border-sky-500;
+      .mat-ripple-element {
+        @apply opacity-20 !bg-sky-500;
+      }
+      .mat-mdc-button-persistent-ripple::before {
+        @apply bg-sky-500;
+      }
+    }
+    &[color='indigo'],
+    &.btn-color-indigo {
+      @apply text-indigo-500 border border-solid border-indigo-500;
+      .mat-ripple-element {
+        @apply opacity-20 !bg-indigo-500;
+      }
+      .mat-mdc-button-persistent-ripple::before {
+        @apply bg-indigo-500;
+      }
+    }
+    &[color='navy'],
+    &.btn-color-navy {
+      @apply text-navy-500 border border-solid border-navy-500;
+      .mat-ripple-element {
+        @apply opacity-20 !bg-navy-500;
+      }
+      .mat-mdc-button-persistent-ripple::before {
+        @apply bg-navy-500;
+      }
+    }
+    &[color='slate'],
+    &.btn-color-slate {
+      @apply text-slate-500 border border-solid border-slate-500;
+      .mat-ripple-element {
+        @apply opacity-20 !bg-slate-500;
+      }
+      .mat-mdc-button-persistent-ripple::before {
+        @apply bg-slate-500;
+      }
+    }
+    &[color='metal'],
+    &.btn-color-metal {
+      @apply text-metal-500 border border-solid border-metal-500;
+      .mat-ripple-element {
+        @apply opacity-20 !bg-metal-500;
+      }
+      .mat-mdc-button-persistent-ripple::before {
+        @apply bg-metal-500;
+      }
+    }
+    &[color='dark'],
+    &.btn-color-dark {
+      @apply text-dark-500 border border-solid border-dark-500;
+      .mat-ripple-element {
+        @apply opacity-20 !bg-dark-500;
+      }
+      .mat-mdc-button-persistent-ripple::before {
+        @apply bg-dark-500;
+      }
+    }
+    &[color='light'],
+    &.btn-color-light {
+      @apply text-light-500 border border-solid border-light-500;
+      .mat-ripple-element {
+        @apply opacity-20 !bg-light-500;
+      }
+      .mat-mdc-button-persistent-ripple::before {
+        @apply bg-light-500;
+      }
+    }
+    &[color='white'],
+    &.btn-color-white {
+      @apply text-white border border-solid border-white;
+      .mat-ripple-element {
+        @apply opacity-20 !bg-white;
+      }
+      .mat-mdc-button-persistent-ripple::before {
+        @apply bg-white;
+      }
+    }
+  }
+
+  &[matbutton='text'],
+  &[maticonbutton='text'],
+  &.btn-text {
+    &[color='primary'],
+    &.btn-color-primary {
+      @apply text-primary-500;
+      .mat-ripple-element {
+        @apply opacity-20 !bg-primary-500;
+      }
+      .mat-mdc-button-persistent-ripple::before {
+        @apply bg-primary-500;
+      }
+    }
+    &[color='secondary'],
+    &.btn-color-secondary {
+      @apply text-secondary-500;
+      .mat-ripple-element {
+        @apply opacity-20 !bg-secondary-500;
+      }
+      .mat-mdc-button-persistent-ripple::before {
+        @apply bg-secondary-500;
+      }
+    }
+    &[color='accent'],
+    &.btn-color-accent {
+      @apply text-accent-500;
+      .mat-ripple-element {
+        @apply opacity-20 !bg-accent-500;
+      }
+      .mat-mdc-button-persistent-ripple::before {
+        @apply bg-accent-500;
+      }
+    }
+    &[color='neutral'],
+    &.btn-color-neutral {
+      @apply text-neutral-500;
+      .mat-ripple-element {
+        @apply opacity-20 !bg-neutral-500;
+      }
+      .mat-mdc-button-persistent-ripple::before {
+        @apply bg-neutral-500;
+      }
+    }
+    &[color='info'],
+    &.btn-color-info {
+      @apply text-info-500;
+      .mat-ripple-element {
+        @apply opacity-20 !bg-info-500;
+      }
+      .mat-mdc-button-persistent-ripple::before {
+        @apply bg-info-500;
+      }
+    }
+    &[color='success'],
+    &.btn-color-success {
+      @apply text-success-500;
+      .mat-ripple-element {
+        @apply opacity-20 !bg-success-500;
+      }
+      .mat-mdc-button-persistent-ripple::before {
+        @apply bg-success-500;
+      }
+    }
+    &[color='error'],
+    &.btn-color-error {
+      @apply text-error-500;
+      .mat-ripple-element {
+        @apply opacity-20 !bg-error-500;
+      }
+      .mat-mdc-button-persistent-ripple::before {
+        @apply bg-error-500;
+      }
+    }
+    &[color='warning'],
+    &.btn-color-warning {
+      @apply text-warning-500;
+      .mat-ripple-element {
+        @apply opacity-20 !bg-warning-500;
+      }
+      .mat-mdc-button-persistent-ripple::before {
+        @apply bg-warning-500;
+      }
+    }
+    &[color='sakura'],
+    &.btn-color-sakura {
+      @apply text-sakura-500;
+      .mat-ripple-element {
+        @apply opacity-20 !bg-sakura-500;
+      }
+      .mat-mdc-button-persistent-ripple::before {
+        @apply bg-sakura-500;
+      }
+    }
+    &[color='rose'],
+    &.btn-color-rose {
+      @apply text-rose-500;
+      .mat-ripple-element {
+        @apply opacity-20 !bg-rose-500;
+      }
+      .mat-mdc-button-persistent-ripple::before {
+        @apply bg-rose-500;
+      }
+    }
+    &[color='yellow'],
+    &.btn-color-yellow {
+      @apply text-yellow-500;
+      .mat-ripple-element {
+        @apply opacity-20 !bg-yellow-500;
+      }
+      .mat-mdc-button-persistent-ripple::before {
+        @apply bg-yellow-500;
+      }
+    }
+    &[color='green'],
+    &.btn-color-green {
+      @apply text-green-500;
+      .mat-ripple-element {
+        @apply opacity-20 !bg-green-500;
+      }
+      .mat-mdc-button-persistent-ripple::before {
+        @apply bg-green-500;
+      }
+    }
+    &[color='teal'],
+    &.btn-color-teal {
+      @apply text-teal-500;
+      .mat-ripple-element {
+        @apply opacity-20 !bg-teal-500;
+      }
+      .mat-mdc-button-persistent-ripple::before {
+        @apply bg-teal-500;
+      }
+    }
+    &[color='sky'],
+    &.btn-color-sky {
+      @apply text-sky-500;
+      .mat-ripple-element {
+        @apply opacity-20 !bg-sky-500;
+      }
+      .mat-mdc-button-persistent-ripple::before {
+        @apply bg-sky-500;
+      }
+    }
+    &[color='indigo'],
+    &.btn-color-indigo {
+      @apply text-indigo-500;
+      .mat-ripple-element {
+        @apply opacity-20 !bg-indigo-500;
+      }
+      .mat-mdc-button-persistent-ripple::before {
+        @apply bg-indigo-500;
+      }
+    }
+    &[color='navy'],
+    &.btn-color-navy {
+      @apply text-navy-500;
+      .mat-ripple-element {
+        @apply opacity-20 !bg-navy-500;
+      }
+      .mat-mdc-button-persistent-ripple::before {
+        @apply bg-navy-500;
+      }
+    }
+    &[color='slate'],
+    &.btn-color-slate {
+      @apply text-slate-500;
+      .mat-ripple-element {
+        @apply opacity-20 !bg-slate-500;
+      }
+      .mat-mdc-button-persistent-ripple::before {
+        @apply bg-slate-500;
+      }
+    }
+    &[color='metal'],
+    &.btn-color-metal {
+      @apply text-metal-500;
+      .mat-ripple-element {
+        @apply opacity-20 !bg-metal-500;
+      }
+      .mat-mdc-button-persistent-ripple::before {
+        @apply bg-metal-500;
+      }
+    }
+    &[color='dark'],
+    &.btn-color-dark {
+      @apply text-dark-500;
+      .mat-ripple-element {
+        @apply opacity-20 !bg-dark-500;
+      }
+      .mat-mdc-button-persistent-ripple::before {
+        @apply bg-dark-500;
+      }
+    }
+    &[color='light'],
+    &.btn-color-light {
+      @apply text-light-500;
+      .mat-ripple-element {
+        @apply opacity-20 !bg-light-500;
+      }
+      .mat-mdc-button-persistent-ripple::before {
+        @apply bg-light-500;
+      }
+    }
+    &[color='white'],
+    &.btn-color-white {
+      @apply text-white;
+      .mat-ripple-element {
+        @apply opacity-20 !bg-white;
+      }
+      .mat-mdc-button-persistent-ripple::before {
+        @apply bg-white;
+      }
+    }
+  }
+
+  &[matbutton='tonal'],
+  &.btn-tonal {
+    &[color='primary'],
+    &.btn-color-primary {
+      @apply text-primary-500 bg-primary-100;
+      .mat-ripple-element {
+        @apply opacity-20 !bg-primary-50;
+      }
+      .mat-mdc-button-persistent-ripple::before {
+        @apply bg-primary-500;
+      }
+    }
+    &[color='secondary'],
+    &.btn-color-secondary {
+      @apply text-secondary-500 bg-secondary-100;
+      .mat-ripple-element {
+        @apply opacity-20 !bg-secondary-50;
+      }
+      .mat-mdc-button-persistent-ripple::before {
+        @apply bg-secondary-500;
+      }
+    }
+    &[color='accent'],
+    &.btn-color-accent {
+      @apply text-accent-500 bg-accent-100;
+      .mat-ripple-element {
+        @apply opacity-20 !bg-accent-50;
+      }
+      .mat-mdc-button-persistent-ripple::before {
+        @apply bg-accent-500;
+      }
+    }
+    &[color='neutral'],
+    &.btn-color-neutral {
+      @apply text-neutral-500 bg-neutral-100;
+      .mat-ripple-element {
+        @apply opacity-20 !bg-neutral-50;
+      }
+      .mat-mdc-button-persistent-ripple::before {
+        @apply bg-neutral-500;
+      }
+    }
+    &[color='info'],
+    &.btn-color-info {
+      @apply text-info-500 bg-info-100;
+      .mat-ripple-element {
+        @apply opacity-20 !bg-info-50;
+      }
+      .mat-mdc-button-persistent-ripple::before {
+        @apply bg-info-500;
+      }
+    }
+    &[color='success'],
+    &.btn-color-success {
+      @apply text-success-500 bg-success-100;
+      .mat-ripple-element {
+        @apply opacity-20 !bg-success-50;
+      }
+      .mat-mdc-button-persistent-ripple::before {
+        @apply bg-success-500;
+      }
+    }
+    &[color='error'],
+    &.btn-color-error {
+      @apply text-error-500 bg-error-100;
+      .mat-ripple-element {
+        @apply opacity-20 !bg-error-50;
+      }
+      .mat-mdc-button-persistent-ripple::before {
+        @apply bg-error-500;
+      }
+    }
+    &[color='warning'],
+    &.btn-color-warning {
+      @apply text-warning-500 bg-warning-100;
+      .mat-ripple-element {
+        @apply opacity-20 !bg-warning-50;
+      }
+      .mat-mdc-button-persistent-ripple::before {
+        @apply bg-warning-500;
+      }
+    }
+    &[color='sakura'],
+    &.btn-color-sakura {
+      @apply text-sakura-500 bg-sakura-100;
+      .mat-ripple-element {
+        @apply opacity-20 !bg-sakura-50;
+      }
+      .mat-mdc-button-persistent-ripple::before {
+        @apply bg-sakura-500;
+      }
+    }
+    &[color='rose'],
+    &.btn-color-rose {
+      @apply text-rose-500 bg-rose-100;
+      .mat-ripple-element {
+        @apply opacity-20 !bg-rose-50;
+      }
+      .mat-mdc-button-persistent-ripple::before {
+        @apply bg-rose-500;
+      }
+    }
+    &[color='yellow'],
+    &.btn-color-yellow {
+      @apply text-yellow-500 bg-yellow-100;
+      .mat-ripple-element {
+        @apply opacity-20 !bg-yellow-50;
+      }
+      .mat-mdc-button-persistent-ripple::before {
+        @apply bg-yellow-500;
+      }
+    }
+    &[color='green'],
+    &.btn-color-green {
+      @apply text-green-500 bg-green-100;
+      .mat-ripple-element {
+        @apply opacity-20 !bg-green-50;
+      }
+      .mat-mdc-button-persistent-ripple::before {
+        @apply bg-green-500;
+      }
+    }
+    &[color='teal'],
+    &.btn-color-teal {
+      @apply text-teal-500 bg-teal-100;
+      .mat-ripple-element {
+        @apply opacity-20 !bg-teal-50;
+      }
+      .mat-mdc-button-persistent-ripple::before {
+        @apply bg-teal-500;
+      }
+    }
+    &[color='sky'],
+    &.btn-color-sky {
+      @apply text-sky-500 bg-sky-100;
+      .mat-ripple-element {
+        @apply opacity-20 !bg-sky-50;
+      }
+      .mat-mdc-button-persistent-ripple::before {
+        @apply bg-sky-500;
+      }
+    }
+    &[color='indigo'],
+    &.btn-color-indigo {
+      @apply text-indigo-500 bg-indigo-100;
+      .mat-ripple-element {
+        @apply opacity-20 !bg-indigo-50;
+      }
+      .mat-mdc-button-persistent-ripple::before {
+        @apply bg-indigo-500;
+      }
+    }
+
+    &[color='navy'],
+    &.btn-color-navy {
+      @apply text-navy-500 bg-navy-100;
+      .mat-ripple-element {
+        @apply opacity-20 !bg-navy-50;
+      }
+      .mat-mdc-button-persistent-ripple::before {
+        @apply bg-navy-500;
+      }
+    }
+    &[color='slate'],
+    &.btn-color-slate {
+      @apply text-slate-500 bg-slate-100;
+      .mat-ripple-element {
+        @apply opacity-20 !bg-slate-50;
+      }
+      .mat-mdc-button-persistent-ripple::before {
+        @apply bg-slate-500;
+      }
+    }
+    &[color='metal'],
+    &.btn-color-metal {
+      @apply text-metal-500 bg-metal-100;
+      .mat-ripple-element {
+        @apply opacity-20 !bg-metal-50;
+      }
+      .mat-mdc-button-persistent-ripple::before {
+        @apply bg-metal-500;
+      }
+    }
+    &[color='dark'],
+    &.btn-color-dark {
+      @apply text-dark-500 bg-dark-100;
+      .mat-ripple-element {
+        @apply opacity-20 !bg-dark-50;
+      }
+      .mat-mdc-button-persistent-ripple::before {
+        @apply bg-dark-500;
+      }
+    }
+    &[color='light'],
+    &.btn-color-light {
+      @apply text-light-500 bg-light-100;
+      .mat-ripple-element {
+        @apply opacity-20 !bg-light-50;
+      }
+      .mat-mdc-button-persistent-ripple::before {
+        @apply bg-light-500;
+      }
+    }
+  }
+
+  &[matbutton='elevated'],
+  &.btn-elevated {
+    &[color='primary'],
+    &.btn-color-primary {
+      @apply text-primary-500;
+      .mat-ripple-element {
+        @apply opacity-20 !bg-primary-500;
+      }
+      .mat-mdc-button-persistent-ripple::before {
+        @apply bg-primary-500;
+      }
+    }
+    &[color='secondary'],
+    &.btn-color-secondary {
+      @apply text-secondary-500;
+      .mat-ripple-element {
+        @apply opacity-20 !bg-secondary-500;
+      }
+      .mat-mdc-button-persistent-ripple::before {
+        @apply bg-secondary-500;
+      }
+    }
+    &[color='accent'],
+    &.btn-color-accent {
+      @apply text-accent-500;
+      .mat-ripple-element {
+        @apply opacity-20 !bg-accent-500;
+      }
+      .mat-mdc-button-persistent-ripple::before {
+        @apply bg-accent-500;
+      }
+    }
+    &[color='neutral'],
+    &.btn-color-neutral {
+      @apply text-neutral-500;
+      .mat-ripple-element {
+        @apply opacity-20 !bg-neutral-500;
+      }
+      .mat-mdc-button-persistent-ripple::before {
+        @apply bg-neutral-500;
+      }
+    }
+    &[color='info'],
+    &.btn-color-info {
+      @apply text-info-500;
+      .mat-ripple-element {
+        @apply opacity-20 !bg-info-500;
+      }
+      .mat-mdc-button-persistent-ripple::before {
+        @apply bg-info-500;
+      }
+    }
+    &[color='success'],
+    &.btn-color-success {
+      @apply text-success-500;
+      .mat-ripple-element {
+        @apply opacity-20 !bg-success-500;
+      }
+      .mat-mdc-button-persistent-ripple::before {
+        @apply bg-success-500;
+      }
+    }
+    &[color='error'],
+    &.btn-color-error {
+      @apply text-error-500;
+      .mat-ripple-element {
+        @apply opacity-20 !bg-error-500;
+      }
+      .mat-mdc-button-persistent-ripple::before {
+        @apply bg-error-500;
+      }
+    }
+    &[color='warning'],
+    &.btn-color-warning {
+      @apply text-warning-500;
+      .mat-ripple-element {
+        @apply opacity-20 !bg-warning-500;
+      }
+      .mat-mdc-button-persistent-ripple::before {
+        @apply bg-warning-500;
+      }
+    }
+    &[color='sakura'],
+    &.btn-color-sakura {
+      @apply text-sakura-500;
+      .mat-ripple-element {
+        @apply opacity-20 !bg-sakura-500;
+      }
+      .mat-mdc-button-persistent-ripple::before {
+        @apply bg-sakura-500;
+      }
+    }
+    &[color='rose'],
+    &.btn-color-rose {
+      @apply text-rose-500;
+      .mat-ripple-element {
+        @apply opacity-20 !bg-rose-500;
+      }
+      .mat-mdc-button-persistent-ripple::before {
+        @apply bg-rose-500;
+      }
+    }
+    &[color='yellow'],
+    &.btn-color-yellow {
+      @apply text-yellow-500;
+      .mat-ripple-element {
+        @apply opacity-20 !bg-yellow-500;
+      }
+      .mat-mdc-button-persistent-ripple::before {
+        @apply bg-yellow-500;
+      }
+    }
+    &[color='green'],
+    &.btn-color-green {
+      @apply text-green-500;
+      .mat-ripple-element {
+        @apply opacity-20 !bg-green-500;
+      }
+      .mat-mdc-button-persistent-ripple::before {
+        @apply bg-green-500;
+      }
+    }
+    &[color='teal'],
+    &.btn-color-teal {
+      @apply text-teal-500;
+      .mat-ripple-element {
+        @apply opacity-20 !bg-teal-500;
+      }
+      .mat-mdc-button-persistent-ripple::before {
+        @apply bg-teal-500;
+      }
+    }
+    &[color='sky'],
+    &.btn-color-sky {
+      @apply text-sky-500;
+      .mat-ripple-element {
+        @apply opacity-20 !bg-sky-500;
+      }
+      .mat-mdc-button-persistent-ripple::before {
+        @apply bg-sky-500;
+      }
+    }
+    &[color='indigo'],
+    &.btn-color-indigo {
+      @apply text-indigo-500;
+      .mat-ripple-element {
+        @apply opacity-20 !bg-indigo-500;
+      }
+      .mat-mdc-button-persistent-ripple::before {
+        @apply bg-indigo-500;
+      }
+    }
+
+    &[color='navy'],
+    &.btn-color-navy {
+      @apply text-navy-500;
+      .mat-ripple-element {
+        @apply opacity-20 !bg-navy-500;
+      }
+      .mat-mdc-button-persistent-ripple::before {
+        @apply bg-navy-500;
+      }
+    }
+    &[color='slate'],
+    &.btn-color-slate {
+      @apply text-slate-500;
+      .mat-ripple-element {
+        @apply opacity-20 !bg-slate-500;
+      }
+      .mat-mdc-button-persistent-ripple::before {
+        @apply bg-slate-500;
+      }
+    }
+    &[color='metal'],
+    &.btn-color-metal {
+      @apply text-metal-500;
+      .mat-ripple-element {
+        @apply opacity-20 !bg-metal-500;
+      }
+      .mat-mdc-button-persistent-ripple::before {
+        @apply bg-metal-500;
+      }
+    }
+    &[color='dark'],
+    &.btn-color-dark {
+      @apply text-dark-500;
+      .mat-ripple-element {
+        @apply opacity-20 !bg-dark-500;
+      }
+      .mat-mdc-button-persistent-ripple::before {
+        @apply bg-dark-500;
+      }
+    }
+    &[color='light'],
+    &.btn-color-light {
+      @apply text-light-500;
+      .mat-ripple-element {
+        @apply opacity-20 !bg-light-500;
+      }
+      .mat-mdc-button-persistent-ripple::before {
+        @apply bg-light-500;
+      }
+    }
+  }
+
+  &[disabled] {
+    @apply pointer-events-none !text-neutral-300;
+    &[matbutton='filled'],
+    &[maticonbutton='filled'],
+    &[matbutton='tonal'],
+    &[matbutton='elevated'] {
+      @apply pointer-events-none !text-neutral-300 !bg-neutral-50;
+    }
+    &[matbutton='outlined'],
+    &[maticonbutton='outlined'] {
+      @apply pointer-events-none !border-neutral-200;
+    }
+    &.no-icon {
+      background-color: transparent !important;
+      * {
+        display: none;
+      }
+    }
+  }
+}
+
+button[matbutton] {
+  @apply rounded-sm min-w-[100px];
+  .mdc-button__label {
+    @apply flex items-center gap-4;
+  }
+}
+
+button[maticonbutton] {
+  &[squared],
+  &[squared] .mat-mdc-button-persistent-ripple {
+    @apply rounded-sm;
+  }
+}

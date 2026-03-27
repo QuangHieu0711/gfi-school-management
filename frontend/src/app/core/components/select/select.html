@@ -1,0 +1,8 @@
+@if (isShowLabel) {
+<div class="core-control-label">
+    {{labelName}}
+</div>
+}
+
+<p-select [formControl]="ctrl" [options]="options" [optionValue]="optionValue" [optionLabel]="optionLabel"
+    [placeholder]="placeholder" [appendTo]="appendTo" [showClear]="true" [panelStyleClass]="panelStyleClass" />

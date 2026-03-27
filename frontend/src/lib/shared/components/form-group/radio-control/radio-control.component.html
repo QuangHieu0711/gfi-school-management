@@ -1,0 +1,44 @@
+<div class="form-group">
+  @if (item.showLabel) {
+    <label
+      class="block mb-0.5"
+      [class.error]="isInvalidControl()"
+      [for]="item.key">
+      {{ item.label }}
+      @if (isRequired()) {
+        <span class="control-required">*</span>
+      }
+    </label>
+  }
+  <div
+    class="form-control radio-control"
+    [class.vertical]="item.direction === 'vertical'"
+    [class.horizontal]="item.direction === 'horizontal'"
+    [formGroup]="form">
+    <mat-radio-group
+      color="primary"
+      [formControlName]="item.key"
+      [id]="item.key"
+      [tabIndex]="item.tabIndex ?? 0"
+      (input)="onChange($event)"
+      (focus)="onFocus($event)"
+      (blur)="onBlur($event)"
+      (focusout)="onFocusOut($event)">
+      @for (option of item.options; track $index) {
+        <mat-radio-button [value]="option.value">
+          {{ option.label }}
+        </mat-radio-button>
+      }
+    </mat-radio-group>
+
+    <!-- Hint -->
+    @if (item.hint && !isInvalidControl()) {
+      <mat-hint>{{ item.hint }}</mat-hint>
+    }
+
+    <!-- Error message -->
+    @if (isInvalidControl()) {
+      <mat-error>{{ getErrorMessage() }}</mat-error>
+    }
+  </div>
+</div>

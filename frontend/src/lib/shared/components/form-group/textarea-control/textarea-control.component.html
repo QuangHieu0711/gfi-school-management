@@ -1,0 +1,53 @@
+<div class="form-group">
+  @if (item.showLabel) {
+    <label
+      class="block mb-0.5"
+      [class.error]="isInvalidControl() || isMaxLengthReached()"
+      [for]="item.key">
+      {{ item.label }}
+      @if (isRequired()) {
+        <span class="control-required">*</span>
+      }
+    </label>
+  }
+  <div
+    class="form-control textarea-control"
+    [class.disabled]="isDisabled()">
+    <mat-form-field
+      [matTooltip]="getLabel()"
+      appearance="outline"
+      [formGroup]="form">
+      <textarea
+        class="!resize-none"
+        #controlElement
+        matInput
+        [formControlName]="item.key"
+        [id]="item.key"
+        [name]="item.key"
+        [placeholder]="item.placeholder ?? ''"
+        [readonly]="isReadOnly()"
+        [attr.minlength]="item.minLength"
+        [attr.rows]="item.rows ?? 3"
+        [tabIndex]="item.tabIndex ?? 0"
+        (input)="onChange($event)"
+        (paste)="onPaste($event)"
+        (focus)="onFocus($event)"
+        (focusout)="onFocusOut($event)"
+        (blur)="onBlur($event)"></textarea>
+
+      <!-- Hint -->
+      @if (item.hint && !isInvalidControl() && !isMaxLengthReached()) {
+        <mat-hint>{{ item.hint }}</mat-hint>
+      }
+
+      <!-- Error message -->
+      @if (isInvalidControl()) {
+        <mat-error>{{ getErrorMessage() }}</mat-error>
+      }
+    </mat-form-field>
+
+    @if (!isInvalidControl() && isMaxLengthReached()) {
+      <div class="text-error-500 text-xs mt-0.5">{{ getMaxLengthMessage() }}</div>
+    }
+  </div>
+</div>

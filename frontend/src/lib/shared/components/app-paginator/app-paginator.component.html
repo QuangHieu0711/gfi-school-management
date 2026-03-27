@@ -1,0 +1,134 @@
+<div class="paginator flex flex-wrap items-center justify-end gap-6 p-2">
+  <!-- Page Buttons -->
+  <div class="flex items-center gap-1">
+    <!-- Go to First -->
+    <button
+      matIconButton="text"
+      color="neutral"
+      squared
+      [matTooltip]="'table.paginator.first_page_label' | translate"
+      [disabled]="pageIndex === 0"
+      (click)="goToPage(0)">
+      <app-icon
+        icon="svg:first-page"
+        color="#ADADAD"
+        [size]="16" />
+    </button>
+
+    <!-- Prev -->
+    <button
+      matIconButton="text"
+      color="neutral"
+      squared
+      [matTooltip]="'table.paginator.previous_page_label' | translate"
+      [disabled]="pageIndex === 0"
+      (click)="goToPage(pageIndex - 1)">
+      <app-icon
+        icon="svg:prev"
+        color="#ADADAD"
+        [size]="16" />
+    </button>
+
+    <!-- Page Numbers -->
+    @for (page of visiblePages; track $index) {
+      @if (page === -1) {
+        <button
+          class="!min-w-10 !w-10 !p-0"
+          matButton="text"
+          color="info"
+          (click)="onDotsClick($index)">
+          ...
+        </button>
+      } @else {
+        @if (page === pageIndex) {
+          <button
+            class="!min-w-10 !w-10 !p-0"
+            matButton="filled"
+            color="info">
+            {{ page + 1 }}
+          </button>
+        } @else {
+          <button
+            class="!min-w-10 !w-10 !p-0"
+            matButton="text"
+            color="info"
+            (click)="goToPage(page)">
+            {{ page + 1 }}
+          </button>
+        }
+      }
+    }
+
+    <!-- Next -->
+    <button
+      matIconButton="text"
+      color="neutral"
+      squared
+      [matTooltip]="'table.paginator.next_page_label' | translate"
+      [disabled]="pageIndex >= totalPages - 1"
+      (click)="goToPage(pageIndex + 1)">
+      <app-icon
+        icon="svg:next"
+        color="#ADADAD"
+        [size]="16" />
+    </button>
+
+    <!-- Go to Last -->
+    <button
+      matIconButton="text"
+      color="neutral"
+      squared
+      [matTooltip]="'table.paginator.last_page_label' | translate"
+      [disabled]="pageIndex >= totalPages - 1"
+      (click)="goToPage(totalPages - 1)">
+      <app-icon
+        icon="svg:last-page"
+        color="#ADADAD"
+        [size]="16" />
+    </button>
+  </div>
+
+  <!-- Total & Page Size -->
+  <div class="flex items-center gap-2">
+    <div class="text-sm">
+      Tổng
+      <span class="font-semibold text-night-500">{{ total }}</span>
+    </div>
+    <div class="w-0.25 h-2.5 bg-neutral-250"></div>
+
+    <div class="form-group">
+      <div class="form-control select-control !h-[40px] !min-h-[40px]">
+        <mat-form-field appearance="outline">
+          <mtx-select
+            appearance="outline"
+            [(ngModel)]="pageSize"
+            [items]="pageSizeOptions"
+            [trackByFn]="trackByFn"
+            [clearable]="false"
+            [searchable]="false"
+            [multiple]="false"
+            (change)="changePageSize($event)">
+            <!-- Option template -->
+            <ng-template
+              ng-option-tmp
+              let-item="item">
+              <div class="p-4">
+                <span class="font-semibold text-night-500">{{ item }}</span> dòng mỗi trang
+              </div>
+            </ng-template>
+
+            <!-- Label template -->
+            <ng-template
+              ng-label-tmp
+              let-item="item">
+              <span class="text-sm">
+                <span class="font-semibold text-night-500">{{ item }}</span>
+                dòng mỗi trang
+              </span>
+            </ng-template>
+          </mtx-select>
+        </mat-form-field>
+      </div>
+    </div>
+  </div>
+</div>

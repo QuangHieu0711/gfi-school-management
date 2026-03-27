@@ -1,0 +1,42 @@
+<mat-tree
+  #tree
+  [dataSource]="treeDataSource"
+  [childrenAccessor]="childrenAccessor">
+  
+  <mat-tree-node
+    class="!min-h-8"
+    *matTreeNodeDef="let node"
+    matTreeNodePadding>
+    
+    <button
+      matIconButton
+      class="opacity-0"> 
+      <app-icon icon="chevron_right" />
+    </button>
+
+    @if (labelTemplate) {
+      <ng-container *ngTemplateOutlet="labelTemplate; context: { $implicit: node }"></ng-container>
+    } @else {
+      <p class="truncate w-full">{{ node.name }}</p>
+    }
+  </mat-tree-node>
+
+  <mat-tree-node
+    class="!min-h-8"
+    *matTreeNodeDef="let node; when: hasChild"
+    matTreeNodePadding
+    matTreeNodeToggle>
+    
+    <button
+      matIconButton
+      matTreeNodeToggle>
+      <app-icon [icon]="tree.isExpanded(node) ? 'keyboard_arrow_down' : 'chevron_right'" />
+    </button>
+
+    @if (labelTemplate) {
+      <ng-container *ngTemplateOutlet="labelTemplate; context: { $implicit: node }"></ng-container>
+    } @else {
+      <p class="truncate w-full">{{ node.name }}</p>
+    }
+  </mat-tree-node>
+</mat-tree>

@@ -1,0 +1,115 @@
+<div class="form-group">
+  @if (item.showLabel) {
+    <label
+      class="label"
+      [for]="item.key">
+      {{ item.label }}
+      @if (isRequired()) {
+        <span class="control-required">*</span>
+      }
+    </label>
+  }
+  <div class="form-control">
+    <!-- Upload Area - Only show in non-view mode -->
+    @if (!isViewMode) {
+      <div
+        class="dropzone-area w-full h-64 border-2 border-dashed rounded-md flex justify-center items-center"
+        dndDropzone
+        [dndAllowExternal]="true"
+        (dndDrop)="onDrop($event)">
+        <div class="flex flex-col items-center gap-4">
+          <app-icon
+            iconClass="!text-6xl !w-[3rem] !h-[3rem] !flex justify-center items-center !text-primary-500"
+            variant="primary-500"
+            icon="upload" />
+          <div class="flex items-center">
+            <p>Kéo và thả tập tin của bạn tại đây hoặc</p>
+            <button
+              type="button"
+              color="primary"
+              matButton="text"
+              (click)="uploadInput.click()">
+              Chọn tập tin
+            </button>
+          </div>
+        </div>
+
+        <input
+          #uploadInput
+          [id]="item.key"
+          [name]="item.key"
+          type="file"
+          [accept]="item.accept"
+          [multiple]="true"
+          hidden
+          (change)="onFileSelect($event)" />
+      </div>
+
+      <!-- Hint -->
+      @if (item.hint && !isInvalidControl()) {
+        <mat-hint>{{ item.hint }}</mat-hint>
+      }
+
+      <!-- Error message -->
+      @if (isInvalidControl()) {
+        <mat-error>{{ getErrorMessage() }}</mat-error>
+      }
+    }
+  </div>
+
+  @if (files.length) {
+    <div [class]="isViewMode ? 'mt-1' : 'mt-4'">
+      <ul class="space-y-1">
+        @for (file of files; track $index) {
+          @if (isViewMode) {
+            <li>
+              <button
+                type="button"
+                class="w-full flex justify-between items-center gap-2 p-2 rounded hover:bg-gray-100 text-left"
+                (click)="previewFile(file)"
+                (keydown.enter)="previewFile(file)"
+                (keydown.space)="previewFile(file)">
+                <img
+                  class="h-8 pointer-events-none"
+                  [src]="`assets/images/file/${getFileIcon(file)}.svg`"
+                  alt="file icon" />
+                <span class="flex-1 text-info-500 font-medium">{{
+                  file.name
+                }}</span>
+                @if (file.size) {
+                  <span class="text-neutral-500 font-medium">{{
+                    getFileSize(file.size)
+                  }}</span>
+                }
+              </button>
+            </li>
+          } @else {
+            <li class="flex justify-between items-center gap-2">
+              <img
+                class="h-8 pointer-events-none"
+                [src]="`assets/images/file/${getFileIcon(file)}.svg`"
+                alt="file icon" />
+              <span class="flex-1 text-info-500 font-medium">{{
+                file.name
+              }}</span>
+              @if (file.size) {
+                <span class="text-neutral-500 font-medium">{{
+                  getFileSize(file.size)
+                }}</span>
+              }
+              <button
+                matIconButton
+                type="button"
+                color="error"
+                (click)="removeFile($index)">
+                <app-icon
+                  icon="delete"
+                  variant="error-500" />
+              </button>
+            </li>
+          }
+        }
+      </ul>
+    </div>
+  }
+</div>

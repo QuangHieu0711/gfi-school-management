@@ -1,0 +1,69 @@
+@reference "../theme.css";
+
+.tag {
+  @apply px-3 py-1 inline-block gap-1 rounded-2xl text-sm border border-solid;
+  ::before {
+    content: unset !important;
+  }
+  &:not([color]),
+  &[color='primary'] {
+    @apply relative !text-primary-500 !bg-primary-50 !border-primary-150;
+  }
+  &[color='secondary'] {
+    @apply relative !text-secondary-500 !bg-secondary-50 !border-secondary-150;
+  }
+  &[color='accent'] {
+    @apply relative !text-accent-500 !bg-accent-50 !border-accent-150;
+  }
+  &[color='neutral'] {
+    @apply relative !text-neutral-500 !bg-neutral-50 !border-neutral-150;
+  }
+  &[color='info'] {
+    @apply relative !text-info-500 !bg-info-50 !border-info-150;
+  }
+  &[color='success'] {
+    @apply relative !text-success-500 !bg-success-50 !border-success-150;
+  }
+  &[color='error'] {
+    @apply relative !text-error-500 !bg-error-50 !border-error-150;
+  }
+  &[color='warning'] {
+    @apply relative !text-warning-500 !bg-warning-50 !border-warning-150;
+  }
+  &[color='sakura'] {
+    @apply relative !text-sakura-500 !bg-sakura-50 !border-sakura-150;
+  }
+  &[color='rose'] {
+    @apply relative !text-rose-500 !bg-rose-50 !border-rose-150;
+  }
+  &[color='yellow'] {
+    @apply relative !text-yellow-500 !bg-yellow-50 !border-yellow-150;
+  }
+  &[color='green'] {
+    @apply relative !text-green-500 !bg-green-50 !border-green-150;
+  }
+  &[color='teal'] {
+    @apply relative !text-teal-500 !bg-teal-50 !border-teal-150;
+  }
+  &[color='sky'] {
+    @apply relative !text-sky-500 !bg-sky-50 !border-sky-150;
+  }
+  &[color='indigo'] {
+    @apply relative !text-indigo-500 !bg-indigo-50 !border-indigo-150;
+  }
+  &[color='navy'] {
+    @apply relative !text-navy-500 !bg-navy-50 !border-navy-150;
+  }
+  &[color='slate'] {
+    @apply relative !text-slate-500 !bg-slate-50 !border-slate-150;
+  }
+  &[color='metal'] {
+    @apply relative !text-metal-500 !bg-metal-50 !border-metal-150;
+  }
+  &[color='dark'] {
+    @apply relative !text-dark-500 !bg-dark-50 !border-dark-150;
+  }
+  &[color='light'] {
+    @apply relative !text-light-500 !bg-light-50 !border-light-150;
+  }
+}

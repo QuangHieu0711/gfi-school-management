@@ -1,0 +1,25 @@
+.app-header {
+  box-shadow: rgba(149, 157, 165, 0.2) 0px 8px 24px;
+}
+
+::ng-deep .notification-menu .mat-mdc-menu-content {
+  padding: 0 !important;
+}
+
+::ng-deep .notification-menu .mat-mdc-menu-panel {
+  min-width: 360px !important;
+  max-width: 400px !important;
+  border-radius: 12px !important;
+  overflow: hidden;
+}
+
+.notification-panel {
+  width: 360px;
+}
+
+.notification-item .mat-icon,
+.notification-item app-icon {
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+}

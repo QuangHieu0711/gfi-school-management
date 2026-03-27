@@ -1,0 +1,305 @@
+{
+  "webmapId": "04f78607cfa74d7ab806a3725ebd32c4",
+  "validUrlIdentify": [
+    "https://dev-csdldc.vinacomin.vn/server/rest/services/BanDoVungQN1/MapServer",
+    "https://dev-csdldc.vinacomin.vn/server/rest/services/BanDoVungQN1/FeatureServer",
+    "https://dev-csdldc.vinacomin.vn/server/rest/services/BanDoNenQN1/MapServer",
+    "https://dev-csdldc.vinacomin.vn/server/rest/services/BanDoNenQN1/FeatureServer",
+    "https://dev-csdldc.vinacomin.vn/server/rest/services/BanDoVungQN_LoKhoan/MapServer",
+    "https://dev-csdldc.vinacomin.vn/server/rest/services/BanDoVungQN_LoKhoan/FeatureServer",
+    "https://dev-csdldc.vinacomin.vn/server/rest/services/BanDoVungLS/MapServer",
+    "https://dev-csdldc.vinacomin.vn/server/rest/services/BanDoVungLS/FeatureServer",
+    "https://dev-csdldc.vinacomin.vn/server/rest/services/BanDoVungQuangNam/MapServer",
+    "https://dev-csdldc.vinacomin.vn/server/rest/services/BanDoVungQuangNam/FeatureServer",
+    "https://dev-csdldc.vinacomin.vn/server/rest/services/BanDoVungTN/MapServer",
+    "https://dev-csdldc.vinacomin.vn/server/rest/services/BanDoVungTN/FeatureServer"
+  ],
+  "printServiceUrl": "https://dev-csdldc.vinacomin.vn/server/rest/services/Utilities/PrintingTools/GPServer/Export%20Web%20Map%20Task",
+  "layerlistConfig": {
+    "targetGroupTitle": "BanDoVungQN1",
+    "sourceGroupTitle": "BanDoVungQN_LoKhoan",
+    "movedSublayerTitle": "V01_LoKhoan"
+  },
+  "mapList": [
+    {
+      "code": "null",
+      "name": "BẢN ĐỒ TỔNG HỢP",
+      "metadata": "10/03/2020 | TKV",
+      "layerNames": []
+    },
+    {
+      "code": "KM0001",
+      "name": "BẢN ĐỒ MẠO KHÊ",
+      "metadata": "10/03/2020 | TKV",
+      "layerNames": [
+        "BanDoVungQN1",
+        "BanDoNenQN1",
+        "BanDoVungQN_LoKhoan"
+      ]
+    },
+    {
+      "code": "KM0002",
+      "name": "BẢN ĐỒ TRÀNG BẠCH",
+      "metadata": "10/03/2020 | TKV",
+      "layerNames": [
+        "BanDoVungQN1",
+        "BanDoNenQN1",
+        "BanDoVungQN_LoKhoan"
+      ]
+    },
+    {
+      "code": "KM0003",
+      "name": "BẢN ĐỒ ĐÔNG TRÀNG BẠCH",
+      "metadata": "10/03/2020 | TKV",
+      "layerNames": [
+        "BanDoVungQN1",
+        "BanDoNenQN1",
+        "BanDoVungQN_LoKhoan"
+      ]
+    },
+    {
+      "code": "KM0004",
+      "name": "BẢN ĐỒ NAM MẪU",
+      "metadata": "10/03/2020 | TKV",
+      "layerNames": [
+        "BanDoVungQN1",
+        "BanDoNenQN1",
+        "BanDoVungQN_LoKhoan"
+      ]
+    },
+    {
+      "code": "KM0005",
+      "name": "BẢN ĐỒ VÀNG DANH",
+      "metadata": "10/03/2020 | TKV",
+      "layerNames": [
+        "BanDoVungQN1",
+        "BanDoNenQN1",
+        "BanDoVungQN_LoKhoan"
+      ]
+    },
+    {
+      "code": "KM0006",
+      "name": "BẢN ĐỒ ĐỒNG VÔNG - UÔNG THƯỢNG",
+      "metadata": "10/03/2020 | TKV",
+      "layerNames": [
+        "BanDoVungQN1",
+        "BanDoNenQN1",
+        "BanDoVungQN_LoKhoan"
+      ]
+    },
+    {
+      "code": "KM0007",
+      "name": "BẢN ĐỒ ĐÔNG TRIỀU - PHẢ LẠI",
+      "metadata": "10/03/2020 | TKV",
+      "layerNames": [
+        "BanDoVungQN1",
+        "BanDoNenQN1",
+        "BanDoVungQN_LoKhoan"
+      ]
+    },
+    {
+      "code": "KM0008",
+      "name": "BẢN ĐỒ BẢO ĐÀI",
+      "metadata": "10/03/2020 | TKV",
+      "layerNames": [
+        "BanDoVungQN1",
+        "BanDoNenQN1",
+        "BanDoVungQN_LoKhoan"
+      ]
+    },
+    {
+      "code": "KM0009",
+      "name": "BẢN ĐỒ BÌNH MINH",
+      "metadata": "10/03/2020 | TKV",
+      "layerNames": [
+        "BanDoVungQN1",
+        "BanDoNenQN1",
+        "BanDoVungQN_LoKhoan"
+      ]
+    },
+    {
+      "code": "KM0010",
+      "name": "BẢN ĐỒ SUỐI LẠI",
+      "metadata": "10/03/2020 | TKV",
+      "layerNames": [
+        "BanDoVungQN1",
+        "BanDoNenQN1",
+        "BanDoVungQN_LoKhoan"
+      ]
+    },
+    {
+      "code": "KM0011",
+      "name": "BẢN ĐỒ HÀ LẦM",
+      "metadata": "10/03/2020 | TKV",
+      "layerNames": [
+        "BanDoVungQN1",
+        "BanDoNenQN1",
+        "BanDoVungQN_LoKhoan"
+      ]
+    },
+    {
+      "code": "KM0012",
+      "name": "BẢN ĐỒ NÚI BÉO",
+      "metadata": "10/03/2020 | TKV",
+      "layerNames": [
+        "BanDoVungQN1",
+        "BanDoNenQN1",
+        "BanDoVungQN_LoKhoan"
+      ]
+    },
+    {
+      "code": "KM0013",
+      "name": "BẢN ĐỒ BÀNG DANH",
+      "metadata": "10/03/2020 | TKV",
+      "layerNames": [
+        "BanDoVungQN1",
+        "BanDoNenQN1",
+        "BanDoVungQN_LoKhoan"
+      ]
+    },
+    {
+      "code": "KM0014",
+      "name": "BẢN ĐỒ HÀ RÁNG",
+      "metadata": "10/03/2020 | TKV",
+      "layerNames": [
+        "BanDoVungQN1",
+        "BanDoNenQN1",
+        "BanDoVungQN_LoKhoan"
+      ]
+    },
+    {
+      "code": "KM0015",
+      "name": "BẢN ĐỒ NGÃ HAI",
+      "metadata": "10/03/2020 | TKV",
+      "layerNames": [
+        "BanDoVungQN1",
+        "BanDoNenQN1",
+        "BanDoVungQN_LoKhoan"
+      ]
+    },
+    {
+      "code": "KM0016",
+      "name": "BẢN ĐỒ KHE TAM",
+      "metadata": "10/03/2020 | TKV",
+      "layerNames": [
+        "BanDoVungQN1",
+        "BanDoNenQN1",
+        "BanDoVungQN_LoKhoan"
+      ]
+    },
+    {
+      "code": "KM0017",
+      "name": "BẢN ĐỒ KHE SIM",
+      "metadata": "10/03/2020 | TKV",
+      "layerNames": [
+        "BanDoVungQN1",
+        "BanDoNenQN1",
+        "BanDoVungQN_LoKhoan"
+      ]
+    },
+    {
+      "code": "KM0018",
+      "name": "BẢN ĐỒ KHE CHÀM",
+      "metadata": "10/03/2020 | TKV",
+      "layerNames": [
+        "BanDoVungQN1",
+        "BanDoNenQN1",
+        "BanDoVungQN_LoKhoan"
+      ]
+    },
+    {
+      "code": "KM0019",
+      "name": "BẢN ĐỒ LỘ TRÍ",
+      "metadata": "10/03/2020 | TKV",
+      "layerNames": [
+        "BanDoVungQN1",
+        "BanDoNenQN1",
+        "BanDoVungQN_LoKhoan"
+      ]
+    },
+    {
+      "code": "KM0020",
+      "name": "BẢN ĐỒ MÔNG DƯƠNG",
+      "metadata": "10/03/2020 | TKV",
+      "layerNames": [
+        "BanDoVungQN1",
+        "BanDoNenQN1",
+        "BanDoVungQN_LoKhoan"
+      ]
+    },
+    {
+      "code": "KM0021",
+      "name": "BẢN ĐỒ ĐÔNG BẮC MÔNG DƯƠNG",
+      "metadata": "10/03/2020 | TKV",
+      "layerNames": [
+        "BanDoVungQN1",
+        "BanDoNenQN1",
+        "BanDoVungQN_LoKhoan"
+      ]
+    },
+    {
+      "code": "KM0022",
+      "name": "BẢN ĐỒ BẮC CỌC SÁU",
+      "metadata": "10/03/2020 | TKV",
+      "layerNames": [
+        "BanDoVungQN1",
+        "BanDoNenQN1",
+        "BanDoVungQN_LoKhoan"
+      ]
+    },
+    {
+      "code": "KM0023",
+      "name": "BẢN ĐỒ ĐÈO NAI-CỌC SÁU",
+      "metadata": "10/03/2020 | TKV",
+      "layerNames": [
+        "BanDoVungQN1",
+        "BanDoNenQN1",
+        "BanDoVungQN_LoKhoan"
+      ]
+    },
+    {
+      "code": "KM0024",
+      "name": "BẢN ĐỒ KHÁNH HÒA",
+      "metadata": "10/03/2020 | TKV",
+      "layerNames": [
+        "BanDoVungQN1",
+        "BanDoNenQN1",
+        "BanDoVungQN_LoKhoan"
+      ]
+    },
+    {
+      "code": "KM0025",
+      "name": "BẢN ĐỒ NÚI HỒNG",
+      "metadata": "10/03/2020 | TKV",
+      "layerNames": [
+        "BanDoVungQN1",
+        "BanDoNenQN1",
+        "BanDoVungQN_LoKhoan"
+      ]
+    },
+    {
+      "code": "null",
+      "name": "BẢN ĐỒ NA DƯƠNG",
+      "metadata": "10/03/2020 | TKV",
+      "layerNames": [
+        "BanDoVungLS"
+      ]
+    },
+    {
+      "code": "KM0027",
+      "name": "BẢN ĐỒ NÔNG SƠN",
+      "metadata": "10/03/2020 | TKV",
+      "layerNames": [
+        "BanDoVungQuangNam"
+      ]
+    },
+    {
+      "code": "KM0028",
+      "name": "BẢN ĐỒ KHÁNH HÒA-10745",
+      "metadata": "10/03/2020 | TKV",
+      "layerNames": [
+        "BanDoVungLS"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,365 @@
+@reference "./theme.css";
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: 'Source Sans 3', sans-serif;
+  font-optical-sizing: auto;
+  @apply text-dark-500;
+}
+
+body::before,
+.clear-margin-collapsing::before {
+  content: '';
+  display: table;
+}
+
+a {
+  text-decoration: none;
+}
+
+.mat-dialog-content {
+  overflow: visible !important;
+}
+
+.ng-dropdown-panel {
+  z-index: 99999 !important;
+}
+
+.cdk-overlay-container,
+.cdk-overlay-pane {
+  z-index: 999999 !important;
+}
+
+.cdk-overlay-pane.mat-datepicker-popup,
+.mat-datepicker-content,
+.mat-calendar {
+  z-index: 9999999 !important;
+}
+
+.mat-dialog-container {
+  z-index: 1000 !important;
+}
+
+button.btn-tight {
+  padding: 7px 10px !important;
+  min-width: 0 !important;
+  min-height: 32px !important;
+  height: auto !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  overflow: visible !important;
+}
+
+button.btn-tight .mat-mdc-button-persistent-ripple {
+  display: none !important;
+}
+
+button.btn-tight .mat-mdc-button-touch-target {
+  height: 100% !important;
+  display: flex !important;
+  align-items: center !important;
+}
+
+button.btn-tight .mdc-button__label {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  line-height: normal !important;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+}
+
+button.btn-tight app-icon {
+  width: 18px !important;
+  height: 18px !important;
+  min-width: 18px !important;
+  min-height: 18px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  flex-shrink: 0 !important;
+  overflow: visible !important;
+}
+
+button.btn-tight app-icon mat-icon,
+button.btn-tight app-icon svg {
+  width: 18px !important;
+  height: 18px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: visible !important;
+}
+
+button.btn-tight app-icon mat-icon {
+  font-size: 18px !important;
+  line-height: 1 !important;
+  display: flex !important;
+  align-items: center !important;
+}
+
+button.btn-tight app-icon svg {
+  display: block !important;
+}
+.mat-mdc-button,
+.mat-mdc-raised-button,
+.mat-mdc-outlined-button,
+.mat-mdc-unelevated-button {
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease;
+}
+
+.mat-mdc-button:hover,
+.mat-mdc-raised-button:hover,
+.mat-mdc-outlined-button:hover,
+.mat-mdc-unelevated-button:hover {
+  background-color: rgba(0, 0, 0, 0.04);
+  color: inherit;
+}
+
+/* =========================
+   GLOBAL ALIGN HELPERS
+   ========================= */
+
+.text-left {
+  text-align: left !important;
+}
+.text-center {
+  text-align: center !important;
+}
+.text-right {
+  text-align: right !important;
+}
+
+td.text-left {
+  text-align: left !important;
+}
+td.text-center {
+  text-align: center !important;
+}
+td.text-right {
+  text-align: right !important;
+}
+
+td.mat-mdc-cell.text-left {
+  justify-content: flex-start !important;
+}
+td.mat-mdc-cell.text-center {
+  justify-content: center !important;
+}
+td.mat-mdc-cell.text-right {
+  justify-content: flex-end !important;
+}
+
+td.text-left mtx-grid-cell,
+td.text-center mtx-grid-cell,
+td.text-right mtx-grid-cell {
+  width: 100% !important;
+  display: block !important;
+}
+td.text-left mtx-grid-cell {
+  text-align: left !important;
+}
+td.text-center mtx-grid-cell {
+  text-align: center !important;
+}
+td.text-right mtx-grid-cell {
+  text-align: right !important;
+}
+
+th,
+th.text-center,
+th.text-right {
+  text-align: center !important;
+}
+
+th.mat-mdc-header-cell.text-left,
+th.mat-mdc-header-cell.text-center,
+th.mat-mdc-header-cell.text-right {
+  justify-content: center !important;
+}
+/* das */
+.ng-dropdown-panel {
+  border-radius: 12px !important;
+  border: 1px solid #e5e7eb !important;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.12) !important;
+  overflow: hidden !important;
+}
+
+.ng-dropdown-panel .ng-dropdown-panel-items {
+  padding: 6px !important;
+}
+
+.ng-dropdown-panel .ng-option {
+  min-height: 44px !important;
+  padding: 0 10px !important;
+  border-radius: 8px;
+  display: flex !important;
+  align-items: center !important;
+  margin-bottom: 2px;
+}
+
+.ng-dropdown-panel .ng-option.ng-option-marked {
+  background: #f3f4f6 !important;
+}
+
+.ng-dropdown-panel .ng-option.ng-option-selected {
+  background: #eef2ff !important;
+}
+
+.ng-dropdown-panel .ng-option .icon-option-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+}
+
+.ng-dropdown-panel .ng-option .icon-option-row .icon-cell {
+  width: 24px;
+  min-width: 24px;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.ng-dropdown-panel .ng-option .icon-option-row .icon-label {
+  margin-left: 0;
+}
+
+.ng-dropdown-panel .ng-option.ng-option-selected .icon-label {
+  font-weight: 500;
+  color: #1e293b;
+}
+
+.ng-dropdown-panel .ng-dropdown-header,
+.ng-dropdown-panel .ng-select-searchable {
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.ng-dropdown-panel .ng-input > input,
+.ng-dropdown-panel .ng-select-searchable input {
+  font-size: 14px !important;
+  padding: 8px 10px !important;
+}
+@font-face {
+  font-family: 'Roboto';
+  src: url('/font/Roboto/Roboto-Medium.ttf') format('truetype');
+}
+
+@font-face {
+  font-family: 'Roboto-regular';
+  src: url('/font/Roboto/Roboto-Regular.ttf') format('truetype');
+}
+
+@font-face {
+  font-family: 'Roboto-bold';
+  src: url('/font/Roboto/Roboto-Bold.ttf') format('truetype');
+}
+:root {
+  --background-color: #007BB6;
+  --color_bg: #353535;
+  --color_border: #d9d9d9;
+  --p-primary-color: #007BB6;
+  --font_size_medium: 14px;
+  --font_size_small: 14px;
+  --color_text: #333333;
+}
+
+.hidden {
+  display: none !important;
+}
+
+/* =========================
+   Giaidoan select panel (map overlay, appendTo=body)
+   ========================= */
+.giaidoan-select-panel {
+  background: rgba(44, 43, 43, 0.95) !important;
+  border: 1px solid #007BB6 !important;
+  border-radius: 4px !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4) !important;
+}
+
+.giaidoan-select-panel .p-select-list-container {
+  background: transparent !important;
+}
+
+.giaidoan-select-panel .p-select-option {
+  color: #ffffff !important;
+  background: transparent !important;
+  padding: 6px 12px !important;
+  font-size: 14px !important;
+}
+
+.giaidoan-select-panel .p-select-option:hover,
+.giaidoan-select-panel .p-select-option.p-select-option-selected {
+  background: rgba(248, 153, 39, 0.25) !important;
+  color: #ffffff !important;
+}
+
+/* =========================
+   PrimeNG Tooltip - map tools
+   ========================= */
+.p-tooltip .p-tooltip-text {
+  background: rgba(44, 43, 43, 0.92) !important;
+  color: #ffffff !important;
+  font-size: 13px !important;
+  padding: 4px 10px !important;
+  border-radius: 4px !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35) !important;
+}
+
+.p-tooltip.p-tooltip-right .p-tooltip-arrow {
+  border-right-color: rgba(44, 43, 43, 0.92) !important;
+}
+
+.p-tooltip.p-tooltip-left .p-tooltip-arrow {
+  border-left-color: rgba(44, 43, 43, 0.92) !important;
+}
+
+.p-tooltip.p-tooltip-top .p-tooltip-arrow {
+  border-top-color: rgba(44, 43, 43, 0.92) !important;
+}
+
+.p-tooltip.p-tooltip-bottom .p-tooltip-arrow {
+  border-bottom-color: rgba(44, 43, 43, 0.92) !important;
+}
+
+
+.core-control-label {
+  font-weight: 300;
+  display: flex;
+  align-items: center;
+  color: var(--color_text);
+  height: 30px;
+}
+
+.p-dropdown,
+.p-multiselect {
+  width: 100%;
+  height: 30px;
+  font-size: var(--font_size_small);
+  display: flex;
+  align-items: center;
+  border-radius: 3px;
+  border: 1px solid var(--color_border);
+}
+
+.p-select,
+.p-select-label,
+.p-dropdown-label,
+.p-multiselect-label {
+  font-size: var(--font_size_small) !important;
+  font-family: var(--font_family) !important;
+}

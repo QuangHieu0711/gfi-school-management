@@ -1,0 +1,25 @@
+@reference "tailwindcss";
+
+.mat-mdc-dialog-surface {
+  @apply relative !rounded-2xl;
+}
+
+.dialog-wrapper {
+  [mat-dialog-title] {
+    &::before {
+      content: unset;
+    }
+  }
+  .mat-mdc-dialog-content {
+    @apply relative !p-16 !py-6;
+    max-height: 75vh;
+  }
+}
+.cdk-overlay-pane.mat-mdc-dialog-panel {
+  max-width: unset !important;
+}
+mat-dialog-content {
+  .container {
+    max-width: unset !important;
+  }
+}

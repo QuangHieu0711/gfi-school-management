@@ -1,0 +1,44 @@
+:host {
+  position: absolute;
+  top: 0px;
+  right: 0px;
+  bottom: 0px;
+  left: 0px;
+  z-index: 99999999;
+
+  .content {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    background-color: var(--color_bg);
+    opacity: 0.6;
+
+    .loading {
+      width: 80px;
+      height: 80px;
+      background-position: center;
+      background-repeat: no-repeat;
+      background-size: contain;
+
+      &.type-1 {
+        background-image: url('/loading/predefined_loading_1.gif');
+      }
+
+      &.type-2 {
+        background-image: url('/loading/predefined_loading_2.gif');
+      }
+
+      &.type-3 {
+        background-image: url('/loading/predefined_loading_3.gif');
+      }
+
+      &.type-4 {
+        background-image: url('/loading/predefined_loading_4.gif');
+      }
+
+      &.type-5 {
+        background-image: url('/loading/predefined_loading_5.gif');
+      }
+    }
+  }
+}

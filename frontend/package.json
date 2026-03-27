@@ -1,48 +1,97 @@
 {
-  "name": "frontend",
+  "name": "angular-boilerplate",
   "version": "0.0.0",
   "scripts": {
     "ng": "ng",
-    "start": "ng serve",
-    "build": "ng build",
+    "dev": "ng serve --host 0.0.0.0 --proxy-config proxy.conf.json",
+    "serve": "ng serve",
+    "start": "ng serve --host 0.0.0.0 --port 4201",
+    "build": "ng build tkv --configuration production",
     "watch": "ng build --watch --configuration development",
-    "test": "ng test"
-  },
-  "prettier": {
-    "printWidth": 100,
-    "singleQuote": true,
-    "overrides": [
-      {
-        "files": "*.html",
-        "options": {
-          "parser": "angular"
-        }
-      }
-    ]
+    "test": "ng test",
+    "lint": "ng lint",
+    "lint:fix": "prettier --write src && ng lint --fix",
+    "prepare": "husky install",
+    "postinstall": "node ./scripts/patch-arcgis-map-components.mjs",
+    "prod": "node ./scripts/patch-arcgis-map-components.mjs && ng build --configuration production --base-href /myapp/ --output-path='../bin/release/myapp/prod'"
   },
   "private": true,
   "dependencies": {
-    "@angular/common": "^20.3.0",
-    "@angular/compiler": "^20.3.0",
-    "@angular/core": "^20.3.0",
-    "@angular/forms": "^20.3.0",
-    "@angular/platform-browser": "^20.3.0",
-    "@angular/router": "^20.3.0",
+    "@angular/animations": "^20.0.3",
+    "@angular/cdk": "^20.0.3",
+    "@angular/common": "^20.0.3",
+    "@angular/compiler": "^20.0.3",
+    "@angular/core": "^20.0.3",
+    "@angular/forms": "^20.0.3",
+    "@angular/material": "^20.0.3",
+    "@angular/material-date-fns-adapter": "^20.0.3",
+    "@angular/platform-browser": "^20.0.3",
+    "@angular/platform-browser-dynamic": "^20.0.3",
+    "@angular/router": "^20.0.3",
+    "@arcgis/core": "^4.34.8",
+    "@arcgis/map-components": "^4.34.9",
+    "@colsen1991/ngx-translate-extract-marker": "^3.0.1",
+    "@ng-matero/extensions": "^20.0.3",
+    "@ng-matero/extensions-date-fns-adapter": "^20.0.0",
+    "@ngrx/effects": "^19.2.1",
+    "@ngrx/store": "^19.2.1",
+    "@ngrx/store-devtools": "^20.0.1",
+    "@ngx-translate/core": "^16.0.4",
+    "@ngx-translate/http-loader": "^16.0.1",
+    "@popperjs/core": "^2.11.8",
+    "@primeuix/themes": "^2.0.2",
+    "@tailwindcss/postcss": "^4.1.8",
+    "bootstrap": "^5.3.8",
+    "date-fns": "^4.1.0",
+    "jwt-decode": "^4.0.0",
+    "lodash": "^4.17.21",
+    "ngx-drag-drop": "^19.0.0",
+    "ngx-toastr": "^19.0.0",
+    "normalize.css": "^8.0.1",
+    "postcss": "^8.5.4",
+    "primeicons": "^7.0.0",
+    "primeng": "^20.0.0",
     "rxjs": "~7.8.0",
+    "tailwindcss": "^4.1.8",
     "tslib": "^2.3.0",
+    "uuid": "^13.0.0",
     "zone.js": "~0.15.0"
   },
   "devDependencies": {
-    "@angular/build": "^20.3.2",
-    "@angular/cli": "^20.3.2",
-    "@angular/compiler-cli": "^20.3.0",
+    "@angular/build": "^20.0.2",
+    "@angular/cli": "^20.0.2",
+    "@angular/compiler-cli": "^20.0.3",
     "@types/jasmine": "~5.1.0",
-    "jasmine-core": "~5.9.0",
+    "@types/lodash": "^4.17.17",
+    "@types/uuid": "^11.0.0",
+    "angular-eslint": "19.6.0",
+    "eslint": "^9.27.0",
+    "eslint-config-prettier": "^10.1.5",
+    "eslint-plugin-prettier": "^5.4.1",
+    "eslint-plugin-unused-imports": "^4.1.4",
+    "husky": "^8.0.3",
+    "jasmine-core": "~5.6.0",
+    "jsdom": "^27.1.0",
     "karma": "~6.4.0",
     "karma-chrome-launcher": "~3.2.0",
     "karma-coverage": "~2.2.0",
     "karma-jasmine": "~5.1.0",
     "karma-jasmine-html-reporter": "~2.1.0",
-    "typescript": "~5.9.2"
-  }
+    "lint-staged": "^16.1.0",
+    "postcss": "^8.5.4",
+    "prettier": "^3.5.3",
+    "prettier-eslint": "^16.4.2",
+    "typescript": "~5.8.3",
+    "typescript-eslint": "8.32.1",
+    "vitest": "^4.0.8"
+  },
+  "overrides": {
+    "@ng-select/ng-select": "20.1.0"
+  },
+  "pnpm": {
+    "overrides": {
+      "@ng-select/ng-select@*": "20.1.0"
+    }
+  },
+  "packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e"
 }

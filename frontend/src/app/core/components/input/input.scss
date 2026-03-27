@@ -1,0 +1,12 @@
+:host {
+    width: 100%;
+
+    .p-inputtext {
+        width: inherit;
+    }
+
+    .core-control-label {
+        // font-size: 12px;
+        margin-right: 10px;
+    }
+}

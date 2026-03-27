@@ -1,0 +1,136 @@
+@reference "tailwindcss";
+
+.wrapper {
+  mat-sidenav-container {
+    height: calc(100vh - var(--mat-toolbar-standard-height));
+
+    mat-sidenav {
+      transition: width 0.3s ease-in-out !important;
+      width: var(--menu-width-closed);
+      box-shadow: rgba(149, 157, 165, 0.2) 0px 8px 24px;
+
+      .collapse-button {
+        right: calc((var(--menu-width-closed) - 40px) / 2);
+      }
+
+      mat-nav-list {
+        height: calc(100% - 48px);
+      }
+    }
+
+    mat-sidenav-content {
+      margin-left: calc(var(--menu-width-closed) + 1px) !important;
+    }
+
+    ::ng-deep {
+      app-tree {
+        mat-tree-node .node-text {
+          display: inline-block;
+          max-width: 280px;
+          overflow: hidden;
+          white-space: nowrap;
+          text-overflow: ellipsis;
+          vertical-align: middle;
+        }
+
+        mat-tree-node {
+          min-height: 40px;
+          margin: 0 !important;
+
+          padding-left: 0 !important;
+        }
+
+        mat-tree-node[aria-level='1'] {
+          padding-left: 0px !important;
+          font-weight: 600;
+        }
+
+        mat-tree-node[aria-level='2'] {
+          padding-left: 20px !important;
+        }
+
+        mat-tree-node[aria-level='3'] {
+          padding-left: 40px !important;
+        }
+
+        mat-tree-node[aria-level='4'] {
+          padding-left: 60px !important;
+        }
+
+        mat-tree-node[aria-level='5'] {
+          padding-left: 80px !important;
+        }
+
+        mat-tree-node[aria-level='6'] {
+          padding-left: 100px !important;
+        }
+
+        mat-tree-node[aria-level='7'] {
+          padding-left: 120px !important;
+        }
+
+        mat-tree-node[aria-level='8'] {
+          padding-left: 140px !important;
+        }
+
+        mat-tree-node[aria-level='9'] {
+          padding-left: 160px !important;
+        }
+
+        button[mat-icon-button] {
+          width: 24px !important;
+          height: 24px !important;
+          line-height: 24px !important;
+          margin-right: 6px !important;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+
+        button[disabled] {
+          display: none !important;
+        }
+      }
+    }
+  }
+}
+
+.tree-wrapper {
+  box-shadow: rgba(149, 157, 165, 0.2) 0px 8px 24px;
+  transition: all 0.3s ease-in-out !important;
+  margin-left: 0;
+
+  .tree-inner-navigator {
+    transform: translateX(0);
+    transition: all 0.3s ease-in-out !important;
+  }
+
+  &.close {
+    margin-left: -437px;
+    box-shadow: none;
+
+    .tree-inner-navigator {
+      transform: translateX(-100%);
+    }
+  }
+}
+
+::ng-deep {
+  mat-sidenav-container {
+    mat-sidenav .collapse-button mat-icon {
+      transition: transform 0.3s ease-in-out !important;
+      transform: rotateY(180deg);
+    }
+
+    &.open .collapse-button mat-icon {
+      transform: rotateY(0deg) !important;
+    }
+  }
+
+  .active-nav,
+  .active-nav:focus,
+  .active-nav:hover,
+  .active-nav:active {
+    color: var(--color-info-500) !important;
+  }
+}

@@ -3,6 +3,7 @@
 {
   "compileOnSave": false,
   "compilerOptions": {
+    "outDir": "./dist/out-tsc",
     "strict": true,
     "noImplicitOverride": true,
     "noPropertyAccessFromIndexSignature": true,
@@ -10,25 +11,40 @@
     "noFallthroughCasesInSwitch": true,
     "skipLibCheck": true,
     "isolatedModules": true,
+    "esModuleInterop": true,
     "experimentalDecorators": true,
+    "moduleResolution": "bundler",
     "importHelpers": true,
     "target": "ES2022",
-    "module": "preserve"
+    "module": "ES2022",
+    "paths": {
+      // Lib
+      "@env/*": ["./src/environments/*"],
+      "@constant/*": ["./src/lib/shared/constant/*"],
+      "@utils/*": ["./src/lib/shared/utils/*"],
+      "@store/*": ["./src/lib/store/*"],
+      "@directives": ["./src/lib/shared/directives"],
+      "@validators": ["./src/lib/shared/validators"],
+      "@interceptors": ["./src/lib/core/interceptors"],
+      "@guard": ["./src/lib/core/guard"],
+      "@model/*": ["./src/lib/shared/models/*"],
+      "@service": ["./src/lib/core/services"],
+      "@components/*": ["./src/lib/shared/components/*"],
+      "@layout": ["./src/lib/shared/layout"],
+      "@features/*": ["./src/app/features/*"],
+      "@modules": ["./src/lib/shared/modules"],
+      "@i18n": ["./src/lib/shared/i18n"],
+      "@pipe": ["./src/lib/shared/pipes"],
+      // App
+      "@app/model/*": ["./src/app/shared/models/*"],
+      "@app/service/*": ["./src/app/shared/services/*"],
+      "@app/constant/*": ["./src/app/shared/constant/*"]
+    }
   },
   "angularCompilerOptions": {
     "enableI18nLegacyMessageIdFormat": false,
     "strictInjectionParameters": true,
     "strictInputAccessModifiers": true,
-    "typeCheckHostBindings": true,
     "strictTemplates": true
-  },
-  "files": [],
-  "references": [
-    {
-      "path": "./tsconfig.app.json"
-    },
-    {
-      "path": "./tsconfig.spec.json"
-    }
-  ]
+  }
 }

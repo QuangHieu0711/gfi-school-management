@@ -1,0 +1,125 @@
+<div
+  class="table-wrapper"
+  #gridWrapper>
+  <div class="flex items-center justify-between not-empty">
+    <div class="relative">
+      @if (tableTitle) {
+        <h2 class="text-lg font-semibold tracking-wide">{{ tableTitle }}</h2>
+      } @else {
+        <ng-content select="[table-header]"></ng-content>
+      }
+    </div>
+    <div class="btn-group flex gap-1">
+      <!-- Custom buttons slot -->
+      <ng-content select="[custom-buttons]"></ng-content>
+
+      @if (hasFilterPanelButton) {
+        <button
+          matButton="filled"
+          (click)="panelOpenState = !panelOpenState">
+          <app-icon [icon]="panelOpenState ? 'collapse_content' : 'expand_content'" />
+          @if (panelOpenState) {
+            {{ 'table.button.hideFilter' | translate }}
+          } @else {
+            {{ 'table.button.showFilter' | translate }}
+          }
+        </button>
+      }
+      @if (hasImport) {
+        <button
+          matButton="filled"
+          (click)="onImport()">
+          <app-icon icon="cloud_upload" />
+          {{ 'table.button.import' | translate }}
+        </button>
+      }
+      @if (hasExport) {
+        <button
+          matButton="filled"
+          (click)="onExport()">
+          <app-icon icon="cloud_download" />
+          {{ 'table.button.export' | translate }}
+        </button>
+      }
+      @if (hasCreate) {
+        <button
+          matButton="filled"
+          (click)="onCreate()">
+          <app-icon icon="add" />
+          {{ 'table.button.create' | translate }}
+        </button>
+      }
+      @if (hasDelete) {
+        <button
+          matButton="outlined"
+          color="error"
+          (click)="onDelete()">
+          <app-icon icon="delete" />
+          {{ 'table.button.delete' | translate }}
+        </button>
+      }
+    </div>
+  </div>
+
+  @if (hasFilterPanel) {
+    <mat-accordion>
+      <mat-expansion-panel
+        class="!mb-2 !bg-white"
+        [expanded]="(!hasFilterPanelButton && true) || (hasFilterPanelButton && panelOpenState)">
+        <ng-content select="[filter-panel]"></ng-content>
+      </mat-expansion-panel>
+    </mat-accordion>
+  }
+
+  <mtx-grid
+    emptyValuePlaceholder="--"
+    [noResultTemplate]="noResultTpl"
+    [data]="dataSource"
+    [columns]="tableColumns"
+    [trackBy]="trackBy"
+    [loading]="loading"
+    [columnResizable]="columnResizable"
+    [length]="total"
+    [pageOnFront]="false"
+    [paginationTemplate]="paginatorTpl"
+    [pageIndex]="query.pageIndex!"
+    [pageSize]="query.pageSize!"
+    [pageSizeOptions]="pageSizeOptions"
+    [sortOnFront]="false"
+    [sortDisableClear]="false"
+    [sortDisabled]="sortDisabled"
+    [rowSelectable]="rowSelectable"
+    [multiSelectable]="multiSelectable"
+    [disableRowClickSelection]="true"
+    [multiSelectionWithClick]="true"
+    [cellSelectable]="false"
+    [rowHover]="true"
+    [rowStriped]="true"
+    (rowClick)="onRowClick($event)"
+    (page)="onPageChange($event)"
+    (sortChange)="onSortChange($event)"
+    (rowSelectedChange)="onRowSelected($event)"></mtx-grid>
+</div>
+
+<ng-template #noResultTpl>
+  <div class="flex flex-col items-center justify-center gap-2 p-8">
+    <img
+      class="h-24 pointer-events-none m-4"
+      src="assets/images/nodata.svg"
+      alt="nodata" />
+    <p class="text-neutral-500 text-xl">{{ 'table.noResult' | translate }}</p>
+    <p class="text-neutral-400 font-light">{{ 'table.noResultHint' | translate }}</p>
+  </div>
+</ng-template>
+
+<ng-template #paginatorTpl>
+  @if (showPaginator) {
+    <app-paginator
+      [total]="total"
+      [pageIndex]="query.pageIndex!"
+      [pageSize]="query.pageSize!"
+      [pageSizeOptions]="pageSizeOptions"
+      (pageChange)="onPageChange($event)">
+    </app-paginator>
+  }
+</ng-template>
