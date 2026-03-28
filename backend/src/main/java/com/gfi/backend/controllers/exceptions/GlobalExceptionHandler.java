@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import com.gfi.backend.models.global.ApiResult;
+import com.gfi.backend.models.global.CommonErrorCode;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -16,28 +17,29 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiResult<String>> handleAccessDeniedException(AccessDeniedException ex) {
         return ResponseEntity
                 .status(HttpStatus.FORBIDDEN)
-                .body(ApiResult.fail("Bạn không có quyền truy cập tài nguyên này"));
+                .body(ApiResult.fail(CommonErrorCode.ACCESS_DENIED.getCode(), CommonErrorCode.ACCESS_DENIED.getMessage()));
     }
 
     @ExceptionHandler(SecurityException.class)
     public ResponseEntity<ApiResult<String>> handleSecurityException(SecurityException ex) {
         return ResponseEntity
                 .status(HttpStatus.FORBIDDEN)
-                .body(ApiResult.fail(ex.getMessage()));
+                .body(ApiResult.fail(CommonErrorCode.ACCESS_DENIED.getCode(), ex.getMessage()));
     }
 
     @ExceptionHandler(UserMessageException.class)
     public ResponseEntity<ApiResult<String>> handleUserMessageException(UserMessageException ex) {
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
-                .body(ApiResult.fail(ex.getMessage()));
+                .body(ApiResult.fail(ex.getCode(), ex.getMessage()));
     }
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResult<Object>> handleAllException(Exception ex) {
         ex.printStackTrace();
         ApiResult<Object> result = new ApiResult<>();
-        result.setUserMessage("Lỗi hệ thống, vui lòng thử lại sau.");
+        result.setCode(CommonErrorCode.INTERNAL_SERVER_ERROR.getCode());
+        result.setUserMessage(CommonErrorCode.INTERNAL_SERVER_ERROR.getMessage());
         result.setInternalMessage(ex.getMessage());
         return ResponseEntity.internalServerError().body(result);
     }

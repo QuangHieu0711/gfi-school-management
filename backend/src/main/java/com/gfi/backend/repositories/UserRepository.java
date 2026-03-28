@@ -11,4 +11,7 @@ import com.gfi.backend.models.entities.User;
 @Repository
 public interface UserRepository extends JpaRepository<User, Long>, JpaSpecificationExecutor<User> {
     Optional<User> findByUsername(String username);
+    boolean existsByUsername(String username);
+    long countByRoleId(Long roleId);
+    long countByUnitId(Long unitId);
 }
