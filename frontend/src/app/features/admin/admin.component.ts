@@ -1,9 +1,10 @@
 import { Component } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
+import { NAVIGATOR_ENDPOINT } from '@constant/navigator';
 import { ComponentBaseAbstract } from '@layout';
 import { NavigatorAction } from '@store/navigator';
+
 import { MenuItem } from './admin.interface';
-import { NAVIGATOR_ENDPOINT } from '@constant/navigator';
 
 @Component({
   selector: 'admin',
@@ -31,7 +32,7 @@ export class AdminComponent extends ComponentBaseAbstract {
       {
         key: 'nguoi-dung-root',
         id: 'nguoi-dung-root',
-        name: 'Quản trị nguời dùng',
+        name: 'Quản trị người dùng',
         icon: 'group',
         expanded: true,
         children: [
@@ -42,6 +43,24 @@ export class AdminComponent extends ComponentBaseAbstract {
             name: 'Quản lý tài khoản',
             icon: 'person',
             url: `/${NAVIGATOR_ENDPOINT.ADMIN.BASE_PATH}/${NAVIGATOR_ENDPOINT.ADMIN.NGUOI_DUNG.BASE_PATH}`,
+          } as MenuItem,
+          {
+            key: 'cau-hinh-root',
+            id: 'cau-hinh-root',
+            parentId: 'nguoi-dung-root',
+            name: 'Cấu hình',
+            icon: 'settings',
+            expanded: true,
+            children: [
+              {
+                key: 'vai-tro',
+                id: 'vai-tro',
+                parentId: 'cau-hinh-root',
+                name: 'Quản lý vai trò',
+                icon: 'manage_accounts',
+                url: `/${NAVIGATOR_ENDPOINT.ADMIN.BASE_PATH}/${NAVIGATOR_ENDPOINT.ADMIN.VAI_TRO.BASE_PATH}`,
+              } as MenuItem,
+            ],
           } as MenuItem,
         ],
       } as MenuItem,

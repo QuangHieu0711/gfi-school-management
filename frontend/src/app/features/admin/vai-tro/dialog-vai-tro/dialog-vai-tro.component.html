@@ -1,0 +1,44 @@
+<app-dialog-container
+  [dialogTitle]="title"
+  [dialogActionTemplate]="actionTemplate">
+  <app-form-control
+    #formTpl
+    [form]="form"
+    (submitEvent)="onSubmit()">
+    <div class="flex flex-col gap-2">
+      <app-text-control
+        [item]="findFormControl($formItem, key.ROLE_NAME)"
+        [form]="form"></app-text-control>
+      <app-textarea-control
+        [item]="findFormControl($formItem, key.DESCRIPTION)"
+        [form]="form"></app-textarea-control>
+      <app-select-control
+        [item]="findFormControl($formItem, key.STATUS)"
+        [form]="form"></app-select-control>
+    </div>
+  </app-form-control>
+
+  <ng-template #actionTemplate>
+    <button
+      color="info"
+      matButton="outlined"
+      mat-dialog-close>
+      Hủy
+    </button>
+    @if (data.type !== TYPE_FORM.DETAIL) {
+      <button
+        color="info"
+        matButton="filled"
+        (click)="formTpl.submit()">
+        Lưu
+      </button>
+    } @else {
+      <button
+        color="info"
+        matButton="filled"
+        (click)="switchUpdate()">
+        Chỉnh sửa
+      </button>
+    }
+  </ng-template>
+</app-dialog-container>

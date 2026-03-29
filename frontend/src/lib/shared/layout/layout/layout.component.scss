@@ -91,7 +91,7 @@
           background: transparent !important;
           border-radius: 0 !important;
           box-shadow: none !important;
-          color: #ffffff !important;
+          color: #123746 !important;
         }
 
         button[disabled] {
@@ -103,12 +103,35 @@
 }
 
 .tree-wrapper {
+  width: clamp(280px, 22vw, 344px);
+  min-width: clamp(280px, 22vw, 344px);
   box-shadow: rgba(149, 157, 165, 0.2) 0px 8px 24px;
-  background-color: #3e8f97;
+  background: #ffffff;
+  border-right: 1px solid rgba(0, 31, 45, 0.08);
+  overflow: hidden;
 
   .tree-inner-navigator {
+    height: 100%;
     transform: translateX(0);
-    background-color: #3e8f97;
+    background: #ffffff;
+    overflow-x: hidden;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(95, 173, 179, 0.42) transparent;
+
+    &::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    &::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background-color: rgba(95, 173, 179, 0.42);
+      border-radius: 999px;
+      border: 2px solid transparent;
+      background-clip: padding-box;
+    }
   }
 }
 
@@ -119,14 +142,18 @@
     padding: 0;
     border-radius: 0;
     box-sizing: border-box;
-    color: #ffffff !important;
+    color: #123746 !important;
     transition:
       background-color 0.2s ease,
       color 0.2s ease;
   }
 
   .tree-node-row:has(.tree-link-active) {
-    background-color: #6daeb4 !important;
+    background-color: #eef6f8 !important;
+  }
+
+  .tree-node-row:hover {
+    background-color: #f6fbfc !important;
   }
 
   app-tree mat-tree-node {
@@ -138,13 +165,20 @@
   .tree-link mat-icon,
   .tree-node-row button mat-icon,
   .tree-node-row button app-icon {
-    color: #ffffff !important;
+    color: #123746 !important;
   }
 
   .active-nav,
   .active-nav:focus,
   .active-nav:hover,
   .active-nav:active {
-    color: #ffffff !important;
+    color: #2f8d98 !important;
+  }
+}
+
+@media (max-width: 1280px) {
+  .tree-wrapper {
+    width: 296px;
+    min-width: 296px;
   }
 }

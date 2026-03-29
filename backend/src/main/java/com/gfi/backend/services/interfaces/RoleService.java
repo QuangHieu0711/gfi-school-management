@@ -9,6 +9,7 @@ import com.gfi.backend.models.dtos.role.RoleUpdateRequest;
 
 public interface RoleService {
     PageResponseDto<RoleItemDto, RoleFilterDto> search(PageRequestDto<RoleFilterDto> request);
+    RoleItemDto getById(Long id);
     RoleItemDto create(RoleCreateRequest request);
     RoleItemDto update(Long id, RoleUpdateRequest request);
     void delete(Long id);

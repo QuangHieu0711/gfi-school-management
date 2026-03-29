@@ -4,7 +4,7 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { MATERIAL_MODULE } from '@modules';
 import { NAVIGATOR_ENDPOINT } from '@constant/navigator';
-import { AuthService, DialogService } from '@service';
+import { AuthService, DialogService, ToastService } from '@service';
 
 @Component({
   selector: 'app-login',
@@ -22,11 +22,12 @@ export class LoginComponent {
     private readonly fb: FormBuilder,
     private readonly authService: AuthService,
     private readonly dialogService: DialogService,
+    private readonly toastService: ToastService,
     private readonly router: Router
   ) {
     this.form = this.fb.group({
-      username: ['admin', Validators.required],
-      password: ['123456', Validators.required],
+      username: ['', Validators.required],
+      password: ['', Validators.required],
     });
   }
 
@@ -39,15 +40,27 @@ export class LoginComponent {
     const value = this.form.getRawValue();
     this.authService
       .login({
-        username: value.username ?? 'admin',
+        username: value.username ?? '',
         password: value.password ?? '',
         deviceType: 'web',
       })
-      .subscribe(() => {
-        void this.router.navigate([
-          NAVIGATOR_ENDPOINT.ADMIN.BASE_PATH,
-          NAVIGATOR_ENDPOINT.ADMIN.NGUOI_DUNG.BASE_PATH,
-        ]);
+      .subscribe({
+        next: () => {
+          void this.router.navigate([
+            NAVIGATOR_ENDPOINT.ADMIN.BASE_PATH,
+            NAVIGATOR_ENDPOINT.ADMIN.NGUOI_DUNG.BASE_PATH,
+          ]);
+        },
+        error: (error) => {
+          const message =
+            error?.error?.userMessage ??
+            error?.error?.message ??
+            error?.message ??
+            'Đăng nhập thất bại';
+
+          this.toastService.removeToastr();
+          this.toastService.error(message, 'Thất bại');
+        },
       });
   }
 

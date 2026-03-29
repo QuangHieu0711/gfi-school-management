@@ -11,8 +11,8 @@ export enum AUTH_KEY {
 }
 
 export enum AUTH_API_ENDPOINT {
-  AUTH_TOKEN = 'public/auth/token',
-  REFRESH_TOKEN = 'public/auth/renew-token',
+  AUTH_TOKEN = 'auth/login',
+  REFRESH_TOKEN = 'auth/refresh',
   AUTH_USER = 'auth/user',
   CHANGE_PASSWORD = 'change-password',
   CAPTCHA = 'public/auth/captcha',

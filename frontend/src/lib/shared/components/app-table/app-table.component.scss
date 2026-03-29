@@ -13,7 +13,8 @@
       @apply bg-white cursor-pointer;
     }
     .mat-mdc-header-row {
-      background-color: #e7f1f5 !important;
+      background-color: #dcecf1 !important;
+      box-shadow: inset 0 -1px 0 #bfd6de;
     }
     .mtx-grid .mat-mdc-table.mat-table-striped .mat-row-odd {
       background-color: var(--color-neutral-100) !important;

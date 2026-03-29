@@ -35,4 +35,21 @@ export const AdminRoutes: Routes = [
       },
     ],
   },
+  {
+    path: NAVIGATOR_ENDPOINT.ADMIN.VAI_TRO.BASE_PATH,
+    component: AdminComponent,
+    children: [
+      {
+        path: '',
+        providers: [
+          provideState({ name: 'style', reducer: StyleReducer }),
+          provideEffects(StyleEffect),
+        ],
+        loadComponent: () =>
+          import('@features/admin/vai-tro/vai-tro.component').then(
+            (m) => m.VaiTroComponent
+          ),
+      },
+    ],
+  },
 ];

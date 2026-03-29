@@ -1,7 +1,9 @@
 @reference "../theme.css";
 
 .tag {
-  @apply px-3 py-1 inline-block gap-1 rounded-2xl text-sm border border-solid;
+  @apply px-3 py-1 inline-flex items-center justify-center gap-1 rounded-full text-sm font-semibold border border-solid;
+  min-width: 116px;
+  line-height: 1.2;
   ::before {
     content: unset !important;
   }
@@ -27,6 +29,11 @@
   &[color='error'] {
     @apply relative !text-error-500 !bg-error-50 !border-error-150;
   }
+  &[color='red'] {
+    color: #b42318 !important;
+    background-color: #fef3f2 !important;
+    border-color: #fecdca !important;
+  }
   &[color='warning'] {
     @apply relative !text-warning-500 !bg-warning-50 !border-warning-150;
   }
@@ -40,7 +47,9 @@
     @apply relative !text-yellow-500 !bg-yellow-50 !border-yellow-150;
   }
   &[color='green'] {
-    @apply relative !text-green-500 !bg-green-50 !border-green-150;
+    color: #027a48 !important;
+    background-color: #ecfdf3 !important;
+    border-color: #abefc6 !important;
   }
   &[color='teal'] {
     @apply relative !text-teal-500 !bg-teal-50 !border-teal-150;

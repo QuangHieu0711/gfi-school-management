@@ -2,6 +2,7 @@ import { Injectable } from '@angular/core';
 import { HttpInterceptor, HttpRequest, HttpHandler, HttpEvent } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { AuthService } from '@service';
+import { AUTH_API_ENDPOINT } from '@model/auth.model';
 
 @Injectable()
 export class AuthInterceptor implements HttpInterceptor {
@@ -9,6 +10,15 @@ export class AuthInterceptor implements HttpInterceptor {
 
   // Intercepts outgoing HTTP requests and attaches the access token (if available)
   intercept(req: HttpRequest<unknown>, next: HttpHandler): Observable<HttpEvent<unknown>> {
+    const isAuthRequest = [
+      AUTH_API_ENDPOINT.AUTH_TOKEN,
+      AUTH_API_ENDPOINT.REFRESH_TOKEN,
+    ].some((endpoint) => req.url.includes(endpoint));
+
+    if (isAuthRequest) {
+      return next.handle(req.clone({ headers: req.headers.delete('Authorization') }));
+    }
+
     const TOKEN = this.authService.getAccessToken();
 
     // Clone the request and add the Authorization header

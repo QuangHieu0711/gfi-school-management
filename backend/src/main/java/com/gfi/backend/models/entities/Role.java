@@ -31,6 +31,9 @@ public class Role {
     @Column(length = 255)
     private String description;
 
+    @Column(nullable = false)
+    private Integer status;
+
     @Column
     private LocalDateTime createdAt;
 
@@ -47,6 +50,9 @@ public class Role {
     public void prePersist() {
         if (createdAt == null) {
             createdAt = LocalDateTime.now();
+        }
+        if (status == null) {
+            status = 1;
         }
     }
 

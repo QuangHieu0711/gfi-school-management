@@ -58,6 +58,13 @@ public class RoleServiceImpl implements RoleService {
     }
 
     @Override
+    public RoleItemDto getById(Long id) {
+        Role role = roleRepository.findById(id)
+                .orElseThrow(() -> new UserMessageException(CommonErrorCode.ROLE_NOT_FOUND));
+        return toDto(role);
+    }
+
+    @Override
     @Transactional
     public RoleItemDto create(RoleCreateRequest request) {
         String roleName = normalize(request.getRoleName());
@@ -68,6 +75,7 @@ public class RoleServiceImpl implements RoleService {
         Role role = new Role();
         role.setRoleName(roleName);
         role.setDescription(normalizeNullable(request.getDescription()));
+        role.setStatus(request.getStatus());
         role.setCreatedBy(getCurrentUsername());
         return toDto(roleRepository.save(role));
     }
@@ -87,6 +95,7 @@ public class RoleServiceImpl implements RoleService {
 
         role.setRoleName(roleName);
         role.setDescription(normalizeNullable(request.getDescription()));
+        role.setStatus(request.getStatus());
         role.setUpdatedBy(getCurrentUsername());
         return toDto(roleRepository.save(role));
     }
@@ -113,6 +122,10 @@ public class RoleServiceImpl implements RoleService {
                 predicates.add(cb.or(
                         cb.like(cb.lower(root.get("roleName")), keyword),
                         cb.like(cb.lower(root.get("description")), keyword)));
+            }
+
+            if (filter.getStatus() != null) {
+                predicates.add(cb.equal(root.get("status"), filter.getStatus()));
             }
 
             return cb.and(predicates.toArray(new Predicate[0]));
@@ -144,10 +157,7 @@ public class RoleServiceImpl implements RoleService {
                 .id(role.getId())
                 .roleName(role.getRoleName())
                 .description(role.getDescription())
-                .createdAt(role.getCreatedAt())
-                .createdBy(role.getCreatedBy())
-                .updatedAt(role.getUpdatedAt())
-                .updatedBy(role.getUpdatedBy())
+                .status(role.getStatus())
                 .build();
     }
 
