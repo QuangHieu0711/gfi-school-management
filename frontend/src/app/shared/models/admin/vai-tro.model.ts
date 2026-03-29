@@ -90,7 +90,7 @@ export const VAI_TRO_FORM = [
     controlName: VAI_TRO_KEY.STATUS,
     label: 'Trạng thái',
     placeholder: 'Chọn trạng thái',
-    required: false,
+    required: true,
     clearable: true,
     listOption: [
       { value: 1, label: 'Hoạt động' },

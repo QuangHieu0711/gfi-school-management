@@ -183,7 +183,7 @@ export class AuthService {
       this.storageService.get<ICurrentUser>('userInfo', 'all');
 
     if (!user) {
-      return throwError(() => new Error('User not found'));
+      return of(null as unknown as ICurrentUser);
     }
 
     this.setLocalSession(user, !!user.rememberMe);

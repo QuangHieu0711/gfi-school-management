@@ -2,8 +2,8 @@ import { CommonModule } from '@angular/common';
 import { Component } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
-import { MATERIAL_MODULE } from '@modules';
 import { NAVIGATOR_ENDPOINT } from '@constant/navigator';
+import { MATERIAL_MODULE } from '@modules';
 import { AuthService, DialogService, ToastService } from '@service';
 
 @Component({
@@ -15,6 +15,7 @@ import { AuthService, DialogService, ToastService } from '@service';
 })
 export class LoginComponent {
   readonly logoUrl = 'config/Logo_login.png';
+  showPassword = false;
 
   readonly form;
 
@@ -67,9 +68,14 @@ export class LoginComponent {
   openForgotPassword(): void {
     this.dialogService.success({
       title: 'Quên mật khẩu',
-      message: 'Vui lòng liên hệ quản trị viên để được cấp lại mật khẩu.',
+      message:
+        'Vui lòng liên hệ quản trị viên để được cấp lại mật khẩu.',
       closeButtonText: 'Đóng',
       width: '420px',
     });
+  }
+
+  togglePasswordVisibility(): void {
+    this.showPassword = !this.showPassword;
   }
 }

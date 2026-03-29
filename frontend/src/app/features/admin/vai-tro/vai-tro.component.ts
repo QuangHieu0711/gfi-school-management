@@ -72,6 +72,7 @@ export class VaiTroComponent extends ComponentBaseAbstract {
         header: 'Hành động',
         field: COMMON_TABLE_KEY.ACTION,
         type: 'button',
+        class: 'text-center',
         buttons: [
           {
             type: 'icon',

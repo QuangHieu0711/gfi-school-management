@@ -9,16 +9,30 @@
     <form [formGroup]="form" (ngSubmit)="submit()" class="login-form">
       <mat-form-field appearance="outline" class="login-field">
         <mat-icon matPrefix>person_outline</mat-icon>
-        <input matInput formControlName="username" placeholder="Tên đăng nhập" />
+        <input
+          matInput
+          formControlName="username"
+          placeholder="Tên đăng nhập" />
       </mat-form-field>
 
       <mat-form-field appearance="outline" class="login-field">
         <mat-icon matPrefix>lock_outline</mat-icon>
         <input
           matInput
-          type="password"
+          [type]="showPassword ? 'text' : 'password'"
           formControlName="password"
           placeholder="Mật khẩu" />
+        @if (form.get('password')?.value) {
+          <button
+            mat-icon-button
+            matSuffix
+            type="button"
+            class="password-toggle"
+            [attr.aria-label]="showPassword ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'"
+            (click)="togglePasswordVisibility()">
+            <mat-icon>{{ showPassword ? 'visibility' : 'visibility_off' }}</mat-icon>
+          </button>
+        }
       </mat-form-field>
 
       <button matButton="filled" color="primary" class="login-submit" type="submit">

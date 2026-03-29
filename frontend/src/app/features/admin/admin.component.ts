@@ -13,7 +13,7 @@ import { MenuItem } from './admin.interface';
 })
 export class AdminComponent extends ComponentBaseAbstract {
   protected override componentInit(): void {
-    this.loadDynamicMenu();
+    queueMicrotask(() => this.loadDynamicMenu());
   }
 
   private loadDynamicMenu() {

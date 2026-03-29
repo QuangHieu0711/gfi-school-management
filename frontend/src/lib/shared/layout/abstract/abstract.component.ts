@@ -319,7 +319,9 @@ export abstract class ComponentBaseAbstract implements OnInit, OnDestroy {
       .select((state) => state.userInfo)
       .pipe(
         tap((u) => {
-          if (!u?.id) this.store.dispatch(UserInfoAction.GetCurrentUser());
+          if (!u?.id && this.storage.has('userInfo', 'all')) {
+            this.store.dispatch(UserInfoAction.GetCurrentUser());
+          }
         }),
         filter((u): u is ICurrentUser => !!u?.id),
         distinctUntilChanged((a, b) => a.id === b.id),
