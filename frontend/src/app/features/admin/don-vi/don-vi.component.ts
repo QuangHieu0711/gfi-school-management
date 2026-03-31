@@ -8,17 +8,17 @@ import { ComponentBaseAbstract } from '@layout';
 import { FORM_CONTROL_MODULE, MATERIAL_MODULE } from '@modules';
 
 import {
-  VAI_TRO_FILTER_FORM,
-  VAI_TRO_KEY,
-  VaiTroResponse,
-} from '@app/model/admin/vai-tro.model';
-import { VaiTroService } from '@app/service/admin/vai-tro.service';
-import { DialogVaiTroComponent } from './dialog-vai-tro/dialog-vai-tro.component';
+  DON_VI_FILTER_FORM,
+  DON_VI_KEY,
+  DonViResponse,
+} from '@app/model/admin/don-vi.model';
+import { DonViService } from '@app/service/admin/don-vi.service';
+import { DialogDonViComponent } from './dialog-don-vi/dialog-don-vi.component';
 
 @Component({
-  selector: 'vai-tro',
-  templateUrl: './vai-tro.component.html',
-  styleUrls: ['./vai-tro.component.scss'],
+  selector: 'don-vi',
+  templateUrl: './don-vi.component.html',
+  styleUrls: ['./don-vi.component.scss'],
   imports: [
     AppTableComponent,
     IconComponent,
@@ -26,7 +26,7 @@ import { DialogVaiTroComponent } from './dialog-vai-tro/dialog-vai-tro.component
     ...FORM_CONTROL_MODULE,
   ],
 })
-export class VaiTroComponent extends ComponentBaseAbstract {
+export class DonViComponent extends ComponentBaseAbstract {
   @ViewChild('statusTpl', { static: true })
   statusTpl!: TemplateRef<unknown>;
 
@@ -35,13 +35,13 @@ export class VaiTroComponent extends ComponentBaseAbstract {
     hasFilterPanel: true,
   };
   columns: MtxGridColumn[] = [];
-  $formItem = VAI_TRO_FILTER_FORM;
-  key = VAI_TRO_KEY;
-  dataSource: VaiTroResponse[] = [];
+  $formItem = DON_VI_FILTER_FORM;
+  key = DON_VI_KEY;
+  dataSource: DonViResponse[] = [];
 
   constructor(
     protected override injector: Injector,
-    private readonly vaiTroService: VaiTroService
+    private readonly donViService: DonViService
   ) {
     super(injector);
   }
@@ -55,16 +55,28 @@ export class VaiTroComponent extends ComponentBaseAbstract {
         field: COMMON_TABLE_KEY.STT,
       },
       {
-        header: 'Tên vai trò',
-        field: VAI_TRO_KEY.ROLE_NAME,
+        header: 'Mã đơn vị',
+        field: DON_VI_KEY.CODE,
       },
       {
-        header: 'Mô tả',
-        field: VAI_TRO_KEY.DESCRIPTION,
+        header: 'Tên đơn vị',
+        field: DON_VI_KEY.NAME,
+      },
+      {
+        header: 'Địa chỉ',
+        field: DON_VI_KEY.ADDRESS,
+      },
+      {
+        header: 'Số điện thoại',
+        field: DON_VI_KEY.PHONE,
+      },
+      {
+        header: 'Email',
+        field: DON_VI_KEY.EMAIL,
       },
       {
         header: 'Trạng thái',
-        field: VAI_TRO_KEY.STATUS,
+        field: DON_VI_KEY.STATUS,
         class: 'text-center',
         cellTemplate: this.statusTpl,
       },
@@ -78,21 +90,21 @@ export class VaiTroComponent extends ComponentBaseAbstract {
             type: 'icon',
             icon: 'visibility',
             tooltip: 'Chi tiết',
-            click: (rowData: VaiTroResponse) =>
+            click: (rowData: DonViResponse) =>
               this.openDialog(this.TYPE_FORM.DETAIL, rowData),
           },
           {
             type: 'icon',
             icon: 'edit',
             tooltip: 'Chỉnh sửa',
-            click: (rowData: VaiTroResponse) =>
+            click: (rowData: DonViResponse) =>
               this.openDialog(this.TYPE_FORM.UPDATE, rowData),
           },
           {
             type: 'icon',
             icon: 'delete',
             tooltip: 'Xóa',
-            click: (rowData: VaiTroResponse) => this.deleteRole(rowData),
+            click: (rowData: DonViResponse) => this.deleteUnit(rowData),
           },
         ],
       },
@@ -110,25 +122,26 @@ export class VaiTroComponent extends ComponentBaseAbstract {
       pageSize: pageChangeEvent?.pageSize ?? this.pageSize,
       pageNow: (pageChangeEvent?.pageIndex ?? 0) + 1,
       filter: {
-        roleName: formValues[VAI_TRO_KEY.ROLE_NAME] ?? undefined,
-        status: formValues[VAI_TRO_KEY.STATUS] ?? undefined,
+        unitName: formValues[DON_VI_KEY.NAME] ?? undefined,
+        status: formValues[DON_VI_KEY.STATUS] ?? undefined,
       },
     };
 
     this.pageIndex = pageChangeEvent?.pageIndex ?? 0;
     this.pageSize = pageChangeEvent?.pageSize ?? this.pageSize;
 
-    this.vaiTroService.filter(payload).subscribe({
+    this.donViService.filter(payload).subscribe({
       next: ({ data }) => {
         this.dataSource = data.items || [];
         this.dataSourceTotal = data.recordTotal || 0;
       },
       error: (error) => {
-        const message =
+        this.toastr.error(
           error?.error?.userMessage ??
-          error?.error?.message ??
-          'Không tải được danh sách vai trò';
-        this.toastr.error(message, 'Thất bại');
+            error?.error?.message ??
+            'Không tải được danh sách đơn vị',
+          'Thất bại'
+        );
       },
     });
   }
@@ -138,14 +151,14 @@ export class VaiTroComponent extends ComponentBaseAbstract {
     this.appTableComponent.resetQuery();
   }
 
-  openDialog(type: TYPE_FORM_KEY, rowData?: VaiTroResponse) {
+  openDialog(type: TYPE_FORM_KEY, rowData?: DonViResponse) {
     this.dialog.componentDialog(
-      DialogVaiTroComponent,
+      DialogDonViComponent,
       {
         width: '560px',
         data: {
           type,
-          id: rowData?.[VAI_TRO_KEY.ID],
+          id: rowData?.[DON_VI_KEY.ID],
           data: rowData,
         },
       },
@@ -160,18 +173,23 @@ export class VaiTroComponent extends ComponentBaseAbstract {
     );
   }
 
-  deleteRole(rowData: VaiTroResponse) {
+  deleteUnit(rowData: DonViResponse) {
     this.dialog.confirm(
       {
         title: 'Xác nhận',
-        message: `Bạn có chắc chắn muốn xóa vai trò ${rowData[VAI_TRO_KEY.ROLE_NAME]} không?`,
+        message: `Bạn có chắc chắn muốn xóa đơn vị ${rowData[DON_VI_KEY.NAME]} không?`,
       },
       (confirmed?: boolean) => {
         if (!confirmed) return;
 
-        this.vaiTroService.delete(rowData[VAI_TRO_KEY.ID]).subscribe({
+        this.donViService.delete(rowData[DON_VI_KEY.ID]).subscribe({
           next: () => {
             this.toastr.success('Xóa thành công', 'Thành công');
+
+            if (this.dataSource.length === 1 && this.pageIndex > 0) {
+              this.pageIndex = this.pageIndex - 1;
+            }
+
             this.filterData({
               pageIndex: this.pageIndex,
               pageSize: this.pageSize,

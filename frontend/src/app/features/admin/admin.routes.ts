@@ -36,6 +36,23 @@ export const AdminRoutes: Routes = [
     ],
   },
   {
+    path: NAVIGATOR_ENDPOINT.ADMIN.DON_VI.BASE_PATH,
+    component: AdminComponent,
+    children: [
+      {
+        path: '',
+        providers: [
+          provideState({ name: 'style', reducer: StyleReducer }),
+          provideEffects(StyleEffect),
+        ],
+        loadComponent: () =>
+          import('@features/admin/don-vi/don-vi.component').then(
+            (m) => m.DonViComponent
+          ),
+      },
+    ],
+  },
+  {
     path: NAVIGATOR_ENDPOINT.ADMIN.VAI_TRO.BASE_PATH,
     component: AdminComponent,
     children: [

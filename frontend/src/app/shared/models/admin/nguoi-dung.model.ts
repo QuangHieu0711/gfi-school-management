@@ -1,7 +1,7 @@
+import { REGEX } from '@constant/constant';
 import { SELECT_CONTROL, TEXT_CONTROL } from '@model/form-control.model';
 import { ID_TYPE } from '@model/response.model';
 import { TableDataSource, TableRequest } from '@model/table.model';
-import { REGEX } from '@constant/constant';
 
 export enum NGUOI_DUNG_KEY {
   STT = 'no',
@@ -72,40 +72,40 @@ export interface NguoiDungFormRequest {
 export const NGUOI_DUNG_FORM = (requiredPassword = false) => [
   TEXT_CONTROL({
     controlName: NGUOI_DUNG_KEY.HO,
-    label: 'Họ',
-    placeholder: 'Họ',
+    label: 'Ho',
+    placeholder: 'Ho',
     required: true,
     regex: REGEX.VIETNAMESE_NAME,
     maxLength: 255,
   }),
   TEXT_CONTROL({
     controlName: NGUOI_DUNG_KEY.TEN,
-    label: 'Tên',
-    placeholder: 'Tên',
+    label: 'Ten',
+    placeholder: 'Ten',
     required: true,
     regex: REGEX.VIETNAMESE_NAME,
     maxLength: 255,
   }),
   TEXT_CONTROL({
     controlName: NGUOI_DUNG_KEY.TEN_TAI_KHOAN,
-    label: 'Tên tài khoản',
-    placeholder: 'Tên tài khoản',
+    label: 'Ten tai khoan',
+    placeholder: 'Ten tai khoan',
     required: true,
     regex: /^[a-zA-Z0-9!@#$%^&*()_+'";:.,]+$/g,
     maxLength: 255,
   }),
   TEXT_CONTROL({
     controlName: NGUOI_DUNG_KEY.MAT_KHAU,
-    label: 'Mật khẩu',
-    placeholder: 'Mật khẩu',
+    label: 'Mat khau',
+    placeholder: 'Mat khau',
     required: requiredPassword,
     type: 'password',
     regex: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_])[A-Za-z\d\W_]{8,}$/,
   }),
   TEXT_CONTROL({
     controlName: NGUOI_DUNG_KEY.SDT,
-    label: 'Số điện thoại',
-    placeholder: 'Số điện thoại',
+    label: 'So dien thoai',
+    placeholder: 'So dien thoai',
     type: 'tel',
     required: true,
     regex: /^[0-9]+$/g,
@@ -122,20 +122,29 @@ export const NGUOI_DUNG_FORM = (requiredPassword = false) => [
   }),
   SELECT_CONTROL({
     controlName: NGUOI_DUNG_KEY.UNITID,
-    label: 'Đơn vị',
-    placeholder: 'Đơn vị',
+    label: 'Don vi',
+    placeholder: 'Don vi',
     required: true,
   }),
   SELECT_CONTROL({
     controlName: NGUOI_DUNG_KEY.STATUS,
-    label: 'Trạng thái',
-    placeholder: 'Trạng thái',
+    label: 'Trang thai',
+    placeholder: 'Trang thai',
     required: true,
+    listOption: [
+      { value: 1, label: 'Hoat dong' },
+      { value: 0, label: 'Khong hoat dong' },
+    ],
   }),
   SELECT_CONTROL({
     controlName: NGUOI_DUNG_KEY.ROLEID,
-    label: 'Nhóm quyền',
-    placeholder: 'Nhóm quyền',
+    label: 'Nhom quyen',
+    placeholder: 'Nhom quyen',
     required: true,
+    listOption: [
+      { value: 'admin', label: 'Quan tri vien' },
+      { value: 'editor', label: 'Bien tap vien' },
+      { value: 'viewer', label: 'Nguoi xem' },
+    ],
   }),
 ];

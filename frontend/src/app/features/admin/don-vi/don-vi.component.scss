@@ -1,0 +1,32 @@
+::ng-deep {
+  .status-cell {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+  }
+
+  .status-pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 120px;
+    padding: 6px 14px;
+    border-radius: 999px;
+    border: 1px solid transparent;
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.2;
+  }
+
+  .status-pill.is-active {
+    color: #027a48;
+    background-color: #ecfdf3;
+    border-color: #abefc6;
+  }
+
+  .status-pill.is-inactive {
+    color: #b42318;
+    background-color: #fef3f2;
+    border-color: #fecdca;
+  }
+}

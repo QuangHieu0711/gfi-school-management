@@ -6,15 +6,15 @@ import { IResponse, ITableResponse } from '@model/response.model';
 import { Observable } from 'rxjs';
 
 import {
-  VAI_TRO_API_ENDPOINT,
-  VaiTroFilterRequest,
-  VaiTroFormRequest,
-  VaiTroResponse,
-} from '@app/model/admin/vai-tro.model';
+  DON_VI_API_ENDPOINT,
+  DonViFilterRequest,
+  DonViFormRequest,
+  DonViResponse,
+} from '@app/model/admin/don-vi.model';
 
 @Injectable({ providedIn: 'root' })
-export class VaiTroService {
-  private readonly baseUrl = `${environment.host_api}/${VAI_TRO_API_ENDPOINT.BASE_PATH}`;
+export class DonViService {
+  private readonly baseUrl = `${environment.host_api}/${DON_VI_API_ENDPOINT.BASE_PATH}`;
   private readonly silentContext = new HttpContext().set(ERROR_CONTEXT, {
     silent: true,
   });
@@ -22,28 +22,28 @@ export class VaiTroService {
   constructor(private readonly http: HttpClient) {}
 
   filter(
-    payload: VaiTroFilterRequest
-  ): Observable<IResponse<ITableResponse<VaiTroResponse>>> {
-    return this.http.post<IResponse<ITableResponse<VaiTroResponse>>>(
-      `${this.baseUrl}/${VAI_TRO_API_ENDPOINT.FILTER}`,
+    payload: DonViFilterRequest
+  ): Observable<IResponse<ITableResponse<DonViResponse>>> {
+    return this.http.post<IResponse<ITableResponse<DonViResponse>>>(
+      `${this.baseUrl}/${DON_VI_API_ENDPOINT.FILTER}`,
       payload
     );
   }
 
   getById(id: string | number) {
-    return this.http.get<IResponse<VaiTroResponse>>(`${this.baseUrl}/${id}`, {
+    return this.http.get<IResponse<DonViResponse>>(`${this.baseUrl}/${id}`, {
       context: this.silentContext,
     });
   }
 
-  create(payload: VaiTroFormRequest) {
-    return this.http.post<IResponse<VaiTroResponse>>(this.baseUrl, payload, {
+  create(payload: DonViFormRequest) {
+    return this.http.post<IResponse<DonViResponse>>(this.baseUrl, payload, {
       context: this.silentContext,
     });
   }
 
-  update(id: string | number, payload: VaiTroFormRequest) {
-    return this.http.put<IResponse<VaiTroResponse>>(
+  update(id: string | number, payload: DonViFormRequest) {
+    return this.http.put<IResponse<DonViResponse>>(
       `${this.baseUrl}/${id}`,
       payload,
       {

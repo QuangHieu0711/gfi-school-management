@@ -37,7 +37,7 @@ public class Unit {
     private String email;
 
     @Column
-    private Boolean status;
+    private Integer status;
 
     @Column
     private LocalDateTime createdAt;
@@ -57,7 +57,7 @@ public class Unit {
             createdAt = LocalDateTime.now();
         }
         if (status == null) {
-            status = true;
+            status = 1;
         }
     }
 

@@ -542,6 +542,18 @@ export class LayoutComponent extends ComponentBaseAbstract {
     return children.some((child) => this.isTreeNodeActive(child));
   }
 
+  isTreeNodeCurrent(node: Record<string, any> | null | undefined): boolean {
+    if (!node) return false;
+
+    const nodeUrl = node['url'];
+    const nodeQueryParams = node['activeQueryParams'] ?? node['queryParams'];
+
+    return (
+      typeof nodeUrl === 'string' &&
+      this.isNodeActiveUrl(nodeUrl, nodeQueryParams)
+    );
+  }
+
   getMenuByRole(userInfo: ICurrentUser): void {
     this.menu = this.resolveMenu(MENU, this.navigatorEndpoint).filter(
       (menuItem) =>

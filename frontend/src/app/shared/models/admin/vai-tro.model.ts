@@ -13,6 +13,11 @@ export enum VAI_TRO_KEY {
   STATUS = 'status',
 }
 
+export const VAI_TRO_API_ENDPOINT = {
+  BASE_PATH: 'roles',
+  FILTER: 'search',
+};
+
 export interface VaiTroFilter {
   [VAI_TRO_KEY.ROLE_NAME]?: string;
   [VAI_TRO_KEY.STATUS]?: number;
@@ -34,21 +39,6 @@ export interface VaiTroResponse extends TableDataSource {
   [VAI_TRO_KEY.ROLE_NAME]?: string;
   [VAI_TRO_KEY.DESCRIPTION]?: string;
   [VAI_TRO_KEY.STATUS]?: number;
-}
-
-export interface VaiTroSearchResponse {
-  pageNo?: number;
-  pageNow?: number;
-  pageSize?: number;
-  totalCount?: number;
-  totalPage?: number;
-  pageTotal?: number;
-  totalElements?: number;
-  number?: number;
-  recordTotal?: number;
-  data?: VaiTroResponse[];
-  items?: VaiTroResponse[];
-  content?: VaiTroResponse[];
 }
 
 export const VAI_TRO_FILTER_FORM = [

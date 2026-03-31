@@ -58,6 +58,13 @@ public class UnitServiceImpl implements UnitService {
     }
 
     @Override
+    public UnitItemDto getById(Long id) {
+        Unit unit = unitRepository.findById(id)
+                .orElseThrow(() -> new UserMessageException(CommonErrorCode.UNIT_NOT_FOUND));
+        return toDto(unit);
+    }
+
+    @Override
     @Transactional
     public UnitItemDto create(UnitCreateRequest request) {
         String code = normalize(request.getCode());
@@ -118,7 +125,9 @@ public class UnitServiceImpl implements UnitService {
 
             if (hasText(filter.getUnitName())) {
                 String keyword = "%" + filter.getUnitName().trim().toLowerCase() + "%";
-                predicates.add(cb.like(cb.lower(root.get("name")), keyword));
+                predicates.add(cb.or(
+                        cb.like(cb.lower(root.get("code")), keyword),
+                        cb.like(cb.lower(root.get("name")), keyword)));
             }
             if (filter.getStatus() != null) {
                 predicates.add(cb.equal(root.get("status"), filter.getStatus()));
@@ -137,10 +146,6 @@ public class UnitServiceImpl implements UnitService {
                 .phone(unit.getPhone())
                 .email(unit.getEmail())
                 .status(unit.getStatus())
-                .createdAt(unit.getCreatedAt())
-                .createdBy(unit.getCreatedBy())
-                .updatedAt(unit.getUpdatedAt())
-                .updatedBy(unit.getUpdatedBy())
                 .build();
     }
 

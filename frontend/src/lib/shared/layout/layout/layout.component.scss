@@ -50,34 +50,66 @@
 
         mat-tree-node[aria-level='2'] {
           padding-left: 0 !important;
+
+          .tree-node-row {
+            padding-left: 26px;
+          }
         }
 
         mat-tree-node[aria-level='3'] {
           padding-left: 0 !important;
+
+          .tree-node-row {
+            padding-left: 40px;
+          }
         }
 
         mat-tree-node[aria-level='4'] {
           padding-left: 0 !important;
+
+          .tree-node-row {
+            padding-left: 54px;
+          }
         }
 
         mat-tree-node[aria-level='5'] {
           padding-left: 0 !important;
+
+          .tree-node-row {
+            padding-left: 68px;
+          }
         }
 
         mat-tree-node[aria-level='6'] {
           padding-left: 0 !important;
+
+          .tree-node-row {
+            padding-left: 82px;
+          }
         }
 
         mat-tree-node[aria-level='7'] {
           padding-left: 0 !important;
+
+          .tree-node-row {
+            padding-left: 96px;
+          }
         }
 
         mat-tree-node[aria-level='8'] {
           padding-left: 0 !important;
+
+          .tree-node-row {
+            padding-left: 110px;
+          }
         }
 
         mat-tree-node[aria-level='9'] {
           padding-left: 0 !important;
+
+          .tree-node-row {
+            padding-left: 124px;
+          }
         }
 
         button[mat-icon-button] {
@@ -150,6 +182,10 @@
 
   .tree-node-row:has(.tree-link-active) {
     background-color: #eef6f8 !important;
+  }
+
+  .tree-node-row:has(.tree-link-active) .tree-link {
+    font-weight: 700;
   }
 
   .tree-node-row:hover {

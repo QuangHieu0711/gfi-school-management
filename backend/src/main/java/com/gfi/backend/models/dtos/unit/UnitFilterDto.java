@@ -5,5 +5,5 @@ import lombok.Data;
 @Data
 public class UnitFilterDto {
     private String unitName;
-    private Boolean status;
+    private Integer status;
 }

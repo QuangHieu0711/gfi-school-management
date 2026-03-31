@@ -1,7 +1,5 @@
 package com.gfi.backend.models.dtos.unit;
 
-import java.time.LocalDateTime;
-
 import lombok.Builder;
 import lombok.Data;
 
@@ -14,9 +12,5 @@ public class UnitItemDto {
     private String address;
     private String phone;
     private String email;
-    private Boolean status;
-    private LocalDateTime createdAt;
-    private String createdBy;
-    private LocalDateTime updatedAt;
-    private String updatedBy;
+    private Integer status;
 }

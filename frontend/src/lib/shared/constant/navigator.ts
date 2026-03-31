@@ -16,6 +16,9 @@ export const NAVIGATOR_ENDPOINT = {
     NGUOI_DUNG: {
       BASE_PATH: 'NguoiDung',
     },
+    DON_VI: {
+      BASE_PATH: 'DonVi',
+    },
     VAI_TRO: {
       BASE_PATH: 'VaiTro',
     },

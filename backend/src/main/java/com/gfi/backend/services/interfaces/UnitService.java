@@ -9,6 +9,7 @@ import com.gfi.backend.models.dtos.unit.UnitUpdateRequest;
 
 public interface UnitService {
     PageResponseDto<UnitItemDto, UnitFilterDto> search(PageRequestDto<UnitFilterDto> request);
+    UnitItemDto getById(Long id);
     UnitItemDto create(UnitCreateRequest request);
     UnitItemDto update(Long id, UnitUpdateRequest request);
     void delete(Long id);

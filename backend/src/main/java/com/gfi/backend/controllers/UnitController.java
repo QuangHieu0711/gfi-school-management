@@ -3,6 +3,7 @@ package com.gfi.backend.controllers;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -34,11 +35,18 @@ public class UnitController extends ApiBaseController {
 
     @PostMapping("/search")
     @PreAuthorize("hasRole('ADMIN')")
-    @Operation(summary = "Danh sách đơn vị", description = "Lấy danh sách đơn vị có phân trang và filter.")
+    @Operation(summary = "Danh sach đơn vị", description = "Lấy danh sách đơn vị có phân trang và filter.")
     public ResponseEntity<ApiResult<PageResponseDto<UnitItemDto, UnitFilterDto>>> search(
             @RequestBody(required = false) PageRequestDto<UnitFilterDto> request) {
         PageRequestDto<UnitFilterDto> safeRequest = request == null ? new PageRequestDto<>() : request;
         return executeApiResult(() -> ApiResult.success(unitService.search(safeRequest), "Hiển thị danh sách đơn vị thành công"));
+    }
+
+    @GetMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Chi tiết đơn vị", description = "Lấy thông tin đơn vị theo id.")
+    public ResponseEntity<ApiResult<UnitItemDto>> getById(@PathVariable Long id) {
+        return executeApiResult(() -> ApiResult.success(unitService.getById(id), "Hiển thị chi tiết đơn vị thành công"));
     }
 
     @PostMapping

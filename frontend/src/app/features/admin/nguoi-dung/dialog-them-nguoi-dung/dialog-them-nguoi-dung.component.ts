@@ -9,8 +9,10 @@ import {
   NguoiDungFormRequest,
   NguoiDungResponse,
 } from '@app/model/admin/nguoi-dung.model';
+import { DON_VI_KEY } from '@app/model/admin/don-vi.model';
 import { AppDialogComponent } from '@components/app-dialog/app-dialog.component';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
+import { DonViService } from '@app/service/admin/don-vi.service';
 import { NguoiDungService } from '@app/service/admin/nguoi-dung.service';
 import { ID_TYPE } from '@model/response.model';
 import { sha256 } from '@utils/utils';
@@ -24,6 +26,9 @@ import { HttpErrorResponse } from '@angular/common/http';
   imports: [...MATERIAL_MODULE, ...FORM_CONTROL_MODULE, AppDialogComponent],
 })
 export class DialogThemNguoiDungComponent extends ComponentBaseAbstract {
+  private readonly optionPageSize = 1000;
+  private readonly firstPage = 1;
+
   $formItem: FormType[] = NGUOI_DUNG_FORM();
   key = NGUOI_DUNG_KEY;
   permissionUrl = '/Admin/NguoiDung';
@@ -34,6 +39,7 @@ export class DialogThemNguoiDungComponent extends ComponentBaseAbstract {
     protected override injector: Injector,
     private readonly dialogRef: MatDialogRef<DialogThemNguoiDungComponent>,
     private readonly nguoiDungService: NguoiDungService,
+    private readonly donViService: DonViService,
     public permission: PermissionService,
     @Inject(MAT_DIALOG_DATA)
     public data: { type: TYPE_FORM_KEY; id?: ID_TYPE } = {
@@ -46,6 +52,22 @@ export class DialogThemNguoiDungComponent extends ComponentBaseAbstract {
   }
 
   protected override componentInit(): void {
+    this.donViService
+      .filter({
+        pageSize: this.optionPageSize,
+        pageNow: this.firstPage,
+        filter: {},
+      })
+      .subscribe(({ data }) => {
+        const items = data.items ?? data.data ?? [];
+
+        this.findFormControl(this.$formItem, NGUOI_DUNG_KEY.UNITID).options =
+          items.map((item) => ({
+            value: item[DON_VI_KEY.CODE],
+            label: `${item[DON_VI_KEY.CODE]} - ${item[DON_VI_KEY.NAME]}`,
+          }));
+      });
+
     switch (this.data.type) {
       case this.TYPE_FORM.UPDATE:
         this.form.get(NGUOI_DUNG_KEY.TEN_TAI_KHOAN)!.disable();

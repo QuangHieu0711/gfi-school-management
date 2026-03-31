@@ -8,30 +8,30 @@ import { ComponentBaseAbstract } from '@layout';
 import { FORM_CONTROL_MODULE, MATERIAL_MODULE } from '@modules';
 
 import {
-  VAI_TRO_FORM,
-  VAI_TRO_KEY,
-  VaiTroFormRequest,
-  VaiTroResponse,
-} from '@app/model/admin/vai-tro.model';
-import { VaiTroService } from '@app/service/admin/vai-tro.service';
+  DON_VI_FORM,
+  DON_VI_KEY,
+  DonViFormRequest,
+  DonViResponse,
+} from '@app/model/admin/don-vi.model';
+import { DonViService } from '@app/service/admin/don-vi.service';
 
 @Component({
-  selector: 'dialog-vai-tro',
-  templateUrl: './dialog-vai-tro.component.html',
+  selector: 'dialog-don-vi',
+  templateUrl: './dialog-don-vi.component.html',
   imports: [...MATERIAL_MODULE, ...FORM_CONTROL_MODULE, AppDialogComponent],
 })
-export class DialogVaiTroComponent extends ComponentBaseAbstract {
-  $formItem: FormType[] = VAI_TRO_FORM;
-  key = VAI_TRO_KEY;
+export class DialogDonViComponent extends ComponentBaseAbstract {
+  $formItem: FormType[] = DON_VI_FORM;
+  key = DON_VI_KEY;
   title = '';
-  currentData: VaiTroResponse | null = null;
+  currentData: DonViResponse | null = null;
 
   constructor(
     protected override injector: Injector,
-    private readonly dialogRef: MatDialogRef<DialogVaiTroComponent>,
-    private readonly vaiTroService: VaiTroService,
+    private readonly dialogRef: MatDialogRef<DialogDonViComponent>,
+    private readonly donViService: DonViService,
     @Inject(MAT_DIALOG_DATA)
-    public data: { type: TYPE_FORM_KEY; id?: ID_TYPE; data?: VaiTroResponse } = {
+    public data: { type: TYPE_FORM_KEY; id?: ID_TYPE; data?: DonViResponse } = {
       type: TYPE_FORM.CREATE,
     }
   ) {
@@ -42,25 +42,24 @@ export class DialogVaiTroComponent extends ComponentBaseAbstract {
   protected override componentInit(): void {
     switch (this.data.type) {
       case this.TYPE_FORM.UPDATE:
-        this.title = 'Chỉnh sửa vai trò';
+        this.title = 'Chỉnh sửa đơn vị';
         break;
       case this.TYPE_FORM.DETAIL:
-        this.title = 'Chi tiết vai trò';
+        this.title = 'Chi tiết đơn vị';
         this.form.disable();
         break;
       default:
-        this.title = 'Thêm mới vai trò';
+        this.title = 'Thêm mới đơn vị';
         break;
     }
 
-    if (this.data.type !== this.TYPE_FORM.CREATE && this.data.data) {
-      this.currentData = this.data.data;
-      this.form.patchValue(this.data.data);
+    if (this.data.type !== this.TYPE_FORM.CREATE && this.data.id != null) {
+      this.getDetail(this.data.id);
     }
   }
 
   onSubmit() {
-    const payload = this.form.getRawValue() as VaiTroFormRequest;
+    const payload = this.form.getRawValue() as DonViFormRequest;
 
     if (this.data.type === TYPE_FORM.CREATE) {
       this.handleCreate(payload);
@@ -72,12 +71,12 @@ export class DialogVaiTroComponent extends ComponentBaseAbstract {
 
   switchUpdate() {
     this.form.enable();
-    this.title = 'Chỉnh sửa vai trò';
+    this.title = 'Chỉnh sửa đơn vị';
     this.data.type = this.TYPE_FORM.UPDATE;
   }
 
-  private handleCreate(payload: VaiTroFormRequest) {
-    this.vaiTroService.create(payload).subscribe({
+  private handleCreate(payload: DonViFormRequest) {
+    this.donViService.create(payload).subscribe({
       next: () => {
         this.toastr.success('Lưu thành công', 'Thành công');
         this.dialogRef.close(true);
@@ -91,8 +90,8 @@ export class DialogVaiTroComponent extends ComponentBaseAbstract {
     });
   }
 
-  private handleUpdate(payload: VaiTroFormRequest) {
-    this.vaiTroService.update(this.data.id!, payload).subscribe({
+  private handleUpdate(payload: DonViFormRequest) {
+    this.donViService.update(this.data.id!, payload).subscribe({
       next: () => {
         this.toastr.success('Cập nhật thành công', 'Thành công');
         this.dialogRef.close(true);
@@ -105,6 +104,13 @@ export class DialogVaiTroComponent extends ComponentBaseAbstract {
           'Thất bại'
         );
       },
+    });
+  }
+
+  private getDetail(id: ID_TYPE) {
+    this.donViService.getById(id).subscribe(({ data }) => {
+      this.currentData = data;
+      this.form.patchValue(data);
     });
   }
 }

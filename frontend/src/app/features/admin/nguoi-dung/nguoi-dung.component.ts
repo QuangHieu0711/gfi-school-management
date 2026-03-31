@@ -16,7 +16,9 @@ import {
   NGUOI_DUNG_KEY,
   NguoiDungResponse,
 } from '@app/model/admin/nguoi-dung.model';
+import { DON_VI_KEY } from '@app/model/admin/don-vi.model';
 import { DialogThemNguoiDungComponent } from './dialog-them-nguoi-dung/dialog-them-nguoi-dung.component';
+import { DonViService } from '@app/service/admin/don-vi.service';
 import { NguoiDungService } from '@app/service/admin/nguoi-dung.service';
 import { filter, take } from 'rxjs';
 import { IconComponent } from '@components/app-icon/app-icon.component';
@@ -37,6 +39,9 @@ import { PermissionService } from './../../../../lib/core/services/permission.se
   ],
 })
 export class NguoiDungComponent extends ComponentBaseAbstract {
+  private readonly optionPageSize = 1000;
+  private readonly firstPage = 1;
+
   @ViewChild('tenTaiKhoanTpl', { static: true })
   tenTaiKhoanTpl!: TemplateRef<unknown>;
   permissionUrl = '/Admin/NguoiDung';
@@ -77,6 +82,7 @@ export class NguoiDungComponent extends ComponentBaseAbstract {
   constructor(
     protected override injector: Injector,
     private readonly nguoiDungService: NguoiDungService,
+    private readonly donViService: DonViService,
     private readonly authService: AuthService,
     public permission: PermissionService
   ) {
@@ -193,6 +199,21 @@ export class NguoiDungComponent extends ComponentBaseAbstract {
       .subscribe();
 
     this.form = this.itemControl.toFormGroup(this.$formItem);
+    this.donViService
+      .filter({
+        pageSize: this.optionPageSize,
+        pageNow: this.firstPage,
+        filter: {},
+      })
+      .subscribe(({ data }) => {
+        const items = data.items ?? data.data ?? [];
+
+        this.findFormControl(this.$formItem, NGUOI_DUNG_KEY.UNITID).options =
+          items.map((item) => ({
+            value: item[DON_VI_KEY.CODE],
+            label: `${item[DON_VI_KEY.CODE]} - ${item[DON_VI_KEY.NAME]}`,
+          }));
+      });
     this.columns = [
       {
         header: 'STT',
