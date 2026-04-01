@@ -66,6 +66,13 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    public UserItemDto getById(Long id) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new UserMessageException(CommonErrorCode.USER_NOT_FOUND));
+        return toDto(user);
+    }
+
+    @Override
     @Transactional
     public UserItemDto create(UserCreateRequest request) {
         String username = normalize(request.getUsername());
@@ -82,8 +89,10 @@ public class UserServiceImpl implements UserService {
         user.setUsername(username);
         user.setPassword(passwordEncoder.encode(request.getPassword().trim()));
         user.setFullName(normalize(request.getFullName()));
+        user.setEmail(normalizeNullable(request.getEmail()));
         user.setRole(role);
         user.setUnit(unit);
+        user.setStatus(request.getStatus());
         user.setCreatedBy(getCurrentUsername());
 
         return toDto(userRepository.save(user));
@@ -109,8 +118,10 @@ public class UserServiceImpl implements UserService {
 
         user.setUsername(username);
         user.setFullName(normalize(request.getFullName()));
+        user.setEmail(normalizeNullable(request.getEmail()));
         user.setRole(role);
         user.setUnit(unit);
+        user.setStatus(request.getStatus());
         user.setUpdatedBy(getCurrentUsername());
         if (hasText(request.getPassword())) {
             user.setPassword(passwordEncoder.encode(request.getPassword().trim()));
@@ -134,13 +145,19 @@ public class UserServiceImpl implements UserService {
             Join<Object, Object> unitJoin = root.join("unit", JoinType.LEFT);
 
             if (hasText(filter.getFullName())) {
-                predicates.add(cb.like(cb.lower(root.get("fullName")), "%" + filter.getFullName().trim().toLowerCase() + "%"));
+                String keyword = "%" + filter.getFullName().trim().toLowerCase() + "%";
+                predicates.add(cb.or(
+                        cb.like(cb.lower(root.get("username")), keyword),
+                        cb.like(cb.lower(root.get("fullName")), keyword)));
             }
             if (filter.getRoleId() != null) {
                 predicates.add(cb.equal(roleJoin.get("id"), filter.getRoleId()));
             }
             if (filter.getUnitId() != null) {
                 predicates.add(cb.equal(unitJoin.get("id"), filter.getUnitId()));
+            }
+            if (filter.getStatus() != null) {
+                predicates.add(cb.equal(root.get("status"), filter.getStatus()));
             }
 
             return cb.and(predicates.toArray(new Predicate[0]));
@@ -163,20 +180,21 @@ public class UserServiceImpl implements UserService {
         return value == null ? null : value.trim();
     }
 
+    private String normalizeNullable(String value) {
+        return hasText(value) ? value.trim() : null;
+    }
+
     private UserItemDto toDto(User user) {
         return UserItemDto.builder()
                 .id(user.getId())
                 .username(user.getUsername())
                 .fullName(user.getFullName())
+                .email(user.getEmail())
+                .status(user.getStatus())
                 .roleId(user.getRole() == null ? null : user.getRole().getId())
                 .roleName(user.getRole() == null ? null : user.getRole().getRoleName())
                 .unitId(user.getUnit() == null ? null : user.getUnit().getId())
-                .unitCode(user.getUnit() == null ? null : user.getUnit().getCode())
                 .unitName(user.getUnit() == null ? null : user.getUnit().getName())
-                .createdAt(user.getCreatedAt())
-                .createdBy(user.getCreatedBy())
-                .updatedAt(user.getUpdatedAt())
-                .updatedBy(user.getUpdatedBy())
                 .build();
     }
 

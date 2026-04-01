@@ -16,7 +16,13 @@ export enum VAI_TRO_KEY {
 export const VAI_TRO_API_ENDPOINT = {
   BASE_PATH: 'roles',
   FILTER: 'search',
+  OPTIONS: 'options',
 };
+
+export interface VaiTroOptionResponse {
+  id: ID_TYPE;
+  name: string;
+}
 
 export interface VaiTroFilter {
   [VAI_TRO_KEY.ROLE_NAME]?: string;

@@ -1,5 +1,7 @@
 package com.gfi.backend.controllers;
 
+import java.util.List;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -11,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.gfi.backend.models.dtos.common.LookupItemDto;
 import com.gfi.backend.models.dtos.common.PageRequestDto;
 import com.gfi.backend.models.dtos.common.PageResponseDto;
 import com.gfi.backend.models.dtos.unit.UnitCreateRequest;
@@ -40,6 +43,13 @@ public class UnitController extends ApiBaseController {
             @RequestBody(required = false) PageRequestDto<UnitFilterDto> request) {
         PageRequestDto<UnitFilterDto> safeRequest = request == null ? new PageRequestDto<>() : request;
         return executeApiResult(() -> ApiResult.success(unitService.search(safeRequest), "Hiển thị danh sách đơn vị thành công"));
+    }
+
+    @GetMapping("/options")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Danh sách đơn vị cho combobox", description = "Lấy danh sách id và tên đơn vị.")
+    public ResponseEntity<ApiResult<List<LookupItemDto>>> getOptions() {
+        return executeApiResult(() -> ApiResult.success(unitService.getOptions(), "Hiển thị danh sách đơn vị thành công"));
     }
 
     @GetMapping("/{id}")

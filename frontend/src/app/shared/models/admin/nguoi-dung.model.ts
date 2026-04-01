@@ -4,108 +4,92 @@ import { ID_TYPE } from '@model/response.model';
 import { TableDataSource, TableRequest } from '@model/table.model';
 
 export enum NGUOI_DUNG_KEY {
-  STT = 'no',
+  NO = 'no',
   ID = 'id',
-  TEN_NGUOI_DUNG = 'name',
-  TEN_TAI_KHOAN = 'username',
+  FULL_NAME = 'fullName',
+  USERNAME = 'username',
   EMAIL = 'email',
   STATUS = 'status',
-  SDT = 'phone',
-  NHOM_QUYEN = 'nhomQuyen',
-  ROLEID = 'roleId',
-  NHOM_QUYEN_NAME = 'roleName',
-  HO = 'lastName',
-  TEN = 'firstName',
-  MAT_KHAU = 'pwd',
+  PHONE = 'phone',
+  ROLE_ID = 'roleId',
+  ROLE_NAME = 'roleName',
+  PASSWORD = 'password',
   AVATAR = 'avatar',
-  UNITID = 'unitId',
-  TEN_DON_VI = 'unitName',
-  TEN_VIET_TAT = 'shortName',
-  ID_VUNG_MO = 'idVungMo',
-  MA_DON_VI_CHA = 'parentUnitId',
-  ID_LOAI_DON_VI = 'unitTypeId',
+  UNIT_ID = 'unitId',
+  UNIT_NAME = 'unitName',
 }
 
 export const NGUOI_DUNG_API_ENDPOINT = {
-  BASE_PATH: 'account',
-  FILTER: 'filter',
-  FILTER_ALL: 'filter-all',
-  GET_BY_ID: 'get-by-id',
-  CREATE: 'create',
-  UPDATE: 'update',
+  BASE_PATH: 'users',
+  FILTER: 'search',
 };
 
 export interface NguoiDungFilterRequest extends TableRequest {
-  [NGUOI_DUNG_KEY.TEN_NGUOI_DUNG]?: string;
+  pageNow?: number;
+  filter?: {
+    [NGUOI_DUNG_KEY.FULL_NAME]?: string;
+    [NGUOI_DUNG_KEY.ROLE_ID]?: ID_TYPE;
+    [NGUOI_DUNG_KEY.UNIT_ID]?: ID_TYPE | ID_TYPE[];
+    [NGUOI_DUNG_KEY.STATUS]?: number | number[];
+  };
 }
 
 export interface NguoiDungResponse extends TableDataSource {
   [NGUOI_DUNG_KEY.ID]: ID_TYPE;
-  [NGUOI_DUNG_KEY.TEN]?: string;
-  [NGUOI_DUNG_KEY.HO]?: string;
-  [NGUOI_DUNG_KEY.TEN_TAI_KHOAN]?: string;
-  [NGUOI_DUNG_KEY.SDT]?: number;
-  [NGUOI_DUNG_KEY.EMAIL]?: string;
-  [NGUOI_DUNG_KEY.ROLEID]?: string;
-  [NGUOI_DUNG_KEY.NHOM_QUYEN_NAME]?: string;
+  [NGUOI_DUNG_KEY.FULL_NAME]?: string;
+  [NGUOI_DUNG_KEY.USERNAME]?: string;
+  [NGUOI_DUNG_KEY.PHONE]?: number;
+  [NGUOI_DUNG_KEY.EMAIL]?: string | null;
+  [NGUOI_DUNG_KEY.ROLE_ID]?: string;
+  [NGUOI_DUNG_KEY.ROLE_NAME]?: string;
   [NGUOI_DUNG_KEY.AVATAR]?: string;
-  [NGUOI_DUNG_KEY.UNITID]?: ID_TYPE;
-  [NGUOI_DUNG_KEY.TEN_DON_VI]?: string;
-  [NGUOI_DUNG_KEY.TEN_VIET_TAT]?: string;
+  [NGUOI_DUNG_KEY.UNIT_ID]?: ID_TYPE;
+  [NGUOI_DUNG_KEY.UNIT_NAME]?: string;
   [NGUOI_DUNG_KEY.STATUS]: number;
 }
 
 export interface NguoiDungFormRequest {
   [NGUOI_DUNG_KEY.ID]?: ID_TYPE;
-  [NGUOI_DUNG_KEY.TEN]?: string;
-  [NGUOI_DUNG_KEY.HO]?: string;
-  [NGUOI_DUNG_KEY.TEN_TAI_KHOAN]?: string;
+  [NGUOI_DUNG_KEY.FULL_NAME]?: string;
+  [NGUOI_DUNG_KEY.USERNAME]?: string;
   [NGUOI_DUNG_KEY.EMAIL]?: string;
-  [NGUOI_DUNG_KEY.SDT]?: number;
-  [NGUOI_DUNG_KEY.MAT_KHAU]?: string;
-  [NGUOI_DUNG_KEY.ROLEID]?: string;
+  [NGUOI_DUNG_KEY.PHONE]?: number;
+  [NGUOI_DUNG_KEY.PASSWORD]?: string;
+  [NGUOI_DUNG_KEY.ROLE_ID]?: string;
   [NGUOI_DUNG_KEY.AVATAR]?: string;
-  [NGUOI_DUNG_KEY.UNITID]?: ID_TYPE;
+  [NGUOI_DUNG_KEY.UNIT_ID]?: ID_TYPE;
   [NGUOI_DUNG_KEY.STATUS]?: number;
 }
 
 export const NGUOI_DUNG_FORM = (requiredPassword = false) => [
   TEXT_CONTROL({
-    controlName: NGUOI_DUNG_KEY.HO,
-    label: 'Ho',
-    placeholder: 'Ho',
+    controlName: NGUOI_DUNG_KEY.FULL_NAME,
+    label: 'Họ tên',
+    placeholder: 'Họ tên',
     required: true,
-    regex: REGEX.VIETNAMESE_NAME,
+    regex: /^[\p{L}\s]+$/u,
     maxLength: 255,
   }),
   TEXT_CONTROL({
-    controlName: NGUOI_DUNG_KEY.TEN,
-    label: 'Ten',
-    placeholder: 'Ten',
-    required: true,
-    regex: REGEX.VIETNAMESE_NAME,
-    maxLength: 255,
-  }),
-  TEXT_CONTROL({
-    controlName: NGUOI_DUNG_KEY.TEN_TAI_KHOAN,
-    label: 'Ten tai khoan',
-    placeholder: 'Ten tai khoan',
+    controlName: NGUOI_DUNG_KEY.USERNAME,
+    label: 'Tên tài khoản',
+    placeholder: 'Tên tài khoản',
     required: true,
     regex: /^[a-zA-Z0-9!@#$%^&*()_+'";:.,]+$/g,
     maxLength: 255,
   }),
   TEXT_CONTROL({
-    controlName: NGUOI_DUNG_KEY.MAT_KHAU,
-    label: 'Mat khau',
-    placeholder: 'Mat khau',
+    controlName: NGUOI_DUNG_KEY.PASSWORD,
+    label: 'Mật khẩu',
+    placeholder: 'Mật khẩu',
     required: requiredPassword,
     type: 'password',
     regex: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_])[A-Za-z\d\W_]{8,}$/,
   }),
   TEXT_CONTROL({
-    controlName: NGUOI_DUNG_KEY.SDT,
-    label: 'So dien thoai',
-    placeholder: 'So dien thoai',
+    controlName: NGUOI_DUNG_KEY.PHONE,
+    label: 'Số điện thoại',
+    placeholder: 'Số điện thoại',
     type: 'tel',
     required: true,
     regex: /^[0-9]+$/g,
@@ -121,30 +105,26 @@ export const NGUOI_DUNG_FORM = (requiredPassword = false) => [
     maxLength: 255,
   }),
   SELECT_CONTROL({
-    controlName: NGUOI_DUNG_KEY.UNITID,
-    label: 'Don vi',
-    placeholder: 'Don vi',
+    controlName: NGUOI_DUNG_KEY.UNIT_ID,
+    label: 'Đơn vị',
+    placeholder: 'Đơn vị',
     required: true,
   }),
   SELECT_CONTROL({
     controlName: NGUOI_DUNG_KEY.STATUS,
-    label: 'Trang thai',
-    placeholder: 'Trang thai',
+    label: 'Trạng thái',
+    placeholder: 'Trạng thái',
     required: true,
     listOption: [
-      { value: 1, label: 'Hoat dong' },
-      { value: 0, label: 'Khong hoat dong' },
+      { value: 1, label: 'Hoạt động' },
+      { value: 0, label: 'Không hoạt động' },
     ],
   }),
   SELECT_CONTROL({
-    controlName: NGUOI_DUNG_KEY.ROLEID,
-    label: 'Nhom quyen',
-    placeholder: 'Nhom quyen',
+    controlName: NGUOI_DUNG_KEY.ROLE_ID,
+    label: 'Vai trò',
+    placeholder: 'Vai trò',
     required: true,
-    listOption: [
-      { value: 'admin', label: 'Quan tri vien' },
-      { value: 'editor', label: 'Bien tap vien' },
-      { value: 'viewer', label: 'Nguoi xem' },
-    ],
+    listOption: [],
   }),
 ];

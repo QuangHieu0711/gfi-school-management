@@ -9,6 +9,7 @@ import {
   DON_VI_API_ENDPOINT,
   DonViFilterRequest,
   DonViFormRequest,
+  DonViOptionResponse,
   DonViResponse,
 } from '@app/model/admin/don-vi.model';
 
@@ -34,6 +35,12 @@ export class DonViService {
     return this.http.get<IResponse<DonViResponse>>(`${this.baseUrl}/${id}`, {
       context: this.silentContext,
     });
+  }
+
+  getOptions() {
+    return this.http.get<IResponse<DonViOptionResponse[]>>(
+      `${this.baseUrl}/${DON_VI_API_ENDPOINT.OPTIONS}`
+    );
   }
 
   create(payload: DonViFormRequest) {

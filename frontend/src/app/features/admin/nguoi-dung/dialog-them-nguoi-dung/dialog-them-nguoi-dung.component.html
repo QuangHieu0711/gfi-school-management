@@ -7,33 +7,29 @@
     (submitEvent)="onSubmit()">
     <div class="flex flex-col gap-2">
       <app-text-control
-        [item]="findFormControl($formItem, key.HO)"
+        [item]="findFormControl($formItem, key.FULL_NAME)"
         [form]="form"></app-text-control>
       <app-text-control
-        [item]="findFormControl($formItem, key.TEN)"
-        [form]="form"></app-text-control>
-      <app-text-control
-        [item]="findFormControl($formItem, key.TEN_TAI_KHOAN)"
+        [item]="findFormControl($formItem, key.USERNAME)"
         [form]="form"></app-text-control>
       @if (data.type !== TYPE_FORM.DETAIL) {
         <app-text-control
           (mouseenter)="onPasswordMouseEnter()"
           (mouseleave)="onPasswordMouseLeave()"
-          [item]="findFormControl($formItem, key.MAT_KHAU)"
+          [item]="findFormControl($formItem, key.PASSWORD)"
           [form]="form"></app-text-control>
-
       }
       <app-text-control
-        [item]="findFormControl($formItem, key.SDT)"
+        [item]="findFormControl($formItem, key.PHONE)"
         [form]="form"></app-text-control>
       <app-text-control
         [item]="findFormControl($formItem, key.EMAIL)"
         [form]="form"></app-text-control>
       <app-select-control
-        [item]="findFormControl($formItem, key.UNITID)"
+        [item]="findFormControl($formItem, key.UNIT_ID)"
         [form]="form"></app-select-control>
       <app-select-control
-        [item]="findFormControl($formItem, key.ROLEID)"
+        [item]="findFormControl($formItem, key.ROLE_ID)"
         [form]="form"></app-select-control>
       <app-select-control
         [item]="findFormControl($formItem, key.STATUS)"

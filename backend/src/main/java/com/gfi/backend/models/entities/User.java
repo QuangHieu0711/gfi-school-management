@@ -37,6 +37,9 @@ public class User {
     @Column(nullable = false)
     private String fullName;
 
+    @Column(length = 100)
+    private String email;
+
     @ManyToOne
     @JoinColumn(name = "role_id", nullable = false, foreignKey = @ForeignKey(name = "fk_users_roles"))
     private Role role;
@@ -44,6 +47,9 @@ public class User {
     @ManyToOne
     @JoinColumn(name = "unit_id", nullable = false, foreignKey = @ForeignKey(name = "fk_users_units"))
     private Unit unit;
+
+    @Column
+    private Integer status;
 
     @Column
     private LocalDateTime createdAt;
@@ -61,6 +67,9 @@ public class User {
     public void prePersist() {
         if (createdAt == null) {
             createdAt = LocalDateTime.now();
+        }
+        if (status == null) {
+            status = 1;
         }
     }
 

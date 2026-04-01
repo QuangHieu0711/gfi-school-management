@@ -9,6 +9,7 @@ import com.gfi.backend.models.dtos.user.UserUpdateRequest;
 
 public interface UserService {
     PageResponseDto<UserItemDto, UserFilterDto> search(PageRequestDto<UserFilterDto> request);
+    UserItemDto getById(Long id);
     UserItemDto create(UserCreateRequest request);
     UserItemDto update(Long id, UserUpdateRequest request);
     void delete(Long id);

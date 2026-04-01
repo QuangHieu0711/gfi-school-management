@@ -1,5 +1,7 @@
 package com.gfi.backend.controllers;
 
+import java.util.List;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -11,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.gfi.backend.models.dtos.common.LookupItemDto;
 import com.gfi.backend.models.dtos.common.PageRequestDto;
 import com.gfi.backend.models.dtos.common.PageResponseDto;
 import com.gfi.backend.models.dtos.role.RoleCreateRequest;
@@ -35,18 +38,25 @@ public class RoleController extends ApiBaseController {
 
     @PostMapping("/search")
     @PreAuthorize("hasRole('ADMIN')")
-    @Operation(summary = "Danh sách vai trò", description = "Lấy danh sach vai trò có phân trang và filter.")
+    @Operation(summary = "Danh sách vai trò", description = "Lay danh sach vai trò co phan trang va filter.")
     public ResponseEntity<ApiResult<PageResponseDto<RoleItemDto, RoleFilterDto>>> search(
             @RequestBody(required = false) PageRequestDto<RoleFilterDto> request) {
         PageRequestDto<RoleFilterDto> safeRequest = request == null ? new PageRequestDto<>() : request;
-        return executeApiResult(() -> ApiResult.success(roleService.search(safeRequest), "Hiển thị danh sách vai trò thành công"));
+        return executeApiResult(() -> ApiResult.success(roleService.search(safeRequest), "Hien thi danh sach vai trò thanh cong"));
+    }
+
+    @GetMapping("/options")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Danh sach vai trò cho combobox", description = "Lấy danh sách id và tên vai trò.")
+    public ResponseEntity<ApiResult<List<LookupItemDto>>> getOptions() {
+        return executeApiResult(() -> ApiResult.success(roleService.getOptions(), "Hiển thi danh sach vai trò thành công"));
     }
 
     @GetMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Chi tiết vai trò", description = "Lấy thông tin vai trò theo id.")
     public ResponseEntity<ApiResult<RoleItemDto>> getById(@PathVariable Long id) {
-        return executeApiResult(() -> ApiResult.success(roleService.getById(id), "Hiển thị chi tiết vai trò thành công"));
+        return executeApiResult(() -> ApiResult.success(roleService.getById(id), "Hiển thi chi tiet vai trò thành công"));
     }
 
     @PostMapping
@@ -69,7 +79,7 @@ public class RoleController extends ApiBaseController {
     public ResponseEntity<ApiResult<String>> delete(@PathVariable Long id) {
         return executeApiResult(() -> {
             roleService.delete(id);
-            return ApiResult.success(null, "Xóa role thành công");
+            return ApiResult.success(null, "Xóa vai trò thành công");
         });
     }
 }

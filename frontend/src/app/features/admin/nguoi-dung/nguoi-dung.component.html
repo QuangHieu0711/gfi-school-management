@@ -72,11 +72,14 @@
       (resetEvent)="resetFilter()">
       <div class="flex gap-2 items-center">
         <app-text-control
-          [item]="findFormControl($formItem, key.TEN_NGUOI_DUNG)"
+          [item]="findFormControl($formItem, key.FULL_NAME)"
           [form]="form"></app-text-control>
         <app-multiselect-control
-          [item]="findFormControl($formItem, key.UNITID)"
+          [item]="findFormControl($formItem, key.UNIT_ID)"
           [form]="form"></app-multiselect-control>
+        <app-select-control
+          [item]="findFormControl($formItem, key.ROLE_ID)"
+          [form]="form"></app-select-control>
         <app-select-control
           [item]="findFormControl($formItem, key.STATUS)"
           [form]="form"></app-select-control>
@@ -106,7 +109,7 @@
 </app-table>
 
 <ng-template
-  #tenTaiKhoanTpl
+  #usernameTpl
   let-row>
   <a
     tabindex="0"
@@ -115,6 +118,19 @@
     (keydown.enter)="
       $event.stopPropagation(); openDialog(TYPE_FORM.DETAIL, row)
     ">
-    {{ row?.[key.TEN_TAI_KHOAN] }}
+    {{ row?.[key.USERNAME] }}
   </a>
+</ng-template>
+
+<ng-template
+  #statusTpl
+  let-row>
+  <div class="status-cell">
+    <span
+      class="status-pill"
+      [class.is-active]="row?.[key.STATUS] === 1"
+      [class.is-inactive]="row?.[key.STATUS] !== 1">
+      {{ row?.[key.STATUS] === 1 ? 'Hoạt động' : 'Không hoạt động' }}
+    </span>
+  </div>
 </ng-template>

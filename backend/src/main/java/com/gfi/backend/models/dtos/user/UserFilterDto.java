@@ -7,4 +7,5 @@ public class UserFilterDto {
     private String fullName;
     private Long roleId;
     private Long unitId;
+    private Integer status;
 }

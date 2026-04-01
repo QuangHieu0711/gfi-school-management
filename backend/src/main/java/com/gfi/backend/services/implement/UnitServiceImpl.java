@@ -6,6 +6,7 @@ import java.util.List;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -13,6 +14,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.gfi.backend.controllers.exceptions.UserMessageException;
+import com.gfi.backend.models.dtos.common.LookupItemDto;
 import com.gfi.backend.models.dtos.common.PageRequestDto;
 import com.gfi.backend.models.dtos.common.PageResponseDto;
 import com.gfi.backend.models.dtos.unit.UnitCreateRequest;
@@ -55,6 +57,16 @@ public class UnitServiceImpl implements UnitService {
                 .recordTotal(page.getTotalElements())
                 .items(items)
                 .build();
+    }
+
+    @Override
+    public List<LookupItemDto> getOptions() {
+        return unitRepository.findAll(Sort.by(Sort.Direction.ASC, "name")).stream()
+                .map(unit -> LookupItemDto.builder()
+                        .id(unit.getId())
+                        .name(unit.getName())
+                        .build())
+                .toList();
     }
 
     @Override

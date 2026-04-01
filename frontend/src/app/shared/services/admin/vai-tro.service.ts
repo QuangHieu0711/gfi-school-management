@@ -9,6 +9,7 @@ import {
   VAI_TRO_API_ENDPOINT,
   VaiTroFilterRequest,
   VaiTroFormRequest,
+  VaiTroOptionResponse,
   VaiTroResponse,
 } from '@app/model/admin/vai-tro.model';
 
@@ -34,6 +35,12 @@ export class VaiTroService {
     return this.http.get<IResponse<VaiTroResponse>>(`${this.baseUrl}/${id}`, {
       context: this.silentContext,
     });
+  }
+
+  getOptions() {
+    return this.http.get<IResponse<VaiTroOptionResponse[]>>(
+      `${this.baseUrl}/${VAI_TRO_API_ENDPOINT.OPTIONS}`
+    );
   }
 
   create(payload: VaiTroFormRequest) {

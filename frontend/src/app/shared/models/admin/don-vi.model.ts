@@ -17,7 +17,13 @@ export enum DON_VI_KEY {
 export const DON_VI_API_ENDPOINT = {
   BASE_PATH: 'units',
   FILTER: 'search',
+  OPTIONS: 'options',
 };
+
+export interface DonViOptionResponse {
+  id: ID_TYPE;
+  name: string;
+}
 
 export interface DonViFilter {
   unitName?: string;
