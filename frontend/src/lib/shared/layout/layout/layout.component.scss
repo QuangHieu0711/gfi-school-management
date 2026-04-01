@@ -135,15 +135,21 @@
 }
 
 .tree-wrapper {
+  display: flex;
+  flex-direction: column;
   width: clamp(280px, 22vw, 344px);
   min-width: clamp(280px, 22vw, 344px);
   box-shadow: rgba(149, 157, 165, 0.2) 0px 8px 24px;
   background: #ffffff;
   border-right: 1px solid rgba(0, 31, 45, 0.08);
   overflow: hidden;
+  transition:
+    width 0.22s ease,
+    min-width 0.22s ease;
 
   .tree-inner-navigator {
-    height: 100%;
+    flex: 1 1 auto;
+    min-height: 0;
     transform: translateX(0);
     background: #ffffff;
     overflow-x: hidden;
@@ -165,6 +171,31 @@
       background-clip: padding-box;
     }
   }
+
+  .sidebar-footer {
+    display: flex;
+    justify-content: flex-end;
+    padding: 12px;
+    border-top: 1px solid rgba(0, 31, 45, 0.08);
+    background: #ffffff;
+  }
+
+  .sidebar-toggle {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    color: #123746 !important;
+    background: #f3f9fa !important;
+  }
+}
+
+.tree-wrapper-collapsed {
+  width: 88px;
+  min-width: 88px;
+
+  .sidebar-footer {
+    justify-content: center;
+  }
 }
 
 ::ng-deep {
@@ -178,6 +209,18 @@
     transition:
       background-color 0.2s ease,
       color 0.2s ease;
+  }
+
+  .tree-link-collapsed {
+    justify-content: center;
+    gap: 0 !important;
+  }
+
+  .node-text-collapsed {
+    width: 0 !important;
+    max-width: 0 !important;
+    overflow: hidden !important;
+    opacity: 0;
   }
 
   .tree-node-row:has(.tree-link-active) {
@@ -210,11 +253,48 @@
   .active-nav:active {
     color: #2f8d98 !important;
   }
+
+  .tree-wrapper-collapsed {
+    app-tree {
+      .tree-node-row {
+        min-height: 52px;
+        justify-content: center;
+        padding: 0 !important;
+      }
+
+      .tree-node-label {
+        flex: 0 0 auto;
+      }
+
+      mat-tree-node[aria-level='1'],
+      mat-tree-node[aria-level='2'],
+      mat-tree-node[aria-level='3'],
+      mat-tree-node[aria-level='4'],
+      mat-tree-node[aria-level='5'],
+      mat-tree-node[aria-level='6'],
+      mat-tree-node[aria-level='7'],
+      mat-tree-node[aria-level='8'],
+      mat-tree-node[aria-level='9'] {
+        .tree-node-row {
+          padding-left: 0 !important;
+        }
+      }
+
+      button[mat-icon-button] {
+        display: none !important;
+      }
+    }
+  }
 }
 
 @media (max-width: 1280px) {
   .tree-wrapper {
     width: 296px;
     min-width: 296px;
+  }
+
+  .tree-wrapper-collapsed {
+    width: 88px;
+    min-width: 88px;
   }
 }

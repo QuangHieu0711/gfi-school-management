@@ -164,7 +164,9 @@ import { ICurrentUser, UserRole } from '@model/auth.model';
   ],
 })
 export class LayoutComponent extends ComponentBaseAbstract {
+  private readonly SIDEBAR_COLLAPSED_KEY = 'layout.sidebar.collapsed';
   isExpanded = true;
+  isSidebarCollapsed = false;
   menu: ISidebarItem[] = [];
   treeDataSource: TreeNode[] = [];
   userInfo = getObsValue(this.store.select((state) => state.userInfo));
@@ -185,6 +187,7 @@ export class LayoutComponent extends ComponentBaseAbstract {
   }
 
   protected override componentInit(): void {
+    this.restoreSidebarState();
     this.getUserInfo();
     this.getnavigator();
     this.bindSidebarLifecycleByRoute();
@@ -251,6 +254,20 @@ export class LayoutComponent extends ComponentBaseAbstract {
   private clearSidebar(): void {
     // không xóa dữ liệu navigator
     // chỉ để UI tự xử lý expand/collapse
+  }
+
+  toggleSidebarCollapsed(): void {
+    this.isSidebarCollapsed = !this.isSidebarCollapsed;
+    localStorage.setItem(
+      this.SIDEBAR_COLLAPSED_KEY,
+      String(this.isSidebarCollapsed)
+    );
+    this.cdRef.markForCheck();
+  }
+
+  private restoreSidebarState(): void {
+    this.isSidebarCollapsed =
+      localStorage.getItem(this.SIDEBAR_COLLAPSED_KEY) === 'true';
   }
 
   getnavigator(): void {

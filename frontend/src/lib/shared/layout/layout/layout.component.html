@@ -7,12 +7,26 @@
     <mat-sidenav-content>
       <div class="clear-margin-collapsing h-full">
         <div class="flex h-full">
-          <div class="tree-wrapper relative h-full">
+          <div
+            class="tree-wrapper relative h-full"
+            [class.tree-wrapper-collapsed]="isSidebarCollapsed">
             <div
-              class="tree-inner-navigator h-full w-full px-1 py-6 overflow-auto">
+              class="tree-inner-navigator h-full w-full px-1 py-6 overflow-auto"
+              [class.tree-inner-navigator-collapsed]="isSidebarCollapsed">
               <app-tree
                 [dataSource]="treeDataSource"
                 [labelTemplate]="labelRef" />
+            </div>
+            <div class="sidebar-footer">
+              <button
+                type="button"
+                matIconButton
+                class="sidebar-toggle"
+                [matTooltip]="isSidebarCollapsed ? 'Mở rộng menu' : 'Thu gọn menu'"
+                matTooltipPosition="right"
+                (click)="toggleSidebarCollapsed()">
+                <app-icon [icon]="isSidebarCollapsed ? 'menu_open' : 'menu'" />
+              </button>
             </div>
           </div>
           <div
@@ -31,7 +45,10 @@
   @if (data.url) {
     <a
       class="flex items-center gap-2 nav-link cursor-pointer tree-link"
+      [class.tree-link-collapsed]="isSidebarCollapsed"
       [class.tree-link-active]="isTreeNodeActive(data)"
+      [matTooltip]="isSidebarCollapsed ? data.name : ''"
+      matTooltipPosition="right"
       tabindex="0"
       (click)="$event.stopPropagation(); $event.preventDefault(); goToUrl(data)"
       (keyup)="
@@ -42,24 +59,27 @@
         [icon]="data.icon" />
       <span
         class="node-text text-[#001F2D] font-semibold"
+        [class.node-text-collapsed]="isSidebarCollapsed"
         [class.active-nav]="isTreeNodeActive(data)"
-        [matTooltip]="data.name"
-        matTooltipPosition="right">
+        >
         {{ data.name }}
       </span>
     </a>
   } @else {
     <span
       class="cursor-pointer flex items-center gap-2 nav-link tree-link"
+      [class.tree-link-collapsed]="isSidebarCollapsed"
+      [matTooltip]="isSidebarCollapsed ? data.name : ''"
+      matTooltipPosition="right"
       [class.tree-link-active]="isTreeNodeActive(data)">
       <app-icon
         iconClass="grow shrink-0"
         [icon]="data.icon" />
       <span
         class="node-text text-[#001F2D] font-semibold"
+        [class.node-text-collapsed]="isSidebarCollapsed"
         [class.active-nav]="isTreeNodeActive(data)"
-        [matTooltip]="data.name"
-        matTooltipPosition="right">
+        >
         {{ data.name }}
       </span>
     </span>
