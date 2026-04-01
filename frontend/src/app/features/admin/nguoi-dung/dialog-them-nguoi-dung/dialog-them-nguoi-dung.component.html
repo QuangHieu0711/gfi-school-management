@@ -12,7 +12,7 @@
       <app-text-control
         [item]="findFormControl($formItem, key.USERNAME)"
         [form]="form"></app-text-control>
-      @if (data.type !== TYPE_FORM.DETAIL) {
+      @if (data.type === TYPE_FORM.CREATE) {
         <app-text-control
           (mouseenter)="onPasswordMouseEnter()"
           (mouseleave)="onPasswordMouseLeave()"
@@ -46,7 +46,7 @@
     </button>
     @if (data.type !== TYPE_FORM.DETAIL) {
       <button
-        color="info"
+        color="primary"
         matButton="filled"
         (click)="formTpl.submit()">
         Lưu
@@ -54,7 +54,7 @@
     }
     @if (data.type === TYPE_FORM.DETAIL && permission.canEdit(permissionUrl)) {
       <button
-        color="info"
+        color="primary"
         matButton="filled"
         (click)="switchUpdate()">
         Chỉnh sửa

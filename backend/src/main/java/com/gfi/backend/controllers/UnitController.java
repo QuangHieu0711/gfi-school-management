@@ -38,7 +38,7 @@ public class UnitController extends ApiBaseController {
 
     @PostMapping("/search")
     @PreAuthorize("hasRole('ADMIN')")
-    @Operation(summary = "Danh sach đơn vị", description = "Lấy danh sách đơn vị có phân trang và filter.")
+    @Operation(summary = "Danh sách đơn vị", description = "Lấy danh sách đơn vị có phân trang và filter.")
     public ResponseEntity<ApiResult<PageResponseDto<UnitItemDto, UnitFilterDto>>> search(
             @RequestBody(required = false) PageRequestDto<UnitFilterDto> request) {
         PageRequestDto<UnitFilterDto> safeRequest = request == null ? new PageRequestDto<>() : request;

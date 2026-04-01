@@ -56,17 +56,19 @@ export class DialogThemNguoiDungComponent extends ComponentBaseAbstract {
       units: this.donViService.getOptions(),
       roles: this.vaiTroService.getOptions(),
     }).subscribe(({ units, roles }) => {
-      this.findFormControl(this.$formItem, NGUOI_DUNG_KEY.UNIT_ID).options =
-        (units.data ?? []).map((item) => ({
-          value: item.id,
-          label: item.name,
-        }));
+      this.findFormControl(this.$formItem, NGUOI_DUNG_KEY.UNIT_ID).options = (
+        units.data ?? []
+      ).map((item) => ({
+        value: item.id,
+        label: item.name,
+      }));
 
-      this.findFormControl(this.$formItem, NGUOI_DUNG_KEY.ROLE_ID).options =
-        (roles.data ?? []).map((item) => ({
-          value: item.id,
-          label: item.name,
-        }));
+      this.findFormControl(this.$formItem, NGUOI_DUNG_KEY.ROLE_ID).options = (
+        roles.data ?? []
+      ).map((item) => ({
+        value: item.id,
+        label: item.name,
+      }));
     });
 
     switch (this.data.type) {
@@ -105,6 +107,8 @@ export class DialogThemNguoiDungComponent extends ComponentBaseAbstract {
     const payload: NguoiDungFormRequest = {
       [NGUOI_DUNG_KEY.USERNAME]: formValue[NGUOI_DUNG_KEY.USERNAME],
       [NGUOI_DUNG_KEY.FULL_NAME]: formValue[NGUOI_DUNG_KEY.FULL_NAME],
+      [NGUOI_DUNG_KEY.EMAIL]: formValue[NGUOI_DUNG_KEY.EMAIL],
+      [NGUOI_DUNG_KEY.PHONE]: formValue[NGUOI_DUNG_KEY.PHONE],
       [NGUOI_DUNG_KEY.ROLE_ID]: formValue[NGUOI_DUNG_KEY.ROLE_ID],
       [NGUOI_DUNG_KEY.UNIT_ID]: formValue[NGUOI_DUNG_KEY.UNIT_ID],
       [NGUOI_DUNG_KEY.STATUS]: formValue[NGUOI_DUNG_KEY.STATUS],

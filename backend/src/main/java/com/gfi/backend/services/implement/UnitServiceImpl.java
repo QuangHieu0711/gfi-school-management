@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
@@ -26,6 +25,7 @@ import com.gfi.backend.models.global.CommonErrorCode;
 import com.gfi.backend.repositories.UnitRepository;
 import com.gfi.backend.repositories.UserRepository;
 import com.gfi.backend.services.interfaces.UnitService;
+import com.gfi.backend.utils.PageableUtils;
 
 import jakarta.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;
@@ -42,7 +42,7 @@ public class UnitServiceImpl implements UnitService {
         UnitFilterDto filter = request.getFilter() == null ? new UnitFilterDto() : request.getFilter();
         int pageSize = normalizePageSize(request.getPageSize());
         int pageNow = normalizePageNow(request.getPageNow());
-        Pageable pageable = PageRequest.of(pageNow - 1, pageSize);
+        Pageable pageable = PageableUtils.newestFirst(pageNow, pageSize);
 
         Page<Unit> page = unitRepository.findAll(buildSpecification(filter), pageable);
         List<UnitItemDto> items = page.getContent().stream()

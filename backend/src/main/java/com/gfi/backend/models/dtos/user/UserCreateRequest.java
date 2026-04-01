@@ -3,6 +3,7 @@ package com.gfi.backend.models.dtos.user;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 
@@ -24,7 +25,11 @@ public class UserCreateRequest {
     @Size(max = 100, message = "Email toi da 100 ky tu")
     private String email;
 
-    @NotNull(message = "Role khong duoc de trong")
+    @Pattern(regexp = "^[0-9]*$", message = "So dien thoai chi duoc chua chu so")
+    @Size(max = 50, message = "So dien thoai toi da 50 ky tu")
+    private String phone;
+
+    @NotNull(message = "Vai tro khong duoc de trong")
     private Long roleId;
 
     @NotNull(message = "Don vi khong duoc de trong")

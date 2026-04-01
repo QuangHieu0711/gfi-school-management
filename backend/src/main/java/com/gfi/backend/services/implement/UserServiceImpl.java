@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.core.Authentication;
@@ -28,6 +27,7 @@ import com.gfi.backend.repositories.RoleRepository;
 import com.gfi.backend.repositories.UnitRepository;
 import com.gfi.backend.repositories.UserRepository;
 import com.gfi.backend.services.interfaces.UserService;
+import com.gfi.backend.utils.PageableUtils;
 
 import jakarta.persistence.criteria.Join;
 import jakarta.persistence.criteria.JoinType;
@@ -48,7 +48,7 @@ public class UserServiceImpl implements UserService {
         UserFilterDto filter = request.getFilter() == null ? new UserFilterDto() : request.getFilter();
         int pageSize = normalizePageSize(request.getPageSize());
         int pageNow = normalizePageNow(request.getPageNow());
-        Pageable pageable = PageRequest.of(pageNow - 1, pageSize);
+        Pageable pageable = PageableUtils.newestFirst(pageNow, pageSize);
 
         Page<User> page = userRepository.findAll(buildSpecification(filter), pageable);
         List<UserItemDto> items = page.getContent().stream()
@@ -90,6 +90,7 @@ public class UserServiceImpl implements UserService {
         user.setPassword(passwordEncoder.encode(request.getPassword().trim()));
         user.setFullName(normalize(request.getFullName()));
         user.setEmail(normalizeNullable(request.getEmail()));
+        user.setPhone(normalizeNullable(request.getPhone()));
         user.setRole(role);
         user.setUnit(unit);
         user.setStatus(request.getStatus());
@@ -119,6 +120,7 @@ public class UserServiceImpl implements UserService {
         user.setUsername(username);
         user.setFullName(normalize(request.getFullName()));
         user.setEmail(normalizeNullable(request.getEmail()));
+        user.setPhone(normalizeNullable(request.getPhone()));
         user.setRole(role);
         user.setUnit(unit);
         user.setStatus(request.getStatus());
@@ -153,8 +155,8 @@ public class UserServiceImpl implements UserService {
             if (filter.getRoleId() != null) {
                 predicates.add(cb.equal(roleJoin.get("id"), filter.getRoleId()));
             }
-            if (filter.getUnitId() != null) {
-                predicates.add(cb.equal(unitJoin.get("id"), filter.getUnitId()));
+            if (filter.getUnitId() != null && !filter.getUnitId().isEmpty()) {
+                predicates.add(unitJoin.get("id").in(filter.getUnitId()));
             }
             if (filter.getStatus() != null) {
                 predicates.add(cb.equal(root.get("status"), filter.getStatus()));
@@ -190,6 +192,7 @@ public class UserServiceImpl implements UserService {
                 .username(user.getUsername())
                 .fullName(user.getFullName())
                 .email(user.getEmail())
+                .phone(user.getPhone())
                 .status(user.getStatus())
                 .roleId(user.getRole() == null ? null : user.getRole().getId())
                 .roleName(user.getRole() == null ? null : user.getRole().getRoleName())

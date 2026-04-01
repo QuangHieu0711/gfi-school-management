@@ -40,6 +40,9 @@ public class User {
     @Column(length = 100)
     private String email;
 
+    @Column(length = 50)
+    private String phone;
+
     @ManyToOne
     @JoinColumn(name = "role_id", nullable = false, foreignKey = @ForeignKey(name = "fk_users_roles"))
     private Role role;

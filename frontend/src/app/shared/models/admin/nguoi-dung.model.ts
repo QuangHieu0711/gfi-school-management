@@ -38,7 +38,7 @@ export interface NguoiDungResponse extends TableDataSource {
   [NGUOI_DUNG_KEY.ID]: ID_TYPE;
   [NGUOI_DUNG_KEY.FULL_NAME]?: string;
   [NGUOI_DUNG_KEY.USERNAME]?: string;
-  [NGUOI_DUNG_KEY.PHONE]?: number;
+  [NGUOI_DUNG_KEY.PHONE]?: string;
   [NGUOI_DUNG_KEY.EMAIL]?: string | null;
   [NGUOI_DUNG_KEY.ROLE_ID]?: string;
   [NGUOI_DUNG_KEY.ROLE_NAME]?: string;
@@ -53,7 +53,7 @@ export interface NguoiDungFormRequest {
   [NGUOI_DUNG_KEY.FULL_NAME]?: string;
   [NGUOI_DUNG_KEY.USERNAME]?: string;
   [NGUOI_DUNG_KEY.EMAIL]?: string;
-  [NGUOI_DUNG_KEY.PHONE]?: number;
+  [NGUOI_DUNG_KEY.PHONE]?: string;
   [NGUOI_DUNG_KEY.PASSWORD]?: string;
   [NGUOI_DUNG_KEY.ROLE_ID]?: string;
   [NGUOI_DUNG_KEY.AVATAR]?: string;

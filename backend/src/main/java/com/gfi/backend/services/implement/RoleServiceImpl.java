@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
@@ -26,6 +25,7 @@ import com.gfi.backend.models.global.CommonErrorCode;
 import com.gfi.backend.repositories.RoleRepository;
 import com.gfi.backend.repositories.UserRepository;
 import com.gfi.backend.services.interfaces.RoleService;
+import com.gfi.backend.utils.PageableUtils;
 
 import jakarta.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;
@@ -42,7 +42,7 @@ public class RoleServiceImpl implements RoleService {
         RoleFilterDto filter = request.getFilter() == null ? new RoleFilterDto() : request.getFilter();
         int pageSize = normalizePageSize(request.getPageSize());
         int pageNow = normalizePageNow(request.getPageNow());
-        Pageable pageable = PageRequest.of(pageNow - 1, pageSize);
+        Pageable pageable = PageableUtils.newestFirst(pageNow, pageSize);
 
         Page<Role> page = roleRepository.findAll(buildSpecification(filter), pageable);
         List<RoleItemDto> items = page.getContent().stream()
