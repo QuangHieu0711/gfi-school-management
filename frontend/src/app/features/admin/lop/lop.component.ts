@@ -1,5 +1,6 @@
 import { Component, Injector, TemplateRef, ViewChild } from '@angular/core';
 import { MtxGridColumn } from '@ng-matero/extensions/grid';
+
 import { AppTableComponent } from '@components/app-table/app-table.component';
 import { IconComponent } from '@components/app-icon/app-icon.component';
 import { TYPE_FORM, TYPE_FORM_KEY } from '@constant/constant';
@@ -16,6 +17,7 @@ import { DonViService } from '@app/service/admin/don-vi.service';
 import { KhoiService } from '@app/service/admin/khoi.service';
 import { LopService } from '@app/service/admin/lop.service';
 import { NamHocService } from '@app/service/admin/nam-hoc.service';
+import { DialogCauHinhMonHocLopComponent } from './dialog-cau-hinh-mon-hoc/dialog-cau-hinh-mon-hoc.component';
 import { DialogLopComponent } from './dialog-lop/dialog-lop.component';
 
 @Component({
@@ -111,6 +113,12 @@ export class LopComponent extends ComponentBaseAbstract {
           },
           {
             type: 'icon',
+            icon: 'assignment',
+            tooltip: 'Cấu hình môn học',
+            click: (rowData: LopResponse) => this.openSubjectConfig(rowData),
+          },
+          {
+            type: 'icon',
             icon: 'delete',
             tooltip: 'Xóa',
             click: (rowData: LopResponse) => this.deleteLop(rowData),
@@ -151,8 +159,8 @@ export class LopComponent extends ComponentBaseAbstract {
         this.toastr.error(
           error?.error?.userMessage ??
             error?.error?.message ??
-            'Kh\u00f4ng t\u1ea3i \u0111\u01b0\u1ee3c danh s\u00e1ch l\u1edbp',
-          'Th\u1ea5t b\u1ea1i'
+            'Không tải được danh sách lớp',
+          'Thất bại'
         );
       },
     });
@@ -187,6 +195,16 @@ export class LopComponent extends ComponentBaseAbstract {
         }
       }
     );
+  }
+
+  openSubjectConfig(rowData: LopResponse) {
+    this.dialog.componentDialog(DialogCauHinhMonHocLopComponent, {
+      width: '980px',
+      data: {
+        classroomId: rowData[LOP_KEY.ID],
+        classroom: rowData,
+      },
+    });
   }
 
   deleteLop(rowData: LopResponse) {

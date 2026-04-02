@@ -22,6 +22,7 @@ import com.gfi.backend.models.dtos.subject.SubjectItemDto;
 import com.gfi.backend.models.dtos.subject.SubjectUpdateRequest;
 import com.gfi.backend.models.entities.Subject;
 import com.gfi.backend.models.global.CommonErrorCode;
+import com.gfi.backend.repositories.ClassroomSubjectRepository;
 import com.gfi.backend.repositories.GradeLevelSubjectRepository;
 import com.gfi.backend.repositories.SubjectRepository;
 import com.gfi.backend.services.interfaces.SubjectService;
@@ -36,6 +37,7 @@ public class SubjectServiceImpl implements SubjectService {
 
     private final SubjectRepository subjectRepository;
     private final GradeLevelSubjectRepository gradeLevelSubjectRepository;
+    private final ClassroomSubjectRepository classroomSubjectRepository;
 
     @Override
     public PageResponseDto<SubjectItemDto, SubjectFilterDto> search(PageRequestDto<SubjectFilterDto> request) {
@@ -112,7 +114,7 @@ public class SubjectServiceImpl implements SubjectService {
     @Transactional
     public void delete(Long id) {
         Subject subject = findSubject(id);
-        if (gradeLevelSubjectRepository.countBySubjectId(id) > 0) {
+        if (gradeLevelSubjectRepository.countBySubjectId(id) > 0 || classroomSubjectRepository.countBySubjectId(id) > 0) {
             throw new UserMessageException(CommonErrorCode.SUBJECT_IN_USE);
         }
         subjectRepository.delete(subject);

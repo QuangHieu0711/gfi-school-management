@@ -13,6 +13,9 @@ ALTER TABLE IF EXISTS classes
 ALTER TABLE IF EXISTS grade_level_subjects
     DROP CONSTRAINT IF EXISTS grade_level_subjects_status_check;
 
+ALTER TABLE IF EXISTS classroom_subjects
+    DROP CONSTRAINT IF EXISTS classroom_subjects_status_check;
+
 ALTER TABLE IF EXISTS classes
     DROP COLUMN IF EXISTS is_current;
 
@@ -29,6 +32,21 @@ CREATE TABLE IF NOT EXISTS grade_level_subjects (
     CONSTRAINT fk_grade_level_subjects_grade_levels FOREIGN KEY (grade_level_id) REFERENCES grade_levels (id),
     CONSTRAINT fk_grade_level_subjects_subjects FOREIGN KEY (subject_id) REFERENCES subjects (id),
     CONSTRAINT uk_grade_level_subjects_grade_level_subject UNIQUE (grade_level_id, subject_id)
+);
+
+CREATE TABLE IF NOT EXISTS classroom_subjects (
+    id bigserial PRIMARY KEY,
+    classroom_id bigint NOT NULL,
+    subject_id bigint NOT NULL,
+    status integer NOT NULL DEFAULT 1,
+    description varchar(500),
+    created_at timestamp,
+    created_by varchar(255),
+    updated_at timestamp,
+    updated_by varchar(255),
+    CONSTRAINT fk_classroom_subjects_classes FOREIGN KEY (classroom_id) REFERENCES classes (id),
+    CONSTRAINT fk_classroom_subjects_subjects FOREIGN KEY (subject_id) REFERENCES subjects (id),
+    CONSTRAINT uk_classroom_subjects_classroom_subject UNIQUE (classroom_id, subject_id)
 );
 
 ALTER TABLE IF EXISTS school_years
@@ -86,6 +104,17 @@ ALTER TABLE IF EXISTS grade_level_subjects
         END
     );
 
+ALTER TABLE IF EXISTS classroom_subjects
+    ALTER COLUMN status TYPE integer
+    USING (
+        CASE status::text
+            WHEN 'PLANNING' THEN 0
+            WHEN 'ACTIVE' THEN 1
+            WHEN 'CLOSED' THEN 2
+            ELSE status::integer
+        END
+    );
+
 ALTER TABLE IF EXISTS school_years
     ADD CONSTRAINT school_years_status_check
     CHECK (status IN (0, 1, 2));
@@ -104,6 +133,10 @@ ALTER TABLE IF EXISTS classes
 
 ALTER TABLE IF EXISTS grade_level_subjects
     ADD CONSTRAINT grade_level_subjects_status_check
+    CHECK (status IN (0, 1, 2));
+
+ALTER TABLE IF EXISTS classroom_subjects
+    ADD CONSTRAINT classroom_subjects_status_check
     CHECK (status IN (0, 1, 2));
 
 ALTER TABLE IF EXISTS roles

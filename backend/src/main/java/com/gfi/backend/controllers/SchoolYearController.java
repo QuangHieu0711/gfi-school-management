@@ -31,7 +31,7 @@ import lombok.RequiredArgsConstructor;
 @RestController
 @RequestMapping("/api/school-years")
 @RequiredArgsConstructor
-@Tag(name = "School Year")
+@Tag(name = "Quản lý năm học - School Year")
 public class SchoolYearController extends ApiBaseController {
 
     private final SchoolYearService schoolYearService;

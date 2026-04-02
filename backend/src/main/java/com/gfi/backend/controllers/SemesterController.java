@@ -30,7 +30,7 @@ import lombok.RequiredArgsConstructor;
 @RestController
 @RequestMapping("/api/semesters")
 @RequiredArgsConstructor
-@Tag(name = "Semester")
+@Tag(name = "Quản lý học kỳ - Semester")
 public class SemesterController extends ApiBaseController {
 
     private final SemesterService semesterService;

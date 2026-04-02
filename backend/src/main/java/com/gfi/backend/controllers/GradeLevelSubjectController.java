@@ -22,27 +22,27 @@ import lombok.RequiredArgsConstructor;
 @RestController
 @RequestMapping("/api/grade-level-subjects")
 @RequiredArgsConstructor
-@Tag(name = "GradeLevelSubject")
+@Tag(name = "Quản lý cấu hình môn học theo khối - GradeLevelSubject")
 public class GradeLevelSubjectController extends ApiBaseController {
 
     private final GradeLevelSubjectService gradeLevelSubjectService;
 
     @GetMapping("/{gradeLevelId}")
     @PreAuthorize("hasRole('ADMIN')")
-    @Operation(summary = "Chi tiet cau hinh mon hoc theo khoi", description = "Lay danh sach mon hoc duoc cau hinh cho khoi.")
+    @Operation(summary = "Chi tiết cấu hình môn học theo khối", description = "Lấy thông tin cấu hình danh sách môn học theo khối.")
     public ResponseEntity<ApiResult<GradeLevelSubjectConfigDto>> getByGradeLevelId(@PathVariable Long gradeLevelId) {
         return executeApiResult(() -> ApiResult.success(
                 gradeLevelSubjectService.getByGradeLevelId(gradeLevelId),
-                "Hien thi cau hinh mon hoc theo khoi thanh cong"));
+                "Hiển thị cấu hình môn học theo khối thành công"));
     }
 
     @PostMapping("/assign")
     @PreAuthorize("hasRole('ADMIN')")
-    @Operation(summary = "Gan mon hoc cho khoi", description = "Luu cau hinh danh sach mon hoc theo khoi.")
+    @Operation(summary = "Gán môn học cho khối", description = "Lưu cấu hình danh sách môn học theo khối.")
     public ResponseEntity<ApiResult<GradeLevelSubjectConfigDto>> assignSubjects(
             @Valid @RequestBody GradeLevelSubjectAssignRequest request) {
         return executeApiResult(() -> ApiResult.success(
                 gradeLevelSubjectService.assignSubjects(request),
-                "Luu cau hinh mon hoc theo khoi thanh cong"));
+                "Gán cấu hình môn học theo khối thành công"));
     }
 }

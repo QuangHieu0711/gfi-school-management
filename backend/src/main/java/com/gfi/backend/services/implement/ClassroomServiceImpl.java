@@ -30,6 +30,7 @@ import com.gfi.backend.repositories.GradeLevelRepository;
 import com.gfi.backend.repositories.SchoolYearRepository;
 import com.gfi.backend.repositories.UnitRepository;
 import com.gfi.backend.services.interfaces.ClassroomService;
+import com.gfi.backend.services.interfaces.ClassroomSubjectService;
 import com.gfi.backend.utils.PageableUtils;
 
 import jakarta.persistence.criteria.Join;
@@ -45,6 +46,7 @@ public class ClassroomServiceImpl implements ClassroomService {
     private final UnitRepository unitRepository;
     private final GradeLevelRepository gradeLevelRepository;
     private final SchoolYearRepository schoolYearRepository;
+    private final ClassroomSubjectService classroomSubjectService;
 
     @Override
     public PageResponseDto<ClassroomItemDto, ClassroomFilterDto> search(PageRequestDto<ClassroomFilterDto> request) {
@@ -100,7 +102,9 @@ public class ClassroomServiceImpl implements ClassroomService {
         classroom.setStatus(request.getStatus());
         classroom.setDescription(normalizeNullable(request.getDescription()));
         classroom.setCreatedBy(getCurrentUsername());
-        return toDto(classroomRepository.save(classroom));
+        Classroom savedClassroom = classroomRepository.save(classroom);
+        classroomSubjectService.syncFromGradeLevel(savedClassroom);
+        return toDto(savedClassroom);
     }
 
     @Override
@@ -112,6 +116,7 @@ public class ClassroomServiceImpl implements ClassroomService {
         SchoolYear schoolYear = findSchoolYear(request.getSchoolYearId());
         String code = normalize(request.getCode());
         String name = normalize(request.getName());
+        boolean gradeLevelChanged = classroom.getGradeLevel() == null || !classroom.getGradeLevel().getId().equals(gradeLevel.getId());
 
         validateUnique(unit.getId(), gradeLevel.getId(), schoolYear.getId(), code, name, id);
 
@@ -123,12 +128,17 @@ public class ClassroomServiceImpl implements ClassroomService {
         classroom.setStatus(request.getStatus());
         classroom.setDescription(normalizeNullable(request.getDescription()));
         classroom.setUpdatedBy(getCurrentUsername());
-        return toDto(classroomRepository.save(classroom));
+        Classroom savedClassroom = classroomRepository.save(classroom);
+        if (gradeLevelChanged) {
+            classroomSubjectService.syncFromGradeLevel(savedClassroom);
+        }
+        return toDto(savedClassroom);
     }
 
     @Override
     @Transactional
     public void delete(Long id) {
+        classroomSubjectService.clearByClassroomId(id);
         classroomRepository.delete(findClassroom(id));
     }
 

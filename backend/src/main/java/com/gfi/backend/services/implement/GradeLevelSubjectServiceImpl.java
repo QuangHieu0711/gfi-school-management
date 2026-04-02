@@ -53,6 +53,7 @@ public class GradeLevelSubjectServiceImpl implements GradeLevelSubjectService {
         String username = getCurrentUsername();
 
         gradeLevelSubjectRepository.deleteByGradeLevelId(gradeLevel.getId());
+        gradeLevelSubjectRepository.flush();
 
         List<GradeLevelSubject> mappings = new ArrayList<>();
         for (Subject subject : subjects) {

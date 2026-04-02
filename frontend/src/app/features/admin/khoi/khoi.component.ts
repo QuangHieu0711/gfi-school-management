@@ -182,18 +182,13 @@ export class KhoiComponent extends ComponentBaseAbstract {
   }
 
   openSubjectConfig(rowData: KhoiResponse) {
-    this.dialog.componentDialog(
-      DialogCauHinhMonHocComponent,
-      {
-        width: '980px',
-        height: '720px',
-        maxHeight: '85vh',
-        data: {
-          gradeLevelId: rowData[KHOI_KEY.ID],
-          gradeLevel: rowData,
-        },
-      }
-    );
+    this.dialog.componentDialog(DialogCauHinhMonHocComponent, {
+      width: '980px',
+      data: {
+        gradeLevelId: rowData[KHOI_KEY.ID],
+        gradeLevel: rowData,
+      },
+    });
   }
 
   deleteKhoi(rowData: KhoiResponse) {

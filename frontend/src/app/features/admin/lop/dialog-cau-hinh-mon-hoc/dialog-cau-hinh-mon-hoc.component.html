@@ -57,9 +57,9 @@
     #selectTpl
     let-row>
     <mat-checkbox
-      [checked]="isSelected(row?.id)"
+      [checked]="isSelected(row?.subjectId)"
       (click)="$event.stopPropagation()"
-      (change)="toggleSubject(row?.id, $event.checked)">
+      (change)="toggleSubject(row?.subjectId, $event.checked)">
     </mat-checkbox>
   </ng-template>
 

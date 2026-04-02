@@ -60,11 +60,13 @@ export class AppTableComponent implements OnDestroy {
 
   /** Internal dataSource with 1-based rowIndex injected for display */
   private _dataSource: TableDataSource[] = [];
+  private _requestedRowSelected: TableDataSource[] = [];
 
   /** Table rows input; rowIndex is attached on assignment */
   @Input()
   set dataSource(value: TableDataSource[]) {
     this._dataSource = this.attachRowIndex(value);
+    this.syncRowSelected();
   }
   get dataSource(): TableDataSource[] {
     return this._dataSource;
@@ -78,7 +80,8 @@ export class AppTableComponent implements OnDestroy {
   /** Preselected rows for checkbox selection */
   @Input()
   set rowSelected(value: TableDataSource[]) {
-    this._rowSelected = this.attachRowIndex(value);
+    this._requestedRowSelected = value ?? [];
+    this.syncRowSelected();
   }
   get rowSelected(): TableDataSource[] {
     return this._rowSelected;
@@ -306,5 +309,15 @@ export class AppTableComponent implements OnDestroy {
       ...row,
       rowIndex: page * size + idx + 1,
     }));
+  }
+
+  private syncRowSelected(): void {
+    const selectedIds = new Set(
+      (this._requestedRowSelected ?? [])
+        .map((row) => row?.id)
+        .filter((id) => id != null)
+    );
+
+    this._rowSelected = this._dataSource.filter((row) => selectedIds.has(row.id));
   }
 }

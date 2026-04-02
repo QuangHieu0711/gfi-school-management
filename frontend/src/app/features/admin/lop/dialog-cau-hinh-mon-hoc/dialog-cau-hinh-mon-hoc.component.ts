@@ -5,9 +5,8 @@ import {
   TemplateRef,
   ViewChild,
 } from '@angular/core';
-import { MtxGridCellTemplate, MtxGridColumn } from '@ng-matero/extensions/grid';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
-import { forkJoin } from 'rxjs';
+import { MtxGridCellTemplate, MtxGridColumn } from '@ng-matero/extensions/grid';
 
 import { AppDialogComponent } from '@components/app-dialog/app-dialog.component';
 import { IconComponent } from '@components/app-icon/app-icon.component';
@@ -19,13 +18,13 @@ import { COMMON_TABLE_KEY, TableQueryEvent } from '@model/table.model';
 import { ComponentBaseAbstract } from '@layout';
 import { FORM_CONTROL_MODULE, MATERIAL_MODULE } from '@modules';
 
-import { KHOI_KEY, KhoiResponse } from '@app/model/admin/khoi.model';
-import { MON_HOC_KEY, MonHocResponse } from '@app/model/admin/mon-hoc.model';
-import { KhoiMonHocService } from '@app/service/admin/khoi-mon-hoc.service';
-import { MonHocService } from '@app/service/admin/mon-hoc.service';
+import { LOP_KEY, LopResponse } from '@app/model/admin/lop.model';
+import { LopMonHocDetailSubjectResponse } from '@app/model/admin/lop-mon-hoc.model';
+import { MON_HOC_KEY } from '@app/model/admin/mon-hoc.model';
+import { LopMonHocService } from '@app/service/admin/lop-mon-hoc.service';
 
 @Component({
-  selector: 'dialog-cau-hinh-mon-hoc',
+  selector: 'dialog-cau-hinh-mon-hoc-lop',
   templateUrl: './dialog-cau-hinh-mon-hoc.component.html',
   styleUrls: ['./dialog-cau-hinh-mon-hoc.component.scss'],
   imports: [
@@ -36,7 +35,7 @@ import { MonHocService } from '@app/service/admin/mon-hoc.service';
     ...FORM_CONTROL_MODULE,
   ],
 })
-export class DialogCauHinhMonHocComponent extends ComponentBaseAbstract {
+export class DialogCauHinhMonHocLopComponent extends ComponentBaseAbstract {
   @ViewChild('selectHeaderTpl', { static: true })
   selectHeaderTpl!: TemplateRef<unknown>;
 
@@ -48,8 +47,7 @@ export class DialogCauHinhMonHocComponent extends ComponentBaseAbstract {
   readonly $formItem = [
     TEXT_CONTROL({
       controlName: MON_HOC_KEY.NAME,
-      placeholder:
-        'T\u00ecm ki\u1ebfm theo m\u00e3 ho\u1eb7c t\u00ean m\u00f4n h\u1ecdc',
+      placeholder: 'T\u00ecm ki\u1ebfm theo m\u00e3 ho\u1eb7c t\u00ean m\u00f4n h\u1ecdc',
       required: false,
       maxLength: 255,
     }),
@@ -59,26 +57,26 @@ export class DialogCauHinhMonHocComponent extends ComponentBaseAbstract {
     rowSelectable: false,
     multiSelectable: false,
   };
+
   columns: MtxGridColumn[] = [];
   headerTemplate: MtxGridCellTemplate = {};
-
-  dataSource: MonHocResponse[] = [];
+  dataSource: LopMonHocDetailSubjectResponse[] = [];
+  allSubjects: LopMonHocDetailSubjectResponse[] = [];
   title = '';
   selectedSubjectIds = new Set<ID_TYPE>();
 
   constructor(
     protected override injector: Injector,
-    private readonly dialogRef: MatDialogRef<DialogCauHinhMonHocComponent>,
-    private readonly monHocService: MonHocService,
-    private readonly khoiMonHocService: KhoiMonHocService,
+    private readonly dialogRef: MatDialogRef<DialogCauHinhMonHocLopComponent>,
+    private readonly lopMonHocService: LopMonHocService,
     @Inject(MAT_DIALOG_DATA)
     public data: {
-      gradeLevelId: ID_TYPE;
-      gradeLevel?: KhoiResponse | null;
+      classroomId: ID_TYPE;
+      classroom?: LopResponse | null;
     }
   ) {
     super(injector);
-    this.title = `Cấu hình môn học: ${data.gradeLevel?.[KHOI_KEY.NAME] ?? ''}`;
+    this.title = `C\u1ea5u h\u00ecnh m\u00f4n h\u1ecdc: ${data.classroom?.[LOP_KEY.NAME] ?? ''}`;
   }
 
   protected override componentInit(): void {
@@ -93,12 +91,12 @@ export class DialogCauHinhMonHocComponent extends ComponentBaseAbstract {
         field: COMMON_TABLE_KEY.STT,
       },
       {
-        header: 'Mã môn học',
-        field: MON_HOC_KEY.CODE,
+        header: 'M\u00e3 m\u00f4n h\u1ecdc',
+        field: 'subjectCode',
       },
       {
-        header: 'Tên môn học',
-        field: MON_HOC_KEY.NAME,
+        header: 'T\u00ean m\u00f4n h\u1ecdc',
+        field: 'subjectName',
       },
       {
         header: '',
@@ -109,62 +107,29 @@ export class DialogCauHinhMonHocComponent extends ComponentBaseAbstract {
       },
     ];
 
-    forkJoin({
-      detail: this.khoiMonHocService.getDetail(this.data.gradeLevelId),
-      subjects: this.monHocService.filter({
-        pageSize: this.pageSize,
-        pageNow: 1,
-        filter: {},
-      }),
-    }).subscribe({
-      next: ({ detail, subjects }) => {
-        const selectedIds = detail.data?.subjectIds?.length
-          ? detail.data.subjectIds
-          : (detail.data?.subjects ?? []).map((item) => item.subjectId);
-
-        this.selectedSubjectIds = new Set(selectedIds);
-        this.bindSubjectData(
-          subjects.data?.items || [],
-          subjects.data?.recordTotal || 0
-        );
-      },
-      error: (error) => {
-        this.toastr.error(
-          error?.error?.userMessage ??
-            error?.error?.message ??
-            'Không tải được danh sách môn học',
-          'Thất bại'
-        );
-      },
-    });
+    this.loadDetail();
   }
 
   filterData(pageChangeEvent?: TableQueryEvent) {
-    const formValues = this.form.getRawValue();
-    const payload = {
-      pageSize: pageChangeEvent?.pageSize ?? this.pageSize,
-      pageNow: (pageChangeEvent?.pageIndex ?? 0) + 1,
-      filter: {
-        subject: formValues[MON_HOC_KEY.NAME] ?? undefined,
-      },
-    };
-
     this.pageIndex = pageChangeEvent?.pageIndex ?? 0;
     this.pageSize = pageChangeEvent?.pageSize ?? this.pageSize;
 
-    this.monHocService.filter(payload).subscribe({
-      next: ({ data }) => {
-        this.bindSubjectData(data.items || [], data.recordTotal || 0);
-      },
-      error: (error) => {
-        this.toastr.error(
-          error?.error?.userMessage ??
-            error?.error?.message ??
-            'Không tải được danh sách môn học',
-          'Thất bại'
-        );
-      },
+    const keyword = (this.form.getRawValue()?.[MON_HOC_KEY.NAME] ?? '')
+      .toString()
+      .trim()
+      .toLowerCase();
+
+    const filteredData = this.allSubjects.filter((item) => {
+      if (!keyword) return true;
+      return (
+        item.subjectCode?.toLowerCase().includes(keyword) ||
+        item.subjectName?.toLowerCase().includes(keyword)
+      );
     });
+
+    this.dataSourceTotal = filteredData.length;
+    const start = this.pageIndex * this.pageSize;
+    this.dataSource = filteredData.slice(start, start + this.pageSize);
   }
 
   resetFilter() {
@@ -187,11 +152,10 @@ export class DialogCauHinhMonHocComponent extends ComponentBaseAbstract {
 
   toggleCurrentPage(checked: boolean) {
     this.dataSource.forEach((item) => {
-      const subjectId = item[MON_HOC_KEY.ID];
       if (checked) {
-        this.selectedSubjectIds.add(subjectId);
+        this.selectedSubjectIds.add(item.subjectId);
       } else {
-        this.selectedSubjectIds.delete(subjectId);
+        this.selectedSubjectIds.delete(item.subjectId);
       }
     });
   }
@@ -199,28 +163,31 @@ export class DialogCauHinhMonHocComponent extends ComponentBaseAbstract {
   isAllCurrentPageSelected() {
     return this.dataSource.length > 0
       ? this.dataSource.every((item) =>
-          this.selectedSubjectIds.has(item[MON_HOC_KEY.ID])
+          this.selectedSubjectIds.has(item.subjectId)
         )
       : false;
   }
 
   saveConfig() {
-    this.khoiMonHocService
+    this.lopMonHocService
       .assign({
-        gradeLevelId: this.data.gradeLevelId,
+        classroomId: this.data.classroomId,
         subjectIds: [...this.selectedSubjectIds],
       })
       .subscribe({
         next: () => {
-          this.toastr.success('Lưu cấu hình thành công', 'Thành công');
+          this.toastr.success(
+            'L\u01b0u c\u1ea5u h\u00ecnh th\u00e0nh c\u00f4ng',
+            'Th\u00e0nh c\u00f4ng'
+          );
           this.dialogRef.close(true);
         },
         error: (error) => {
           this.toastr.error(
             error?.error?.userMessage ??
               error?.error?.message ??
-              'Lưu cấu hình thất bại',
-            'Thất bại'
+              'L\u01b0u c\u1ea5u h\u00ecnh th\u1ea5t b\u1ea1i',
+            'Th\u1ea5t b\u1ea1i'
           );
         },
       });
@@ -230,8 +197,34 @@ export class DialogCauHinhMonHocComponent extends ComponentBaseAbstract {
     this.dialogRef.close();
   }
 
-  private bindSubjectData(dataSource: MonHocResponse[], total: number) {
-    this.dataSource = dataSource;
-    this.dataSourceTotal = total;
+  private loadDetail() {
+    this.lopMonHocService.getDetail(this.data.classroomId).subscribe({
+      next: ({ data }) => {
+        this.allSubjects = (data?.subjects ?? []).map((item) => ({
+          ...item,
+          id: item.subjectId,
+        }));
+
+        const selectedIds = data?.subjectIds?.length
+          ? data.subjectIds
+          : this.allSubjects
+              .filter((item) => item.selected)
+              .map((item) => item.subjectId);
+
+        this.selectedSubjectIds = new Set(selectedIds);
+        this.filterData({
+          pageIndex: 0,
+          pageSize: this.pageSize,
+        });
+      },
+      error: (error) => {
+        this.toastr.error(
+          error?.error?.userMessage ??
+            error?.error?.message ??
+            'Kh\u00f4ng t\u1ea3i \u0111\u01b0\u1ee3c danh s\u00e1ch m\u00f4n h\u1ecdc',
+          'Th\u1ea5t b\u1ea1i'
+        );
+      },
+    });
   }
 }

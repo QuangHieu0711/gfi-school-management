@@ -31,7 +31,7 @@ import lombok.RequiredArgsConstructor;
 @RestController
 @RequestMapping("/api/grade-levels")
 @RequiredArgsConstructor
-@Tag(name = "GradeLevel")
+@Tag(name = "Quản lý khối - GradeLevel")
 public class GradeLevelController extends ApiBaseController {
 
     private final GradeLevelService gradeLevelService;

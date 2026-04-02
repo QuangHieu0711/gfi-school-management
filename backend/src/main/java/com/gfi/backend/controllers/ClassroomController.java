@@ -32,14 +32,14 @@ import lombok.RequiredArgsConstructor;
 @RestController
 @RequestMapping("/api/classes")
 @RequiredArgsConstructor
-@Tag(name = "Classroom")
+@Tag(name = "Quản lý lớp - Classroom")
 public class ClassroomController extends ApiBaseController {
 
     private final ClassroomService classroomService;
 
     @PostMapping("/search")
     @PreAuthorize("hasRole('ADMIN')")
-    @Operation(summary = "Danh sách lớp", description = "Lấy danh sach lớp có phân trang và filter.")
+    @Operation(summary = "Danh sách lớp", description = "Lấy danh sách lớp có phân trang và filter.")
     public ResponseEntity<ApiResult<PageResponseDto<ClassroomItemDto, ClassroomFilterDto>>> search(
             @RequestBody(required = false) PageRequestDto<ClassroomFilterDto> request) {
         PageRequestDto<ClassroomFilterDto> safeRequest = request == null ? new PageRequestDto<>() : request;

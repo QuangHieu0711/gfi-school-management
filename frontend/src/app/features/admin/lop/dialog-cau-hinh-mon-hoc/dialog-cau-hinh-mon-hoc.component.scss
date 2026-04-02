@@ -1,0 +1,12 @@
+.subject-config-head {
+  margin-bottom: 12px;
+}
+
+::ng-deep {
+  dialog-cau-hinh-mon-hoc-lop {
+    .paginator {
+      padding-top: 2px !important;
+      margin-top: -4px;
+    }
+  }
+}
