@@ -1,0 +1,76 @@
+<app-dialog-container
+  [dialogTitle]="title"
+  [dialogActionTemplate]="actionTemplate">
+  <div class="semester-config-head">
+    <div class="semester-summary">
+      <div class="semester-summary-label">N&#259;m h&#7885;c</div>
+      <div class="semester-summary-value">
+        {{ data.schoolYear?.code }} - {{ data.schoolYear?.name }}
+      </div>
+    </div>
+  </div>
+
+  <app-table
+    tableTitle=""
+    [pageIndex]="pageIndex"
+    [pageSize]="pageSize"
+    [total]="dataSourceTotal"
+    [tableConfig]="tableConfig"
+    [dataSource]="dataSource"
+    [tableColumns]="columns"
+    (queryChange)="filterData($event)">
+    <ng-container custom-buttons>
+      <div class="flex gap-2 items-center">
+        <button
+          color="primary"
+          matButton="filled"
+          class="btn-tight"
+          (click)="openCreateDialog()">
+          <app-icon
+            icon="add_box"
+            [size]="18"
+            class="btn-icon" />
+          Th&#234;m h&#7885;c k&#7923;
+        </button>
+      </div>
+    </ng-container>
+  </app-table>
+
+  <ng-template #actionTemplate>
+    <button
+      color="info"
+      matButton="outlined"
+      (click)="closeDialog()">
+      &#272;&#243;ng
+    </button>
+  </ng-template>
+</app-dialog-container>
+
+<ng-template #statusTpl let-row>
+  <div class="status-cell">
+    <span
+      class="status-pill"
+      [class.planning]="row?.status === 0"
+      [class.active]="row?.status === 1"
+      [class.completed]="row?.status === 2">
+      {{ getStatusLabel(row?.status) }}
+    </span>
+  </div>
+</ng-template>
+
+<ng-template #currentTpl let-row>
+  <div class="status-cell">
+    <span
+      class="status-pill"
+      [class.is-current]="row?.isCurrent"
+      [class.is-inactive]="!row?.isCurrent">
+      {{ row?.isCurrent ? 'Hi&#7879;n h&#224;nh' : 'Kh&#244;ng' }}
+    </span>
+  </div>
+</ng-template>
+
+<ng-template #periodTpl let-row>
+  <span class="period-text">
+    {{ formatDateRange(row?.startDate, row?.endDate) }}
+  </span>
+</ng-template>

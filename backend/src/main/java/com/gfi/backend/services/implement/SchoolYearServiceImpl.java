@@ -23,6 +23,7 @@ import com.gfi.backend.models.dtos.schoolyear.SchoolYearItemDto;
 import com.gfi.backend.models.dtos.schoolyear.SchoolYearUpdateRequest;
 import com.gfi.backend.models.entities.SchoolYear;
 import com.gfi.backend.models.global.CommonErrorCode;
+import com.gfi.backend.repositories.ClassroomRepository;
 import com.gfi.backend.repositories.SchoolYearRepository;
 import com.gfi.backend.repositories.SemesterRepository;
 import com.gfi.backend.services.interfaces.SchoolYearService;
@@ -37,6 +38,7 @@ public class SchoolYearServiceImpl implements SchoolYearService {
 
     private final SchoolYearRepository schoolYearRepository;
     private final SemesterRepository semesterRepository;
+    private final ClassroomRepository classroomRepository;
 
     @Override
     public PageResponseDto<SchoolYearItemDto, SchoolYearFilterDto> search(PageRequestDto<SchoolYearFilterDto> request) {
@@ -124,6 +126,9 @@ public class SchoolYearServiceImpl implements SchoolYearService {
     public void delete(Long id) {
         SchoolYear schoolYear = findSchoolYear(id);
         if (semesterRepository.countBySchoolYearId(id) > 0) {
+            throw new UserMessageException(CommonErrorCode.SCHOOL_YEAR_IN_USE);
+        }
+        if (classroomRepository.countBySchoolYearId(id) > 0) {
             throw new UserMessageException(CommonErrorCode.SCHOOL_YEAR_IN_USE);
         }
         schoolYearRepository.delete(schoolYear);

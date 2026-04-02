@@ -73,6 +73,17 @@ export class AppTableComponent implements OnDestroy {
   /** MtxGrid column definitions */
   @Input() tableColumns: MtxGridColumn[] = [];
 
+  private _rowSelected: TableDataSource[] = [];
+
+  /** Preselected rows for checkbox selection */
+  @Input()
+  set rowSelected(value: TableDataSource[]) {
+    this._rowSelected = this.attachRowIndex(value);
+  }
+  get rowSelected(): TableDataSource[] {
+    return this._rowSelected;
+  }
+
   /** Loading flag to show table-level progress UI */
   @Input() loading = false;
 

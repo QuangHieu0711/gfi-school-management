@@ -1,0 +1,113 @@
+<app-table
+  tableTitle="Cấu hình năm học"
+  [pageIndex]="pageIndex"
+  [pageSize]="pageSize"
+  [total]="dataSourceTotal"
+  [tableConfig]="tableConfig"
+  [dataSource]="dataSource"
+  [tableColumns]="columns"
+  (queryChange)="filterData($event)">
+  <ng-container custom-buttons>
+    <div class="flex gap-2 items-center">
+      <button
+        color="primary"
+        matButton="filled"
+        class="btn-tight"
+        (click)="openDialog(TYPE_FORM.CREATE)">
+        <app-icon
+          icon="add_box"
+          [size]="18"
+          class="btn-icon" />
+        Thêm mới
+      </button>
+    </div>
+  </ng-container>
+
+  <ng-container filter-panel>
+    <app-form-control
+      [form]="form"
+      (submitEvent)="filterData()"
+      (resetEvent)="resetFilter()">
+      <div class="flex gap-2 items-center">
+        <app-text-control
+          [item]="findFormControl($formItem, key.NAME)"
+          [form]="form"></app-text-control>
+        <app-select-control
+          [item]="findFormControl($formItem, key.STATUS)"
+          [form]="form"></app-select-control>
+        <app-select-control
+          [item]="findFormControl($formItem, key.IS_CURRENT)"
+          [form]="form"></app-select-control>
+        <div class="flex gap-1 items-center">
+          <button
+            color="dark"
+            matIconButton="text"
+            matTooltip="Tìm kiếm"
+            type="submit">
+            <app-icon
+              icon="svg:search"
+              color="#858585" />
+          </button>
+          <button
+            color="dark"
+            matIconButton="text"
+            matTooltip="Làm mới"
+            type="reset">
+            <app-icon
+              icon="svg:cached"
+              color="#858585" />
+          </button>
+        </div>
+      </div>
+    </app-form-control>
+  </ng-container>
+</app-table>
+
+<ng-template
+  #nameTpl
+  let-row>
+  <a
+    tabindex="0"
+    class="cursor-pointer text-info-500"
+    (click)="openDialog(TYPE_FORM.DETAIL, row)"
+    (keydown.enter)="
+      $event.stopPropagation(); openDialog(TYPE_FORM.DETAIL, row)
+    ">
+    {{ row?.[key.NAME] }}
+  </a>
+</ng-template>
+
+<ng-template
+  #statusTpl
+  let-row>
+  <div class="status-cell">
+    <span
+      class="status-pill"
+      [class.planning]="row?.status === 0"
+      [class.active]="row?.status === 1"
+      [class.completed]="row?.status === 2">
+      {{ getStatusLabel(row?.status) }}
+    </span>
+  </div>
+</ng-template>
+
+<ng-template
+  #currentTpl
+  let-row>
+  <div class="status-cell">
+    <span
+      class="status-pill"
+      [class.is-current]="row?.[key.IS_CURRENT]"
+      [class.is-inactive]="!row?.[key.IS_CURRENT]">
+      {{ row?.[key.IS_CURRENT] ? 'Hiện hành' : 'Không' }}
+    </span>
+  </div>
+</ng-template>
+
+<ng-template
+  #periodTpl
+  let-row>
+  <span class="period-text">
+    {{ formatDateRange(row?.startDate, row?.endDate) }}
+  </span>
+</ng-template>

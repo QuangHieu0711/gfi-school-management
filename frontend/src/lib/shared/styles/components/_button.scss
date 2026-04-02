@@ -223,6 +223,10 @@ button[maticonbutton] {
     &[color='primary'],
     &.btn-color-primary {
       @apply text-primary-500 border border-solid border-primary-500;
+      color: var(--color-primary-500) !important;
+      border-color: var(--color-primary-500) !important;
+      --mdc-outlined-button-label-text-color: var(--color-primary-500);
+      --mdc-outlined-button-outline-color: var(--color-primary-500);
       .mat-ripple-element {
         @apply opacity-20 !bg-primary-500;
       }
@@ -263,6 +267,10 @@ button[maticonbutton] {
     &[color='info'],
     &.btn-color-info {
       @apply text-info-500 border border-solid border-info-500;
+      color: var(--color-info-500) !important;
+      border-color: var(--color-info-500) !important;
+      --mdc-outlined-button-label-text-color: var(--color-info-500);
+      --mdc-outlined-button-outline-color: var(--color-info-500);
       .mat-ripple-element {
         @apply opacity-20 !bg-info-500;
       }

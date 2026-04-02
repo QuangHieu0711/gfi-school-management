@@ -55,6 +55,11 @@ export class VaiTroComponent extends ComponentBaseAbstract {
         field: COMMON_TABLE_KEY.STT,
       },
       {
+        header: 'Mã vai trò',
+        field: VAI_TRO_KEY.CODE,
+      },
+
+      {
         header: 'Tên vai trò',
         field: VAI_TRO_KEY.ROLE_NAME,
       },

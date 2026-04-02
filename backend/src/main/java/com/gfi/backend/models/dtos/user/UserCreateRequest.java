@@ -9,30 +9,30 @@ import lombok.Data;
 
 @Data
 public class UserCreateRequest {
-    @NotBlank(message = "Ten dang nhap khong duoc de trong")
-    @Size(max = 255, message = "Ten dang nhap toi da 255 ky tu")
+    @NotBlank(message = "Tên đăng nhập không được để trống")
+    @Size(max = 255, message = "Tên đăng nhập tối đa 255 ký tự")
     private String username;
 
-    @NotBlank(message = "Mat khau khong duoc de trong")
-    @Size(min = 6, max = 255, message = "Mat khau phai tu 6 den 255 ky tu")
+    @NotBlank(message = "Mật khẩu không được để trống")
+    @Size(min = 6, max = 255, message = "Mật khẩu phải từ 6 đến 255 ký tự")
     private String password;
 
-    @NotBlank(message = "Ho ten khong duoc de trong")
-    @Size(max = 255, message = "Ho ten toi da 255 ky tu")
+    @NotBlank(message = "Họ tên không được để trống")
+    @Size(max = 255, message = "Họ tên tối đa 255 ký tự")
     private String fullName;
 
-    @Email(message = "Email khong dung dinh dang")
-    @Size(max = 100, message = "Email toi da 100 ky tu")
+    @Email(message = "Email không đúng định dạng")
+    @Size(max = 100, message = "Email tối đa 100 ký tự")
     private String email;
 
-    @Pattern(regexp = "^[0-9]*$", message = "So dien thoai chi duoc chua chu so")
-    @Size(max = 50, message = "So dien thoai toi da 50 ky tu")
+    @Pattern(regexp = "^[0-9]*$", message = "Số điện thoại chỉ được chứa chữ số")
+    @Size(max = 50, message = "Số điện thoại tối đa 50 ký tự")
     private String phone;
 
-    @NotNull(message = "Vai tro khong duoc de trong")
+    @NotNull(message = "Vai trò không được để trống")
     private Long roleId;
 
-    @NotNull(message = "Don vi khong duoc de trong")
+    @NotNull(message = "Đơn vị không được để trống")
     private Long unitId;
 
     private Integer status;

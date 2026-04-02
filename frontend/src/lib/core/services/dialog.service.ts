@@ -29,11 +29,13 @@ export class DialogService {
     config?: MatDialogConfig<D>,
     callback?: (result: R | undefined) => void
   ): MatDialogRef<T, R> {
-    const { width = '500px' }: MatDialogConfig<D> = config ?? {};
+    const dialogConfig: MatDialogConfig<D> = {
+      ...config,
+      width: config?.width ?? '500px',
+    };
     const dialogRef = this.dialog.open<T, D, R>(component, {
-      width: width,
+      ...dialogConfig,
       disableClose: true,
-      data: config?.data,
       autoFocus: false,
     });
 

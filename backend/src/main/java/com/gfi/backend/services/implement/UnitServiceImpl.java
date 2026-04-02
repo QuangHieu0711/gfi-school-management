@@ -22,6 +22,7 @@ import com.gfi.backend.models.dtos.unit.UnitItemDto;
 import com.gfi.backend.models.dtos.unit.UnitUpdateRequest;
 import com.gfi.backend.models.entities.Unit;
 import com.gfi.backend.models.global.CommonErrorCode;
+import com.gfi.backend.repositories.ClassroomRepository;
 import com.gfi.backend.repositories.UnitRepository;
 import com.gfi.backend.repositories.UserRepository;
 import com.gfi.backend.services.interfaces.UnitService;
@@ -36,6 +37,7 @@ public class UnitServiceImpl implements UnitService {
 
     private final UnitRepository unitRepository;
     private final UserRepository userRepository;
+    private final ClassroomRepository classroomRepository;
 
     @Override
     public PageResponseDto<UnitItemDto, UnitFilterDto> search(PageRequestDto<UnitFilterDto> request) {
@@ -125,6 +127,9 @@ public class UnitServiceImpl implements UnitService {
                 .orElseThrow(() -> new UserMessageException(CommonErrorCode.UNIT_NOT_FOUND));
 
         if (userRepository.countByUnitId(id) > 0) {
+            throw new UserMessageException(CommonErrorCode.UNIT_IN_USE);
+        }
+        if (classroomRepository.countByUnitId(id) > 0) {
             throw new UserMessageException(CommonErrorCode.UNIT_IN_USE);
         }
 

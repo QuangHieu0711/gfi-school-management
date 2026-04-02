@@ -8,6 +8,7 @@ import { TableDataSource, TableRequest } from '@model/table.model';
 
 export enum VAI_TRO_KEY {
   ID = 'id',
+  CODE = 'code',
   ROLE_NAME = 'roleName',
   DESCRIPTION = 'description',
   STATUS = 'status',
@@ -22,11 +23,13 @@ export const VAI_TRO_API_ENDPOINT = {
 export interface VaiTroOptionResponse {
   id: ID_TYPE;
   name: string;
+  code: string;
 }
 
 export interface VaiTroFilter {
   [VAI_TRO_KEY.ROLE_NAME]?: string;
   [VAI_TRO_KEY.STATUS]?: number;
+  [VAI_TRO_KEY.CODE]?: string;
 }
 
 export interface VaiTroFilterRequest extends TableRequest {
@@ -35,6 +38,7 @@ export interface VaiTroFilterRequest extends TableRequest {
 
 export interface VaiTroFormRequest {
   [VAI_TRO_KEY.ID]?: ID_TYPE;
+  [VAI_TRO_KEY.CODE]: string;
   [VAI_TRO_KEY.ROLE_NAME]: string;
   [VAI_TRO_KEY.DESCRIPTION]?: string;
   [VAI_TRO_KEY.STATUS]?: number;
@@ -42,6 +46,7 @@ export interface VaiTroFormRequest {
 
 export interface VaiTroResponse extends TableDataSource {
   [VAI_TRO_KEY.ID]: ID_TYPE;
+  [VAI_TRO_KEY.CODE]: string;
   [VAI_TRO_KEY.ROLE_NAME]?: string;
   [VAI_TRO_KEY.DESCRIPTION]?: string;
   [VAI_TRO_KEY.STATUS]?: number;
@@ -67,6 +72,13 @@ export const VAI_TRO_FILTER_FORM = [
 ];
 
 export const VAI_TRO_FORM = [
+  TEXT_CONTROL({
+    controlName: VAI_TRO_KEY.CODE,
+    label: 'Mã vai trò',
+    placeholder: 'Ví dụ: ROLE_ADMIN',
+    required: true,
+    maxLength: 50,
+  }),
   TEXT_CONTROL({
     controlName: VAI_TRO_KEY.ROLE_NAME,
     label: 'Tên vai trò',

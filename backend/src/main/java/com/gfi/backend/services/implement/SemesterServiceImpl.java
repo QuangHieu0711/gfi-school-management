@@ -4,8 +4,6 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.core.Authentication;
@@ -15,8 +13,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.gfi.backend.controllers.exceptions.UserMessageException;
 import com.gfi.backend.models.dtos.common.LookupItemDto;
-import com.gfi.backend.models.dtos.common.PageRequestDto;
-import com.gfi.backend.models.dtos.common.PageResponseDto;
 import com.gfi.backend.models.dtos.semester.SemesterCreateRequest;
 import com.gfi.backend.models.dtos.semester.SemesterFilterDto;
 import com.gfi.backend.models.dtos.semester.SemesterItemDto;
@@ -27,7 +23,6 @@ import com.gfi.backend.models.global.CommonErrorCode;
 import com.gfi.backend.repositories.SchoolYearRepository;
 import com.gfi.backend.repositories.SemesterRepository;
 import com.gfi.backend.services.interfaces.SemesterService;
-import com.gfi.backend.utils.PageableUtils;
 
 import jakarta.persistence.criteria.Join;
 import jakarta.persistence.criteria.JoinType;
@@ -42,23 +37,12 @@ public class SemesterServiceImpl implements SemesterService {
     private final SchoolYearRepository schoolYearRepository;
 
     @Override
-    public PageResponseDto<SemesterItemDto, SemesterFilterDto> search(PageRequestDto<SemesterFilterDto> request) {
-        SemesterFilterDto filter = request.getFilter() == null ? new SemesterFilterDto() : request.getFilter();
-        int pageSize = normalizePageSize(request.getPageSize());
-        int pageNow = normalizePageNow(request.getPageNow());
-        Pageable pageable = PageableUtils.newestFirst(pageNow, pageSize);
-
-        Page<Semester> page = semesterRepository.findAll(buildSpecification(filter), pageable);
-        List<SemesterItemDto> items = page.getContent().stream().map(this::toDto).toList();
-
-        return PageResponseDto.<SemesterItemDto, SemesterFilterDto>builder()
-                .pageSize(pageSize)
-                .pageNow(pageNow)
-                .filter(filter)
-                .pageTotal(page.getTotalPages())
-                .recordTotal(page.getTotalElements())
-                .items(items)
-                .build();
+    public List<SemesterItemDto> search(SemesterFilterDto filter) {
+        SemesterFilterDto safeFilter = filter == null ? new SemesterFilterDto() : filter;
+        return semesterRepository.findAll(buildSpecification(safeFilter), Sort.by(Sort.Direction.DESC, "id"))
+                .stream()
+                .map(this::toDto)
+                .toList();
     }
 
     @Override
@@ -171,15 +155,6 @@ public class SemesterServiceImpl implements SemesterService {
             List<Predicate> predicates = new ArrayList<>();
             Join<Object, Object> schoolYearJoin = root.join("schoolYear", JoinType.INNER);
 
-            if (hasText(filter.getSemester())) {
-                String keyword = "%" + filter.getSemester().trim().toLowerCase() + "%";
-                predicates.add(cb.or(
-                        cb.like(cb.lower(root.get("code")), keyword),
-                        cb.like(cb.lower(root.get("name")), keyword),
-                        cb.like(cb.lower(root.get("description")), keyword),
-                        cb.like(cb.lower(schoolYearJoin.get("code")), keyword),
-                        cb.like(cb.lower(schoolYearJoin.get("name")), keyword)));
-            }
             if (filter.getSchoolYearId() != null) {
                 predicates.add(cb.equal(schoolYearJoin.get("id"), filter.getSchoolYearId()));
             }
@@ -214,14 +189,6 @@ public class SemesterServiceImpl implements SemesterService {
         if (startDate != null && endDate != null && startDate.isAfter(endDate)) {
             throw new UserMessageException(CommonErrorCode.INVALID_DATE_RANGE);
         }
-    }
-
-    private int normalizePageSize(Integer pageSize) {
-        return pageSize == null || pageSize <= 0 ? 10 : pageSize;
-    }
-
-    private int normalizePageNow(Integer pageNow) {
-        return pageNow == null || pageNow <= 0 ? 1 : pageNow;
     }
 
     private boolean hasText(String value) {

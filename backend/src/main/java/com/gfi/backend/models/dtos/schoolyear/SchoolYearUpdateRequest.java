@@ -2,8 +2,6 @@ package com.gfi.backend.models.dtos.schoolyear;
 
 import java.time.LocalDate;
 
-import com.gfi.backend.models.enums.AcademicPeriodStatus;
-
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -26,7 +24,7 @@ public class SchoolYearUpdateRequest {
     private LocalDate endDate;
 
     @NotNull(message = "Trang thai khong duoc de trong")
-    private AcademicPeriodStatus status;
+    private Integer status;
 
     private Boolean isCurrent;
 

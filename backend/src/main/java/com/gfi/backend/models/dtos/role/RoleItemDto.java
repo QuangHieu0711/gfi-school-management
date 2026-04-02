@@ -7,6 +7,7 @@ import lombok.Data;
 @Builder
 public class RoleItemDto {
     private Long id;
+    private String code;
     private String roleName;
     private String description;
     private Integer status;

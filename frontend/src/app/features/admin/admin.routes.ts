@@ -69,4 +69,70 @@ export const AdminRoutes: Routes = [
       },
     ],
   },
+  {
+    path: NAVIGATOR_ENDPOINT.ADMIN.NAM_HOC.BASE_PATH,
+    component: AdminComponent,
+    children: [
+      {
+        path: '',
+        providers: [
+          provideState({ name: 'style', reducer: StyleReducer }),
+          provideEffects(StyleEffect),
+        ],
+        loadComponent: () =>
+          import('@features/admin/nam-hoc/nam-hoc.component').then(
+            (m) => m.NamHocComponent
+          ),
+      },
+    ],
+  },
+  {
+    path: NAVIGATOR_ENDPOINT.ADMIN.KHOI.BASE_PATH,
+    component: AdminComponent,
+    children: [
+      {
+        path: '',
+        providers: [
+          provideState({ name: 'style', reducer: StyleReducer }),
+          provideEffects(StyleEffect),
+        ],
+        loadComponent: () =>
+          import('@features/admin/khoi/khoi.component').then(
+            (m) => m.KhoiComponent
+          ),
+      },
+    ],
+  },
+  {
+    path: NAVIGATOR_ENDPOINT.ADMIN.LOP.BASE_PATH,
+    component: AdminComponent,
+    children: [
+      {
+        path: '',
+        providers: [
+          provideState({ name: 'style', reducer: StyleReducer }),
+          provideEffects(StyleEffect),
+        ],
+        loadComponent: () =>
+          import('@features/admin/lop/lop.component').then((m) => m.LopComponent),
+      },
+    ],
+  },
+  {
+    path: NAVIGATOR_ENDPOINT.ADMIN.MON_HOC.BASE_PATH,
+    component: AdminComponent,
+    children: [
+      {
+        path: '',
+        providers: [
+          provideState({ name: 'style', reducer: StyleReducer }),
+          provideEffects(StyleEffect),
+        ],
+        loadComponent: () =>
+          import('@features/admin/mon-hoc/mon-hoc.component').then(
+            (m) => m.MonHocComponent
+          ),
+      },
+    ],
+  },
 ];

@@ -61,7 +61,6 @@ button.btn-tight {
   box-shadow: none !important;
   --mdc-filled-button-label-text-color: #ffffff !important;
   --mdc-text-button-label-text-color: #ffffff !important;
-  --mdc-outlined-button-label-text-color: #ffffff !important;
   --mat-text-button-state-layer-color: transparent !important;
   --mat-filled-button-state-layer-color: transparent !important;
   --mat-outlined-button-state-layer-color: transparent !important;

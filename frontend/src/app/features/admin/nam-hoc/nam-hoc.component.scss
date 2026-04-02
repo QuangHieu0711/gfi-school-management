@@ -1,0 +1,40 @@
+::ng-deep {
+  .status-cell {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+  }
+
+  .status-pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 110px;
+    padding: 6px 12px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+  }
+
+  .status-pill.planning {
+    color: #9a6700;
+    background: #fff6da;
+  }
+
+  .status-pill.active,
+  .status-pill.is-current {
+    color: #027a48;
+    background: #ecfdf3;
+  }
+
+  .status-pill.completed,
+  .status-pill.is-inactive {
+    color: #b42318;
+    background: #fef3f2;
+  }
+}
+
+.period-text {
+  color: #123746;
+  font-weight: 500;
+}

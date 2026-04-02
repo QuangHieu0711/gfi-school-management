@@ -1,0 +1,64 @@
+<app-dialog-container
+  [dialogTitle]="title"
+  [dialogActionTemplate]="actionTemplate">
+  <app-form-control
+    class="subject-config-head"
+    [form]="form"
+    (submitEvent)="filterData()"
+    (resetEvent)="resetFilter()">
+    <div class="flex gap-2 items-center">
+      <app-text-control
+        class="flex-1"
+        [item]="findFormControl($formItem, MON_HOC_KEY.NAME)"
+        [form]="form"></app-text-control>
+      <div class="flex gap-1 items-center">
+        <button
+          color="dark"
+          matIconButton="text"
+          matTooltip="T&#236;m ki&#7871;m"
+          type="submit">
+          <app-icon
+            icon="svg:search"
+            color="#858585" />
+        </button>
+        <button
+          color="dark"
+          matIconButton="text"
+          matTooltip="L&#224;m m&#7899;i"
+          type="reset">
+          <app-icon
+            icon="svg:cached"
+            color="#858585" />
+        </button>
+      </div>
+    </div>
+  </app-form-control>
+
+  <app-table
+    tableTitle="Danh s&#225;ch m&#244;n h&#7885;c"
+    [pageIndex]="pageIndex"
+    [pageSize]="pageSize"
+    [total]="dataSourceTotal"
+    [tableConfig]="tableConfig"
+    [dataSource]="dataSource"
+    [rowSelected]="rowSelected"
+    [tableColumns]="columns"
+    (queryChange)="filterData($event)"
+    (rowSelectedChange)="onRowSelected($event)">
+  </app-table>
+
+  <ng-template #actionTemplate>
+    <button
+      color="primary"
+      matButton="outlined"
+      (click)="closeDialog()">
+      H&#7911;y
+    </button>
+    <button
+      color="primary"
+      matButton="filled"
+      (click)="saveConfig()">
+      L&#432;u
+    </button>
+  </ng-template>
+</app-dialog-container>

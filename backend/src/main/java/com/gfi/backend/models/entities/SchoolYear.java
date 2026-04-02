@@ -3,12 +3,8 @@ package com.gfi.backend.models.entities;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
-import com.gfi.backend.models.enums.AcademicPeriodStatus;
-
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -30,28 +26,35 @@ public class SchoolYear {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    // Mã năm học
     @Column(nullable = false, unique = true, length = 50)
     private String code;
 
+    // Tên năm học
     @Column(nullable = false, unique = true, length = 255)
     private String name;
 
+    // Ngày bắt đầu năm học
     @Column(nullable = false)
     private LocalDate startDate;
 
+    // Ngày kết thúc năm học
     @Column(nullable = false)
     private LocalDate endDate;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 20)
-    private AcademicPeriodStatus status;
+    // 0: Lập kế hoạch  1: Đang diễn ra, 2: Đã kết thúc
+    @Column(nullable = false)
+    private Integer status;
 
+    // 0: Không phải năm học hiện tại, 1: Là năm học hiện tại
     @Column(nullable = false)
     private Boolean isCurrent;
 
+    // Mô tả năm học
     @Column(length = 500)
     private String description;
 
+    // Thông tin audit
     @Column
     private LocalDateTime createdAt;
 
@@ -70,7 +73,7 @@ public class SchoolYear {
             createdAt = LocalDateTime.now();
         }
         if (status == null) {
-            status = AcademicPeriodStatus.PLANNING;
+            status = 0;
         }
         if (isCurrent == null) {
             isCurrent = Boolean.FALSE;

@@ -4,6 +4,7 @@ import lombok.Data;
 
 @Data
 public class RoleFilterDto {
+    private String code;
     private String roleName;
     private Integer status;
 }

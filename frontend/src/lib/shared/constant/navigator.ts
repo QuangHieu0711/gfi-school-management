@@ -22,6 +22,18 @@ export const NAVIGATOR_ENDPOINT = {
     VAI_TRO: {
       BASE_PATH: 'VaiTro',
     },
+    NAM_HOC: {
+      BASE_PATH: 'NamHoc',
+    },
+    KHOI: {
+      BASE_PATH: 'Khoi',
+    },
+    LOP: {
+      BASE_PATH: 'Lop',
+    },
+    MON_HOC: {
+      BASE_PATH: 'MonHoc',
+    },
   },
 } as const;
 

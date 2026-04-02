@@ -7,6 +7,9 @@
     (submitEvent)="onSubmit()">
     <div class="flex flex-col gap-2">
       <app-text-control
+        [item]="findFormControl($formItem, key.CODE)"
+        [form]="form"></app-text-control>
+      <app-text-control
         [item]="findFormControl($formItem, key.ROLE_NAME)"
         [form]="form"></app-text-control>
       <app-textarea-control

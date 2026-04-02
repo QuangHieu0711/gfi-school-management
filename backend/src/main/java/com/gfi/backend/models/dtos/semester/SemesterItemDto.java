@@ -2,8 +2,6 @@ package com.gfi.backend.models.dtos.semester;
 
 import java.time.LocalDate;
 
-import com.gfi.backend.models.enums.AcademicPeriodStatus;
-
 import lombok.Builder;
 import lombok.Data;
 
@@ -19,7 +17,7 @@ public class SemesterItemDto {
     private Integer semesterOrder;
     private LocalDate startDate;
     private LocalDate endDate;
-    private AcademicPeriodStatus status;
+    private Integer status;
     private Boolean isCurrent;
     private String description;
 }

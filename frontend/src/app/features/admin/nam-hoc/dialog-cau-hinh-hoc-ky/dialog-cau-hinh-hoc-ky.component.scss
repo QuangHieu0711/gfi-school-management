@@ -1,0 +1,102 @@
+.semester-config-head {
+  margin-bottom: 12px;
+}
+
+.semester-summary {
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: #f5fafb;
+}
+
+.semester-summary-label {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #6b7d85;
+}
+
+.semester-summary-value {
+  margin-top: 4px;
+  font-size: 16px;
+  font-weight: 700;
+  color: #123746;
+}
+
+::ng-deep {
+  .status-cell {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+  }
+
+  .status-pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 110px;
+    padding: 6px 12px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+  }
+
+  .status-pill.planning {
+    color: #9a6700;
+    background: #fff6da;
+  }
+
+  .status-pill.active,
+  .status-pill.is-current {
+    color: #027a48;
+    background: #ecfdf3;
+  }
+
+  .status-pill.completed,
+  .status-pill.is-inactive {
+    color: #b42318;
+    background: #fef3f2;
+  }
+}
+
+.period-text {
+  color: #123746;
+  font-weight: 500;
+}
+
+:host {
+  display: block;
+  height: 100%;
+}
+
+::ng-deep .semester-config-dialog {
+  .mat-mdc-dialog-surface {
+    overflow: hidden;
+  }
+
+  .dialog-wrapper {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+  }
+
+  .mat-mdc-dialog-content {
+    display: flex;
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
+  }
+
+  .mat-mdc-dialog-content .container {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    min-height: 0;
+  }
+
+  .mat-mdc-dialog-actions {
+    margin-top: auto;
+    padding: 16px 30px;
+    border-top: 1px solid #e5e7eb;
+    background: #fff;
+  }
+}

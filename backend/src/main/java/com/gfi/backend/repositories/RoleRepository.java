@@ -10,6 +10,8 @@ import com.gfi.backend.models.entities.Role;
 
 @Repository
 public interface RoleRepository extends JpaRepository<Role, Long>, JpaSpecificationExecutor<Role> {
+    Optional<Role> findByCode(String code);
+    boolean existsByCode(String code);
     Optional<Role> findByRoleName(String roleName);
     boolean existsByRoleName(String roleName);
 }

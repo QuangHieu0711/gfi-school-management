@@ -1,0 +1,73 @@
+<app-table
+  tableTitle="Qu&#7843;n l&#253; kh&#7889;i"
+  [pageIndex]="pageIndex"
+  [pageSize]="pageSize"
+  [total]="dataSourceTotal"
+  [tableConfig]="tableConfig"
+  [dataSource]="dataSource"
+  [tableColumns]="columns"
+  (queryChange)="filterData($event)">
+  <ng-container custom-buttons>
+    <div class="flex gap-2 items-center">
+      <button
+        color="primary"
+        matButton="filled"
+        class="btn-tight"
+        (click)="openDialog(TYPE_FORM.CREATE)">
+        <app-icon
+          icon="add_box"
+          [size]="18"
+          class="btn-icon" />
+        Thêm mới
+      </button>
+    </div>
+  </ng-container>
+  <ng-container filter-panel>
+    <app-form-control
+      [form]="form"
+      (submitEvent)="filterData()"
+      (resetEvent)="resetFilter()">
+      <div class="flex gap-2 items-center">
+        <app-text-control
+          [item]="findFormControl($formItem, key.NAME)"
+          [form]="form"></app-text-control>
+        <app-select-control
+          [item]="findFormControl($formItem, key.STATUS)"
+          [form]="form"></app-select-control>
+        <div class="flex gap-1 items-center">
+          <button
+            color="dark"
+            matIconButton="text"
+            matTooltip="Tìm kiếm"
+            type="submit">
+            <app-icon
+              icon="svg:search"
+              color="#858585" />
+          </button>
+          <button
+            color="dark"
+            matIconButton="text"
+            matTooltip="Làm mới"
+            type="reset">
+            <app-icon
+              icon="svg:cached"
+              color="#858585" />
+          </button>
+        </div>
+      </div>
+    </app-form-control>
+  </ng-container>
+</app-table>
+
+<ng-template
+  #statusTpl
+  let-row>
+  <div class="status-cell">
+    <span
+      class="status-pill"
+      [class.is-active]="row?.[key.STATUS] === 1"
+      [class.is-inactive]="row?.[key.STATUS] !== 1">
+      {{ row?.[key.STATUS] === 1 ? 'Hoạt động' : 'Không hoạt động' }}
+    </span>
+  </div>
+</ng-template>

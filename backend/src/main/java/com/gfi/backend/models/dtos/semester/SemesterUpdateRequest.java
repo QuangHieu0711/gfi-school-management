@@ -2,8 +2,6 @@ package com.gfi.backend.models.dtos.semester;
 
 import java.time.LocalDate;
 
-import com.gfi.backend.models.enums.AcademicPeriodStatus;
-
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -34,7 +32,7 @@ public class SemesterUpdateRequest {
     private LocalDate endDate;
 
     @NotNull(message = "Trang thai khong duoc de trong")
-    private AcademicPeriodStatus status;
+    private Integer status;
 
     private Boolean isCurrent;
 

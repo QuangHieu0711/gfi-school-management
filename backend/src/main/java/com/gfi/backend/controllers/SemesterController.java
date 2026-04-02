@@ -15,8 +15,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.gfi.backend.models.dtos.common.LookupItemDto;
-import com.gfi.backend.models.dtos.common.PageRequestDto;
-import com.gfi.backend.models.dtos.common.PageResponseDto;
 import com.gfi.backend.models.dtos.semester.SemesterCreateRequest;
 import com.gfi.backend.models.dtos.semester.SemesterFilterDto;
 import com.gfi.backend.models.dtos.semester.SemesterItemDto;
@@ -39,11 +37,10 @@ public class SemesterController extends ApiBaseController {
 
     @PostMapping("/search")
     @PreAuthorize("hasRole('ADMIN')")
-    @Operation(summary = "Danh sách học kỳ", description = "Lấy danh sách học kỳ có phân trang và filter.")
-    public ResponseEntity<ApiResult<PageResponseDto<SemesterItemDto, SemesterFilterDto>>> search(
-            @RequestBody(required = false) PageRequestDto<SemesterFilterDto> request) {
-        PageRequestDto<SemesterFilterDto> safeRequest = request == null ? new PageRequestDto<>() : request;
-        return executeApiResult(() -> ApiResult.success(semesterService.search(safeRequest), "Hiển thị danh sách học kỳ thành công"));
+    @Operation(summary = "Danh sách học kỳ", description = "Lấy toàn bộ danh sách học kỳ.")
+    public ResponseEntity<ApiResult<List<SemesterItemDto>>> search(
+            @RequestBody(required = false) SemesterFilterDto filter) {
+        return executeApiResult(() -> ApiResult.success(semesterService.search(filter), "Hiển thị danh sách học kỳ thành công"));
     }
 
     @GetMapping("/options")

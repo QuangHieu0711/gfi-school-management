@@ -79,12 +79,17 @@ public class RoleServiceImpl implements RoleService {
     @Override
     @Transactional
     public RoleItemDto create(RoleCreateRequest request) {
+        String code = normalize(request.getCode());
         String roleName = normalize(request.getRoleName());
+        if (roleRepository.existsByCode(code)) {
+            throw new UserMessageException(CommonErrorCode.ROLE_CODE_ALREADY_EXISTS);
+        }
         if (roleRepository.existsByRoleName(roleName)) {
             throw new UserMessageException(CommonErrorCode.ROLE_NAME_ALREADY_EXISTS);
         }
 
         Role role = new Role();
+        role.setCode(code);
         role.setRoleName(roleName);
         role.setDescription(normalizeNullable(request.getDescription()));
         role.setStatus(request.getStatus());
@@ -98,13 +103,20 @@ public class RoleServiceImpl implements RoleService {
         Role role = roleRepository.findById(id)
                 .orElseThrow(() -> new UserMessageException(CommonErrorCode.ROLE_NOT_FOUND));
 
+        String code = normalize(request.getCode());
         String roleName = normalize(request.getRoleName());
+        roleRepository.findByCode(code)
+                .filter(found -> !found.getId().equals(id))
+                .ifPresent(found -> {
+                    throw new UserMessageException(CommonErrorCode.ROLE_CODE_ALREADY_EXISTS);
+                });
         roleRepository.findByRoleName(roleName)
                 .filter(found -> !found.getId().equals(id))
                 .ifPresent(found -> {
                     throw new UserMessageException(CommonErrorCode.ROLE_NAME_ALREADY_EXISTS);
                 });
 
+        role.setCode(code);
         role.setRoleName(roleName);
         role.setDescription(normalizeNullable(request.getDescription()));
         role.setStatus(request.getStatus());
@@ -128,6 +140,11 @@ public class RoleServiceImpl implements RoleService {
     private Specification<Role> buildSpecification(RoleFilterDto filter) {
         return (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
+
+            if (hasText(filter.getCode())) {
+                String keyword = "%" + filter.getCode().trim().toLowerCase() + "%";
+                predicates.add(cb.like(cb.lower(root.get("code")), keyword));
+            }
 
             if (hasText(filter.getRoleName())) {
                 String keyword = "%" + filter.getRoleName().trim().toLowerCase() + "%";
@@ -167,6 +184,7 @@ public class RoleServiceImpl implements RoleService {
     private RoleItemDto toDto(Role role) {
         return RoleItemDto.builder()
                 .id(role.getId())
+                .code(role.getCode())
                 .roleName(role.getRoleName())
                 .description(role.getDescription())
                 .status(role.getStatus())
