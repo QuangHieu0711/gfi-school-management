@@ -15,6 +15,7 @@ import { HoSoHocSinhComponent } from './ho-so-hoc-sinh/ho-so-hoc-sinh.component'
 
 @Component({
   selector: 'chi-tiet-hoc-sinh',
+  standalone: true,
   templateUrl: './chi-tiet-hoc-sinh.component.html',
   styleUrls: ['./chi-tiet-hoc-sinh.component.scss'],
   imports: [CommonModule, HoSoHocSinhComponent, IconComponent],

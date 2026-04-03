@@ -49,11 +49,12 @@ public class StudentEnrollment {
     @Column
     private Boolean isRepeater;
 
-    @Column(length = 50)
-    private String sessionsPerWeek;
+    @Column
+    private Integer sessionsPerWeek;
 
-    @Column(length = 50)
-    private String studyMode;
+    // 0 - Hoc ca ngay, 1 - Ban tru, 2 - Noi tru
+    @Column
+    private Integer studyMode;
 
     @Column
     private Boolean isBoarding;

@@ -43,8 +43,9 @@ public class Student {
     @Column(nullable = false)
     private LocalDate dateOfBirth;
 
-    @Column(length = 20)
-    private String gender;
+    //0 - Nam, 1 - Nữ
+    @Column
+    private Integer gender;
 
     @Column(length = 255)
     private String placeOfBirth;
@@ -63,6 +64,9 @@ public class Student {
 
     @Column(length = 255)
     private String email;
+
+    @Column(length = 500)
+    private String avatarUrl;
 
     @Column(length = 50)
     private String identityNumber;
@@ -88,8 +92,8 @@ public class Student {
     @Column
     private Integer studentStatus;
 
-    @Column(length = 100)
-    private String admissionType;
+    @Column
+    private Integer admissionType;
 
     @ManyToOne
     @JoinColumn(name = "unit_id", nullable = false, foreignKey = @ForeignKey(name = "fk_students_unit"))

@@ -161,6 +161,17 @@ export const AdminRoutes: Routes = [
             (m) => m.ChiTietHocSinhComponent
           ),
       },
+      {
+        path: PATH.TAO_MOI,
+        providers: [
+          provideState({ name: 'style', reducer: StyleReducer }),
+          provideEffects(StyleEffect),
+        ],
+        loadComponent: () =>
+          import('./hoc-sinh/tao-moi-hoc-sinh.component').then(
+            (m) => m.TaoMoiHocSinhComponent
+          ),
+      },
     ],
   },
 ];

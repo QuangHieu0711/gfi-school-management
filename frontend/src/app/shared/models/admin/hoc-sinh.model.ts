@@ -170,6 +170,101 @@ export interface HocSinhResponse extends TableDataSource {
 
 export type HocSinhDetailResponse = HocSinhResponse;
 
+export interface HocSinhFormAddressRequest {
+  addressType?: string;
+  provinceName?: string;
+  wardName?: string;
+  hamletName?: string;
+  detailAddress?: string;
+}
+
+export interface HocSinhFormGuardianRequest {
+  guardianType?: string;
+  fullName?: string;
+  birthYear?: number;
+  occupation?: string;
+  phone?: string;
+  email?: string;
+  identityNumber?: string;
+  isEthnic?: boolean;
+}
+
+export interface HocSinhFormEnrollmentRequest {
+  schoolYearId?: ID_TYPE;
+  classId?: ID_TYPE;
+  enrolledAt?: string;
+  status?: number;
+  isRepeater?: boolean;
+  sessionsPerWeek?: number;
+  studyMode?: number;
+  isBoarding?: boolean;
+  isTwoSessionsPerDay?: boolean;
+}
+
+export interface HocSinhFormProfileRequest {
+  policyObject?: string;
+  policyBenefit?: string;
+  priorityCategory?: string;
+  studentCategory?: string;
+  regionCategory?: string;
+  disabilityType?: string;
+  disabilityExemptEval?: boolean;
+  supportTuitionCost?: boolean;
+  resettlementArea?: boolean;
+  housingSupport?: boolean;
+  monthlyAllowance?: boolean;
+  riceSupport?: boolean;
+  followsMoeProgram?: boolean;
+  canSwim?: boolean;
+  learnsEthnicLanguage?: boolean;
+  studiedKindergarten5yo?: boolean;
+  needsVietnameseSupport?: boolean;
+  hasVietnameseReinforcementMaterial?: boolean;
+  hasEthnicTeachingAssistant?: boolean;
+  hasParentInternet?: boolean;
+  hasParentSmartphone?: boolean;
+  foreignLanguageProgram?: string;
+  foreignLanguageCertificate?: string;
+  informaticsCertificate?: string;
+  careerOrientation?: string;
+  vocationalOrientation?: string;
+  joinedTeamDate?: string;
+  joinedUnionDate?: string;
+  joinedPartyDate?: string;
+  otherSystemCode?: string;
+  ssoCode?: string;
+}
+
+export interface HocSinhFormRequest {
+  studentCode?: string;
+  fullName?: string;
+  firstName?: string;
+  moeCode?: string;
+  dateOfBirth?: string;
+  gender?: number;
+  placeOfBirth?: string;
+  ethnicity?: string;
+  religion?: string;
+  nationality?: string;
+  mobilePhone?: string;
+  email?: string;
+  avatarUrl?: string;
+  identityNumber?: string;
+  identityIssueDate?: string;
+  identityIssuePlace?: string;
+  healthInsuranceNumber?: string;
+  bloodGroup?: string;
+  boardingBook?: string;
+  admissionDate?: string;
+  studentStatus?: number;
+  admissionType?: number;
+  unitId?: ID_TYPE;
+  enrollment?: HocSinhFormEnrollmentRequest;
+  addresses?: HocSinhFormAddressRequest[];
+  guardians?: HocSinhFormGuardianRequest[];
+  profile?: HocSinhFormProfileRequest;
+}
+
 export const HOC_SINH_STATUS_OPTIONS = [
   { value: 0, label: 'Đang học' },
   { value: 1, label: 'Đã chuyển trường' },
@@ -273,63 +368,63 @@ export const HOC_SINH_FILTER_FORM = [
 ];
 
 export const HOC_SINH_DETAIL_FALLBACK: HocSinhDetailResponse = {
-  id: 'demo-student',
-  studentCode: '64632517-00-2519',
-  fullName: 'Ro Lan Cho',
-  firstName: 'Cho',
-  moeCode: '5289638318',
-  dateOfBirth: '2019-07-28',
-  gender: 'Nu',
-  studentStatus: 0,
-  classId: 1,
-  className: '1B',
-  gradeLevelId: 1,
-  gradeLevelName: 'Khoi 1',
+  id: '',
+  studentCode: '',
+  fullName: '',
+  firstName: '',
+  moeCode: '',
+  dateOfBirth: '',
+  gender: '',
+  studentStatus: undefined,
+  classId: undefined,
+  className: '',
+  gradeLevelId: undefined,
+  gradeLevelName: '',
   mobilePhone: '',
   email: '',
   identityNumber: '',
-  ethnicity: 'Gia-rai',
+  ethnicity: '',
   religion: '',
-  nationality: 'Viet Nam',
+  nationality: '',
   bloodGroup: '',
   identityIssueDate: '',
   identityIssuePlace: '',
-  healthInsuranceNumber: '6423450354',
+  healthInsuranceNumber: '',
   enrollment: {
-    schoolYearId: 1,
-    schoolYearName: '2025-2026',
-    classId: 1,
-    className: '1B',
-    gradeLevelId: 1,
-    gradeLevelName: 'Khoi 1',
-    enrolledAt: '2025-08-15',
-    status: 0,
+    schoolYearId: undefined,
+    schoolYearName: '',
+    classId: undefined,
+    className: '',
+    gradeLevelId: undefined,
+    gradeLevelName: '',
+    enrolledAt: '',
+    status: undefined,
     isRepeater: false,
-    sessionsPerWeek: '9 buoi/tuan',
-    studyMode: 'Hoc tai truong',
+    sessionsPerWeek: '',
+    studyMode: '',
     isBoarding: false,
-    isTwoSessionsPerDay: true,
+    isTwoSessionsPerDay: false,
   },
   fatherPhone: '',
-  motherPhone: '0867895495',
-  permanentProvinceName: 'Tinh Gia Lai',
-  permanentWardName: 'Xa Ia Puch',
+  motherPhone: '',
+  permanentProvinceName: '',
+  permanentWardName: '',
   addresses: [
     {
-      addressType: 'Thuong tru',
-      provinceName: 'Tinh Gia Lai',
-      districtName: 'Huyen Chu Prong',
-      wardName: 'Xa Ia Puch',
-      hamletName: 'Lang Bin',
-      detailAddress: 'Lang Bin, xa Ia Puch, tinh Gia Lai',
+      addressType: '',
+      provinceName: '',
+      districtName: '',
+      wardName: '',
+      hamletName: '',
+      detailAddress: '',
     },
     {
-      addressType: 'Noi sinh',
-      provinceName: 'Tinh Gia Lai',
-      districtName: 'Huyen Chu Prong',
-      wardName: 'Xa Ia Puch',
-      hamletName: 'Lang Bin',
-      detailAddress: 'Lang Bin, xa Ia Puch, tinh Gia Lai',
+      addressType: '',
+      provinceName: '',
+      districtName: '',
+      wardName: '',
+      hamletName: '',
+      detailAddress: '',
     },
   ],
   guardians: [
@@ -345,13 +440,13 @@ export const HOC_SINH_DETAIL_FALLBACK: HocSinhDetailResponse = {
     },
     {
       guardianType: HOC_SINH_GUARDIAN_TYPE.MOTHER,
-      fullName: 'Ro Lan Tho',
-      birthYear: 2001,
-      occupation: 'Nong dan',
-      phone: '0867895495',
+      fullName: '',
+      birthYear: undefined,
+      occupation: '',
+      phone: '',
       email: '',
       identityNumber: '',
-      isEthnic: true,
+      isEthnic: false,
     },
     {
       guardianType: HOC_SINH_GUARDIAN_TYPE.GUARDIAN,
@@ -365,15 +460,14 @@ export const HOC_SINH_DETAIL_FALLBACK: HocSinhDetailResponse = {
     },
   ],
   profile: {
-    policyObject:
-      'HS nguoi dan toc thieu so, o vung co dieu kien KT-XH kho khan',
+    policyObject: '',
     policyBenefit: '',
     priorityCategory: '',
     studentCategory: '',
-    regionCategory: 'Bien gioi - Hai dao',
+    regionCategory: '',
     disabilityType: '',
     disabilityExemptEval: false,
-    supportTuitionCost: true,
+    supportTuitionCost: false,
     resettlementArea: false,
     housingSupport: false,
     monthlyAllowance: false,
@@ -381,7 +475,7 @@ export const HOC_SINH_DETAIL_FALLBACK: HocSinhDetailResponse = {
     followsMoeProgram: false,
     canSwim: false,
     learnsEthnicLanguage: false,
-    studiedKindergarten5yo: true,
+    studiedKindergarten5yo: false,
     needsVietnameseSupport: false,
     hasVietnameseReinforcementMaterial: false,
     hasEthnicTeachingAssistant: false,

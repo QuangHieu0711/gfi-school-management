@@ -13,7 +13,7 @@ public class StudentFilterDto {
     private String moeCode;
     private Long gradeLevelId;
     private LocalDate dateOfBirth;
-    private String gender;
+    private Integer gender;
     private String studentCode;
     private String otherSystemCode;
     private String fatherPhone;

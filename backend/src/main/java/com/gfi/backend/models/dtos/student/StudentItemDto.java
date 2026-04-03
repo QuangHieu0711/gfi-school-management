@@ -15,13 +15,14 @@ public class StudentItemDto {
     private String firstName;
     private String moeCode;
     private LocalDate dateOfBirth;
-    private String gender;
+    private Integer gender;
     private String placeOfBirth;
     private String ethnicity;
     private String religion;
     private String nationality;
     private String mobilePhone;
     private String email;
+    private String avatarUrl;
     private String identityNumber;
     private LocalDate identityIssueDate;
     private String identityIssuePlace;
@@ -30,7 +31,7 @@ public class StudentItemDto {
     private String boardingBook;
     private LocalDate admissionDate;
     private Integer studentStatus;
-    private String admissionType;
+    private Integer admissionType;
     private Long unitId;
     private String unitName;
     private StudentEnrollmentItemDto enrollment;

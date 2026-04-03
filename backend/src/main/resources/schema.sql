@@ -115,6 +115,18 @@ ALTER TABLE IF EXISTS classroom_subjects
         END
     );
 
+ALTER TABLE IF EXISTS subjects
+    ALTER COLUMN type TYPE integer
+    USING (
+        CASE type::text
+            WHEN 'BAT_BUOC' THEN 0
+            WHEN 'TU_CHON' THEN 1
+            WHEN '0' THEN 0
+            WHEN '1' THEN 1
+            ELSE NULLIF(type::text, '')::integer
+        END
+    );
+
 ALTER TABLE IF EXISTS school_years
     ADD CONSTRAINT school_years_status_check
     CHECK (status IN (0, 1, 2));
@@ -201,13 +213,14 @@ CREATE TABLE IF NOT EXISTS students (
     first_name varchar(100),
     moe_code varchar(50),
     date_of_birth date NOT NULL,
-    gender varchar(20),
+    gender integer,
     place_of_birth varchar(255),
     ethnicity varchar(100),
     religion varchar(100),
     nationality varchar(100) DEFAULT 'Việt Nam',
     mobile_phone varchar(20),
     email varchar(255),
+    avatar_url varchar(500),
     identity_number varchar(50),
     identity_issue_date date,
     identity_issue_place varchar(255),
@@ -216,7 +229,7 @@ CREATE TABLE IF NOT EXISTS students (
     boarding_book varchar(100),
     admission_date date,
     student_status integer,
-    admission_type varchar(100),
+    admission_type integer,
     unit_id bigint NOT NULL,
     created_at timestamp,
     created_by varchar(255),
@@ -233,8 +246,8 @@ CREATE TABLE IF NOT EXISTS student_enrollments (
     enrolled_at date,
     status integer,
     is_repeater boolean DEFAULT false,
-    sessions_per_week varchar(50),
-    study_mode varchar(50),
+    sessions_per_week integer,
+    study_mode integer,
     is_boarding boolean DEFAULT false,
     is_two_sessions_per_day boolean DEFAULT false,
     created_at timestamp,
@@ -246,6 +259,55 @@ CREATE TABLE IF NOT EXISTS student_enrollments (
     CONSTRAINT fk_student_enrollments_class FOREIGN KEY (class_id) REFERENCES classes (id),
     CONSTRAINT uk_student_enrollment UNIQUE (student_id, school_year_id)
 );
+
+ALTER TABLE IF EXISTS students
+    ALTER COLUMN gender TYPE integer
+    USING (
+        CASE lower(gender::text)
+            WHEN 'nam' THEN 0
+            WHEN 'nu' THEN 1
+            WHEN 'nữ' THEN 1
+            WHEN '0' THEN 0
+            WHEN '1' THEN 1
+            ELSE NULLIF(gender::text, '')::integer
+        END
+    );
+
+ALTER TABLE IF EXISTS students
+    ALTER COLUMN admission_type TYPE integer
+    USING (
+        CASE lower(admission_type::text)
+            WHEN 'xet tuyen' THEN 0
+            WHEN 'thi tuyen' THEN 1
+            WHEN 'khac' THEN 2
+            WHEN '0' THEN 0
+            WHEN '1' THEN 1
+            WHEN '2' THEN 2
+            ELSE NULLIF(admission_type::text, '')::integer
+        END
+    );
+
+ALTER TABLE IF EXISTS student_enrollments
+    ALTER COLUMN sessions_per_week TYPE integer
+    USING NULLIF(regexp_replace(sessions_per_week::text, '[^0-9]', '', 'g'), '')::integer;
+
+ALTER TABLE IF EXISTS student_enrollments
+    ALTER COLUMN study_mode TYPE integer
+    USING (
+        CASE lower(study_mode::text)
+            WHEN 'hoc ca ngay' THEN 0
+            WHEN 'ban tru' THEN 1
+            WHEN 'n?i tru' THEN 2
+            WHEN 'noi tru' THEN 2
+            WHEN '0' THEN 0
+            WHEN '1' THEN 1
+            WHEN '2' THEN 2
+            ELSE NULLIF(study_mode::text, '')::integer
+        END
+    );
+
+ALTER TABLE IF EXISTS students
+    ADD COLUMN IF NOT EXISTS avatar_url varchar(500);
 
 CREATE TABLE IF NOT EXISTS student_addresses (
     id bigserial PRIMARY KEY,
@@ -434,7 +496,7 @@ SELECT
     'Minh Anh',
     'MOE-HS0001',
     DATE '2017-09-12',
-    'Nữ',
+    1,
     'Hà ội',
     'Kinh',
     'Không',
@@ -449,7 +511,7 @@ SELECT
     'HK-0001',
     DATE '2023-08-20',
     1,
-    'Xét tuyển',
+    0,
     c.unit_id,
     NOW(),
     'SYSTEM'
@@ -484,8 +546,8 @@ SELECT
     DATE '2023-08-20',
     1,
     false,
-    '10 buổi/tuần',
-    'Bán trú',
+    10,
+    1,
     false,
     true,
     NOW(),
@@ -638,3 +700,112 @@ WHERE s.student_code = 'HS0001'
       FROM student_profiles sp
       WHERE sp.student_id = s.id
   );
+
+INSERT INTO students (
+    student_code,
+    full_name,
+    first_name,
+    moe_code,
+    date_of_birth,
+    gender,
+    place_of_birth,
+    ethnicity,
+    religion,
+    nationality,
+    mobile_phone,
+    email,
+    admission_date,
+    student_status,
+    admission_type,
+    unit_id,
+    created_at,
+    created_by
+)
+SELECT
+    v.student_code,
+    v.full_name,
+    v.first_name,
+    v.moe_code,
+    v.date_of_birth,
+    v.gender,
+    v.place_of_birth,
+    v.ethnicity,
+    v.religion,
+    v.nationality,
+    v.mobile_phone,
+    v.email,
+    v.admission_date,
+    v.student_status,
+    v.admission_type,
+    c.unit_id,
+    NOW(),
+    'SYSTEM'
+FROM (
+    VALUES
+        ('HS0002', 'Trần Gia Hân', 'Gia Hân', 'MOE-HS0002', DATE '2017-03-21', 1, 'Hà Nội', 'Kinh', 'Không', 'Việt Nam', '0910000002', 'giahan.hs0002@example.com', DATE '2023-08-20', 1, 0, '1A'),
+        ('HS0003', 'Nguyễn Minh Khang', 'Minh Khang', 'MOE-HS0003', DATE '2017-05-12', 0, 'Hà Nội', 'Kinh', 'Không', 'Việt Nam', '0910000003', 'minhkhang.hs0003@example.com', DATE '2023-08-20', 1, 0, '1A'),
+        ('HS0004', 'Lê Khánh An', 'Khánh An', 'MOE-HS0004', DATE '2017-07-08', 1, 'Hà Nội', 'Kinh', 'Không', 'Việt Nam', '0910000004', 'khanhan.hs0004@example.com', DATE '2023-08-20', 1, 0, '1B'),
+        ('HS0005', 'Phạm Đức Anh', 'Đức Anh', 'MOE-HS0005', DATE '2017-01-16', 0, 'Hà Nội', 'Kinh', 'Không', 'Việt Nam', '0910000005', 'ducanh.hs0005@example.com', DATE '2023-08-20', 1, 0, '1B'),
+        ('HS0006', 'Vũ Ngọc Mai', 'Ngọc Mai', 'MOE-HS0006', DATE '2017-11-03', 1, 'Hà Nội', 'Kinh', 'Không', 'Việt Nam', '0910000006', 'ngocmai.hs0006@example.com', DATE '2023-08-20', 1, 0, '1C'),
+        ('HS0007', 'Đỗ Hoàng Long', 'Hoàng Long', 'MOE-HS0007', DATE '2017-02-27', 0, 'Hà Nội', 'Kinh', 'Không', 'Việt Nam', '0910000007', 'hoanglong.hs0007@example.com', DATE '2023-08-20', 1, 0, '1C'),
+        ('HS0008', 'Bùi Phương Linh', 'Phương Linh', 'MOE-HS0008', DATE '2016-09-14', 1, 'Hà Nội', 'Kinh', 'Không', 'Việt Nam', '0910000008', 'phuonglinh.hs0008@example.com', DATE '2023-08-20', 1, 0, '2A'),
+        ('HS0009', 'Ngô Tuấn Kiệt', 'Tuấn Kiệt', 'MOE-HS0009', DATE '2016-12-01', 0, 'Hà Nội', 'Kinh', 'Không', 'Việt Nam', '0910000009', 'tuankiet.hs0009@example.com', DATE '2023-08-20', 1, 0, '2B'),
+        ('HS0010', 'Phan Hà My', 'Hà My', 'MOE-HS0010', DATE '2016-06-19', 1, 'Hà Nội', 'Kinh', 'Không', 'Việt Nam', '0910000010', 'hamy.hs0010@example.com', DATE '2023-08-20', 1, 0, '2C'),
+        ('HS0011', 'Hoàng Bảo Nam', 'Bảo Nam', 'MOE-HS0011', DATE '2016-04-25', 0, 'Hà Nội', 'Kinh', 'Không', 'Việt Nam', '0910000011', 'baonam.hs0011@example.com', DATE '2023-08-20', 1, 0, '3A')
+) AS v(student_code, full_name, first_name, moe_code, date_of_birth, gender, place_of_birth, ethnicity, religion, nationality, mobile_phone, email, admission_date, student_status, admission_type, class_code)
+JOIN classes c ON c.code = v.class_code
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM students s
+    WHERE s.student_code = v.student_code
+);
+
+INSERT INTO student_enrollments (
+    student_id,
+    school_year_id,
+    class_id,
+    enrolled_at,
+    status,
+    is_repeater,
+    sessions_per_week,
+    study_mode,
+    is_boarding,
+    is_two_sessions_per_day,
+    created_at,
+    created_by
+)
+SELECT
+    s.id,
+    c.school_year_id,
+    c.id,
+    DATE '2023-08-20',
+    1,
+    false,
+    10,
+    1,
+    false,
+    true,
+    NOW(),
+    'SYSTEM'
+FROM students s
+JOIN (
+    VALUES
+        ('HS0002', '1A'),
+        ('HS0003', '1A'),
+        ('HS0004', '1B'),
+        ('HS0005', '1B'),
+        ('HS0006', '1C'),
+        ('HS0007', '1C'),
+        ('HS0008', '2A'),
+        ('HS0009', '2B'),
+        ('HS0010', '2C'),
+        ('HS0011', '3A')
+) AS v(student_code, class_code) ON v.student_code = s.student_code
+JOIN classes c ON c.code = v.class_code
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM student_enrollments se
+    WHERE se.student_id = s.id
+      AND se.school_year_id = c.school_year_id
+);
+

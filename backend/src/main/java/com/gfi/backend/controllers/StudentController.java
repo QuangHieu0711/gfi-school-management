@@ -9,14 +9,18 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
+import com.gfi.backend.models.dtos.common.FileUploadDto;
 import com.gfi.backend.models.dtos.common.PageRequestDto;
 import com.gfi.backend.models.dtos.common.PageResponseDto;
 import com.gfi.backend.models.dtos.student.StudentCreateRequest;
 import com.gfi.backend.models.dtos.student.StudentFilterDto;
 import com.gfi.backend.models.dtos.student.StudentItemDto;
 import com.gfi.backend.models.global.ApiResult;
+import com.gfi.backend.services.FileStorageService;
 import com.gfi.backend.services.interfaces.StudentService;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -31,6 +35,7 @@ import lombok.RequiredArgsConstructor;
 public class StudentController extends ApiBaseController {
 
     private final StudentService studentService;
+    private final FileStorageService fileStorageService;
 
     @PostMapping("/search")
     @PreAuthorize("hasRole('ADMIN')")
@@ -47,6 +52,13 @@ public class StudentController extends ApiBaseController {
     @Operation(summary = "Thêm học sinh", description = "Tạo mới học sinh kèm thông tin nhập học, địa chỉ, người giám hộ và hồ sơ mở rộng.")
     public ResponseEntity<ApiResult<StudentItemDto>> create(@Valid @RequestBody StudentCreateRequest request) {
         return executeApiResult(() -> ApiResult.success(studentService.create(request), "Thêm học sinh thành công"));
+    }
+
+    @PostMapping("/upload-avatar")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Tai anh hoc sinh", description = "Tai anh dai dien hoc sinh len server va tra ve avatarUrl.")
+    public ResponseEntity<ApiResult<FileUploadDto>> uploadAvatar(@RequestParam("file") MultipartFile file) {
+        return executeApiResult(() -> ApiResult.success(fileStorageService.storeStudentAvatar(file), "Tai anh thanh cong"));
     }
 
     @GetMapping("/{id}")

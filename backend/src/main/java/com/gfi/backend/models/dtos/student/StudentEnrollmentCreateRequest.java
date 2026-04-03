@@ -3,16 +3,15 @@ package com.gfi.backend.models.dtos.student;
 import java.time.LocalDate;
 
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Size;
 import lombok.Data;
 
 @Data
 public class StudentEnrollmentCreateRequest {
 
-    @NotNull(message = "Nam hoc khong duoc de trong")
+    @NotNull(message = "Năm học không được để trống")
     private Long schoolYearId;
 
-    @NotNull(message = "Lop khong duoc de trong")
+    @NotNull(message = "Lớp không được để trống")
     private Long classId;
 
     private LocalDate enrolledAt;
@@ -21,11 +20,9 @@ public class StudentEnrollmentCreateRequest {
 
     private Boolean isRepeater;
 
-    @Size(max = 50, message = "So buoi hoc toi da 50 ky tu")
-    private String sessionsPerWeek;
+    private Integer sessionsPerWeek;
 
-    @Size(max = 50, message = "Hinh thuc hoc toi da 50 ky tu")
-    private String studyMode;
+    private Integer studyMode;
 
     private Boolean isBoarding;
 

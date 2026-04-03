@@ -44,6 +44,7 @@ import com.gfi.backend.repositories.StudentGuardianRepository;
 import com.gfi.backend.repositories.StudentProfileRepository;
 import com.gfi.backend.repositories.StudentRepository;
 import com.gfi.backend.repositories.UnitRepository;
+import com.gfi.backend.services.FileStorageService;
 import com.gfi.backend.services.interfaces.StudentService;
 import com.gfi.backend.utils.PageableUtils;
 
@@ -70,6 +71,7 @@ public class StudentServiceImpl implements StudentService {
     private final UnitRepository unitRepository;
     private final SchoolYearRepository schoolYearRepository;
     private final ClassroomRepository classroomRepository;
+    private final FileStorageService fileStorageService;
 
     @Override
     @Transactional(readOnly = true)
@@ -191,8 +193,8 @@ public class StudentServiceImpl implements StudentService {
             if (filter.getDateOfBirth() != null) {
                 predicates.add(cb.equal(root.get("dateOfBirth"), filter.getDateOfBirth()));
             }
-            if (hasText(filter.getGender())) {
-                predicates.add(cb.equal(cb.lower(root.get("gender")), filter.getGender().trim().toLowerCase(Locale.ROOT)));
+            if (filter.getGender() != null) {
+                predicates.add(cb.equal(root.get("gender"), filter.getGender()));
             }
             if (hasText(filter.getStudentCode())) {
                 predicates.add(cb.like(cb.lower(root.get("studentCode")), likeValue(filter.getStudentCode())));
@@ -322,13 +324,14 @@ public class StudentServiceImpl implements StudentService {
         student.setFirstName(normalizeNullable(request.getFirstName()));
         student.setMoeCode(normalizeNullable(request.getMoeCode()));
         student.setDateOfBirth(request.getDateOfBirth());
-        student.setGender(normalizeNullable(request.getGender()));
+        student.setGender(request.getGender());
         student.setPlaceOfBirth(normalizeNullable(request.getPlaceOfBirth()));
         student.setEthnicity(normalizeNullable(request.getEthnicity()));
         student.setReligion(normalizeNullable(request.getReligion()));
         student.setNationality(normalizeNullable(request.getNationality()));
         student.setMobilePhone(normalizeNullable(request.getMobilePhone()));
         student.setEmail(normalizeNullable(request.getEmail()));
+        student.setAvatarUrl(normalizeNullable(fileStorageService.storeStudentAvatarFromDataUrl(request.getAvatarUrl())));
         student.setIdentityNumber(normalizeNullable(request.getIdentityNumber()));
         student.setIdentityIssueDate(request.getIdentityIssueDate());
         student.setIdentityIssuePlace(normalizeNullable(request.getIdentityIssuePlace()));
@@ -337,7 +340,7 @@ public class StudentServiceImpl implements StudentService {
         student.setBoardingBook(normalizeNullable(request.getBoardingBook()));
         student.setAdmissionDate(request.getAdmissionDate());
         student.setStudentStatus(request.getStudentStatus());
-        student.setAdmissionType(normalizeNullable(request.getAdmissionType()));
+        student.setAdmissionType(request.getAdmissionType());
         student.setUnit(unit);
     }
 
@@ -351,8 +354,8 @@ public class StudentServiceImpl implements StudentService {
         enrollment.setEnrolledAt(request.getEnrolledAt());
         enrollment.setStatus(request.getStatus());
         enrollment.setIsRepeater(request.getIsRepeater());
-        enrollment.setSessionsPerWeek(normalizeNullable(request.getSessionsPerWeek()));
-        enrollment.setStudyMode(normalizeNullable(request.getStudyMode()));
+        enrollment.setSessionsPerWeek(request.getSessionsPerWeek());
+        enrollment.setStudyMode(request.getStudyMode());
         enrollment.setIsBoarding(request.getIsBoarding());
         enrollment.setIsTwoSessionsPerDay(request.getIsTwoSessionsPerDay());
         if (enrollment.getId() == null) {
@@ -464,6 +467,7 @@ public class StudentServiceImpl implements StudentService {
                 .nationality(student.getNationality())
                 .mobilePhone(student.getMobilePhone())
                 .email(student.getEmail())
+                .avatarUrl(student.getAvatarUrl())
                 .identityNumber(student.getIdentityNumber())
                 .identityIssueDate(student.getIdentityIssueDate())
                 .identityIssuePlace(student.getIdentityIssuePlace())

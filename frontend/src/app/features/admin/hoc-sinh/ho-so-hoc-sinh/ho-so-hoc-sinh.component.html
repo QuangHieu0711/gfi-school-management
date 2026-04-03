@@ -5,7 +5,7 @@
         <div class="avatar">{{ initials }}</div>
         <div class="head-info">
           <div class="student-name">{{ vm.fullName }}</div>
-          <div class="meta-line">{{ date(vm.dateOfBirth) }} - {{ value(vm.gender) }}</div>
+          <div class="meta-line">{{ date(vm.dateOfBirth) }} - {{ genderLabel(vm.gender) }}</div>
           <div class="meta-line">{{ value(vm.gradeLevelName || vm.enrollment?.gradeLevelName) }} - {{ value(vm.className || vm.enrollment?.className) }}</div>
           <div class="meta-line status-line">{{ statusLabel(vm.studentStatus) }}</div>
         </div>

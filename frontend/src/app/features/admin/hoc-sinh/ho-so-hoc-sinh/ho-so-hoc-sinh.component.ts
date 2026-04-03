@@ -21,6 +21,7 @@ interface FlagItem {
 
 @Component({
   selector: 'app-ho-so-hoc-sinh',
+  standalone: true,
   templateUrl: './ho-so-hoc-sinh.component.html',
   styleUrls: ['./ho-so-hoc-sinh.component.scss'],
   imports: [CommonModule],
@@ -104,7 +105,7 @@ export class HoSoHocSinhComponent {
   get personalInfo(): InfoItem[] {
     return [
       { label: 'Ngày sinh', value: this.date(this.vm.dateOfBirth) },
-      { label: 'Giới tính', value: this.value(this.vm.gender) },
+      { label: 'Giới tính', value: this.genderLabel(this.vm.gender) },
       { label: 'Dân tộc', value: this.value(this.vm.ethnicity) },
       { label: 'Tôn giáo', value: this.value(this.vm.religion) },
       { label: 'Quốc tịch', value: this.value(this.vm.nationality) },
@@ -118,7 +119,10 @@ export class HoSoHocSinhComponent {
         label: 'Số buổi học/tuần',
         value: this.value(this.vm.enrollment?.sessionsPerWeek),
       },
-      { label: 'Chế độ học', value: this.value(this.vm.enrollment?.studyMode) },
+      {
+        label: 'Chế độ học',
+        value: this.studyModeLabel(this.vm.enrollment?.studyMode),
+      },
       { label: 'BHYT', value: this.value(this.vm.healthInsuranceNumber) },
       {
         label: 'Mã hệ thống khác',
@@ -310,6 +314,20 @@ export class HoSoHocSinhComponent {
   value(value: unknown): string {
     if (value === null || value === undefined || value === '') return '';
     return `${value}`;
+  }
+
+  genderLabel(value: unknown): string {
+    if (value === 0 || value === '0') return 'Nam';
+    if (value === 1 || value === '1' || value === 'Nu') return 'Nữ';
+    if (value === 'Nam' || value === 'Nữ') return `${value}`;
+    return this.value(value);
+  }
+
+  studyModeLabel(value: unknown): string {
+    if (value === 0 || value === '0') return 'Học cả ngày';
+    if (value === 1 || value === '1') return 'Bán trú';
+    if (value === 2 || value === '2') return 'Nội trú';
+    return this.value(value);
   }
 
   private guardianByType(

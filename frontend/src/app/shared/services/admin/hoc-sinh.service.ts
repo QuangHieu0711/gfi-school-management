@@ -8,6 +8,7 @@ import {
   HOC_SINH_API_ENDPOINT,
   HocSinhDetailResponse,
   HocSinhFilterRequest,
+  HocSinhFormRequest,
   HocSinhResponse,
 } from '@app/model/admin/hoc-sinh.model';
 
@@ -29,6 +30,12 @@ export class HocSinhService {
 
   getById(id: string | number) {
     return this.http.get<IResponse<HocSinhDetailResponse>>(`${this.baseUrl}/${id}`, {
+      context: this.silentContext,
+    });
+  }
+
+  create(payload: HocSinhFormRequest) {
+    return this.http.post<IResponse<HocSinhDetailResponse>>(this.baseUrl, payload, {
       context: this.silentContext,
     });
   }

@@ -16,8 +16,8 @@ public class StudentEnrollmentItemDto {
     private LocalDate enrolledAt;
     private Integer status;
     private Boolean isRepeater;
-    private String sessionsPerWeek;
-    private String studyMode;
+    private Integer sessionsPerWeek;
+    private Integer studyMode;
     private Boolean isBoarding;
     private Boolean isTwoSessionsPerDay;
 }

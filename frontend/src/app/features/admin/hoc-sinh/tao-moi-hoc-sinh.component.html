@@ -1,0 +1,677 @@
+﻿<div class="detail-page">
+  <div class="detail-topbar">
+    <div class="fake-tabs">
+      <button
+        type="button"
+        class="fake-tab active">
+        HO SO HOC SINH
+      </button>
+    </div>
+
+    <div class="toolbar-actions">
+      <button
+        type="button"
+        class="back-button"
+        (click)="goBack()">
+        <app-icon
+          icon="arrow_back"
+          [size]="16"></app-icon>
+        Quay lai
+      </button>
+      <button
+        type="button"
+        color="primary"
+        matButton="filled"
+        class="btn-tight"
+        (click)="submit()">
+        <app-icon
+          icon="save"
+          [size]="18"
+          class="btn-icon"></app-icon>
+        Luu
+      </button>
+    </div>
+  </div>
+
+  <form
+    class="detail-layout"
+    [formGroup]="form">
+    <div class="left-column">
+      <section class="form-section">
+        <div class="section-bar">Thong tin hoc sinh</div>
+        <div class="avatar-row">
+          <div class="avatar-card">
+            @if (avatarPreview) {
+              <img
+                class="avatar-image"
+                [src]="avatarPreview"
+                alt="Avatar hoc sinh" />
+            } @else {
+              <div class="avatar-placeholder">
+                <app-icon
+                  icon="image"
+                  [size]="22"></app-icon>
+              </div>
+            }
+          </div>
+          <div class="field full avatar-input">
+            <span>Anh dai dien</span>
+            <div class="avatar-picker">
+              <input
+                #avatarInput
+                type="file"
+                accept="image/*"
+                hidden
+                (change)="onAvatarSelected($event)" />
+              <button
+                type="button"
+                class="avatar-trigger"
+                (click)="avatarInput.click()">
+                Chon anh
+              </button>
+              <div class="avatar-file-name">
+                {{ selectedAvatarName || 'Chua chon anh' }}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-grid one">
+          <label class="field">
+            <span>Ma hoc sinh</span>
+            <input
+              type="text"
+              formControlName="studentCode"
+              placeholder="Ma hoc sinh" />
+          </label>
+          <label class="field">
+            <span>Ho va ten</span>
+            <input
+              type="text"
+              formControlName="fullName"
+              placeholder="Ho va ten" />
+          </label>
+          <label class="field">
+            <span>Ten</span>
+            <input
+              type="text"
+              formControlName="firstName"
+              placeholder="Ten" />
+          </label>
+          <label class="field">
+            <span>Ma MOET</span>
+            <input
+              type="text"
+              formControlName="moeCode"
+              placeholder="Ma MOET" />
+          </label>
+          <div class="field field-date">
+            <span>Ngay sinh</span>
+            <app-date-control
+              [item]="dateOfBirthItem"
+              [form]="form"></app-date-control>
+          </div>
+          <div class="field field-select">
+            <span>Gioi tinh</span>
+            <app-select-control
+              [item]="genderItem"
+              [form]="form"></app-select-control>
+          </div>
+          <div class="field field-date">
+            <span>Ngay vao truong</span>
+            <app-date-control
+              [item]="admissionDateItem"
+              [form]="form"></app-date-control>
+          </div>
+          <div class="field field-select">
+            <span>Trang thai hoc sinh</span>
+            <app-select-control
+              [item]="studentStatusItem"
+              [form]="form"></app-select-control>
+          </div>
+          <div class="field field-select">
+            <span>Hinh thuc tuyen sinh</span>
+            <app-select-control
+              [item]="admissionTypeItem"
+              [form]="form"></app-select-control>
+          </div>
+          <div class="field field-select">
+            <span>Don vi</span>
+            <app-select-control
+              [item]="unitItem"
+              [form]="form"></app-select-control>
+          </div>
+        </div>
+      </section>
+
+      <section
+        class="form-section"
+        formGroupName="guardians">
+        <div class="section-bar">Thong tin cha</div>
+        <div
+          class="form-grid one"
+          formGroupName="father">
+          <label class="field"
+            ><span>Ho va ten</span
+            ><input
+              type="text"
+              formControlName="fullName"
+              placeholder="Ho va ten cha"
+          /></label>
+          <label class="field"
+            ><span>Nam sinh</span
+            ><input
+              type="number"
+              formControlName="birthYear"
+              placeholder="Nam sinh"
+          /></label>
+          <label class="field"
+            ><span>Nghe nghiep</span
+            ><input
+              type="text"
+              formControlName="occupation"
+              placeholder="Nghe nghiep"
+          /></label>
+          <label class="field"
+            ><span>SDT</span
+            ><input
+              type="text"
+              formControlName="phone"
+              placeholder="So dien thoai"
+          /></label>
+          <label class="field"
+            ><span>Email</span
+            ><input
+              type="email"
+              formControlName="email"
+              placeholder="Email"
+          /></label>
+          <label class="field"
+            ><span>CCCD</span
+            ><input
+              type="text"
+              formControlName="identityNumber"
+              placeholder="CCCD"
+          /></label>
+          <div class="switch-row">
+            <span>La dan toc</span>
+            <mat-slide-toggle formControlName="isEthnic"></mat-slide-toggle>
+          </div>
+        </div>
+      </section>
+
+      <section
+        class="form-section"
+        formGroupName="guardians">
+        <div class="section-bar">Thong tin me</div>
+        <div
+          class="form-grid one"
+          formGroupName="mother">
+          <label class="field"
+            ><span>Ho va ten</span
+            ><input
+              type="text"
+              formControlName="fullName"
+              placeholder="Ho va ten me"
+          /></label>
+          <label class="field"
+            ><span>Nam sinh</span
+            ><input
+              type="number"
+              formControlName="birthYear"
+              placeholder="Nam sinh"
+          /></label>
+          <label class="field"
+            ><span>Nghe nghiep</span
+            ><input
+              type="text"
+              formControlName="occupation"
+              placeholder="Nghe nghiep"
+          /></label>
+          <label class="field"
+            ><span>SDT</span
+            ><input
+              type="text"
+              formControlName="phone"
+              placeholder="So dien thoai"
+          /></label>
+          <label class="field"
+            ><span>Email</span
+            ><input
+              type="email"
+              formControlName="email"
+              placeholder="Email"
+          /></label>
+          <label class="field"
+            ><span>CCCD</span
+            ><input
+              type="text"
+              formControlName="identityNumber"
+              placeholder="CCCD"
+          /></label>
+          <div class="switch-row">
+            <span>La dan toc</span>
+            <mat-slide-toggle formControlName="isEthnic"></mat-slide-toggle>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <div class="right-column">
+      <section class="form-section">
+        <div class="section-bar">Thong tin chung</div>
+        <div class="form-grid three">
+          <label class="field"
+            ><span>Noi sinh</span
+            ><input
+              type="text"
+              formControlName="placeOfBirth"
+              placeholder="Noi sinh"
+          /></label>
+          <label class="field"
+            ><span>Dan toc</span
+            ><input
+              type="text"
+              formControlName="ethnicity"
+              placeholder="Dan toc"
+          /></label>
+          <label class="field"
+            ><span>Ton giao</span
+            ><input
+              type="text"
+              formControlName="religion"
+              placeholder="Ton giao"
+          /></label>
+          <label class="field"
+            ><span>Quoc tich</span
+            ><input
+              type="text"
+              formControlName="nationality"
+              placeholder="Quoc tich"
+          /></label>
+          <label class="field"
+            ><span>Dien thoai</span
+            ><input
+              type="text"
+              formControlName="mobilePhone"
+              placeholder="So dien thoai"
+          /></label>
+          <label class="field"
+            ><span>Email</span
+            ><input
+              type="email"
+              formControlName="email"
+              placeholder="Email"
+          /></label>
+          <label class="field"
+            ><span>CCCD</span
+            ><input
+              type="text"
+              formControlName="identityNumber"
+              placeholder="CCCD"
+          /></label>
+          <div class="field field-date">
+            <span>Ngay cap</span>
+            <app-date-control
+              [item]="identityIssueDateItem"
+              [form]="form"></app-date-control>
+          </div>
+          <label class="field"
+            ><span>Noi cap</span
+            ><input
+              type="text"
+              formControlName="identityIssuePlace"
+              placeholder="Noi cap"
+          /></label>
+          <label class="field"
+            ><span>BHYT</span
+            ><input
+              type="text"
+              formControlName="healthInsuranceNumber"
+              placeholder="So BHYT"
+          /></label>
+          <label class="field"
+            ><span>Nhom mau</span
+            ><input
+              type="text"
+              formControlName="bloodGroup"
+              placeholder="Nhom mau"
+          /></label>
+          <label class="field"
+            ><span>So ho khau</span
+            ><input
+              type="text"
+              formControlName="boardingBook"
+              placeholder="So ho khau"
+          /></label>
+        </div>
+      </section>
+
+      <section
+        class="form-section"
+        formGroupName="enrollment">
+        <div class="section-bar">Thong tin hoc tap</div>
+        <div class="form-grid three">
+          <div class="field field-select">
+            <span>Nam hoc</span>
+            <app-select-control
+              [item]="schoolYearItem"
+              [form]="$any(form.get('enrollment'))"></app-select-control>
+          </div>
+          <div class="field field-select">
+            <span>Lop</span>
+            <app-select-control
+              [item]="classItem"
+              [form]="$any(form.get('enrollment'))"></app-select-control>
+          </div>
+          <div class="field field-date">
+            <span>Ngay nhap hoc</span>
+            <app-date-control
+              [item]="enrolledAtItem"
+              [form]="$any(form.get('enrollment'))"></app-date-control>
+          </div>
+          <div class="field field-select">
+            <span>Trang thai lop</span>
+            <app-select-control
+              [item]="enrollmentStatusItem"
+              [form]="$any(form.get('enrollment'))"></app-select-control>
+          </div>
+          <label class="field"
+            ><span>So buoi hoc/tuan</span
+            ><input
+              type="number"
+              formControlName="sessionsPerWeek"
+              placeholder="So buoi hoc/tuan"
+          /></label>
+          <div class="field field-select">
+            <span>Che do hoc</span>
+            <app-select-control
+              [item]="studyModeItem"
+              [form]="$any(form.get('enrollment'))"></app-select-control>
+          </div>
+          <div class="switch-row">
+            <span>Luu ban</span>
+            <mat-slide-toggle formControlName="isRepeater"></mat-slide-toggle>
+          </div>
+          <div class="switch-row">
+            <span>Noi tru</span>
+            <mat-slide-toggle formControlName="isBoarding"></mat-slide-toggle>
+          </div>
+          <div class="switch-row">
+            <span>Hoc 2 buoi/ngay</span>
+            <mat-slide-toggle
+              formControlName="isTwoSessionsPerDay"></mat-slide-toggle>
+          </div>
+        </div>
+      </section>
+
+      <section
+        class="form-section"
+        formGroupName="addresses">
+        <div class="section-bar">Thong tin dia chi</div>
+        <div class="address-grid">
+          <div
+            class="form-grid two"
+            formGroupName="permanent">
+            <div class="address-title">Thuong tru</div>
+            <label class="field"
+              ><span>Tinh/TP</span
+              ><input
+                type="text"
+                formControlName="provinceName"
+                placeholder="Tinh/TP"
+            /></label>
+            <label class="field"
+              ><span>Xa/Phuong</span
+              ><input
+                type="text"
+                formControlName="wardName"
+                placeholder="Xa/phuong"
+            /></label>
+            <label class="field"
+              ><span>Thon/Xom</span
+              ><input
+                type="text"
+                formControlName="hamletName"
+                placeholder="Thon/xom"
+            /></label>
+            <label class="field full"
+              ><span>Dia chi chi tiet</span
+              ><input
+                type="text"
+                formControlName="detailAddress"
+                placeholder="Dia chi chi tiet"
+            /></label>
+          </div>
+          <div
+            class="form-grid two"
+            formGroupName="temporary">
+            <div class="address-title">Tam tru</div>
+            <label class="field"
+              ><span>Tinh/TP</span
+              ><input
+                type="text"
+                formControlName="provinceName"
+                placeholder="Tinh/TP"
+            /></label>
+            <label class="field"
+              ><span>Xa/Phuong</span
+              ><input
+                type="text"
+                formControlName="wardName"
+                placeholder="Xa/phuong"
+            /></label>
+            <label class="field"
+              ><span>Thon/Xom</span
+              ><input
+                type="text"
+                formControlName="hamletName"
+                placeholder="Thon/xom"
+            /></label>
+            <label class="field full"
+              ><span>Dia chi chi tiet</span
+              ><input
+                type="text"
+                formControlName="detailAddress"
+                placeholder="Dia chi chi tiet"
+            /></label>
+          </div>
+        </div>
+      </section>
+
+      <section
+        class="form-section"
+        formGroupName="profile">
+        <div class="section-bar">Ho so hoc sinh</div>
+        <div class="form-grid two">
+          <label class="field"
+            ><span>Doi tuong chinh sach</span
+            ><input
+              type="text"
+              formControlName="policyObject"
+              placeholder="Doi tuong chinh sach"
+          /></label>
+          <label class="field"
+            ><span>Che do chinh sach</span
+            ><input
+              type="text"
+              formControlName="policyBenefit"
+              placeholder="Che do chinh sach"
+          /></label>
+          <label class="field"
+            ><span>Dien uu tien</span
+            ><input
+              type="text"
+              formControlName="priorityCategory"
+              placeholder="Dien uu tien"
+          /></label>
+          <label class="field"
+            ><span>Dien hoc sinh</span
+            ><input
+              type="text"
+              formControlName="studentCategory"
+              placeholder="Dien hoc sinh"
+          /></label>
+          <label class="field"
+            ><span>Khu vuc</span
+            ><input
+              type="text"
+              formControlName="regionCategory"
+              placeholder="Khu vuc"
+          /></label>
+          <label class="field"
+            ><span>Loai khuyet tat</span
+            ><input
+              type="text"
+              formControlName="disabilityType"
+              placeholder="Loai khuyet tat"
+          /></label>
+          <label class="field"
+            ><span>Chuong trinh ngoai ngu</span
+            ><input
+              type="text"
+              formControlName="foreignLanguageProgram"
+              placeholder="Chuong trinh ngoai ngu"
+          /></label>
+          <label class="field"
+            ><span>Chung chi ngoai ngu</span
+            ><input
+              type="text"
+              formControlName="foreignLanguageCertificate"
+              placeholder="Chung chi ngoai ngu"
+          /></label>
+          <label class="field"
+            ><span>Chung chi tin hoc</span
+            ><input
+              type="text"
+              formControlName="informaticsCertificate"
+              placeholder="Chung chi tin hoc"
+          /></label>
+          <label class="field"
+            ><span>Huong nghiep</span
+            ><input
+              type="text"
+              formControlName="careerOrientation"
+              placeholder="Huong nghiep"
+          /></label>
+          <label class="field"
+            ><span>Nghe pho thong</span
+            ><input
+              type="text"
+              formControlName="vocationalOrientation"
+              placeholder="Nghe pho thong"
+          /></label>
+          <div class="field field-date">
+            <span>Ngay vao doi</span>
+            <app-date-control
+              [item]="joinedTeamDateItem"
+              [form]="$any(form.get('profile'))"></app-date-control>
+          </div>
+          <div class="field field-date">
+            <span>Ngay vao doan</span>
+            <app-date-control
+              [item]="joinedUnionDateItem"
+              [form]="$any(form.get('profile'))"></app-date-control>
+          </div>
+          <div class="field field-date">
+            <span>Ngay vao dang</span>
+            <app-date-control
+              [item]="joinedPartyDateItem"
+              [form]="$any(form.get('profile'))"></app-date-control>
+          </div>
+          <label class="field"
+            ><span>Ma he thong khac</span
+            ><input
+              type="text"
+              formControlName="otherSystemCode"
+              placeholder="Ma he thong khac"
+          /></label>
+          <label class="field"
+            ><span>SSO</span
+            ><input
+              type="text"
+              formControlName="ssoCode"
+              placeholder="Ma SSO"
+          /></label>
+        </div>
+
+        <div class="flag-grid">
+          <div class="switch-row">
+            <span>Khuyet tat mien danh gia</span
+            ><mat-slide-toggle
+              formControlName="disabilityExemptEval"></mat-slide-toggle>
+          </div>
+          <div class="switch-row">
+            <span>Ho tro chi phi hoc tap</span
+            ><mat-slide-toggle
+              formControlName="supportTuitionCost"></mat-slide-toggle>
+          </div>
+          <div class="switch-row">
+            <span>Thuoc dien tai dinh cu</span
+            ><mat-slide-toggle
+              formControlName="resettlementArea"></mat-slide-toggle>
+          </div>
+          <div class="switch-row">
+            <span>Ho tro nha o</span
+            ><mat-slide-toggle
+              formControlName="housingSupport"></mat-slide-toggle>
+          </div>
+          <div class="switch-row">
+            <span>Cap tien hang thang</span
+            ><mat-slide-toggle
+              formControlName="monthlyAllowance"></mat-slide-toggle>
+          </div>
+          <div class="switch-row">
+            <span>Ho tro gao</span
+            ><mat-slide-toggle formControlName="riceSupport"></mat-slide-toggle>
+          </div>
+          <div class="switch-row">
+            <span>Hoc chuong trinh Bo</span
+            ><mat-slide-toggle
+              formControlName="followsMoeProgram"></mat-slide-toggle>
+          </div>
+          <div class="switch-row">
+            <span>Biet boi</span
+            ><mat-slide-toggle formControlName="canSwim"></mat-slide-toggle>
+          </div>
+          <div class="switch-row">
+            <span>Hoc ngon ngu dan toc</span
+            ><mat-slide-toggle
+              formControlName="learnsEthnicLanguage"></mat-slide-toggle>
+          </div>
+          <div class="switch-row">
+            <span>Da hoc lop Mam 5 tuoi</span
+            ><mat-slide-toggle
+              formControlName="studiedKindergarten5yo"></mat-slide-toggle>
+          </div>
+          <div class="switch-row">
+            <span>Can ho tro tieng Viet</span
+            ><mat-slide-toggle
+              formControlName="needsVietnameseSupport"></mat-slide-toggle>
+          </div>
+          <div class="switch-row">
+            <span>Co tai lieu tang cuong tieng Viet</span
+            ><mat-slide-toggle
+              formControlName="hasVietnameseReinforcementMaterial"></mat-slide-toggle>
+          </div>
+          <div class="switch-row">
+            <span>Co tro giang nguoi dan toc</span
+            ><mat-slide-toggle
+              formControlName="hasEthnicTeachingAssistant"></mat-slide-toggle>
+          </div>
+          <div class="switch-row">
+            <span>Phu huynh co Internet</span
+            ><mat-slide-toggle
+              formControlName="hasParentInternet"></mat-slide-toggle>
+          </div>
+          <div class="switch-row">
+            <span>Phu huynh co smartphone</span
+            ><mat-slide-toggle
+              formControlName="hasParentSmartphone"></mat-slide-toggle>
+          </div>
+        </div>
+      </section>
+    </div>
+  </form>
+</div>
+

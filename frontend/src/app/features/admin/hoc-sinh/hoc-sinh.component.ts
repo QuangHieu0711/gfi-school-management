@@ -25,6 +25,7 @@ import { HocSinhService } from '@app/service/admin/hoc-sinh.service';
 
 @Component({
   selector: 'hoc-sinh',
+  standalone: true,
   templateUrl: './hoc-sinh.component.html',
   styleUrls: ['./hoc-sinh.component.scss'],
   imports: [
@@ -160,6 +161,10 @@ export class HocSinhComponent extends ComponentBaseAbstract {
     );
   }
 
+  openCreate(): void {
+    this.routerService.navigate(['/Admin', 'HocSinh', PATH.TAO_MOI]);
+  }
+
   getStatusLabel(status?: number): string {
     return (
       this.statusOptions.find((item) => item.value === status)?.label ??
@@ -258,6 +263,7 @@ export class HocSinhComponent extends ComponentBaseAbstract {
       permanentWardName:
         item.permanentWardName ?? permanentAddress?.wardName ?? '--',
       dateOfBirth: this.formatDate(item.dateOfBirth),
+      gender: this.formatGender(item.gender),
     };
   }
 
@@ -273,5 +279,14 @@ export class HocSinhComponent extends ComponentBaseAbstract {
     const [year, month, day] = raw.split('-');
     if (!year || !month || !day) return raw;
     return `${day}/${month}/${year}`;
+  }
+
+  private formatGender(value?: string | number): string {
+    if (value === 0 || value === '0') return 'Nam';
+    if (value === 1 || value === '1') return 'Nữ';
+    if (value === 'Nam' || value === 'Nu') {
+      return value === 'Nu' ? 'Nữ' : value;
+    }
+    return value ? `${value}` : '';
   }
 }
