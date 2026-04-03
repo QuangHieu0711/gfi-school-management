@@ -34,6 +34,9 @@ export const NAVIGATOR_ENDPOINT = {
     MON_HOC: {
       BASE_PATH: 'MonHoc',
     },
+    HOC_SINH: {
+      BASE_PATH: 'HocSinh',
+    },
   },
 } as const;
 

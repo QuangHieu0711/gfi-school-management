@@ -17,6 +17,7 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatBadgeModule } from '@angular/material/badge';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
+import { MatSelectModule } from '@angular/material/select';
 
 export const MATERIAL_MODULE = [
   MatTreeModule,
@@ -34,6 +35,7 @@ export const MATERIAL_MODULE = [
   MatMenuModule,
   MatTooltipModule,
   MatFormFieldModule,
+  MatSelectModule,
   MatCheckboxModule,
   MatChipsModule,
   MatBadgeModule,

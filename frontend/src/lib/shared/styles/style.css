@@ -12,6 +12,34 @@ body {
   @apply text-dark-500;
 }
 
+* {
+  scrollbar-color: #cfd8dc #ffffff;
+}
+
+*::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+  background: #ffffff;
+}
+
+*::-webkit-scrollbar-track {
+  background: #ffffff;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: #c3cfd4;
+  border-radius: 999px;
+  border: 2px solid #ffffff;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: #aebbc1;
+}
+
+*::-webkit-scrollbar-corner {
+  background: #ffffff;
+}
+
 body::before,
 .clear-margin-collapsing::before {
   content: '';

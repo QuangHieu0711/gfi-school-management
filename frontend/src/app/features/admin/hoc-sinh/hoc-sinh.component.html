@@ -1,0 +1,218 @@
+<section class="student-list-page">
+  <div class="page-toolbar">
+    <div class="page-title">
+      <app-icon
+        icon="svg:clipboard-list-alt"
+        [size]="16"></app-icon>
+      <span>Danh sách học sinh</span>
+    </div>
+
+    <div class="toolbar-actions">
+      <button
+        type="button"
+        color="primary"
+        matButton="filled"
+        class="btn-tight">
+        <app-icon
+          icon="add_box"
+          [size]="18"
+          class="btn-icon" />
+        Thêm mới
+      </button>
+      <button
+        type="button"
+        color="primary"
+        matButton="filled"
+        class="btn-tight">
+        <app-icon
+          icon="swap_vert"
+          [size]="18"
+          class="btn-icon" />
+        Sắp xếp
+      </button>
+      <button
+        type="button"
+        color="primary"
+        matButton="filled"
+        class="btn-tight">
+        <app-icon
+          icon="settings"
+          [size]="18"
+          class="btn-icon" />
+        Cấu hình
+      </button>
+      <button
+        type="button"
+        color="primary"
+        matButton="filled"
+        class="btn-tight">
+        <app-icon
+          icon="image"
+          [size]="18"
+          class="btn-icon" />
+        Cập nhật ảnh
+      </button>
+    </div>
+  </div>
+
+  <form
+    class="student-grid-card"
+    [formGroup]="form"
+    (ngSubmit)="submitInlineFilter()">
+    <div class="table-scroll">
+      <table class="student-table">
+        <thead>
+          <tr class="heading-row">
+            <th class="stt-col">STT</th>
+            <th class="action-col">Thao tác</th>
+            <th>Họ và tên</th>
+            <th>Tên</th>
+            <th>Trạng thái</th>
+            <th>Tên lớp</th>
+            <th>Mã MOET</th>
+            <th>Khối</th>
+            <th>Ngày sinh</th>
+            <th>Giới tính</th>
+            <th>Mã học sinh</th>
+            <th>Mã hệ thống khác</th>
+            <th>Số điện thoại bố</th>
+            <th>Số điện thoại mẹ</th>
+            <th>Tỉnh/TP thường trú</th>
+            <th>Xã/phường thường trú</th>
+          </tr>
+
+          <tr class="filter-row">
+            <th class="stt-col"></th>
+            <th class="action-col"></th>
+            <th class="filter-cell">
+              <app-text-control
+                [item]="findFormControl($formItem, key.FULL_NAME)"
+                [form]="form"></app-text-control>
+            </th>
+            <th class="filter-cell">
+              <app-text-control
+                [item]="findFormControl($formItem, key.FIRST_NAME)"
+                [form]="form"></app-text-control>
+            </th>
+            <th class="filter-cell">
+              <app-select-control
+                [item]="findFormControl($formItem, key.STUDENT_STATUS)"
+                [form]="form"></app-select-control>
+            </th>
+            <th class="filter-cell">
+              <app-select-control
+                [item]="findFormControl($formItem, key.CLASS_ID)"
+                [form]="form"></app-select-control>
+            </th>
+            <th class="filter-cell">
+              <app-text-control
+                [item]="findFormControl($formItem, key.MOE_CODE)"
+                [form]="form"></app-text-control>
+            </th>
+            <th class="filter-cell">
+              <app-select-control
+                [item]="findFormControl($formItem, key.GRADE_LEVEL_ID)"
+                [form]="form"></app-select-control>
+            </th>
+            <th class="filter-cell">
+              <app-date-control
+                [item]="findFormControl($formItem, key.DATE_OF_BIRTH)"
+                [form]="form"></app-date-control>
+            </th>
+            <th class="filter-cell">
+              <app-select-control
+                [item]="findFormControl($formItem, key.GENDER)"
+                [form]="form"></app-select-control>
+            </th>
+            <th class="filter-cell">
+              <app-text-control
+                [item]="findFormControl($formItem, key.STUDENT_CODE)"
+                [form]="form"></app-text-control>
+            </th>
+            <th class="filter-cell">
+              <app-text-control
+                [item]="findFormControl($formItem, key.OTHER_SYSTEM_CODE)"
+                [form]="form"></app-text-control>
+            </th>
+            <th class="filter-cell">
+              <app-text-control
+                [item]="findFormControl($formItem, key.FATHER_PHONE)"
+                [form]="form"></app-text-control>
+            </th>
+            <th class="filter-cell">
+              <app-text-control
+                [item]="findFormControl($formItem, key.MOTHER_PHONE)"
+                [form]="form"></app-text-control>
+            </th>
+            <th class="filter-cell">
+              <app-text-control
+                [item]="findFormControl($formItem, key.PERMANENT_PROVINCE_NAME)"
+                [form]="form"></app-text-control>
+            </th>
+            <th class="filter-cell">
+              <app-text-control
+                [item]="findFormControl($formItem, key.PERMANENT_WARD_NAME)"
+                [form]="form"></app-text-control>
+            </th>
+          </tr>
+        </thead>
+
+        <tbody>
+          @for (row of dataSource; track row.id; let index = $index) {
+            <tr>
+              <td class="stt-col">{{ pageIndex * pageSize + index + 1 }}</td>
+              <td class="action-col">
+                <button
+                  type="button"
+                  class="detail-btn"
+                  (click)="openDetail(row)"
+                  aria-label="Xem chi tiết">
+                  <mat-icon class="detail-icon">visibility</mat-icon>
+                </button>
+              </td>
+              <td>
+                <button
+                  type="button"
+                  class="name-link"
+                  (click)="openDetail(row)">
+                  {{ row.fullName }}
+                </button>
+              </td>
+              <td>{{ row.firstName || '' }}</td>
+              <td class="status-col">
+                <span class="status-pill">{{ getStatusLabel(row.studentStatus) }}</span>
+              </td>
+              <td>{{ row.className || '' }}</td>
+              <td>{{ row.moeCode || '' }}</td>
+              <td>{{ row.gradeLevelName || '' }}</td>
+              <td>{{ row.dateOfBirth || '' }}</td>
+              <td>{{ row.gender || '' }}</td>
+              <td>{{ row.studentCode || '' }}</td>
+              <td>{{ row.otherSystemCode || '' }}</td>
+              <td>{{ row.fatherPhone || '' }}</td>
+              <td>{{ row.motherPhone || '' }}</td>
+              <td>{{ row.permanentProvinceName || '' }}</td>
+              <td>{{ row.permanentWardName || '' }}</td>
+            </tr>
+          } @empty {
+            <tr>
+              <td
+                class="empty-row"
+                colspan="16">
+                Không có dữ liệu
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </form>
+
+  <app-paginator
+    [total]="dataSourceTotal"
+    [pageIndex]="pageIndex"
+    [pageSize]="pageSize"
+    [pageSizeOptions]="[10, 20, 50]"
+    (pageChange)="onPageChange($event)">
+  </app-paginator>
+</section>

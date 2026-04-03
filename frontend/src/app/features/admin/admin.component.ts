@@ -1,5 +1,6 @@
 import { Component } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
+
 import { NAVIGATOR_ENDPOINT } from '@constant/navigator';
 import { ComponentBaseAbstract } from '@layout';
 import { NavigatorAction } from '@store/navigator';
@@ -31,7 +32,7 @@ export class AdminComponent extends ComponentBaseAbstract {
       {
         key: 'nguoi-dung-root',
         id: 'nguoi-dung-root',
-        name: 'Qu\u1ea3n tr\u1ecb ng\u01b0\u1eddi d\u00f9ng',
+        name: 'Quản trị người dùng',
         icon: 'group',
         expanded: true,
         children: [
@@ -39,7 +40,7 @@ export class AdminComponent extends ComponentBaseAbstract {
             key: 'nguoi-dung',
             id: 'nguoi-dung',
             parentId: 'nguoi-dung-root',
-            name: 'Qu\u1ea3n l\u00fd t\u00e0i kho\u1ea3n',
+            name: 'Quản lý tài khoản',
             icon: 'person',
             url: `/${NAVIGATOR_ENDPOINT.ADMIN.BASE_PATH}/${NAVIGATOR_ENDPOINT.ADMIN.NGUOI_DUNG.BASE_PATH}`,
           } as MenuItem,
@@ -47,7 +48,7 @@ export class AdminComponent extends ComponentBaseAbstract {
             key: 'don-vi',
             id: 'don-vi',
             parentId: 'nguoi-dung-root',
-            name: 'Qu\u1ea3n l\u00fd \u0111\u01a1n v\u1ecb',
+            name: 'Quản lý đơn vị',
             icon: 'account_tree',
             url: `/${NAVIGATOR_ENDPOINT.ADMIN.BASE_PATH}/${NAVIGATOR_ENDPOINT.ADMIN.DON_VI.BASE_PATH}`,
           } as MenuItem,
@@ -56,7 +57,7 @@ export class AdminComponent extends ComponentBaseAbstract {
       {
         key: 'cau-hinh-root',
         id: 'cau-hinh-root',
-        name: 'C\u1ea5u h\u00ecnh h\u1ec7 th\u1ed1ng',
+        name: 'Cấu hình hệ thống',
         icon: 'settings',
         expanded: true,
         children: [
@@ -64,7 +65,7 @@ export class AdminComponent extends ComponentBaseAbstract {
             key: 'vai-tro',
             id: 'vai-tro',
             parentId: 'cau-hinh-root',
-            name: 'Qu\u1ea3n l\u00fd vai tr\u00f2',
+            name: 'Quản lý vai trò',
             icon: 'manage_accounts',
             url: `/${NAVIGATOR_ENDPOINT.ADMIN.BASE_PATH}/${NAVIGATOR_ENDPOINT.ADMIN.VAI_TRO.BASE_PATH}`,
           } as MenuItem,
@@ -72,7 +73,7 @@ export class AdminComponent extends ComponentBaseAbstract {
             key: 'nam-hoc',
             id: 'nam-hoc',
             parentId: 'cau-hinh-root',
-            name: 'C\u1ea5u h\u00ecnh n\u0103m h\u1ecdc',
+            name: 'Cấu hình năm học',
             icon: 'calendar_month',
             url: `/${NAVIGATOR_ENDPOINT.ADMIN.BASE_PATH}/${NAVIGATOR_ENDPOINT.ADMIN.NAM_HOC.BASE_PATH}`,
           } as MenuItem,
@@ -80,7 +81,7 @@ export class AdminComponent extends ComponentBaseAbstract {
             key: 'khoi',
             id: 'khoi',
             parentId: 'cau-hinh-root',
-            name: 'C\u1ea5u h\u00ecnh kh\u1ed1i',
+            name: 'Cấu hình khối',
             icon: 'dashboard',
             url: `/${NAVIGATOR_ENDPOINT.ADMIN.BASE_PATH}/${NAVIGATOR_ENDPOINT.ADMIN.KHOI.BASE_PATH}`,
           } as MenuItem,
@@ -89,7 +90,7 @@ export class AdminComponent extends ComponentBaseAbstract {
       {
         key: 'hoc-tap-root',
         id: 'hoc-tap-root',
-        name: 'Qu\u1ea3n l\u00fd h\u1ecdc t\u1eadp',
+        name: 'Quản lý học tập',
         icon: 'school',
         expanded: true,
         children: [
@@ -97,7 +98,7 @@ export class AdminComponent extends ComponentBaseAbstract {
             key: 'lop',
             id: 'lop',
             parentId: 'hoc-tap-root',
-            name: 'Qu\u1ea3n l\u00fd l\u1edbp',
+            name: 'Quản lý lớp',
             icon: 'meeting_room',
             url: `/${NAVIGATOR_ENDPOINT.ADMIN.BASE_PATH}/${NAVIGATOR_ENDPOINT.ADMIN.LOP.BASE_PATH}`,
           } as MenuItem,
@@ -105,9 +106,26 @@ export class AdminComponent extends ComponentBaseAbstract {
             key: 'mon-hoc',
             id: 'mon-hoc',
             parentId: 'hoc-tap-root',
-            name: 'Qu\u1ea3n l\u00fd m\u00f4n h\u1ecdc',
+            name: 'Quản lý môn học',
             icon: 'menu_book',
             url: `/${NAVIGATOR_ENDPOINT.ADMIN.BASE_PATH}/${NAVIGATOR_ENDPOINT.ADMIN.MON_HOC.BASE_PATH}`,
+          } as MenuItem,
+        ],
+      } as MenuItem,
+      {
+        key: 'hoc-sinh-root',
+        id: 'hoc-sinh-root',
+        name: 'Học sinh',
+        icon: 'groups',
+        expanded: true,
+        children: [
+          {
+            key: 'ho-so-hoc-sinh',
+            id: 'ho-so-hoc-sinh',
+            parentId: 'hoc-sinh-root',
+            name: 'Hồ sơ học sinh',
+            icon: 'badge',
+            url: `/${NAVIGATOR_ENDPOINT.ADMIN.BASE_PATH}/${NAVIGATOR_ENDPOINT.ADMIN.HOC_SINH.BASE_PATH}`,
           } as MenuItem,
         ],
       } as MenuItem,

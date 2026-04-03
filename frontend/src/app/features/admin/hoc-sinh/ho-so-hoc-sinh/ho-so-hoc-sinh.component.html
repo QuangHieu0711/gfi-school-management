@@ -1,0 +1,116 @@
+<div class="detail-layout">
+  <div class="left-column">
+    <section class="student-summary">
+      <div class="student-head">
+        <div class="avatar">{{ initials }}</div>
+        <div class="head-info">
+          <div class="student-name">{{ vm.fullName }}</div>
+          <div class="meta-line">{{ date(vm.dateOfBirth) }} - {{ value(vm.gender) }}</div>
+          <div class="meta-line">{{ value(vm.gradeLevelName || vm.enrollment?.gradeLevelName) }} - {{ value(vm.className || vm.enrollment?.className) }}</div>
+          <div class="meta-line status-line">{{ statusLabel(vm.studentStatus) }}</div>
+        </div>
+      </div>
+
+      <div class="summary-list">
+        @for (item of summaryItems; track item.label) {
+          <div class="simple-row">
+            <span>{{ item.label }} :</span>
+            <strong>{{ item.value }}</strong>
+          </div>
+        }
+      </div>
+    </section>
+
+    <section class="side-section">
+      <div class="section-bar">Thông tin cha</div>
+      @for (item of guardianItems(father); track item.label) {
+        <div class="simple-row">
+          <span>{{ item.label }}:</span>
+          <strong>{{ item.value }}</strong>
+        </div>
+      }
+    </section>
+
+    <section class="side-section">
+      <div class="section-bar">Thông tin mẹ</div>
+      @for (item of guardianItems(mother); track item.label) {
+        <div class="simple-row">
+          <span>{{ item.label }}:</span>
+          <strong>{{ item.value }}</strong>
+        </div>
+      }
+    </section>
+
+    <section class="side-section">
+      <div class="section-bar">Thông tin người bảo hộ</div>
+      @for (item of guardianItems(sponsor); track item.label) {
+        <div class="simple-row">
+          <span>{{ item.label }}:</span>
+          <strong>{{ item.value }}</strong>
+        </div>
+      }
+    </section>
+  </div>
+
+  <div class="right-column">
+    <section class="main-section">
+      <div class="section-bar">Thông tin chung</div>
+      <div class="info-grid compact three">
+        @for (item of generalInfo; track item.label) {
+          <div class="info-item">
+            <span>{{ item.label }} :</span>
+            <strong>{{ item.value }}</strong>
+          </div>
+        }
+      </div>
+    </section>
+
+    <section class="main-section">
+      <div class="section-bar">Thông tin địa chỉ & Hộ khẩu</div>
+      <div class="info-grid compact two">
+        @for (item of addressInfo; track item.label) {
+          <div class="info-item">
+            <span>{{ item.label }} :</span>
+            <strong>{{ item.value }}</strong>
+          </div>
+        }
+      </div>
+    </section>
+
+    <section class="main-section">
+      <div class="section-bar">Thông tin cá nhân</div>
+      <div class="info-grid compact two">
+        @for (item of personalInfo; track item.label) {
+          <div class="info-item">
+            <span>{{ item.label }} :</span>
+            <strong>{{ item.value }}</strong>
+          </div>
+        }
+      </div>
+
+      <div class="flag-grid">
+        @for (item of supportFlags; track item.label) {
+          <div class="flag-item">
+            <span>{{ item.label }} :</span>
+            <span
+              class="flag-switch"
+              [class.active]="item.value"
+              aria-hidden="true"></span>
+          </div>
+        }
+      </div>
+    </section>
+
+    <section class="main-section">
+      <div class="section-bar">Hồ sơ học sinh</div>
+      <div class="info-grid compact two">
+        @for (item of profileInfo; track item.label) {
+          <div class="info-item">
+            <span>{{ item.label }} :</span>
+            <strong>{{ item.value }}</strong>
+          </div>
+        }
+      </div>
+    </section>
+  </div>
+</div>

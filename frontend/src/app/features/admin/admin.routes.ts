@@ -1,5 +1,5 @@
 import { Routes } from '@angular/router';
-import { NAVIGATOR_ENDPOINT } from '@constant/navigator';
+import { NAVIGATOR_ENDPOINT, PATH } from '@constant/navigator';
 import { AdminComponent } from '@features/admin/admin.component';
 
 import { provideState } from '@ngrx/store';
@@ -131,6 +131,34 @@ export const AdminRoutes: Routes = [
         loadComponent: () =>
           import('@features/admin/mon-hoc/mon-hoc.component').then(
             (m) => m.MonHocComponent
+          ),
+      },
+    ],
+  },
+  {
+    path: NAVIGATOR_ENDPOINT.ADMIN.HOC_SINH.BASE_PATH,
+    component: AdminComponent,
+    children: [
+      {
+        path: '',
+        providers: [
+          provideState({ name: 'style', reducer: StyleReducer }),
+          provideEffects(StyleEffect),
+        ],
+        loadComponent: () =>
+          import('./hoc-sinh/hoc-sinh.component').then(
+            (m) => m.HocSinhComponent
+          ),
+      },
+      {
+        path: `${PATH.CHI_TIET}/:id`,
+        providers: [
+          provideState({ name: 'style', reducer: StyleReducer }),
+          provideEffects(StyleEffect),
+        ],
+        loadComponent: () =>
+          import('./hoc-sinh/chi-tiet-hoc-sinh.component').then(
+            (m) => m.ChiTietHocSinhComponent
           ),
       },
     ],
