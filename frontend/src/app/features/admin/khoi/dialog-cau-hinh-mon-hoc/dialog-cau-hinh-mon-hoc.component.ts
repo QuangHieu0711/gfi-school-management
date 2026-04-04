@@ -48,8 +48,7 @@ export class DialogCauHinhMonHocComponent extends ComponentBaseAbstract {
   readonly $formItem = [
     TEXT_CONTROL({
       controlName: MON_HOC_KEY.NAME,
-      placeholder:
-        'T\u00ecm ki\u1ebfm theo m\u00e3 ho\u1eb7c t\u00ean m\u00f4n h\u1ecdc',
+      placeholder: 'Tìm kiếm theo mã hoặc tên môn học',
       required: false,
       maxLength: 255,
     }),

@@ -7,5 +7,20 @@
       "Origin": "http://localhost:8080"
     },
     "logLevel": "debug"
+  },
+  "/address-kit": {
+    "target": "https://production.cas.so",
+    "secure": true,
+    "changeOrigin": true,
+    "logLevel": "debug"
+  },
+  "/hcmesb-test": {
+    "target": "https://hcmesb.tphcm.gov.vn/test",
+    "secure": true,
+    "changeOrigin": true,
+    "pathRewrite": {
+      "^/hcmesb-test": ""
+    },
+    "logLevel": "debug"
   }
 }

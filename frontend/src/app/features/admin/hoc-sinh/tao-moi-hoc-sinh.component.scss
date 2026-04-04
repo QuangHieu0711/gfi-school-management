@@ -214,33 +214,40 @@
   box-sizing: border-box;
 }
 
+.field.field-text,
 .field.field-select,
 .field.field-date {
   gap: 4px;
 }
 
+.field.field-text app-text-control,
 .field.field-select app-select-control,
 .field.field-date app-date-control {
   display: block;
 }
 
+.field.field-text ::ng-deep .form-group,
 .field.field-select ::ng-deep .form-group,
 .field.field-date ::ng-deep .form-group {
   display: block;
   width: 100%;
 }
 
+.field.field-text ::ng-deep .form-control,
 .field.field-select ::ng-deep .form-control,
 .field.field-date ::ng-deep .form-control {
   min-width: 0;
   width: 100%;
 }
 
+.field.field-text ::ng-deep .mat-mdc-form-field,
 .field.field-select ::ng-deep .mat-mdc-form-field,
 .field.field-date ::ng-deep .mat-mdc-form-field {
   width: 100%;
 }
 
+.field.field-text ::ng-deep .mat-mdc-form-field-infix,
+.field.field-text ::ng-deep .mat-mdc-text-field-wrapper,
 .field.field-select ::ng-deep .mat-mdc-form-field-infix,
 .field.field-select ::ng-deep .mat-mdc-text-field-wrapper,
 .field.field-select ::ng-deep .mtx-select,

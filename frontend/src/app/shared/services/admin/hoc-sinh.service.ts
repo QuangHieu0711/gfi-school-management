@@ -39,4 +39,20 @@ export class HocSinhService {
       context: this.silentContext,
     });
   }
+
+  update(id: string | number, payload: HocSinhFormRequest) {
+    return this.http.put<IResponse<HocSinhDetailResponse>>(
+      `${this.baseUrl}/${id}`,
+      payload,
+      {
+        context: this.silentContext,
+      }
+    );
+  }
+
+  delete(id: string | number) {
+    return this.http.delete<IResponse<null>>(`${this.baseUrl}/${id}`, {
+      context: this.silentContext,
+    });
+  }
 }

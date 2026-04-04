@@ -172,6 +172,17 @@ export const AdminRoutes: Routes = [
             (m) => m.TaoMoiHocSinhComponent
           ),
       },
+      {
+        path: `${PATH.CAP_NHAT}/:id`,
+        providers: [
+          provideState({ name: 'style', reducer: StyleReducer }),
+          provideEffects(StyleEffect),
+        ],
+        loadComponent: () =>
+          import('./hoc-sinh/tao-moi-hoc-sinh.component').then(
+            (m) => m.TaoMoiHocSinhComponent
+          ),
+      },
     ],
   },
 ];

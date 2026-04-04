@@ -47,7 +47,7 @@ export class DialogCauHinhMonHocLopComponent extends ComponentBaseAbstract {
   readonly $formItem = [
     TEXT_CONTROL({
       controlName: MON_HOC_KEY.NAME,
-      placeholder: 'T\u00ecm ki\u1ebfm theo m\u00e3 ho\u1eb7c t\u00ean m\u00f4n h\u1ecdc',
+      placeholder: 'Tìm kiếm theo mã hoặc tên môn học',
       required: false,
       maxLength: 255,
     }),
@@ -76,7 +76,7 @@ export class DialogCauHinhMonHocLopComponent extends ComponentBaseAbstract {
     }
   ) {
     super(injector);
-    this.title = `C\u1ea5u h\u00ecnh m\u00f4n h\u1ecdc: ${data.classroom?.[LOP_KEY.NAME] ?? ''}`;
+    this.title = `Cấu hình môn học: ${data.classroom?.[LOP_KEY.NAME] ?? ''}`;
   }
 
   protected override componentInit(): void {
@@ -91,11 +91,11 @@ export class DialogCauHinhMonHocLopComponent extends ComponentBaseAbstract {
         field: COMMON_TABLE_KEY.STT,
       },
       {
-        header: 'M\u00e3 m\u00f4n h\u1ecdc',
+        header: 'Mã môn học',
         field: 'subjectCode',
       },
       {
-        header: 'T\u00ean m\u00f4n h\u1ecdc',
+        header: 'Tên môn học',
         field: 'subjectName',
       },
       {
@@ -176,18 +176,15 @@ export class DialogCauHinhMonHocLopComponent extends ComponentBaseAbstract {
       })
       .subscribe({
         next: () => {
-          this.toastr.success(
-            'L\u01b0u c\u1ea5u h\u00ecnh th\u00e0nh c\u00f4ng',
-            'Th\u00e0nh c\u00f4ng'
-          );
+          this.toastr.success('Lưu cấu hình thành công', 'Thành công');
           this.dialogRef.close(true);
         },
         error: (error) => {
           this.toastr.error(
             error?.error?.userMessage ??
               error?.error?.message ??
-              'L\u01b0u c\u1ea5u h\u00ecnh th\u1ea5t b\u1ea1i',
-            'Th\u1ea5t b\u1ea1i'
+              'Lưu cấu hình thất bại',
+            'Thất bại'
           );
         },
       });
@@ -221,8 +218,8 @@ export class DialogCauHinhMonHocLopComponent extends ComponentBaseAbstract {
         this.toastr.error(
           error?.error?.userMessage ??
             error?.error?.message ??
-            'Kh\u00f4ng t\u1ea3i \u0111\u01b0\u1ee3c danh s\u00e1ch m\u00f4n h\u1ecdc',
-          'Th\u1ea5t b\u1ea1i'
+            'Không tải được chi tiết cấu hình môn học',
+          'Thất bại'
         );
       },
     });

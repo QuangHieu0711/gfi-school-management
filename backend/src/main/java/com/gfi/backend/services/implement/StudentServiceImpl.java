@@ -400,11 +400,14 @@ public class StudentServiceImpl implements StudentService {
     }
 
     private StudentProfile replaceProfile(Student student, StudentProfileCreateRequest request) {
-        studentProfileRepository.deleteByStudentId(student.getId());
         if (request == null) {
+            studentProfileRepository.findByStudentId(student.getId())
+                    .ifPresent(studentProfileRepository::delete);
             return null;
         }
-        StudentProfile profile = new StudentProfile();
+
+        StudentProfile profile = studentProfileRepository.findByStudentId(student.getId())
+                .orElseGet(StudentProfile::new);
         profile.setStudent(student);
         profile.setPolicyObject(normalizeNullable(request.getPolicyObject()));
         profile.setPolicyBenefit(normalizeNullable(request.getPolicyBenefit()));

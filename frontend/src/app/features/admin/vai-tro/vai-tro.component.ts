@@ -82,6 +82,7 @@ export class VaiTroComponent extends ComponentBaseAbstract {
           {
             type: 'icon',
             icon: 'visibility',
+            class: 'action-view',
             tooltip: 'Chi tiết',
             click: (rowData: VaiTroResponse) =>
               this.openDialog(this.TYPE_FORM.DETAIL, rowData),
@@ -89,6 +90,7 @@ export class VaiTroComponent extends ComponentBaseAbstract {
           {
             type: 'icon',
             icon: 'edit',
+            class: 'action-edit',
             tooltip: 'Chỉnh sửa',
             click: (rowData: VaiTroResponse) =>
               this.openDialog(this.TYPE_FORM.UPDATE, rowData),
@@ -96,6 +98,7 @@ export class VaiTroComponent extends ComponentBaseAbstract {
           {
             type: 'icon',
             icon: 'delete',
+            class: 'action-delete',
             tooltip: 'Xóa',
             click: (rowData: VaiTroResponse) => this.deleteRole(rowData),
           },

@@ -169,6 +169,7 @@ export class NguoiDungComponent extends ComponentBaseAbstract {
           {
             type: 'icon',
             icon: 'key',
+            class: 'action-view',
             tooltip: 'Mở khóa / Reset mật khẩu',
             click: (rowData: NguoiDungResponse) => {
               this.dialog.confirm(
@@ -199,6 +200,7 @@ export class NguoiDungComponent extends ComponentBaseAbstract {
           {
             type: 'icon',
             icon: 'edit',
+            class: 'action-edit',
             tooltip: 'Chỉnh sửa',
             iif: () => this.permission.canEdit(this.permissionUrl),
             click: (rowData: NguoiDungResponse) =>
@@ -207,6 +209,7 @@ export class NguoiDungComponent extends ComponentBaseAbstract {
           {
             type: 'icon',
             icon: 'delete',
+            class: 'action-delete',
             tooltip: 'Xóa',
             iif: () => this.permission.canDelete(this.permissionUrl),
             click: (rowData: NguoiDungResponse) =>

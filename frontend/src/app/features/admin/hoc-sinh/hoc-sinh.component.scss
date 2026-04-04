@@ -162,9 +162,20 @@
 }
 
 .action-col {
-  min-width: 96px;
+  min-width: 148px;
   text-align: center;
   padding: 0 !important;
+}
+
+.action-buttons {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
+.action-col .detail-btn + .detail-btn {
+  margin-left: 4px;
 }
 
 .status-col {
@@ -191,15 +202,15 @@
 }
 
 .detail-btn {
-  width: 44px;
-  height: 44px;
+  width: 36px;
+  height: 36px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  margin: 0 auto;
+  margin: 0;
   padding: 0;
-  border-radius: 6px;
-  background: #f3f6f7;
+  border-radius: 8px;
+  background: transparent;
   color: #5f97a1;
   text-decoration: none;
   overflow: visible;
@@ -208,7 +219,15 @@
 }
 
 .detail-btn:hover {
-  background: #e9f1f3;
+  background: rgba(95, 151, 161, 0.08);
+}
+
+.delete-btn {
+  color: #b54747;
+}
+
+.action-col .detail-btn:nth-child(2) {
+  color: #c7951a;
 }
 
 .detail-icon {

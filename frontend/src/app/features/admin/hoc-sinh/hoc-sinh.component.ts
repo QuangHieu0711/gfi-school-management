@@ -161,6 +161,45 @@ export class HocSinhComponent extends ComponentBaseAbstract {
     );
   }
 
+  openEdit(student: HocSinhResponse): void {
+    this.routerService.navigate([
+      '/Admin',
+      'HocSinh',
+      PATH.CAP_NHAT,
+      student[this.key.ID],
+    ]);
+  }
+
+  deleteStudent(student: HocSinhResponse): void {
+    this.dialog.confirm(
+      {
+        title: 'Xác nhận',
+        message: `Bạn có chắc chắn muốn xóa học sinh ${student.fullName ?? ''} không?`,
+      },
+      (confirmed?: boolean) => {
+        if (!confirmed) return;
+
+        this.hocSinhService.delete(student[this.key.ID]).subscribe({
+          next: () => {
+            this.toastr.success('Xóa thành công', 'Thành công');
+            this.filterData({
+              pageIndex: this.pageIndex,
+              pageSize: this.pageSize,
+            });
+          },
+          error: (error) => {
+            this.toastr.error(
+              error?.error?.userMessage ??
+                error?.error?.message ??
+                'Xóa thất bại',
+              'Thất bại'
+            );
+          },
+        });
+      }
+    );
+  }
+
   openCreate(): void {
     this.routerService.navigate(['/Admin', 'HocSinh', PATH.TAO_MOI]);
   }

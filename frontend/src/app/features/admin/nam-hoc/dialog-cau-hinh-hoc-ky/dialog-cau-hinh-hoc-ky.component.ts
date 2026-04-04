@@ -238,12 +238,14 @@ export class DialogCauHinhHocKyComponent extends ComponentBaseAbstract {
           {
             type: 'icon',
             icon: 'edit',
+            class: 'action-edit',
             tooltip: 'Ch\u1ec9nh s\u1eeda',
             click: (rowData: HocKyResponse) => this.openUpdateDialog(rowData),
           },
           {
             type: 'icon',
             icon: 'delete',
+            class: 'action-delete',
             tooltip: 'X\u00f3a',
             click: (rowData: HocKyResponse) => this.deleteSemester(rowData),
           },

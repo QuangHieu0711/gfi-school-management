@@ -87,6 +87,7 @@ export class KhoiComponent extends ComponentBaseAbstract {
           {
             type: 'icon',
             icon: 'visibility',
+            class: 'action-view',
             tooltip: 'Chi tiết',
             click: (rowData: KhoiResponse) =>
               this.openDialog(this.TYPE_FORM.DETAIL, rowData),
@@ -94,6 +95,7 @@ export class KhoiComponent extends ComponentBaseAbstract {
           {
             type: 'icon',
             icon: 'edit',
+            class: 'action-edit',
             tooltip: 'Chỉnh sửa',
             click: (rowData: KhoiResponse) =>
               this.openDialog(this.TYPE_FORM.UPDATE, rowData),
@@ -101,12 +103,14 @@ export class KhoiComponent extends ComponentBaseAbstract {
           {
             type: 'icon',
             icon: 'assignment',
+            class: 'action-config',
             tooltip: 'Cấu hình môn học',
             click: (rowData: KhoiResponse) => this.openSubjectConfig(rowData),
           },
           {
             type: 'icon',
             icon: 'delete',
+            class: 'action-delete',
             tooltip: 'Xóa',
             click: (rowData: KhoiResponse) => this.deleteKhoi(rowData),
           },

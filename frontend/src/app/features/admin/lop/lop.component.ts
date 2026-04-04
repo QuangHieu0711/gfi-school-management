@@ -100,6 +100,7 @@ export class LopComponent extends ComponentBaseAbstract {
           {
             type: 'icon',
             icon: 'visibility',
+            class: 'action-config',
             tooltip: 'Chi tiết',
             click: (rowData: LopResponse) =>
               this.openDialog(this.TYPE_FORM.DETAIL, rowData),
@@ -107,6 +108,7 @@ export class LopComponent extends ComponentBaseAbstract {
           {
             type: 'icon',
             icon: 'edit',
+            class: 'action-edit',
             tooltip: 'Chỉnh sửa',
             click: (rowData: LopResponse) =>
               this.openDialog(this.TYPE_FORM.UPDATE, rowData),
@@ -114,12 +116,14 @@ export class LopComponent extends ComponentBaseAbstract {
           {
             type: 'icon',
             icon: 'assignment',
+            class: 'action-view',
             tooltip: 'Cấu hình môn học',
             click: (rowData: LopResponse) => this.openSubjectConfig(rowData),
           },
           {
             type: 'icon',
             icon: 'delete',
+            class: 'action-delete',
             tooltip: 'Xóa',
             click: (rowData: LopResponse) => this.deleteLop(rowData),
           },

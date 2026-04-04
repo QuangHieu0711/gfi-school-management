@@ -65,7 +65,7 @@
         <thead>
           <tr class="heading-row">
             <th class="stt-col">STT</th>
-            <th class="action-col">Thao tác</th>
+            <th class="action-col">Hành động</th>
             <th>Họ và tên</th>
             <th>Tên</th>
             <th>Trạng thái</th>
@@ -169,6 +169,20 @@
                   (click)="openDetail(row)"
                   aria-label="Xem chi tiết">
                   <mat-icon class="detail-icon">visibility</mat-icon>
+                </button>
+                <button
+                  type="button"
+                  class="detail-btn"
+                  (click)="openEdit(row)"
+                  aria-label="Sua hoc sinh">
+                  <mat-icon class="detail-icon">edit</mat-icon>
+                </button>
+                <button
+                  type="button"
+                  class="detail-btn delete-btn"
+                  (click)="deleteStudent(row)"
+                  aria-label="Xoa hoc sinh">
+                  <mat-icon class="detail-icon">delete</mat-icon>
                 </button>
               </td>
               <td>

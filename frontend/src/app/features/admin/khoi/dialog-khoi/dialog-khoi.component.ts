@@ -42,14 +42,14 @@ export class DialogKhoiComponent extends ComponentBaseAbstract {
   protected override componentInit(): void {
     switch (this.data.type) {
       case this.TYPE_FORM.UPDATE:
-        this.title = 'Ch\u1ec9nh s\u1eeda kh\u1ed1i';
+        this.title = 'Chỉnh sửa khối';
         break;
       case this.TYPE_FORM.DETAIL:
-        this.title = 'Chi ti\u1ebft kh\u1ed1i';
+        this.title = 'Chi tiết khối';
         this.form.disable();
         break;
       default:
-        this.title = 'Th\u00eam m\u1edbi kh\u1ed1i';
+        this.title = 'Thêm mới khối';
         break;
     }
 
@@ -78,20 +78,20 @@ export class DialogKhoiComponent extends ComponentBaseAbstract {
 
   switchUpdate() {
     this.form.enable();
-    this.title = 'Ch\u1ec9nh s\u1eeda kh\u1ed1i';
+    this.title = 'Chỉnh sửa khối';
     this.data.type = this.TYPE_FORM.UPDATE;
   }
 
   private handleCreate(payload: KhoiFormRequest) {
     this.khoiService.create(payload).subscribe({
       next: () => {
-        this.toastr.success('L\u01b0u th\u00e0nh c\u00f4ng', 'Th\u00e0nh c\u00f4ng');
+        this.toastr.success('Lưu thành công', 'Thành công');
         this.dialogRef.close(true);
       },
       error: (error) => {
         this.toastr.error(
-          error?.error?.userMessage ?? error?.error?.message ?? 'L\u01b0u th\u1ea5t b\u1ea1i',
-          'Th\u1ea5t b\u1ea1i'
+          error?.error?.userMessage ?? error?.error?.message ?? 'Lưu thất bại',
+          'Thất bại'
         );
       },
     });
@@ -100,18 +100,15 @@ export class DialogKhoiComponent extends ComponentBaseAbstract {
   private handleUpdate(payload: KhoiFormRequest) {
     this.khoiService.update(this.data.id!, payload).subscribe({
       next: () => {
-        this.toastr.success(
-          'C\u1eadp nh\u1eadt th\u00e0nh c\u00f4ng',
-          'Th\u00e0nh c\u00f4ng'
-        );
+        this.toastr.success('Cập nhật thành công', 'Thành công');
         this.dialogRef.close(true);
       },
       error: (error) => {
         this.toastr.error(
           error?.error?.userMessage ??
             error?.error?.message ??
-            'C\u1eadp nh\u1eadt th\u1ea5t b\u1ea1i',
-          'Th\u1ea5t b\u1ea1i'
+            'Cập nhật thất bại',
+          'Thất bại'
         );
       },
     });

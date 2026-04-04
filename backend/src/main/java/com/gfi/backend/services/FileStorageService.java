@@ -24,6 +24,7 @@ public class FileStorageService {
     private static final long MAX_FILE_SIZE = 5L * 1024 * 1024;
     private static final Set<String> ALLOWED_CONTENT_TYPES = Set.of(
             "image/jpeg",
+            "image/jpg",
             "image/png",
             "image/webp",
             "image/gif");
@@ -37,8 +38,9 @@ public class FileStorageService {
     public FileUploadDto storeStudentAvatar(MultipartFile file) {
         validateImage(file);
         try {
-            String extension = resolveExtension(file.getOriginalFilename(), file.getContentType());
-            return storeStudentAvatar(file.getInputStream(), file.getSize(), file.getContentType(), extension);
+            String normalizedContentType = normalizeContentType(file.getContentType());
+            String extension = resolveExtension(file.getOriginalFilename(), normalizedContentType);
+            return storeStudentAvatar(file.getInputStream(), file.getSize(), normalizedContentType, extension);
         } catch (IOException ex) {
             throw new UserMessageException(CommonErrorCode.BAD_REQUEST);
         }
@@ -84,7 +86,7 @@ public class FileStorageService {
         if (file == null || file.isEmpty()) {
             throw new UserMessageException(CommonErrorCode.BAD_REQUEST);
         }
-        String contentType = file.getContentType();
+        String contentType = normalizeContentType(file.getContentType());
         validateImage(file.getSize(), contentType);
     }
 
@@ -119,6 +121,9 @@ public class FileStorageService {
         if (metadata.startsWith("data:image/png")) {
             return "image/png";
         }
+        if (metadata.startsWith("data:image/jpg")) {
+            return "image/jpeg";
+        }
         if (metadata.startsWith("data:image/webp")) {
             return "image/webp";
         }
@@ -140,6 +145,17 @@ public class FileStorageService {
             case "image/webp" -> ".webp";
             case "image/gif" -> ".gif";
             default -> ".jpg";
+        };
+    }
+
+    private String normalizeContentType(String contentType) {
+        if (contentType == null) {
+            return null;
+        }
+
+        return switch (contentType.toLowerCase()) {
+            case "image/jpg" -> "image/jpeg";
+            default -> contentType.toLowerCase();
         };
     }
 }

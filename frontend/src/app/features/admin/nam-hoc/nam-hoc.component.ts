@@ -123,6 +123,7 @@ export class NamHocComponent extends ComponentBaseAbstract {
           {
             type: 'icon',
             icon: 'settings',
+            class: 'action-view',
             tooltip: 'Cấu hình học kỳ',
             click: (rowData: NamHocResponse) =>
               this.openSemesterConfig(rowData),
@@ -130,6 +131,7 @@ export class NamHocComponent extends ComponentBaseAbstract {
           {
             type: 'icon',
             icon: 'edit',
+            class: 'action-edit',
             tooltip: 'Chỉnh sửa',
             click: (rowData: NamHocResponse) =>
               this.openDialog(this.TYPE_FORM.UPDATE, rowData),
@@ -137,6 +139,7 @@ export class NamHocComponent extends ComponentBaseAbstract {
           {
             type: 'icon',
             icon: 'delete',
+            class: 'action-delete',
             tooltip: 'Xóa',
             click: (rowData: NamHocResponse) => this.deleteSchoolYear(rowData),
           },
