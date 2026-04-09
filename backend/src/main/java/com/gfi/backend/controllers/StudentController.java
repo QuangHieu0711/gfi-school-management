@@ -1,7 +1,6 @@
 package com.gfi.backend.controllers;
 
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -38,7 +37,6 @@ public class StudentController extends ApiBaseController {
     private final FileStorageService fileStorageService;
 
     @PostMapping("/search")
-    @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Danh sách học sinh", description = "Lấy danh sách học sinh có phân trang và filter cho màn hình lưới.")
     public ResponseEntity<ApiResult<PageResponseDto<StudentItemDto, StudentFilterDto>>> search(
             @RequestBody(required = false) PageRequestDto<StudentFilterDto> request) {
@@ -48,21 +46,18 @@ public class StudentController extends ApiBaseController {
     }
 
     @PostMapping
-    @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Thêm học sinh", description = "Tạo mới học sinh kèm thông tin nhập học, địa chỉ, người giám hộ và hồ sơ mở rộng.")
     public ResponseEntity<ApiResult<StudentItemDto>> create(@Valid @RequestBody StudentCreateRequest request) {
         return executeApiResult(() -> ApiResult.success(studentService.create(request), "Thêm học sinh thành công"));
     }
 
     @PostMapping("/upload-avatar")
-    @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Tai anh hoc sinh", description = "Tai anh dai dien hoc sinh len server va tra ve avatarUrl.")
     public ResponseEntity<ApiResult<FileUploadDto>> uploadAvatar(@RequestParam("file") MultipartFile file) {
         return executeApiResult(() -> ApiResult.success(fileStorageService.storeStudentAvatar(file), "Tai anh thanh cong"));
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Chi tiết học sinh", description = "Lấy thông tin học sinh theo id.")
     public ResponseEntity<ApiResult<StudentItemDto>> getById(@PathVariable Long id) {
         return executeApiResult(
@@ -70,7 +65,6 @@ public class StudentController extends ApiBaseController {
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Cập nhật học sinh", description = "Cập nhật học sinh theo id.")
     public ResponseEntity<ApiResult<StudentItemDto>> update(@PathVariable Long id,
             @Valid @RequestBody StudentCreateRequest request) {
@@ -79,7 +73,6 @@ public class StudentController extends ApiBaseController {
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Xóa học sinh", description = "Xóa học sinh theo id.")
     public ResponseEntity<ApiResult<String>> delete(@PathVariable Long id) {
         return executeApiResult(() -> {

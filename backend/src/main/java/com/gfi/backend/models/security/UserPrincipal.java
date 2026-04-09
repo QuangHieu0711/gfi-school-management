@@ -11,13 +11,18 @@ public class UserPrincipal implements UserDetails {
     private final String username;
     private final String password;
     private final String fullName;
+    private final Long roleId;
+    private final String roleName;
     private final Collection<? extends GrantedAuthority> authorities;
 
-    public UserPrincipal(Long id, String username, String password, String fullName, Collection<? extends GrantedAuthority> authorities) {
+    public UserPrincipal(Long id, String username, String password, String fullName, Long roleId, String roleName,
+            Collection<? extends GrantedAuthority> authorities) {
         this.id = id;
         this.username = username;
         this.password = password;
         this.fullName = fullName;
+        this.roleId = roleId;
+        this.roleName = roleName;
         this.authorities = authorities == null ? Collections.emptyList() : authorities;
     }
 
@@ -27,6 +32,14 @@ public class UserPrincipal implements UserDetails {
 
     public String getFullName() {
         return fullName;
+    }
+
+    public Long getRoleId() {
+        return roleId;
+    }
+
+    public String getRoleName() {
+        return roleName;
     }
 
     @Override
@@ -63,4 +76,4 @@ public class UserPrincipal implements UserDetails {
     public boolean isEnabled() {
         return true;
     }
-} 
+}

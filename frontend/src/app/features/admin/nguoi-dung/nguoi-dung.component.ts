@@ -225,7 +225,10 @@ export class NguoiDungComponent extends ComponentBaseAbstract {
                       .subscribe({
                         next: () => {
                           this.toastr.success('Xóa thành công', 'Thành công');
-                          if (this.dataSource.length === 1 && this.pageIndex > 0) {
+                          if (
+                            this.dataSource.length === 1 &&
+                            this.pageIndex > 0
+                          ) {
                             this.pageIndex = this.pageIndex - 1;
                           }
                           this.filterData();

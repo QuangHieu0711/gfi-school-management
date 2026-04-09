@@ -148,7 +148,7 @@ import { UserInfoAction } from '@store/user-info';
 import { IconComponent } from '@components/app-icon/app-icon.component';
 import { MENU } from '@constant/menu';
 import { getObsValue } from '@utils/utils';
-import { ICurrentUser, UserRole } from '@model/auth.model';
+import { ICurrentUser, IRule, UserRole } from '@model/auth.model';
 
 @Component({
   selector: 'app-layout-component',
@@ -171,6 +171,7 @@ export class LayoutComponent extends ComponentBaseAbstract {
   menu: ISidebarItem[] = [];
   treeDataSource: TreeNode[] = [];
   private allTreeDataSource: TreeNode[] = [];
+  private isPermissionDrivenSidebar = false;
   userInfo = getObsValue(this.store.select((state) => state.userInfo));
 
   private readonly TREE_MODULE_PREFIXES = [
@@ -283,6 +284,9 @@ export class LayoutComponent extends ComponentBaseAbstract {
       //   this.treeDataSource = navigator ?? [];
       // });
       .subscribe((navigator) => {
+        if (this.isPermissionDrivenSidebar) {
+          return;
+        }
         this.allTreeDataSource =
           navigator && navigator.length ? [...navigator] : [];
         this.applySidebarSearch();
@@ -315,6 +319,7 @@ export class LayoutComponent extends ComponentBaseAbstract {
       )
       .subscribe((userInfo) => {
         this.getMenuByRole(userInfo);
+        this.syncSidebarFromPermissions(userInfo.role.rules ?? []);
       });
   }
 
@@ -615,5 +620,104 @@ export class LayoutComponent extends ComponentBaseAbstract {
         } as TreeNode;
       })
       .filter((node): node is TreeNode => node !== null);
+  }
+
+  private syncSidebarFromPermissions(rules: IRule[]): void {
+    if (!rules.length) {
+      this.isPermissionDrivenSidebar = false;
+      this.allTreeDataSource = [];
+      this.treeDataSource = [];
+      return;
+    }
+
+    this.isPermissionDrivenSidebar = true;
+    this.allTreeDataSource = this.buildSidebarTreeFromRules(rules);
+    this.applySidebarSearch();
+  }
+
+  private buildSidebarTreeFromRules(rules: IRule[]): TreeNode[] {
+    const orderedRules = [...rules].sort((a, b) => {
+      const ordinalCompare = Number(a.ordinal ?? 0) - Number(b.ordinal ?? 0);
+      if (ordinalCompare !== 0) return ordinalCompare;
+      return Number(a.moduleId ?? 0) - Number(b.moduleId ?? 0);
+    });
+    const ruleMap = new Map<string, IRule>();
+
+    orderedRules.forEach((rule) => {
+      ruleMap.set(String(rule.moduleId), rule);
+    });
+
+    const visibleIds = new Set<string>();
+    orderedRules.forEach((rule) => {
+      if (Number(rule.isView) !== 1) {
+        return;
+      }
+
+      let current: IRule | undefined = rule;
+      while (current) {
+        visibleIds.add(String(current.moduleId));
+        const parentId: string | null =
+          current.pid == null || current.pid === 0 ? null : String(current.pid);
+        current = parentId ? ruleMap.get(parentId) : undefined;
+      }
+    });
+
+    const nodeMap = new Map<string, TreeNode>();
+    orderedRules
+      .filter((rule) => visibleIds.has(String(rule.moduleId)))
+      .forEach((rule) => {
+        nodeMap.set(String(rule.moduleId), {
+          id: rule.moduleId,
+          parentId: rule.pid ?? null,
+          name: rule.name,
+          url: rule.url ? this.ensureLeadingSlash(rule.url) : null,
+          icon: rule.icon || 'menu',
+          ordinal: Number(rule.ordinal ?? 0),
+          children: [],
+        });
+      });
+
+    const roots: TreeNode[] = [];
+    orderedRules
+      .filter((rule) => nodeMap.has(String(rule.moduleId)))
+      .forEach((rule) => {
+        const node = nodeMap.get(String(rule.moduleId))!;
+        const parentId =
+          rule.pid == null || rule.pid === 0 ? null : String(rule.pid);
+        const parentNode = parentId ? nodeMap.get(parentId) : undefined;
+
+        if (parentNode) {
+          (parentNode.children ??= []).push(node);
+          return;
+        }
+
+        roots.push(node);
+      });
+
+    return this.sortTreeNodes(roots);
+  }
+
+  private sortTreeNodes(nodes: TreeNode[]): TreeNode[] {
+    return [...nodes]
+      .sort(
+        (a, b) =>
+          Number(a['ordinal'] ?? 0) - Number(b['ordinal'] ?? 0) ||
+          `${a.name ?? ''}`.localeCompare(`${b.name ?? ''}`)
+      )
+      .map((node) => {
+        const children = this.sortTreeNodes(
+          Array.isArray(node.children) ? node.children : []
+        );
+
+        return {
+          ...node,
+          expanded: children.length > 0,
+          children,
+        };
+      });
+  }
+
+  private ensureLeadingSlash(url: string): string {
+    return url.startsWith('/') ? url : `/${url}`;
   }
 }

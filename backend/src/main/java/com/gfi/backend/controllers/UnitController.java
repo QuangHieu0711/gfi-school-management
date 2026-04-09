@@ -3,7 +3,6 @@ package com.gfi.backend.controllers;
 import java.util.List;
 
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -37,7 +36,6 @@ public class UnitController extends ApiBaseController {
     private final UnitService unitService;
 
     @PostMapping("/search")
-    @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Danh sách đơn vị", description = "Lấy danh sách đơn vị có phân trang và filter.")
     public ResponseEntity<ApiResult<PageResponseDto<UnitItemDto, UnitFilterDto>>> search(
             @RequestBody(required = false) PageRequestDto<UnitFilterDto> request) {
@@ -46,35 +44,30 @@ public class UnitController extends ApiBaseController {
     }
 
     @GetMapping("/options")
-    @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Danh sách đơn vị cho combobox", description = "Lấy danh sách id và tên đơn vị.")
     public ResponseEntity<ApiResult<List<LookupItemDto>>> getOptions() {
         return executeApiResult(() -> ApiResult.success(unitService.getOptions(), "Hiển thị danh sách đơn vị thành công"));
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Chi tiết đơn vị", description = "Lấy thông tin đơn vị theo id.")
     public ResponseEntity<ApiResult<UnitItemDto>> getById(@PathVariable Long id) {
         return executeApiResult(() -> ApiResult.success(unitService.getById(id), "Hiển thị chi tiết đơn vị thành công"));
     }
 
     @PostMapping
-    @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Thêm đơn vị", description = "Tạo mới đơn vị.")
     public ResponseEntity<ApiResult<UnitItemDto>> create(@Valid @RequestBody UnitCreateRequest request) {
         return executeApiResult(() -> ApiResult.success(unitService.create(request), "Thêm đơn vị thành công"));
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Sửa đơn vị", description = "Cập nhật đơn vị theo id.")
     public ResponseEntity<ApiResult<UnitItemDto>> update(@PathVariable Long id, @Valid @RequestBody UnitUpdateRequest request) {
         return executeApiResult(() -> ApiResult.success(unitService.update(id, request), "Cập nhật đơn vị thành công"));
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Xóa đơn vị", description = "Xóa đơn vị theo id.")
     public ResponseEntity<ApiResult<String>> delete(@PathVariable Long id) {
         return executeApiResult(() -> {

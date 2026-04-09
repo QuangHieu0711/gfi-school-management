@@ -1,8 +1,17 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { HttpBackend, HttpClient, HttpRequest } from '@angular/common/http';
+import { HttpBackend, HttpClient, HttpHeaders, HttpRequest } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Router } from '@angular/router';
-import { BehaviorSubject, Observable, map, of, tap, throwError } from 'rxjs';
+import {
+  BehaviorSubject,
+  Observable,
+  catchError,
+  map,
+  of,
+  switchMap,
+  tap,
+  throwError,
+} from 'rxjs';
 
 import {
   ACCESS_TOKEN_KEY,
@@ -20,7 +29,7 @@ import {
   IRule,
   UserRole,
 } from '@model/auth.model';
-import { ID_TYPE } from '@model/response.model';
+import { ID_TYPE, IResponse } from '@model/response.model';
 import { StorageService } from '@service';
 
 import { PermissionService } from './permission.service';
@@ -133,7 +142,16 @@ export class AuthService {
         password: payload.password,
       })
       .pipe(
-        map((response) => this.mapLoginResponseToUser(response, payload.username)),
+        switchMap((response) =>
+          this.fetchRulesByRoleId(
+            response?.data?.roleId,
+            response?.data?.accessToken ?? ''
+          ).pipe(
+            map((rules) =>
+              this.mapLoginResponseToUser(response, payload.username, rules)
+            )
+          )
+        ),
         tap((user) => this.setLocalSession(user, rememberMe))
       );
   }
@@ -199,7 +217,7 @@ export class AuthService {
   }
 
   getUserRules(): Observable<IRule[]> {
-    return of(this.getDefaultRules());
+    return of(this.currentUserSubject.value?.role.rules ?? []);
   }
 
   resetPassword(_accountId: ID_TYPE): Observable<any> {
@@ -266,7 +284,8 @@ export class AuthService {
 
   private mapLoginResponseToUser(
     response: BackendLoginEnvelope,
-    username: string
+    username: string,
+    rules: IRule[]
   ): ICurrentUserWithTokens {
     const data = response?.data;
     const normalizedRole = this.normalizeRoleName(data?.role);
@@ -277,9 +296,9 @@ export class AuthService {
       name: data?.fullName ?? username,
       email: '',
       role: {
-        id: normalizedRole === UserRole.ADMIN ? 1 : 0,
+        id: data?.roleId ?? 0,
         name: normalizedRole,
-        rules: this.getDefaultRules(),
+        rules,
       },
       donVi: {
         maDonVi: '',
@@ -290,6 +309,58 @@ export class AuthService {
       accessToken: data?.accessToken ?? '',
       refreshToken: data?.refreshToken ?? '',
     };
+  }
+
+  private fetchRulesByRoleId(
+    roleId: ID_TYPE | undefined,
+    accessToken: string
+  ): Observable<IRule[]> {
+    if (roleId == null || accessToken.trim() === '') {
+      return of([]);
+    }
+
+    return this.rawHttp
+      .get<IResponse<BackendPermissionItem[]>>(
+        `${environment.host_api}/permissions/${roleId}`,
+        {
+          headers: new HttpHeaders({
+            Authorization: `Bearer ${accessToken}`,
+          }),
+        }
+      )
+      .pipe(
+        map((response) => this.mapPermissionsToRules(response?.data ?? [])),
+        catchError(() => of([]))
+      );
+  }
+
+  private mapPermissionsToRules(items: BackendPermissionItem[]): IRule[] {
+    return [...items]
+      .sort((a, b) => {
+        const ordinalCompare = Number(a.ordinal ?? 0) - Number(b.ordinal ?? 0);
+        if (ordinalCompare !== 0) return ordinalCompare;
+        return Number(a.menuId ?? 0) - Number(b.menuId ?? 0);
+      })
+      .map((item) => ({
+        ruleId: Number(item.id ?? item.menuId ?? 0),
+        roleId: Number(item.roleId ?? 0),
+        moduleId: item.menuId ?? 0,
+        isView: Number(item.isView ?? 0),
+        isAdd: Number(item.isAdd ?? 0),
+        isEdit: Number(item.isEdit ?? 0),
+        isDelete: Number(item.isDelete ?? 0),
+        isDownload: Number(item.isDownload ?? 0),
+        isApprove: 0,
+        name: item.menuName ?? '',
+        url: item.menuUrl ?? '',
+        pid:
+          item.parentId == null || item.parentId === ''
+            ? undefined
+            : Number(item.parentId),
+        pathId: String(item.menuId ?? ''),
+        ordinal: Number(item.ordinal ?? 0),
+        icon: item.icon ?? '',
+      }));
   }
 
   private normalizeRoleName(role?: string): UserRole {
@@ -327,6 +398,8 @@ interface BackendLoginEnvelope {
     tokenType?: string;
     expiresIn?: number;
     role?: string;
+    roleId?: number;
+    roleName?: string;
     fullName?: string;
     userId?: number;
   };
@@ -335,4 +408,20 @@ interface BackendLoginEnvelope {
 interface ICurrentUserWithTokens extends ICurrentUser {
   accessToken?: string;
   refreshToken?: string;
+}
+
+interface BackendPermissionItem {
+  id?: ID_TYPE | null;
+  roleId?: ID_TYPE;
+  menuId?: ID_TYPE;
+  menuName?: string | null;
+  menuUrl?: string | null;
+  parentId?: ID_TYPE | null;
+  icon?: string | null;
+  ordinal?: number | null;
+  isView?: number;
+  isAdd?: number;
+  isEdit?: number;
+  isDelete?: number;
+  isDownload?: number;
 }

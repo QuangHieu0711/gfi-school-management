@@ -47,20 +47,15 @@ public class AuthController extends ApiBaseController {
 
             UserDetails userDetails = (UserDetails) authentication.getPrincipal();
 
-            String role = userDetails.getAuthorities().stream()
-                    .findFirst()
-                    .map(grantedAuthority -> grantedAuthority.getAuthority())
-                    .orElse("USER");
-
-            String fullName = "";
-            if (userDetails instanceof UserPrincipal principal) {
-                fullName = principal.getFullName();
-            }
-
             TokenResponse tokens = tokenService.generateTokens(userDetails);
-            tokens.setRole(role);
-            tokens.setFullName(fullName);
-            tokens.setUserId(((UserPrincipal) userDetails).getId());
+
+            if (userDetails instanceof UserPrincipal principal) {
+                tokens.setRole(principal.getRoleName());
+                tokens.setRoleId(principal.getRoleId());
+                tokens.setRoleName(principal.getRoleName());
+                tokens.setFullName(principal.getFullName());
+                tokens.setUserId(principal.getId());
+            }
 
             ResponseCookie cookie = ResponseCookie.from("authToken", tokens.getAccessToken())
                     .httpOnly(true)
@@ -72,7 +67,7 @@ public class AuthController extends ApiBaseController {
 
             return ResponseEntity.ok()
                     .header(HttpHeaders.SET_COOKIE, cookie.toString())
-                    .body(ApiResult.success(tokens, "Đăng nhập thành công"));
+                    .body(ApiResult.success(tokens, "Dang nhap thanh cong"));
 
         } catch (BadCredentialsException ex) {
             return ResponseEntity
@@ -96,6 +91,6 @@ public class AuthController extends ApiBaseController {
 
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, deleteCookie.toString())
-                .body(ApiResult.success(null, "Đăng xuất thành công"));
+                .body(ApiResult.success(null, "Dang xuat thanh cong"));
     }
 }

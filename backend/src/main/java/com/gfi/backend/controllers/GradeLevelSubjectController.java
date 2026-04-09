@@ -1,7 +1,6 @@
 package com.gfi.backend.controllers;
 
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -28,7 +27,6 @@ public class GradeLevelSubjectController extends ApiBaseController {
     private final GradeLevelSubjectService gradeLevelSubjectService;
 
     @GetMapping("/{gradeLevelId}")
-    @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Chi tiết cấu hình môn học theo khối", description = "Lấy thông tin cấu hình danh sách môn học theo khối.")
     public ResponseEntity<ApiResult<GradeLevelSubjectConfigDto>> getByGradeLevelId(@PathVariable Long gradeLevelId) {
         return executeApiResult(() -> ApiResult.success(
@@ -37,7 +35,6 @@ public class GradeLevelSubjectController extends ApiBaseController {
     }
 
     @PostMapping("/assign")
-    @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Gán môn học cho khối", description = "Lưu cấu hình danh sách môn học theo khối.")
     public ResponseEntity<ApiResult<GradeLevelSubjectConfigDto>> assignSubjects(
             @Valid @RequestBody GradeLevelSubjectAssignRequest request) {

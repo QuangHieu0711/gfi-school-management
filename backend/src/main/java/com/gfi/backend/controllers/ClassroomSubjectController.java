@@ -1,7 +1,6 @@
 package com.gfi.backend.controllers;
 
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -28,7 +27,6 @@ public class ClassroomSubjectController extends ApiBaseController {
     private final ClassroomSubjectService classroomSubjectService;
 
     @GetMapping("/{classroomId}")
-    @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Chi tiet cau hinh mon hoc cua lop", description = "Lay danh sach mon hoc lop duoc ke thua tu khoi va trang thai dang bat.")
     public ResponseEntity<ApiResult<ClassroomSubjectConfigDto>> getByClassroomId(@PathVariable Long classroomId) {
         return executeApiResult(() -> ApiResult.success(
@@ -37,7 +35,6 @@ public class ClassroomSubjectController extends ApiBaseController {
     }
 
     @PostMapping("/assign")
-    @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Cap nhat mon hoc cua lop", description = "Luu danh sach mon hoc dang ap dung cho lop trong pham vi mon hoc cua khoi.")
     public ResponseEntity<ApiResult<ClassroomSubjectConfigDto>> assignSubjects(
             @Valid @RequestBody ClassroomSubjectAssignRequest request) {
