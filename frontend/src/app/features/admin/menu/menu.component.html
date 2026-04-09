@@ -1,0 +1,107 @@
+<app-table
+  tableTitle="Quản lý chức năng"
+  [pageIndex]="pageIndex"
+  [pageSize]="pageSize"
+  [total]="dataSourceTotal"
+  [tableConfig]="tableConfig"
+  [dataSource]="dataSource"
+  [tableColumns]="columns"
+  (queryChange)="filterData()">
+  <ng-container custom-buttons>
+    <div class="flex gap-2 items-center">
+      <button
+        color="primary"
+        matButton="filled"
+        class="btn-tight"
+        (click)="openDialog(TYPE_FORM.CREATE)">
+        <app-icon
+          icon="add_box"
+          [size]="18"
+          class="btn-icon" />
+        Thêm mới
+      </button>
+    </div>
+  </ng-container>
+
+  <ng-container filter-panel>
+    <app-form-control
+      [form]="form"
+      (submitEvent)="filterData()"
+      (resetEvent)="resetFilter()">
+      <div class="flex gap-2 items-center">
+        <app-text-control
+          [item]="findFormControl($formItem, 'menu')"
+          [form]="form"></app-text-control>
+        <div class="flex gap-1 items-center">
+          <button
+            color="dark"
+            matIconButton="text"
+            matTooltip="Tìm kiếm"
+            type="submit">
+            <app-icon
+              icon="svg:search"
+              color="#858585" />
+          </button>
+          <button
+            color="dark"
+            matIconButton="text"
+            matTooltip="Làm mới"
+            type="reset">
+            <app-icon
+              icon="svg:cached"
+              color="#858585" />
+          </button>
+        </div>
+      </div>
+    </app-form-control>
+  </ng-container>
+</app-table>
+
+<ng-template
+  #nameTpl
+  let-row>
+  <div
+    class="menu-tree-cell"
+    [style.--menu-level]="row?.[key.LEVEL] ?? 0">
+    <button
+      type="button"
+      class="menu-toggle"
+      [class.is-placeholder]="!hasChildren(row)"
+      [class.is-child]="(row?.[key.LEVEL] ?? 0) > 0"
+      (click)="toggleRow(row, $event)">
+      @if (hasChildren(row)) {
+        <app-icon [icon]="isExpanded(row) ? 'expand_more' : 'chevron_right'" />
+      }
+    </button>
+    <div class="menu-tree-content">
+      <div class="menu-tree-title-row">
+        @if (row?.[key.ICON]) {
+          <span class="menu-node-icon">
+            <app-icon [icon]="row?.[key.ICON]" [size]="18" />
+          </span>
+        }
+        <span class="menu-tree-title">{{ row?.[key.NAME] }}</span>
+        <span
+          class="menu-level-badge"
+          [class.is-root]="(row?.[key.LEVEL] ?? 0) === 0">
+          {{ (row?.[key.LEVEL] ?? 0) === 0 ? 'Menu cha' : 'Menu con' }}
+        </span>
+      </div>
+      @if (row?.[key.CHILDREN_COUNT]) {
+        <span class="menu-tree-meta">
+          Có {{ row?.[key.CHILDREN_COUNT] }} menu con
+        </span>
+      }
+    </div>
+  </div>
+</ng-template>
+
+<ng-template
+  #parentTpl
+  let-row>
+  @if (row?.[key.PARENT_NAME]) {
+    <span class="parent-chip">{{ row?.[key.PARENT_NAME] }}</span>
+  } @else {
+    <span class="root-chip">Menu gốc</span>
+  }
+</ng-template>

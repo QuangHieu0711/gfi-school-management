@@ -22,6 +22,7 @@ import com.gfi.backend.models.dtos.role.RoleItemDto;
 import com.gfi.backend.models.dtos.role.RoleUpdateRequest;
 import com.gfi.backend.models.entities.Role;
 import com.gfi.backend.models.global.CommonErrorCode;
+import com.gfi.backend.repositories.PermissionRepository;
 import com.gfi.backend.repositories.RoleRepository;
 import com.gfi.backend.repositories.UserRepository;
 import com.gfi.backend.services.interfaces.RoleService;
@@ -36,6 +37,7 @@ public class RoleServiceImpl implements RoleService {
 
     private final RoleRepository roleRepository;
     private final UserRepository userRepository;
+    private final PermissionRepository permissionRepository;
 
     @Override
     public PageResponseDto<RoleItemDto, RoleFilterDto> search(PageRequestDto<RoleFilterDto> request) {
@@ -131,6 +133,9 @@ public class RoleServiceImpl implements RoleService {
                 .orElseThrow(() -> new UserMessageException(CommonErrorCode.ROLE_NOT_FOUND));
 
         if (userRepository.countByRoleId(id) > 0) {
+            throw new UserMessageException(CommonErrorCode.ROLE_IN_USE);
+        }
+        if (permissionRepository.countByRoleId(id) > 0) {
             throw new UserMessageException(CommonErrorCode.ROLE_IN_USE);
         }
 

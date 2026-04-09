@@ -70,6 +70,23 @@ export const AdminRoutes: Routes = [
     ],
   },
   {
+    path: NAVIGATOR_ENDPOINT.ADMIN.MENU.BASE_PATH,
+    component: AdminComponent,
+    children: [
+      {
+        path: '',
+        providers: [
+          provideState({ name: 'style', reducer: StyleReducer }),
+          provideEffects(StyleEffect),
+        ],
+        loadComponent: () =>
+          import('@features/admin/menu/menu.component').then(
+            (m) => m.MenuComponent
+          ),
+      },
+    ],
+  },
+  {
     path: NAVIGATOR_ENDPOINT.ADMIN.NAM_HOC.BASE_PATH,
     component: AdminComponent,
     children: [

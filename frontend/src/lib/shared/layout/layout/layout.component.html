@@ -13,6 +13,19 @@
             <div
               class="tree-inner-navigator h-full w-full px-1 py-6 overflow-auto"
               [class.tree-inner-navigator-collapsed]="isSidebarCollapsed">
+              @if (!isSidebarCollapsed) {
+                <div class="sidebar-search">
+                  <div class="sidebar-search-box">
+                    <app-icon icon="search" [size]="18" />
+                    <input
+                      type="text"
+                      class="sidebar-search-input"
+                      placeholder="Tìm kiếm menu"
+                      [value]="sidebarSearchTerm"
+                      (input)="onSidebarSearch($event)" />
+                  </div>
+                </div>
+              }
               <app-tree
                 [dataSource]="treeDataSource"
                 [labelTemplate]="labelRef" />

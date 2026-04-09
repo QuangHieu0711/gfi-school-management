@@ -1,10 +1,14 @@
-import { Component } from '@angular/core';
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { Component, Injector } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
+import { takeUntil } from 'rxjs';
 
 import { NAVIGATOR_ENDPOINT } from '@constant/navigator';
 import { ComponentBaseAbstract } from '@layout';
 import { NavigatorAction } from '@store/navigator';
 
+import { MenuResponse } from '@app/model/admin/menu.model';
+import { MenuService } from '@app/service/admin/menu.service';
 import { MenuItem } from './admin.interface';
 
 @Component({
@@ -13,122 +17,118 @@ import { MenuItem } from './admin.interface';
   imports: [RouterOutlet],
 })
 export class AdminComponent extends ComponentBaseAbstract {
+  constructor(
+    protected override injector: Injector,
+    private readonly menuService: MenuService
+  ) {
+    super(injector);
+  }
+
   protected override componentInit(): void {
     queueMicrotask(() => this.loadDynamicMenu());
+    this.menuService.menuChanged$
+      .pipe(takeUntil(this.ngUnsubscribe))
+      .subscribe(() => this.loadDynamicMenu());
   }
 
   private loadDynamicMenu() {
-    const dynamicMenu = this.buildMenuTree();
+    this.menuService.filter({}).subscribe({
+      next: ({ data }) => {
+        const dynamicMenu = this.buildMenuTree(data ?? []);
 
-    this.store.dispatch(
-      NavigatorAction.Update({
-        newState: dynamicMenu as any,
-      })
-    );
+        this.store.dispatch(
+          NavigatorAction.Update({
+            newState: dynamicMenu as any,
+          })
+        );
+      },
+    });
   }
 
-  private buildMenuTree(): MenuItem[] {
-    return [
-      {
-        key: 'nguoi-dung-root',
-        id: 'nguoi-dung-root',
-        name: 'Quản trị người dùng',
-        icon: 'group',
+  private buildMenuTree(items: MenuResponse[]): MenuItem[] {
+    const normalizedItems = items.map((item) => ({
+      ...item,
+      url: this.normalizeMenuUrl(item.code, item.url),
+      icon: item.icon || this.getFallbackIcon(item.code),
+    }));
+
+    const itemMap = new Map<string | number, MenuItem>();
+
+    normalizedItems.forEach((item) => {
+      itemMap.set(item.id, {
+        key: item.code,
+        id: item.id,
+        parentId: item.parentId,
+        name: item.name,
+        icon: item.icon ?? undefined,
+        url: item.url ?? undefined,
         expanded: true,
-        children: [
-          {
-            key: 'nguoi-dung',
-            id: 'nguoi-dung',
-            parentId: 'nguoi-dung-root',
-            name: 'Quản lý tài khoản',
-            icon: 'person',
-            url: `/${NAVIGATOR_ENDPOINT.ADMIN.BASE_PATH}/${NAVIGATOR_ENDPOINT.ADMIN.NGUOI_DUNG.BASE_PATH}`,
-          } as MenuItem,
-          {
-            key: 'don-vi',
-            id: 'don-vi',
-            parentId: 'nguoi-dung-root',
-            name: 'Quản lý đơn vị',
-            icon: 'account_tree',
-            url: `/${NAVIGATOR_ENDPOINT.ADMIN.BASE_PATH}/${NAVIGATOR_ENDPOINT.ADMIN.DON_VI.BASE_PATH}`,
-          } as MenuItem,
-        ],
-      } as MenuItem,
-      {
-        key: 'cau-hinh-root',
-        id: 'cau-hinh-root',
-        name: 'Cấu hình hệ thống',
-        icon: 'settings',
-        expanded: true,
-        children: [
-          {
-            key: 'vai-tro',
-            id: 'vai-tro',
-            parentId: 'cau-hinh-root',
-            name: 'Quản lý vai trò',
-            icon: 'manage_accounts',
-            url: `/${NAVIGATOR_ENDPOINT.ADMIN.BASE_PATH}/${NAVIGATOR_ENDPOINT.ADMIN.VAI_TRO.BASE_PATH}`,
-          } as MenuItem,
-          {
-            key: 'nam-hoc',
-            id: 'nam-hoc',
-            parentId: 'cau-hinh-root',
-            name: 'Cấu hình năm học',
-            icon: 'calendar_month',
-            url: `/${NAVIGATOR_ENDPOINT.ADMIN.BASE_PATH}/${NAVIGATOR_ENDPOINT.ADMIN.NAM_HOC.BASE_PATH}`,
-          } as MenuItem,
-          {
-            key: 'khoi',
-            id: 'khoi',
-            parentId: 'cau-hinh-root',
-            name: 'Cấu hình khối',
-            icon: 'dashboard',
-            url: `/${NAVIGATOR_ENDPOINT.ADMIN.BASE_PATH}/${NAVIGATOR_ENDPOINT.ADMIN.KHOI.BASE_PATH}`,
-          } as MenuItem,
-        ],
-      } as MenuItem,
-      {
-        key: 'hoc-tap-root',
-        id: 'hoc-tap-root',
-        name: 'Quản lý học tập',
-        icon: 'school',
-        expanded: true,
-        children: [
-          {
-            key: 'lop',
-            id: 'lop',
-            parentId: 'hoc-tap-root',
-            name: 'Quản lý lớp',
-            icon: 'meeting_room',
-            url: `/${NAVIGATOR_ENDPOINT.ADMIN.BASE_PATH}/${NAVIGATOR_ENDPOINT.ADMIN.LOP.BASE_PATH}`,
-          } as MenuItem,
-          {
-            key: 'mon-hoc',
-            id: 'mon-hoc',
-            parentId: 'hoc-tap-root',
-            name: 'Quản lý môn học',
-            icon: 'menu_book',
-            url: `/${NAVIGATOR_ENDPOINT.ADMIN.BASE_PATH}/${NAVIGATOR_ENDPOINT.ADMIN.MON_HOC.BASE_PATH}`,
-          } as MenuItem,
-        ],
-      } as MenuItem,
-      {
-        key: 'hoc-sinh-root',
-        id: 'hoc-sinh-root',
-        name: 'Học sinh',
-        icon: 'groups',
-        expanded: true,
-        children: [
-          {
-            key: 'ho-so-hoc-sinh',
-            id: 'ho-so-hoc-sinh',
-            parentId: 'hoc-sinh-root',
-            name: 'Hồ sơ học sinh',
-            icon: 'badge',
-            url: `/${NAVIGATOR_ENDPOINT.ADMIN.BASE_PATH}/${NAVIGATOR_ENDPOINT.ADMIN.HOC_SINH.BASE_PATH}`,
-          } as MenuItem,
-        ],
-      } as MenuItem,
-    ];
+        children: [],
+      } as MenuItem);
+    });
+
+    const roots: MenuItem[] = [];
+
+    normalizedItems.forEach((item) => {
+      const node = itemMap.get(item.id)!;
+      if (item.parentId != null && itemMap.has(item.parentId)) {
+        itemMap.get(item.parentId)!.children!.push(node);
+      } else {
+        roots.push(node);
+      }
+    });
+
+    return roots;
+  }
+
+  private normalizeMenuUrl(
+    code: string,
+    url?: string | null
+  ): string | undefined {
+    const adminBase = `/${NAVIGATOR_ENDPOINT.ADMIN.BASE_PATH}`;
+    const codeToUrl: Partial<Record<string, string>> = {
+      ACCOUNT_MANAGEMENT: `${adminBase}/${NAVIGATOR_ENDPOINT.ADMIN.NGUOI_DUNG.BASE_PATH}`,
+      UNIT_MANAGEMENT: `${adminBase}/${NAVIGATOR_ENDPOINT.ADMIN.DON_VI.BASE_PATH}`,
+      ROLE_MANAGEMENT: `${adminBase}/${NAVIGATOR_ENDPOINT.ADMIN.VAI_TRO.BASE_PATH}`,
+      FUNCTION_MANAGEMENT: `${adminBase}/${NAVIGATOR_ENDPOINT.ADMIN.MENU.BASE_PATH}`,
+      SCHOOL_YEAR_CONFIG: `${adminBase}/${NAVIGATOR_ENDPOINT.ADMIN.NAM_HOC.BASE_PATH}`,
+      GRADE_CONFIG: `${adminBase}/${NAVIGATOR_ENDPOINT.ADMIN.KHOI.BASE_PATH}`,
+      CLASS_MANAGEMENT: `${adminBase}/${NAVIGATOR_ENDPOINT.ADMIN.LOP.BASE_PATH}`,
+      SUBJECT_MANAGEMENT: `${adminBase}/${NAVIGATOR_ENDPOINT.ADMIN.MON_HOC.BASE_PATH}`,
+      STUDENT_PROFILE: `${adminBase}/${NAVIGATOR_ENDPOINT.ADMIN.HOC_SINH.BASE_PATH}`,
+    };
+
+    if (codeToUrl[code]) {
+      return codeToUrl[code];
+    }
+
+    if (!url) return undefined;
+    if (url.startsWith('/admin/')) {
+      return `/Admin/${url.slice('/admin/'.length)}`;
+    }
+    if (url.startsWith('/Admin/')) {
+      return url;
+    }
+    return url;
+  }
+
+  private getFallbackIcon(code: string): string {
+    const codeToIcon: Record<string, string> = {
+      USER_ADMIN: 'group',
+      ACCOUNT_MANAGEMENT: 'person',
+      UNIT_MANAGEMENT: 'account_tree',
+      SYSTEM_CONFIG: 'settings',
+      ROLE_MANAGEMENT: 'manage_accounts',
+      FUNCTION_MANAGEMENT: 'account_tree',
+      SCHOOL_YEAR_CONFIG: 'calendar_month',
+      GRADE_CONFIG: 'dashboard',
+      STUDY_MANAGEMENT: 'school',
+      CLASS_MANAGEMENT: 'meeting_room',
+      SUBJECT_MANAGEMENT: 'menu_book',
+      STUDENT: 'groups',
+      STUDENT_PROFILE: 'badge',
+    };
+
+    return codeToIcon[code] ?? 'menu';
   }
 }

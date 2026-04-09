@@ -157,6 +157,70 @@ ALTER TABLE IF EXISTS roles
 CREATE UNIQUE INDEX IF NOT EXISTS uk_roles_code
     ON roles (code);
 
+CREATE TABLE IF NOT EXISTS menus (
+    id bigserial PRIMARY KEY,
+    parent_menu_id bigint,
+    menu_id varchar(100) NOT NULL UNIQUE,
+    menu_name varchar(255) NOT NULL,
+    url varchar(500),
+    icon varchar(255),
+    created_at timestamp,
+    created_by varchar(255),
+    updated_at timestamp,
+    updated_by varchar(255),
+    CONSTRAINT fk_menus_parent FOREIGN KEY (parent_menu_id) REFERENCES menus (id)
+);
+
+ALTER TABLE IF EXISTS menus
+    ADD COLUMN IF NOT EXISTS icon varchar(255);
+
+CREATE TABLE IF NOT EXISTS permissions (
+    id bigserial PRIMARY KEY,
+    is_add integer NOT NULL DEFAULT 0,
+    is_approve integer NOT NULL DEFAULT 0,
+    is_delete integer NOT NULL DEFAULT 0,
+    is_download integer NOT NULL DEFAULT 0,
+    is_edit integer NOT NULL DEFAULT 0,
+    is_view integer NOT NULL DEFAULT 0,
+    menu_id bigint NOT NULL,
+    role_id bigint NOT NULL,
+    created_at timestamp,
+    created_by varchar(255),
+    updated_at timestamp,
+    updated_by varchar(255),
+    CONSTRAINT fk_permissions_menus FOREIGN KEY (menu_id) REFERENCES menus (id),
+    CONSTRAINT fk_permissions_roles FOREIGN KEY (role_id) REFERENCES roles (id),
+    CONSTRAINT uk_permissions_role_menu UNIQUE (role_id, menu_id)
+);
+
+INSERT INTO menus (parent_menu_id, menu_id, menu_name, url, created_at, created_by)
+SELECT null, 'SYSTEM_CONFIG', 'Cấu hình hệ thống', null, NOW(), 'SYSTEM'
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM menus
+    WHERE menu_id = 'SYSTEM_CONFIG'
+);
+
+INSERT INTO menus (parent_menu_id, menu_id, menu_name, url, created_at, created_by)
+SELECT parent.id, 'ROLE_MANAGEMENT', 'Quản lý vai trò', null, NOW(), 'SYSTEM'
+FROM menus parent
+WHERE parent.menu_id = 'SYSTEM_CONFIG'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM menus
+      WHERE menu_id = 'ROLE_MANAGEMENT'
+  );
+
+INSERT INTO menus (parent_menu_id, menu_id, menu_name, url, created_at, created_by)
+SELECT parent.id, 'FUNCTION_MANAGEMENT', 'Quản lý chức năng', null, NOW(), 'SYSTEM'
+FROM menus parent
+WHERE parent.menu_id = 'SYSTEM_CONFIG'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM menus
+      WHERE menu_id = 'FUNCTION_MANAGEMENT'
+  );
+
 INSERT INTO grade_levels (code, name, grade_number, status, description, created_at, created_by)
 SELECT 'KHOI_1', 'Khoi 1', 1, 1, null, NOW(), 'SYSTEM'
 WHERE NOT EXISTS (SELECT 1 FROM grade_levels WHERE code = 'KHOI_1');

@@ -189,6 +189,32 @@
   }
 }
 
+.sidebar-search {
+  padding: 0 12px 12px;
+}
+
+.sidebar-search-box {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px;
+  height: 40px;
+  border: 1px solid rgba(18, 55, 70, 0.12);
+  border-radius: 12px;
+  background: #f8fbfc;
+  color: #123746;
+}
+
+.sidebar-search-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: #123746;
+  font-size: 14px;
+}
+
 .tree-wrapper-collapsed {
   width: 88px;
   min-width: 88px;

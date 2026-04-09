@@ -167,8 +167,10 @@ export class LayoutComponent extends ComponentBaseAbstract {
   private readonly SIDEBAR_COLLAPSED_KEY = 'layout.sidebar.collapsed';
   isExpanded = true;
   isSidebarCollapsed = false;
+  sidebarSearchTerm = '';
   menu: ISidebarItem[] = [];
   treeDataSource: TreeNode[] = [];
+  private allTreeDataSource: TreeNode[] = [];
   userInfo = getObsValue(this.store.select((state) => state.userInfo));
 
   private readonly TREE_MODULE_PREFIXES = [
@@ -281,8 +283,9 @@ export class LayoutComponent extends ComponentBaseAbstract {
       //   this.treeDataSource = navigator ?? [];
       // });
       .subscribe((navigator) => {
-        this.treeDataSource =
+        this.allTreeDataSource =
           navigator && navigator.length ? [...navigator] : [];
+        this.applySidebarSearch();
       });
   }
 
@@ -576,5 +579,41 @@ export class LayoutComponent extends ComponentBaseAbstract {
       (menuItem) =>
         menuItem.key === 'admin' && userInfo.role.name === UserRole.ADMIN
     );
+  }
+
+  onSidebarSearch(event: Event): void {
+    const target = event.target as HTMLInputElement | null;
+    this.sidebarSearchTerm = target?.value ?? '';
+    this.applySidebarSearch();
+  }
+
+  private applySidebarSearch(): void {
+    const keyword = this.sidebarSearchTerm.trim().toLowerCase();
+    if (!keyword) {
+      this.treeDataSource = [...this.allTreeDataSource];
+      return;
+    }
+
+    this.treeDataSource = this.filterTreeByKeyword(this.allTreeDataSource, keyword);
+  }
+
+  private filterTreeByKeyword(nodes: TreeNode[], keyword: string): TreeNode[] {
+    return nodes
+      .map((node) => {
+        const children = Array.isArray(node.children) ? node.children : [];
+        const filteredChildren = this.filterTreeByKeyword(children, keyword);
+        const selfMatched = `${node.name ?? ''}`.toLowerCase().includes(keyword);
+
+        if (!selfMatched && filteredChildren.length === 0) {
+          return null;
+        }
+
+        return {
+          ...node,
+          expanded: true,
+          children: filteredChildren,
+        } as TreeNode;
+      })
+      .filter((node): node is TreeNode => node !== null);
   }
 }

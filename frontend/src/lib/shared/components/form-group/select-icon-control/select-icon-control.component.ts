@@ -67,10 +67,16 @@ export class SelectIconControlComponent
   extends FormGroupAbstractComponent
   implements OnInit, AfterViewInit
 {
-  iconConstant: IconOption[] = SVG_ICONS.map((name) => ({
+  private readonly defaultIconOptions: IconOption[] = SVG_ICONS.map((name) => ({
     value: `svg:${name}`,
     label: name,
   }));
+
+  get iconConstant(): IconOption[] {
+    return this.item.options?.length
+      ? (this.item.options as IconOption[])
+      : this.defaultIconOptions;
+  }
 
   ngOnInit(): void {
     const control = this.getControl();
@@ -135,8 +141,17 @@ export class SelectIconControlComponent
     const trimmed = value.trim();
     if (!trimmed) return null;
 
+    if (this.iconConstant.some((option) => option.value === trimmed)) {
+      return trimmed;
+    }
+
     if (trimmed.startsWith('svg:')) return trimmed;
 
-    return `svg:${trimmed}`;
+    const svgValue = `svg:${trimmed}`;
+    if (this.iconConstant.some((option) => option.value === svgValue)) {
+      return svgValue;
+    }
+
+    return trimmed;
   }
 }

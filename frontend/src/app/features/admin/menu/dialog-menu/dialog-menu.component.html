@@ -1,0 +1,50 @@
+<app-dialog-container
+  [dialogTitle]="title"
+  [dialogActionTemplate]="actionTemplate">
+  <app-form-control
+    #formTpl
+    [form]="form"
+    (submitEvent)="onSubmit()">
+    <div class="flex flex-col gap-2">
+      <app-select-control
+        [item]="findFormControl($formItem, key.PARENT_ID)"
+        [form]="form"></app-select-control>
+      <app-text-control
+        [item]="findFormControl($formItem, key.CODE)"
+        [form]="form"></app-text-control>
+      <app-text-control
+        [item]="findFormControl($formItem, key.NAME)"
+        [form]="form"></app-text-control>
+      <app-select-icon-control
+        [item]="findFormControl($formItem, key.ICON)"
+        [form]="form"></app-select-icon-control>
+      <app-text-control
+        [item]="findFormControl($formItem, key.URL)"
+        [form]="form"></app-text-control>
+    </div>
+  </app-form-control>
+
+  <ng-template #actionTemplate>
+    <button
+      color="info"
+      matButton="outlined"
+      mat-dialog-close>
+      Hủy
+    </button>
+    @if (data.type !== TYPE_FORM.DETAIL) {
+      <button
+        color="primary"
+        matButton="filled"
+        (click)="formTpl.submit()">
+        Lưu
+      </button>
+    } @else {
+      <button
+        color="primary"
+        matButton="filled"
+        (click)="switchUpdate()">
+        Chỉnh sửa
+      </button>
+    }
+  </ng-template>
+</app-dialog-container>

@@ -12,30 +12,33 @@ export const NAVIGATOR_ENDPOINT = {
   SERVER_ERROR: 'server-error',
 
   ADMIN: {
-    BASE_PATH: 'Admin',
+    BASE_PATH: 'admin',
     NGUOI_DUNG: {
-      BASE_PATH: 'NguoiDung',
+      BASE_PATH: 'nguoi-dung',
     },
     DON_VI: {
-      BASE_PATH: 'DonVi',
+      BASE_PATH: 'don-vi',
     },
     VAI_TRO: {
-      BASE_PATH: 'VaiTro',
+      BASE_PATH: 'vai-tro',
+    },
+    MENU: {
+      BASE_PATH: 'menu',
     },
     NAM_HOC: {
-      BASE_PATH: 'NamHoc',
+      BASE_PATH: 'nam-hoc',
     },
     KHOI: {
-      BASE_PATH: 'Khoi',
+      BASE_PATH: 'khoi',
     },
     LOP: {
-      BASE_PATH: 'Lop',
+      BASE_PATH: 'lop',
     },
     MON_HOC: {
-      BASE_PATH: 'MonHoc',
+      BASE_PATH: 'mon-hoc',
     },
     HOC_SINH: {
-      BASE_PATH: 'HocSinh',
+      BASE_PATH: 'hoc-sinh',
     },
   },
 } as const;
