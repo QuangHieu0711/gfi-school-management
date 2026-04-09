@@ -44,6 +44,9 @@ public class Menu {
     @Column(length = 255)
     private String icon;
 
+    @Column(nullable = false)
+    private Integer ordinal;
+
     @Column
     private LocalDateTime createdAt;
 
@@ -60,6 +63,9 @@ public class Menu {
     public void prePersist() {
         if (createdAt == null) {
             createdAt = LocalDateTime.now();
+        }
+        if (ordinal == null) {
+            ordinal = 0;
         }
     }
 

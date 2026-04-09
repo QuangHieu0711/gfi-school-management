@@ -84,6 +84,7 @@ export class DialogMenuComponent extends ComponentBaseAbstract {
       [MENU_KEY.NAME]: formValue[MENU_KEY.NAME],
       [MENU_KEY.ICON]: formValue[MENU_KEY.ICON] || null,
       [MENU_KEY.URL]: formValue[MENU_KEY.URL] || null,
+      [MENU_KEY.ORDINAL]: Number(formValue[MENU_KEY.ORDINAL]),
     };
 
     if (this.data.type === TYPE_FORM.CREATE) {
@@ -173,6 +174,7 @@ export class DialogMenuComponent extends ComponentBaseAbstract {
       ...data,
       [MENU_KEY.PARENT_ID]: data[MENU_KEY.PARENT_ID] ?? '',
       [MENU_KEY.ICON]: data[MENU_KEY.ICON] ?? null,
+      [MENU_KEY.ORDINAL]: data[MENU_KEY.ORDINAL] ?? 1,
       [MENU_KEY.URL]: data[MENU_KEY.URL] ?? '',
     };
   }

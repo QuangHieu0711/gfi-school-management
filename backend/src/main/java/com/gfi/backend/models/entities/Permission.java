@@ -35,9 +35,6 @@ public class Permission {
     private Integer isAdd;
 
     @Column(nullable = false)
-    private Integer isApprove;
-
-    @Column(nullable = false)
     private Integer isDelete;
 
     @Column(nullable = false)
@@ -76,9 +73,6 @@ public class Permission {
         }
         if (isAdd == null) {
             isAdd = 0;
-        }
-        if (isApprove == null) {
-            isApprove = 0;
         }
         if (isDelete == null) {
             isDelete = 0;

@@ -1,6 +1,7 @@
 package com.gfi.backend.models.dtos.menu;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 
@@ -8,17 +9,20 @@ import lombok.Data;
 public class MenuCreateRequest {
     private Long parentId;
 
-    @NotBlank(message = "Mã menu không được để trống")
-    @Size(max = 100, message = "Mã menu tối đa 100 ký tự")
+    @NotBlank(message = "Ma menu khong duoc de trong")
+    @Size(max = 100, message = "Ma menu toi da 100 ky tu")
     private String code;
 
-    @NotBlank(message = "Tên menu không được để trống")
-    @Size(max = 255, message = "Tên menu tối đa 255 ký tự")
+    @NotBlank(message = "Ten menu khong duoc de trong")
+    @Size(max = 255, message = "Ten menu toi da 255 ky tu")
     private String name;
 
-    @Size(max = 500, message = "Url tối đa 500 ký tự")
+    @Size(max = 500, message = "Url toi da 500 ky tu")
     private String url;
 
-    @Size(max = 255, message = "Icon tối đa 255 ký tự")
+    @Size(max = 255, message = "Icon toi da 255 ky tu")
     private String icon;
+
+    @NotNull(message = "Thu tu khong duoc de trong")
+    private Integer ordinal;
 }

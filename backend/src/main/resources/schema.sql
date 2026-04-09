@@ -164,6 +164,7 @@ CREATE TABLE IF NOT EXISTS menus (
     menu_name varchar(255) NOT NULL,
     url varchar(500),
     icon varchar(255),
+    ordinal integer NOT NULL DEFAULT 0,
     created_at timestamp,
     created_by varchar(255),
     updated_at timestamp,
@@ -174,10 +175,12 @@ CREATE TABLE IF NOT EXISTS menus (
 ALTER TABLE IF EXISTS menus
     ADD COLUMN IF NOT EXISTS icon varchar(255);
 
+ALTER TABLE IF EXISTS menus
+    ADD COLUMN IF NOT EXISTS ordinal integer NOT NULL DEFAULT 0;
+
 CREATE TABLE IF NOT EXISTS permissions (
     id bigserial PRIMARY KEY,
     is_add integer NOT NULL DEFAULT 0,
-    is_approve integer NOT NULL DEFAULT 0,
     is_delete integer NOT NULL DEFAULT 0,
     is_download integer NOT NULL DEFAULT 0,
     is_edit integer NOT NULL DEFAULT 0,
@@ -192,6 +195,9 @@ CREATE TABLE IF NOT EXISTS permissions (
     CONSTRAINT fk_permissions_roles FOREIGN KEY (role_id) REFERENCES roles (id),
     CONSTRAINT uk_permissions_role_menu UNIQUE (role_id, menu_id)
 );
+
+ALTER TABLE permissions
+    DROP COLUMN IF EXISTS is_approve;
 
 INSERT INTO menus (parent_menu_id, menu_id, menu_name, url, created_at, created_by)
 SELECT null, 'SYSTEM_CONFIG', 'Cấu hình hệ thống', null, NOW(), 'SYSTEM'

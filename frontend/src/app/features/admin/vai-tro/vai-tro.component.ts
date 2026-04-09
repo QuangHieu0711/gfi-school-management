@@ -82,9 +82,10 @@ export class VaiTroComponent extends ComponentBaseAbstract {
           {
             type: 'icon',
             icon: 'settings',
-            class: 'action-edit',
+            class: 'action-config',
             tooltip: 'Cấu hình vai trò',
-            click: (rowData: VaiTroResponse) => this.openPermissionConfig(rowData),
+            click: (rowData: VaiTroResponse) =>
+              this.openPermissionConfig(rowData),
           },
           {
             type: 'icon',

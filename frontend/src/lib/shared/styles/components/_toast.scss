@@ -17,6 +17,25 @@
   }
   &.toast-warning {
     @apply bg-warning-50 border-warning-150 text-warning-500;
+    background-image: none !important;
+    &::before {
+      content: 'warning';
+      font-family: 'Material Symbols Outlined', sans-serif;
+      font-weight: normal;
+      font-style: normal;
+      font-size: 30px;
+      line-height: 1;
+      letter-spacing: normal;
+      text-transform: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      position: absolute;
+      left: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--color-warning-600);
+    }
   }
 
   .toast-title {

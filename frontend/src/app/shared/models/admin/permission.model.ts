@@ -14,7 +14,6 @@ export enum PERMISSION_KEY {
   IS_ADD = 'isAdd',
   IS_EDIT = 'isEdit',
   IS_DELETE = 'isDelete',
-  IS_APPROVE = 'isApprove',
   IS_DOWNLOAD = 'isDownload',
 }
 
@@ -39,9 +38,10 @@ export interface PermissionFormRequest {
   [PERMISSION_KEY.IS_ADD]: number;
   [PERMISSION_KEY.IS_EDIT]: number;
   [PERMISSION_KEY.IS_DELETE]: number;
-  [PERMISSION_KEY.IS_APPROVE]: number;
   [PERMISSION_KEY.IS_DOWNLOAD]: number;
 }
+
+export type PermissionBulkFormRequest = PermissionFormRequest[];
 
 export interface PermissionResponse {
   [PERMISSION_KEY.ID]?: ID_TYPE;
@@ -56,6 +56,5 @@ export interface PermissionResponse {
   [PERMISSION_KEY.IS_ADD]: number;
   [PERMISSION_KEY.IS_EDIT]: number;
   [PERMISSION_KEY.IS_DELETE]: number;
-  [PERMISSION_KEY.IS_APPROVE]: number;
   [PERMISSION_KEY.IS_DOWNLOAD]: number;
 }

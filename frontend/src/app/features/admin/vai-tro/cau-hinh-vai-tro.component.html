@@ -6,66 +6,64 @@
       <app-icon icon="arrow_back" [size]="20" />
       <span>{{ getRoleName() }}</span>
     </a>
-    <div class="header-meta">
-      <span>Role ID: {{ roleId }}</span>
-      <span>{{ dataSourceTotal }} chức năng</span>
-    </div>
-  </div>
-
-  <div
-    class="permission-toolbar"
-    [formGroup]="filterForm">
-    <mat-form-field appearance="outline">
-      <mat-label>Tìm chức năng</mat-label>
-      <input
-        matInput
-        formControlName="keyword"
-        placeholder="Tên, mã hoặc đường dẫn"
-        (input)="onKeywordChange()" />
-      <button
-        matSuffix
-        mat-icon-button
-        type="button"
-        (click)="filterForm.controls.keyword.setValue(''); onKeywordChange()">
-        <app-icon icon="close" />
-      </button>
-    </mat-form-field>
-
-    <div class="permission-switch">
-      <span>Chỉ hiển thị chức năng đã cấp quyền</span>
-      <mat-slide-toggle
-        formControlName="assignedOnly"
-        (change)="onAssignedOnlyChange()"></mat-slide-toggle>
-    </div>
-
-    <div class="toolbar-actions">
-      <button
-        mat-stroked-button
-        type="button"
-        [disabled]="saving || !hasDirtyRows()"
-        (click)="resetChanges()">
-        Hủy
-      </button>
-      <button
-        matButton="filled"
-        color="primary"
-        type="button"
-        [disabled]="saving || !hasDirtyRows()"
-        (click)="saveAllChanges()">
-        {{ saving ? 'Đang lưu...' : 'Lưu' }}
-      </button>
-    </div>
   </div>
 
   <section class="permission-table-panel">
     <div class="table-head">
-      <div>
-        <h2>Bảng quyền chi tiết</h2>
-        <p>Tạm thời giữ tìm kiếm theo tên, mã và đường dẫn chức năng.</p>
+      <h2>Bảng quyền chi tiết</h2>
+    </div>
+
+    <div class="permission-toolbar">
+      <div class="permission-search">
+        <app-form-control
+          [form]="searchForm"
+          (submitEvent)="submitSearch()"
+          (resetEvent)="resetSearch()">
+          <div class="search-row">
+            <div class="search-input">
+              <app-text-control
+                [item]="findFormControl(searchItems, 'keyword')"
+                [form]="searchForm"></app-text-control>
+            </div>
+
+            <div class="search-actions">
+              <button
+                color="dark"
+                matIconButton="text"
+                matTooltip="Tìm kiếm"
+                type="submit">
+                <app-icon icon="svg:search" color="#858585" />
+              </button>
+              <button
+                color="dark"
+                matIconButton="text"
+                matTooltip="Làm mới"
+                type="reset">
+                <app-icon icon="svg:cached" color="#858585" />
+              </button>
+            </div>
+          </div>
+        </app-form-control>
       </div>
-      @if (hasDirtyRows()) {
-        <span class="dirty-badge">{{ getDirtyCount() }} dòng đã thay đổi</span>
-      }
+
+      <div class="toolbar-actions">
+        <button
+          color="primary"
+          matButton="outlined"
+          type="button"
+          [disabled]="saving"
+          (click)="resetChanges()">
+          Hủy
+        </button>
+        <button
+          color="primary"
+          matButton="filled"
+          type="button"
+          [disabled]="saving"
+          (click)="saveAllChanges()">
+          {{ saving ? 'Đang lưu...' : 'Lưu' }}
+        </button>
+      </div>
     </div>
 
     <app-table
@@ -87,15 +85,32 @@
   <div
     class="menu-cell"
     [style.--menu-level]="row?.level ?? 0">
+    <button
+      type="button"
+      class="menu-toggle"
+      [class.is-placeholder]="!hasChildren(row)"
+      (click)="toggleRow(row, $event)">
+      @if (hasChildren(row)) {
+        <app-icon [icon]="isExpanded(row) ? 'expand_more' : 'chevron_right'" [size]="18" />
+      }
+    </button>
     <div class="menu-copy">
-      <span class="menu-title">{{ row?.name }}</span>
-      <span class="menu-meta">
-        {{ row?.code }}
-        <span class="menu-divider">•</span>
-        {{ row?.parentId ? 'Menu con' : 'Menu gốc' }}
+      <span class="menu-inline">
+        <span class="menu-node-icon">
+          @if (row?.icon) {
+            <app-icon [icon]="row?.icon" [size]="20" />
+          }
+        </span>
+        <span class="menu-title">{{ row?.name }}</span>
       </span>
     </div>
   </div>
+</ng-template>
+
+<ng-template
+  #menuCodeTpl
+  let-row>
+  <span class="menu-code">{{ row?.code }}</span>
 </ng-template>
 
 <ng-template
@@ -105,7 +120,7 @@
     @if (row?.url) {
       <code>{{ row?.url }}</code>
     } @else {
-      <span class="path-empty">Chưa cấu hình</span>
+      <span></span>
     }
   </div>
 </ng-template>
@@ -115,8 +130,10 @@
   let-row
   let-col="colDef">
   <div class="toggle-cell">
-    <mat-slide-toggle
-      [checked]="col?.field === 'allPermissions' ? isAllSelected(row) : row?.[col?.field] === 1"
-      (change)="onTogglePermission(row, col?.field, $event)"></mat-slide-toggle>
+    @if (!isRootMenu(row)) {
+      <mat-slide-toggle
+        [checked]="col?.field === 'allPermissions' ? isAllSelected(row) : row?.[col?.field] === 1"
+        (change)="onTogglePermission(row, col?.field, $event)"></mat-slide-toggle>
+    }
   </div>
 </ng-template>

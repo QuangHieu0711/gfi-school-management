@@ -100,7 +100,7 @@ export class LopComponent extends ComponentBaseAbstract {
           {
             type: 'icon',
             icon: 'visibility',
-            class: 'action-config',
+            class: 'action-view',
             tooltip: 'Chi tiết',
             click: (rowData: LopResponse) =>
               this.openDialog(this.TYPE_FORM.DETAIL, rowData),

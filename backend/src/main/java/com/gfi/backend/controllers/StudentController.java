@@ -31,7 +31,7 @@ import lombok.RequiredArgsConstructor;
 @RestController
 @RequestMapping("/api/students")
 @RequiredArgsConstructor
-@Tag(name = "Quan ly hoc sinh - Student")
+@Tag(name = "Quản lý học sinh - Student")
 public class StudentController extends ApiBaseController {
 
     private final StudentService studentService;

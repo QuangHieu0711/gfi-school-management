@@ -1,16 +1,11 @@
 package com.gfi.backend.services.interfaces;
 
-import com.gfi.backend.models.dtos.common.PageRequestDto;
-import com.gfi.backend.models.dtos.common.PageResponseDto;
-import com.gfi.backend.models.dtos.permission.PermissionCreateRequest;
-import com.gfi.backend.models.dtos.permission.PermissionFilterDto;
+import java.util.List;
+
 import com.gfi.backend.models.dtos.permission.PermissionItemDto;
-import com.gfi.backend.models.dtos.permission.PermissionUpdateRequest;
+import com.gfi.backend.models.dtos.permission.PermissionSaveRequest;
 
 public interface PermissionService {
-    PageResponseDto<PermissionItemDto, PermissionFilterDto> search(PageRequestDto<PermissionFilterDto> request);
-    PermissionItemDto getById(Long id);
-    PermissionItemDto create(PermissionCreateRequest request);
-    PermissionItemDto update(Long id, PermissionUpdateRequest request);
-    void delete(Long id);
+    List<PermissionItemDto> getByRoleId(Long roleId);
+    List<PermissionItemDto> savePermissions(List<PermissionSaveRequest> requests);
 }

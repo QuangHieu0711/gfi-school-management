@@ -35,14 +35,14 @@ public class MenuServiceImpl implements MenuService {
     @Override
     public List<MenuItemDto> search(MenuFilterDto filter) {
         MenuFilterDto safeFilter = filter == null ? new MenuFilterDto() : filter;
-        return menuRepository.findAll(buildSpecification(safeFilter), Sort.by(Sort.Direction.ASC, "name")).stream()
+        return menuRepository.findAll(buildSpecification(safeFilter), Sort.by(Sort.Direction.ASC, "ordinal", "name")).stream()
                 .map(this::toDto)
                 .toList();
     }
 
     @Override
     public List<LookupItemDto> getOptions() {
-        return menuRepository.findAll(Sort.by(Sort.Direction.ASC, "name")).stream()
+        return menuRepository.findAll(Sort.by(Sort.Direction.ASC, "ordinal", "name")).stream()
                 .map(menu -> LookupItemDto.builder()
                         .id(menu.getId())
                         .name(menu.getName())
@@ -64,7 +64,7 @@ public class MenuServiceImpl implements MenuService {
         }
 
         Menu menu = new Menu();
-        applyRequest(menu, request.getParentId(), code, request.getName(), request.getUrl(), request.getIcon());
+        applyRequest(menu, request.getParentId(), code, request.getName(), request.getUrl(), request.getIcon(), request.getOrdinal());
         menu.setCreatedBy(getCurrentUsername());
         return toDto(menuRepository.save(menu));
     }
@@ -80,7 +80,7 @@ public class MenuServiceImpl implements MenuService {
                     throw new UserMessageException(CommonErrorCode.MENU_CODE_ALREADY_EXISTS);
                 });
 
-        applyRequest(menu, request.getParentId(), code, request.getName(), request.getUrl(), request.getIcon());
+        applyRequest(menu, request.getParentId(), code, request.getName(), request.getUrl(), request.getIcon(), request.getOrdinal());
         menu.setUpdatedBy(getCurrentUsername());
         return toDto(menuRepository.save(menu));
     }
@@ -98,7 +98,7 @@ public class MenuServiceImpl implements MenuService {
         menuRepository.delete(menu);
     }
 
-    private void applyRequest(Menu menu, Long parentId, String code, String name, String url, String icon) {
+    private void applyRequest(Menu menu, Long parentId, String code, String name, String url, String icon, Integer ordinal) {
         if (parentId != null) {
             if (menu.getId() != null && menu.getId().equals(parentId)) {
                 throw new UserMessageException(CommonErrorCode.BAD_REQUEST);
@@ -112,6 +112,7 @@ public class MenuServiceImpl implements MenuService {
         menu.setName(normalize(name));
         menu.setUrl(normalizeNullable(url));
         menu.setIcon(normalizeNullable(icon));
+        menu.setOrdinal(ordinal == null ? 0 : ordinal);
     }
 
     private Specification<Menu> buildSpecification(MenuFilterDto filter) {
@@ -143,6 +144,7 @@ public class MenuServiceImpl implements MenuService {
                 .name(menu.getName())
                 .url(menu.getUrl())
                 .icon(menu.getIcon())
+                .ordinal(menu.getOrdinal())
                 .build();
     }
 

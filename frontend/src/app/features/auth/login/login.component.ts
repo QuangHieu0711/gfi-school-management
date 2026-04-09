@@ -5,6 +5,7 @@ import { Router } from '@angular/router';
 import { NAVIGATOR_ENDPOINT } from '@constant/navigator';
 import { MATERIAL_MODULE } from '@modules';
 import { AuthService, DialogService, ToastService } from '@service';
+import { sha256 } from '@utils/utils';
 
 @Component({
   selector: 'app-login',
@@ -39,37 +40,38 @@ export class LoginComponent {
     }
 
     const value = this.form.getRawValue();
-    this.authService
-      .login({
-        username: value.username ?? '',
-        password: value.password ?? '',
-        deviceType: 'web',
-      })
-      .subscribe({
-        next: () => {
-          void this.router.navigate([
-            NAVIGATOR_ENDPOINT.ADMIN.BASE_PATH,
-            NAVIGATOR_ENDPOINT.ADMIN.NGUOI_DUNG.BASE_PATH,
-          ]);
-        },
-        error: (error) => {
-          const message =
-            error?.error?.userMessage ??
-            error?.error?.message ??
-            error?.message ??
-            'Đăng nhập thất bại';
+    sha256(value.password ?? '').then((hashedPassword) => {
+      this.authService
+        .login({
+          username: value.username ?? '',
+          password: hashedPassword,
+          deviceType: 'web',
+        })
+        .subscribe({
+          next: () => {
+            void this.router.navigate([
+              NAVIGATOR_ENDPOINT.ADMIN.BASE_PATH,
+              NAVIGATOR_ENDPOINT.ADMIN.NGUOI_DUNG.BASE_PATH,
+            ]);
+          },
+          error: (error) => {
+            const message =
+              error?.error?.userMessage ??
+              error?.error?.message ??
+              error?.message ??
+              'Đăng nhập thất bại';
 
-          this.toastService.removeToastr();
-          this.toastService.error(message, 'Thất bại');
-        },
-      });
+            this.toastService.removeToastr();
+            this.toastService.error(message, 'Thất bại');
+          },
+        });
+    });
   }
 
   openForgotPassword(): void {
     this.dialogService.success({
       title: 'Quên mật khẩu',
-      message:
-        'Vui lòng liên hệ quản trị viên để được cấp lại mật khẩu.',
+      message: 'Vui lòng liên hệ quản trị viên để được cấp lại mật khẩu.',
       closeButtonText: 'Đóng',
       width: '420px',
     });

@@ -8,13 +8,13 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.gfi.backend.controllers.exceptions.UserMessageException;
 import com.gfi.backend.models.dtos.common.PageRequestDto;
 import com.gfi.backend.models.dtos.common.PageResponseDto;
+import com.gfi.backend.utils.PageableUtils;
 import com.gfi.backend.models.dtos.user.UserCreateRequest;
 import com.gfi.backend.models.dtos.user.UserFilterDto;
 import com.gfi.backend.models.dtos.user.UserItemDto;
@@ -27,7 +27,7 @@ import com.gfi.backend.repositories.RoleRepository;
 import com.gfi.backend.repositories.UnitRepository;
 import com.gfi.backend.repositories.UserRepository;
 import com.gfi.backend.services.interfaces.UserService;
-import com.gfi.backend.utils.PageableUtils;
+import com.gfi.backend.utils.PasswordUtils;
 
 import jakarta.persistence.criteria.Join;
 import jakarta.persistence.criteria.JoinType;
@@ -41,7 +41,6 @@ public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final UnitRepository unitRepository;
-    private final PasswordEncoder passwordEncoder;
 
     @Override
     public PageResponseDto<UserItemDto, UserFilterDto> search(PageRequestDto<UserFilterDto> request) {
@@ -87,7 +86,8 @@ public class UserServiceImpl implements UserService {
 
         User user = new User();
         user.setUsername(username);
-        user.setPassword(passwordEncoder.encode(request.getPassword().trim()));
+        // FE đã mã hóa sha256, BE mã hóa lần nữa: sha256(hash từ FE)
+        user.setPassword(PasswordUtils.sha256(request.getPassword().trim()));
         user.setFullName(normalize(request.getFullName()));
         user.setEmail(normalizeNullable(request.getEmail()));
         user.setPhone(normalizeNullable(request.getPhone()));
@@ -126,7 +126,8 @@ public class UserServiceImpl implements UserService {
         user.setStatus(request.getStatus());
         user.setUpdatedBy(getCurrentUsername());
         if (hasText(request.getPassword())) {
-            user.setPassword(passwordEncoder.encode(request.getPassword().trim()));
+            // FE đã mã hóa sha256, BE mã hóa lần nữa
+            user.setPassword(PasswordUtils.sha256(request.getPassword().trim()));
         }
 
         return toDto(userRepository.save(user));
@@ -203,7 +204,8 @@ public class UserServiceImpl implements UserService {
 
     private String getCurrentUsername() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication == null || authentication.getName() == null || "anonymousUser".equals(authentication.getName())) {
+        if (authentication == null || authentication.getName() == null
+                || "anonymousUser".equals(authentication.getName())) {
             return "SYSTEM";
         }
         return authentication.getName();

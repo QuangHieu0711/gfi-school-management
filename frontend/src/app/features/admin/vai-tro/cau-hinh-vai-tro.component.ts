@@ -4,15 +4,20 @@ import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { MatSlideToggleChange } from '@angular/material/slide-toggle';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { MtxGridColumn } from '@ng-matero/extensions/grid';
-import { finalize, forkJoin } from 'rxjs';
+import { finalize, forkJoin, takeUntil } from 'rxjs';
 
 import { AppTableComponent } from '@components/app-table/app-table.component';
 import { IconComponent } from '@components/app-icon/app-icon.component';
 import { COMMON_TABLE_KEY } from '@model/table.model';
 import { ComponentBaseAbstract } from '@layout';
-import { MATERIAL_MODULE } from '@modules';
-import { ID_TYPE, IResponse, ITableResponse } from '@model/response.model';
+import { FORM_CONTROL_MODULE, MATERIAL_MODULE } from '@modules';
+import { ID_TYPE, ITableResponse } from '@model/response.model';
 
+import {
+  CAU_HINH_VAI_TRO_SEARCH_ITEMS,
+  PermissionMatrixRow,
+  PermissionToggleKey,
+} from '@app/model/admin/cau-hinh-vai-tro.model';
 import {
   PERMISSION_KEY,
   PermissionFormRequest,
@@ -24,29 +29,6 @@ import { MenuService } from '@app/service/admin/menu.service';
 import { PermissionAdminService } from '@app/service/admin/permission.service';
 import { VaiTroService } from '@app/service/admin/vai-tro.service';
 
-type PermissionToggleKey =
-  | PERMISSION_KEY.IS_VIEW
-  | PERMISSION_KEY.IS_ADD
-  | PERMISSION_KEY.IS_EDIT
-  | PERMISSION_KEY.IS_DELETE
-  | PERMISSION_KEY.IS_APPROVE
-  | PERMISSION_KEY.IS_DOWNLOAD;
-
-interface PermissionMatrixRow extends MenuResponse {
-  permissionId?: ID_TYPE;
-  roleId: ID_TYPE;
-  level: number;
-  assigned: boolean;
-  permissionCount: number;
-  isView: number;
-  isAdd: number;
-  isEdit: number;
-  isDelete: number;
-  isApprove: number;
-  isDownload: number;
-  originalState: Record<PermissionToggleKey, number>;
-}
-
 @Component({
   selector: 'cau-hinh-vai-tro',
   templateUrl: './cau-hinh-vai-tro.component.html',
@@ -57,12 +39,16 @@ interface PermissionMatrixRow extends MenuResponse {
     RouterLink,
     AppTableComponent,
     IconComponent,
+    ...FORM_CONTROL_MODULE,
     ...MATERIAL_MODULE,
   ],
 })
 export class CauHinhVaiTroComponent extends ComponentBaseAbstract {
   @ViewChild('menuNameTpl', { static: true })
   menuNameTpl!: TemplateRef<unknown>;
+
+  @ViewChild('menuCodeTpl', { static: true })
+  menuCodeTpl!: TemplateRef<unknown>;
 
   @ViewChild('pathTpl', { static: true })
   pathTpl!: TemplateRef<unknown>;
@@ -73,17 +59,16 @@ export class CauHinhVaiTroComponent extends ComponentBaseAbstract {
   readonly tableConfig = {
     showPaginator: false,
   };
-  readonly filterForm = new FormGroup({
+  readonly searchForm = new FormGroup({
     keyword: new FormControl('', { nonNullable: true }),
-    assignedOnly: new FormControl(false, { nonNullable: true }),
   });
+  readonly searchItems = CAU_HINH_VAI_TRO_SEARCH_ITEMS;
   readonly columns: MtxGridColumn[] = [];
   readonly permissionKeys: PermissionToggleKey[] = [
     PERMISSION_KEY.IS_VIEW,
     PERMISSION_KEY.IS_ADD,
     PERMISSION_KEY.IS_EDIT,
     PERMISSION_KEY.IS_DELETE,
-    PERMISSION_KEY.IS_APPROVE,
     PERMISSION_KEY.IS_DOWNLOAD,
   ];
 
@@ -94,6 +79,8 @@ export class CauHinhVaiTroComponent extends ComponentBaseAbstract {
   dataSource: PermissionMatrixRow[] = [];
 
   private allRows: PermissionMatrixRow[] = [];
+  private expandedRowIds = new Set<ID_TYPE>();
+  private dirtyRowIds = new Set<ID_TYPE>();
 
   constructor(
     protected override injector: Injector,
@@ -120,15 +107,14 @@ export class CauHinhVaiTroComponent extends ComponentBaseAbstract {
         cellTemplate: this.menuNameTpl,
       },
       {
+        header: 'Mã chức năng',
+        field: MENU_KEY.CODE,
+        cellTemplate: this.menuCodeTpl,
+      },
+      {
         header: 'Đường dẫn',
         field: MENU_KEY.URL,
         cellTemplate: this.pathTpl,
-      },
-      {
-        header: 'Tất cả',
-        field: 'allPermissions',
-        class: 'text-center',
-        cellTemplate: this.toggleTpl,
       },
       ...this.permissionKeys.map((field) => ({
         header: this.getPermissionHeader(field),
@@ -136,6 +122,12 @@ export class CauHinhVaiTroComponent extends ComponentBaseAbstract {
         class: 'text-center',
         cellTemplate: this.toggleTpl,
       })),
+      {
+        header: 'Tất cả',
+        field: 'allPermissions',
+        class: 'text-center',
+        cellTemplate: this.toggleTpl,
+      }
     );
 
     if (this.roleId == null) {
@@ -143,47 +135,70 @@ export class CauHinhVaiTroComponent extends ComponentBaseAbstract {
       return;
     }
 
-    this.refreshSnapshot();
-  }
+    this.searchForm.controls.keyword.valueChanges
+      .pipe(takeUntil(this.ngUnsubscribe))
+      .subscribe(() => this.applyClientFilter());
 
-  onKeywordChange() {
-    this.applyClientFilter();
-  }
-
-  onAssignedOnlyChange() {
     this.refreshSnapshot();
   }
 
   onTogglePermission(
-    row: PermissionMatrixRow,
+    displayRow: PermissionMatrixRow,
     field: PermissionToggleKey | 'allPermissions',
     event: MatSlideToggleChange
   ) {
+    if (this.isRootMenu(displayRow)) return;
+
+    const sourceRow = this.allRows.find((row) => row.id === displayRow.id);
+    if (!sourceRow) return;
+
     if (field === 'allPermissions') {
+      const nextValue = event.checked ? 1 : 0;
       this.permissionKeys.forEach((key) => {
-        row[key] = event.checked ? 1 : 0;
+        sourceRow[key] = nextValue;
       });
     } else {
-      row[field] = event.checked ? 1 : 0;
+      sourceRow[field] = event.checked ? 1 : 0;
     }
 
-    this.syncRowState(row);
+    this.syncRowState(sourceRow);
+    this.syncDirtyState(sourceRow);
+    this.applyClientFilter();
+  }
+
+  submitSearch() {
+    this.applyClientFilter();
+  }
+
+  resetSearch() {
+    this.searchForm.reset({ keyword: '' });
+    this.applyClientFilter();
   }
 
   saveAllChanges() {
-    if (this.roleId == null || !this.hasDirtyRows()) return;
+    if (this.roleId == null) return;
+    if (!this.hasDirtyRows()) {
+      this.toastr.warning('Chưa có thay đổi để lưu', 'Thông báo');
+      return;
+    }
 
-    const dirtyRows = this.allRows.filter((row) => this.isRowDirty(row));
-    const requests = dirtyRows.map((row) => this.buildSaveRequest(row));
+    const payloads = this.allRows
+      .filter((row) => this.isRowDirty(row))
+      .map((row) => this.buildPermissionPayload(row));
 
     this.saving = true;
 
-    forkJoin(requests)
+    this.permissionService
+      .save(payloads)
       .pipe(finalize(() => (this.saving = false)))
       .subscribe({
         next: () => {
           this.toastr.success('Cập nhật quyền thành công', 'Thành công');
-          this.refreshSnapshot(false);
+          this.router.navigate([
+            '/',
+            this.navigatorEndpoint.ADMIN.BASE_PATH,
+            this.navigatorEndpoint.ADMIN.VAI_TRO.BASE_PATH,
+          ]);
         },
         error: (error) => {
           this.toastr.error(
@@ -197,6 +212,11 @@ export class CauHinhVaiTroComponent extends ComponentBaseAbstract {
   }
 
   resetChanges() {
+    if (!this.hasDirtyRows()) {
+      this.toastr.warning('Chưa có thay đổi để hủy', 'Thông báo');
+      return;
+    }
+
     this.allRows = this.allRows.map((row) => {
       const nextRow: PermissionMatrixRow = {
         ...row,
@@ -204,7 +224,6 @@ export class CauHinhVaiTroComponent extends ComponentBaseAbstract {
         isAdd: row.originalState.isAdd,
         isEdit: row.originalState.isEdit,
         isDelete: row.originalState.isDelete,
-        isApprove: row.originalState.isApprove,
         isDownload: row.originalState.isDownload,
       };
 
@@ -212,29 +231,58 @@ export class CauHinhVaiTroComponent extends ComponentBaseAbstract {
       return nextRow;
     });
 
+    this.dirtyRowIds.clear();
     this.applyClientFilter();
+    this.toastr.success('Đã hoàn tác các thay đổi', 'Thành công');
   }
 
   hasDirtyRows(): boolean {
-    return this.allRows.some((row) => this.isRowDirty(row));
+    return this.dirtyRowIds.size > 0;
   }
 
   getDirtyCount(): number {
-    return this.allRows.filter((row) => this.isRowDirty(row)).length;
+    return this.dirtyRowIds.size;
   }
 
   isRowDirty(row: PermissionMatrixRow): boolean {
-    return this.permissionKeys.some(
-      (key) => Number(row[key]) !== Number(row.originalState[key])
-    );
+    return this.dirtyRowIds.has(row.id);
   }
 
   isAllSelected(row: PermissionMatrixRow): boolean {
     return this.permissionKeys.every((key) => Number(row[key]) === 1);
   }
 
+  isRootMenu(row: PermissionMatrixRow): boolean {
+    return Number(row.level) === 0;
+  }
+
+  hasChildren(row: PermissionMatrixRow): boolean {
+    return Number(row.childCount) > 0;
+  }
+
+  isExpanded(row: PermissionMatrixRow): boolean {
+    return this.expandedRowIds.has(row.id);
+  }
+
+  toggleRow(row: PermissionMatrixRow, event?: Event) {
+    event?.stopPropagation();
+    if (!this.hasChildren(row)) return;
+
+    if (this.isExpanded(row)) {
+      this.expandedRowIds.delete(row.id);
+    } else {
+      this.expandedRowIds.add(row.id);
+    }
+
+    this.applyClientFilter();
+  }
+
   getRoleName(): string {
-    return this.roleDetail?.roleName ?? this.roleDetail?.code ?? `Vai trò #${this.roleId}`;
+    return (
+      this.roleDetail?.roleName ??
+      this.roleDetail?.code ??
+      `Vai trò #${this.roleId}`
+    );
   }
 
   private refreshSnapshot(showLoading = true) {
@@ -247,20 +295,27 @@ export class CauHinhVaiTroComponent extends ComponentBaseAbstract {
     forkJoin({
       role: this.vaiTroService.getById(this.roleId),
       menus: this.menuService.filter({}),
-      permissions: this.permissionService.filter({
-        pageNow: 1,
-        pageSize: 1000,
-        filter: {
-          roleId: this.roleId,
-        },
-      }),
+      permissions: this.permissionService.getByRoleId(this.roleId),
     })
       .pipe(finalize(() => (this.loading = false)))
       .subscribe({
         next: ({ role, menus, permissions }) => {
           this.roleDetail = role.data;
-          const permissionItems = this.normalizePermissionItems(permissions.data);
-          this.allRows = this.buildMatrixRows(this.roleId!, menus.data ?? [], permissionItems);
+          const permissionItems = this.normalizePermissionItems(
+            permissions.data
+          );
+
+          this.allRows = this.buildMatrixRows(
+            this.roleId!,
+            menus.data ?? [],
+            permissionItems
+          );
+          this.dirtyRowIds.clear();
+          this.expandedRowIds = new Set(
+            this.allRows
+              .filter((row) => this.hasChildren(row))
+              .map((row) => row.id)
+          );
           this.applyClientFilter();
         },
         error: (error) => {
@@ -275,7 +330,11 @@ export class CauHinhVaiTroComponent extends ComponentBaseAbstract {
   }
 
   private normalizePermissionItems(
-    data: ITableResponse<PermissionResponse> | PermissionResponse[] | null | undefined
+    data:
+      | ITableResponse<PermissionResponse>
+      | PermissionResponse[]
+      | null
+      | undefined
   ): PermissionResponse[] {
     if (Array.isArray(data)) {
       return data;
@@ -312,7 +371,9 @@ export class CauHinhVaiTroComponent extends ComponentBaseAbstract {
       if (visited.has(menu.id)) return;
       visited.add(menu.id);
 
-      rows.push(this.createMatrixRow(roleId, menu, permissionMap.get(menu.id), level));
+      rows.push(
+        this.createMatrixRow(roleId, menu, permissionMap.get(menu.id), level)
+      );
 
       const children = [...(childrenMap.get(menu.id) ?? [])].sort((a, b) =>
         `${a.name}`.localeCompare(`${b.name}`, 'vi')
@@ -329,6 +390,10 @@ export class CauHinhVaiTroComponent extends ComponentBaseAbstract {
       .filter((item) => !visited.has(item.id))
       .forEach((item) => visitNode(item, 0));
 
+    rows.forEach((row) => {
+      row.childCount = menus.filter((item) => item.parentId === row.id).length;
+    });
+
     return rows;
   }
 
@@ -343,20 +408,20 @@ export class CauHinhVaiTroComponent extends ComponentBaseAbstract {
       roleId,
       permissionId: permission?.id ?? permission?.ruleId,
       level,
+      childCount: 0,
       assigned: false,
       permissionCount: 0,
       isView: permission?.isView ?? 0,
       isAdd: permission?.isAdd ?? 0,
       isEdit: permission?.isEdit ?? 0,
       isDelete: permission?.isDelete ?? 0,
-      isApprove: permission?.isApprove ?? 0,
+      isApprove: 0,
       isDownload: permission?.isDownload ?? 0,
       originalState: {
         isView: permission?.isView ?? 0,
         isAdd: permission?.isAdd ?? 0,
         isEdit: permission?.isEdit ?? 0,
         isDelete: permission?.isDelete ?? 0,
-        isApprove: permission?.isApprove ?? 0,
         isDownload: permission?.isDownload ?? 0,
       },
     };
@@ -366,16 +431,13 @@ export class CauHinhVaiTroComponent extends ComponentBaseAbstract {
   }
 
   private applyClientFilter() {
-    const keyword = this.filterForm.controls.keyword.value.trim().toLowerCase();
-    const assignedOnly = this.filterForm.controls.assignedOnly.value;
+    const keyword = this.searchForm.controls.keyword.value.trim().toLowerCase();
     let rows = [...this.allRows];
-
-    if (assignedOnly) {
-      rows = rows.filter((row) => row.assigned);
-    }
 
     if (keyword) {
       rows = this.filterRowsByKeyword(rows, keyword);
+    } else {
+      rows = this.filterRowsByExpandState(rows);
     }
 
     this.dataSource = rows;
@@ -411,6 +473,25 @@ export class CauHinhVaiTroComponent extends ComponentBaseAbstract {
     return rows.filter((row) => resultIds.has(row.id));
   }
 
+  private filterRowsByExpandState(
+    rows: PermissionMatrixRow[]
+  ): PermissionMatrixRow[] {
+    const rowMap = new Map(rows.map((row) => [row.id, row]));
+
+    return rows.filter((row) => {
+      let parentId = row.parentId as ID_TYPE | null | undefined;
+
+      while (parentId != null) {
+        const parent = rowMap.get(parentId);
+        if (!parent) break;
+        if (!this.expandedRowIds.has(parent.id)) return false;
+        parentId = parent.parentId as ID_TYPE | null | undefined;
+      }
+
+      return true;
+    });
+  }
+
   private countEnabledPermissions(row: PermissionMatrixRow): number {
     return this.permissionKeys.filter((key) => Number(row[key]) === 1).length;
   }
@@ -420,21 +501,31 @@ export class CauHinhVaiTroComponent extends ComponentBaseAbstract {
     row.assigned = row.permissionCount > 0 || row.permissionId != null;
   }
 
-  private buildSaveRequest(row: PermissionMatrixRow) {
-    const payload: PermissionFormRequest = {
+  private syncDirtyState(row: PermissionMatrixRow) {
+    const hasChanged = this.permissionKeys.some(
+      (key) => Number(row[key]) !== Number(row.originalState[key])
+    );
+
+    if (hasChanged) {
+      this.dirtyRowIds.add(row.id);
+      return;
+    }
+
+    this.dirtyRowIds.delete(row.id);
+  }
+
+  private buildPermissionPayload(
+    row: PermissionMatrixRow
+  ): PermissionFormRequest {
+    return {
       roleId: this.roleId!,
       menuId: row.id,
       isView: row.isView,
       isAdd: row.isAdd,
       isEdit: row.isEdit,
       isDelete: row.isDelete,
-      isApprove: row.isApprove,
       isDownload: row.isDownload,
     };
-
-    return row.permissionId != null
-      ? this.permissionService.update(row.permissionId, payload)
-      : this.permissionService.create(payload);
   }
 
   private getPermissionHeader(field: PermissionToggleKey): string {
@@ -443,7 +534,6 @@ export class CauHinhVaiTroComponent extends ComponentBaseAbstract {
       isAdd: 'Thêm',
       isEdit: 'Sửa',
       isDelete: 'Xóa',
-      isApprove: 'Duyệt',
       isDownload: 'Tải',
     };
 

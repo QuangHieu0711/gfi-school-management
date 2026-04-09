@@ -8,6 +8,7 @@ export enum MENU_KEY {
   NAME = 'name',
   ICON = 'icon',
   URL = 'url',
+  ORDINAL = 'ordinal',
   PARENT_ID = 'parentId',
   PARENT_NAME = 'parentName',
   PARENT_CODE = 'parentCode',
@@ -38,6 +39,7 @@ export interface MenuFormRequest {
   [MENU_KEY.NAME]: string;
   [MENU_KEY.ICON]?: string | null;
   [MENU_KEY.URL]?: string | null;
+  [MENU_KEY.ORDINAL]: number;
 }
 
 export interface MenuResponse extends TableDataSource {
@@ -46,6 +48,7 @@ export interface MenuResponse extends TableDataSource {
   [MENU_KEY.NAME]: string;
   [MENU_KEY.ICON]?: string | null;
   [MENU_KEY.URL]?: string | null;
+  [MENU_KEY.ORDINAL]?: number | null;
   [MENU_KEY.PARENT_ID]?: ID_TYPE | null;
   [MENU_KEY.PARENT_CODE]?: string | null;
 }
@@ -88,6 +91,13 @@ export const MENU_FORM = [
     required: true,
     maxLength: 255,
   }),
+  TEXT_CONTROL({
+    controlName: MENU_KEY.ORDINAL,
+    label: 'Thứ tự',
+    placeholder: 'Ví dụ: 3',
+    required: true,
+    type: 'number',
+  }),
   SELECT_CONTROL({
     controlName: MENU_KEY.ICON,
     label: 'Icon',
@@ -99,7 +109,7 @@ export const MENU_FORM = [
   TEXT_CONTROL({
     controlName: MENU_KEY.URL,
     label: 'Đường dẫn',
-    placeholder: 'Ví dụ: /Admin/Menu',
+    placeholder: 'Ví dụ: /admin/menu',
     required: false,
     maxLength: 255,
   }),

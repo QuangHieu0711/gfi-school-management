@@ -2,12 +2,11 @@ import { HttpClient, HttpContext } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { ERROR_CONTEXT } from '@constant/error.registry';
 import { environment } from '@env/environment';
-import { IResponse, ITableResponse, ID_TYPE } from '@model/response.model';
+import { IResponse, ID_TYPE } from '@model/response.model';
 
 import {
   PERMISSION_API_ENDPOINT,
-  PermissionFilterRequest,
-  PermissionFormRequest,
+  PermissionBulkFormRequest,
   PermissionResponse,
 } from '@app/model/admin/permission.model';
 
@@ -20,21 +19,15 @@ export class PermissionAdminService {
 
   constructor(private readonly http: HttpClient) {}
 
-  filter(payload: PermissionFilterRequest) {
-    return this.http.post<
-      IResponse<ITableResponse<PermissionResponse> | PermissionResponse[]>
-    >(`${this.baseUrl}/${PERMISSION_API_ENDPOINT.FILTER}`, payload);
+  getByRoleId(roleId: ID_TYPE) {
+    return this.http.get<IResponse<PermissionResponse[]>>(
+      `${this.baseUrl}/${roleId}`
+    );
   }
 
-  create(payload: PermissionFormRequest) {
-    return this.http.post<IResponse<PermissionResponse>>(this.baseUrl, payload, {
-      context: this.silentContext,
-    });
-  }
-
-  update(id: ID_TYPE, payload: PermissionFormRequest) {
-    return this.http.put<IResponse<PermissionResponse>>(
-      `${this.baseUrl}/${id}`,
+  save(payload: PermissionBulkFormRequest) {
+    return this.http.post<IResponse<PermissionResponse[]>>(
+      `${this.baseUrl}/save`,
       payload,
       {
         context: this.silentContext,
