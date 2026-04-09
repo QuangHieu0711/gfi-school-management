@@ -1,0 +1,192 @@
+:host {
+  display: block;
+}
+
+.permission-page {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.permission-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  padding: 6px 2px 2px;
+}
+
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: #16324f;
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1.2;
+  text-decoration: none;
+}
+
+.back-link:hover {
+  color: #0f766e;
+}
+
+.header-meta {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  color: #6b7f95;
+  font-size: 13px;
+}
+
+.permission-toolbar {
+  display: grid;
+  grid-template-columns: minmax(260px, 1fr) auto auto;
+  gap: 16px;
+  align-items: center;
+  padding: 20px 24px;
+  border-radius: 22px;
+  background: #fff;
+  border: 1px solid #e7eef5;
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.05);
+}
+
+.permission-switch {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 56px;
+  padding: 0 18px;
+  border-radius: 16px;
+  background: #f6fbff;
+  border: 1px solid #d7e8f8;
+  color: #24425f;
+  font-weight: 600;
+}
+
+.permission-table-panel {
+  border-radius: 22px;
+  background: #fff;
+  border: 1px solid #e7eef5;
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.05);
+}
+
+.toolbar-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.table-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.table-head h2 {
+  margin: 0;
+  color: #16324f;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.table-head p {
+  margin: 6px 0 0;
+  color: #6b7f95;
+  font-size: 13px;
+}
+
+.dirty-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #0f766e;
+  background: #dff7f2;
+}
+
+.permission-table-panel {
+  padding: 20px;
+}
+
+::ng-deep {
+  .permission-toolbar .mat-mdc-form-field-subscript-wrapper {
+    display: none;
+  }
+}
+
+.menu-cell {
+  display: flex;
+  align-items: center;
+  min-height: 48px;
+  padding-left: calc(var(--menu-level, 0) * 18px);
+}
+
+.menu-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.menu-title {
+  color: #16324f;
+  font-weight: 600;
+}
+
+.menu-meta {
+  color: #71849a;
+  font-size: 12px;
+}
+
+.menu-divider {
+  margin: 0 6px;
+}
+
+.path-cell code {
+  color: #12456b;
+  font-size: 12px;
+  white-space: normal;
+  word-break: break-word;
+  padding: 4px 8px;
+  border-radius: 10px;
+  background: #eef7ff;
+}
+
+.path-empty {
+  color: #8a9aae;
+  font-style: italic;
+}
+
+.toggle-cell,
+.action-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@media (max-width: 900px) {
+  .permission-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .back-link {
+    font-size: 22px;
+  }
+
+  .permission-toolbar {
+    grid-template-columns: 1fr;
+  }
+
+  .header-meta,
+  .table-head {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}

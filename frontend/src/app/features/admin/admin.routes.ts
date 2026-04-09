@@ -67,6 +67,17 @@ export const AdminRoutes: Routes = [
             (m) => m.VaiTroComponent
           ),
       },
+      {
+        path: 'cau-hinh/:id',
+        providers: [
+          provideState({ name: 'style', reducer: StyleReducer }),
+          provideEffects(StyleEffect),
+        ],
+        loadComponent: () =>
+          import('@features/admin/vai-tro/cau-hinh-vai-tro.component').then(
+            (m) => m.CauHinhVaiTroComponent
+          ),
+      },
     ],
   },
   {

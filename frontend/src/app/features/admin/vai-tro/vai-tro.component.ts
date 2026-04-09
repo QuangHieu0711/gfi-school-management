@@ -1,5 +1,6 @@
 import { Component, Injector, TemplateRef, ViewChild } from '@angular/core';
 import { MtxGridColumn } from '@ng-matero/extensions/grid';
+
 import { AppTableComponent } from '@components/app-table/app-table.component';
 import { IconComponent } from '@components/app-icon/app-icon.component';
 import { TYPE_FORM, TYPE_FORM_KEY } from '@constant/constant';
@@ -58,7 +59,6 @@ export class VaiTroComponent extends ComponentBaseAbstract {
         header: 'Mã vai trò',
         field: VAI_TRO_KEY.CODE,
       },
-
       {
         header: 'Tên vai trò',
         field: VAI_TRO_KEY.ROLE_NAME,
@@ -79,6 +79,13 @@ export class VaiTroComponent extends ComponentBaseAbstract {
         type: 'button',
         class: 'text-center',
         buttons: [
+          {
+            type: 'icon',
+            icon: 'settings',
+            class: 'action-edit',
+            tooltip: 'Cấu hình vai trò',
+            click: (rowData: VaiTroResponse) => this.openPermissionConfig(rowData),
+          },
           {
             type: 'icon',
             icon: 'visibility',
@@ -166,6 +173,19 @@ export class VaiTroComponent extends ComponentBaseAbstract {
         }
       }
     );
+  }
+
+  openPermissionConfig(rowData: VaiTroResponse) {
+    const roleId = rowData[VAI_TRO_KEY.ID];
+    if (roleId == null) return;
+
+    this.router.navigate([
+      '/',
+      this.navigatorEndpoint.ADMIN.BASE_PATH,
+      this.navigatorEndpoint.ADMIN.VAI_TRO.BASE_PATH,
+      'cau-hinh',
+      roleId,
+    ]);
   }
 
   deleteRole(rowData: VaiTroResponse) {
