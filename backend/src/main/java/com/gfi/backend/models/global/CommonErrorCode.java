@@ -41,6 +41,8 @@ public enum CommonErrorCode {
     STUDENT_ENROLLMENT_UNIT_MISMATCH(1034, "Lớp không thuộc đơn vị của học sinh"),
     STUDENT_ADDRESS_TYPE_DUPLICATED(1035, "Loại địa chỉ bị trùng"),
     STUDENT_GUARDIAN_TYPE_DUPLICATED(1036, "Loại người giám hộ bị trùng"),
+    TEACHER_CODE_ALREADY_EXISTS(1037, "Mã giáo viên đã tồn tại"),
+    TEACHER_NOT_FOUND(1038, "Không tìm thấy giáo viên/cán bộ"),
     ACCESS_DENIED(1403, "Bạn không có quyền truy cập tài nguyên này"),
     BAD_REQUEST(1400, "Dữ liệu không hợp lệ"),
     INTERNAL_SERVER_ERROR(1500, "Lỗi hệ thống, vui lòng thử lại sau.");

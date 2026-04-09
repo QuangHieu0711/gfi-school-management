@@ -3,7 +3,7 @@
   [dialogActionTemplate]="actionTemplate">
   <div class="semester-config-head">
     <div class="semester-summary">
-      <div class="semester-summary-label">N&#259;m h&#7885;c</div>
+      <div class="semester-summary-label">Năm học</div>
       <div class="semester-summary-value">
         {{ data.schoolYear?.code }} - {{ data.schoolYear?.name }}
       </div>
@@ -30,7 +30,7 @@
             icon="add_box"
             [size]="18"
             class="btn-icon" />
-          Th&#234;m h&#7885;c k&#7923;
+          Thêm học kỳ
         </button>
       </div>
     </ng-container>
@@ -41,7 +41,7 @@
       color="info"
       matButton="outlined"
       (click)="closeDialog()">
-      &#272;&#243;ng
+      Đóng
     </button>
   </ng-template>
 </app-dialog-container>
@@ -64,7 +64,7 @@
       class="status-pill"
       [class.is-current]="row?.isCurrent"
       [class.is-inactive]="!row?.isCurrent">
-      {{ row?.isCurrent ? 'Hi&#7879;n h&#224;nh' : 'Kh&#244;ng' }}
+      {{ row?.isCurrent ? 'Hiện hành' : 'Không' }}
     </span>
   </div>
 </ng-template>

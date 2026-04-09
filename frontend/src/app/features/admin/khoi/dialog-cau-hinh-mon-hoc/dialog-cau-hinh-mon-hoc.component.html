@@ -15,7 +15,7 @@
         <button
           color="dark"
           matIconButton="text"
-          matTooltip="T&#236;m ki&#7871;m"
+          matTooltip="Tìm kiếm"
           type="submit">
           <app-icon
             icon="svg:search"
@@ -24,7 +24,7 @@
         <button
           color="dark"
           matIconButton="text"
-          matTooltip="L&#224;m m&#7899;i"
+          matTooltip="Làm mới"
           type="reset">
           <app-icon
             icon="svg:cached"
@@ -35,7 +35,7 @@
   </app-form-control>
 
   <app-table
-    tableTitle="Danh s&#225;ch m&#244;n h&#7885;c"
+    tableTitle="Danh sách môn học"
     [pageIndex]="pageIndex"
     [pageSize]="pageSize"
     [total]="dataSourceTotal"
@@ -68,13 +68,13 @@
       color="primary"
       matButton="outlined"
       (click)="closeDialog()">
-      H&#7911;y
+      Hủy
     </button>
     <button
       color="primary"
       matButton="filled"
       (click)="saveConfig()">
-      L&#432;u
+      Lưu
     </button>
   </ng-template>
 </app-dialog-container>

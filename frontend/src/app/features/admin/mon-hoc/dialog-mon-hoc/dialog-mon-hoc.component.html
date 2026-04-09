@@ -29,14 +29,14 @@
       color="primary"
       matButton="outlined"
       mat-dialog-close>
-      H&#7911;y
+      Hủy
     </button>
     @if (data.type !== TYPE_FORM.DETAIL) {
       <button
         color="primary"
         matButton="filled"
         (click)="formTpl.submit()">
-        L&#432;u
+        Lưu
       </button>
     }
     @if (data.type === TYPE_FORM.DETAIL) {
@@ -44,7 +44,7 @@
         color="primary"
         matButton="filled"
         (click)="switchUpdate()">
-        Ch&#7881;nh s&#7917;a
+        Chỉnh sửa
       </button>
     }
   </ng-template>
