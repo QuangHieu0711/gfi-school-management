@@ -9,6 +9,7 @@
   (queryChange)="filterData($event)">
   <ng-container custom-buttons>
     <div class="flex gap-2 items-center">
+      @if(canAdd){
       <button
         color="primary"
         matButton="filled"
@@ -20,6 +21,7 @@
           class="btn-icon" />
         Thêm mới
       </button>
+      }
     </div>
   </ng-container>
   <ng-container filter-panel>

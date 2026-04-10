@@ -13,6 +13,7 @@ import {
   DonViResponse,
 } from '@app/model/admin/don-vi.model';
 import { DonViService } from '@app/service/admin/don-vi.service';
+import { PermissionCheckService } from '@service';
 import { DialogDonViComponent } from './dialog-don-vi/dialog-don-vi.component';
 
 @Component({
@@ -34,14 +35,20 @@ export class DonViComponent extends ComponentBaseAbstract {
   tableConfig = {
     hasFilterPanel: true,
   };
+  readonly menuCode = 'UNIT_MANAGEMENT';
   columns: MtxGridColumn[] = [];
   $formItem = DON_VI_FILTER_FORM;
   key = DON_VI_KEY;
   dataSource: DonViResponse[] = [];
 
+  get canAdd(): boolean {
+    return this.permissionCheckService.canAdd(this.menuCode);
+  }
+
   constructor(
     protected override injector: Injector,
-    private readonly donViService: DonViService
+    private readonly donViService: DonViService,
+    private readonly permissionCheckService: PermissionCheckService
   ) {
     super(injector);
   }

@@ -16,9 +16,10 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.gfi.backend.models.dtos.auth.LoginRequest;
 import com.gfi.backend.models.dtos.auth.TokenResponse;
+import com.gfi.backend.models.entities.User;
 import com.gfi.backend.models.global.ApiResult;
 import com.gfi.backend.models.global.CommonErrorCode;
-import com.gfi.backend.models.security.UserPrincipal;
+import com.gfi.backend.repositories.UserRepository;
 import com.gfi.backend.services.ITokenService;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -30,10 +31,13 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 public class AuthController extends ApiBaseController {
     private final AuthenticationManager authenticationManager;
     private final ITokenService tokenService;
+    private final UserRepository userRepository;
 
-    public AuthController(AuthenticationManager authenticationManager, ITokenService tokenService) {
+    public AuthController(AuthenticationManager authenticationManager, ITokenService tokenService,
+            UserRepository userRepository) {
         this.authenticationManager = authenticationManager;
         this.tokenService = tokenService;
+        this.userRepository = userRepository;
     }
 
     @PostMapping("/login")
@@ -49,15 +53,12 @@ public class AuthController extends ApiBaseController {
 
             TokenResponse tokens = tokenService.generateTokens(userDetails);
 
-            if (userDetails instanceof UserPrincipal principal) {
-                tokens.setRole(principal.getRoleName());
-                tokens.setRoleId(principal.getRoleId());
-                tokens.setRoleName(principal.getRoleName());
-                tokens.setFullName(principal.getFullName());
-                tokens.setUserId(principal.getId());
-            }
+            User user = userRepository.findByUsername(userDetails.getUsername())
+                    .orElseThrow(() -> new BadCredentialsException(CommonErrorCode.INVALID_CREDENTIALS.getMessage()));
 
-            ResponseCookie cookie = ResponseCookie.from("authToken", tokens.getAccessToken())
+            tokens.setUser(toUserInfo(user));
+
+            ResponseCookie cookie = ResponseCookie.from("authToken", tokens.getToken().getAccessToken())
                     .httpOnly(true)
                     .secure(false)
                     .path("/")
@@ -67,7 +68,7 @@ public class AuthController extends ApiBaseController {
 
             return ResponseEntity.ok()
                     .header(HttpHeaders.SET_COOKIE, cookie.toString())
-                    .body(ApiResult.success(tokens, "Dang nhap thanh cong"));
+                    .body(ApiResult.success(tokens, "Đăng nhập thành công"));
 
         } catch (BadCredentialsException ex) {
             return ResponseEntity
@@ -76,6 +77,27 @@ public class AuthController extends ApiBaseController {
                             CommonErrorCode.INVALID_CREDENTIALS.getCode(),
                             CommonErrorCode.INVALID_CREDENTIALS.getMessage()));
         }
+    }
+
+    private TokenResponse.UserInfo toUserInfo(User user) {
+        return TokenResponse.UserInfo.builder()
+                .id(user.getId())
+                .username(user.getUsername())
+                .fullName(user.getFullName())
+                .email(user.getEmail())
+                .phone(user.getPhone())
+                .status(user.getStatus())
+                .role(TokenResponse.RoleInfo.builder()
+                        .id(user.getRole() == null ? null : user.getRole().getId())
+                        .code(user.getRole() == null ? null : user.getRole().getCode())
+                        .name(user.getRole() == null ? null : user.getRole().getRoleName())
+                        .build())
+                .unit(TokenResponse.UnitInfo.builder()
+                        .id(user.getUnit() == null ? null : user.getUnit().getId())
+                        .code(user.getUnit() == null ? null : user.getUnit().getCode())
+                        .name(user.getUnit() == null ? null : user.getUnit().getName())
+                        .build())
+                .build();
     }
 
     @PostMapping("/logout")
@@ -91,6 +113,6 @@ public class AuthController extends ApiBaseController {
 
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, deleteCookie.toString())
-                .body(ApiResult.success(null, "Dang xuat thanh cong"));
+                .body(ApiResult.success(null, "Đăng xuất thành công"));
     }
 }

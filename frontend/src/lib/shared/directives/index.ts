@@ -17,3 +17,5 @@ export const ValidatorRegex = (regex: RegExp): ValidatorFn => {
     return !regex.test(control.value) ? { validatorRegex: true } : null;
   };
 };
+
+export * from './has-permission.directive';

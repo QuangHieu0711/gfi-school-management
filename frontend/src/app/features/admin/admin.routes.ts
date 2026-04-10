@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
 import { NAVIGATOR_ENDPOINT, PATH } from '@constant/navigator';
+import { PermissionGuard } from '@guard';
 import { AdminComponent } from '@features/admin/admin.component';
 
 import { provideState } from '@ngrx/store';
@@ -24,6 +25,8 @@ export const AdminRoutes: Routes = [
     children: [
       {
         path: '',
+        canActivate: [PermissionGuard],
+        data: { menuCode: 'ACCOUNT_MANAGEMENT' },
         providers: [
           provideState({ name: 'style', reducer: StyleReducer }),
           provideEffects(StyleEffect),
@@ -41,6 +44,8 @@ export const AdminRoutes: Routes = [
     children: [
       {
         path: '',
+        canActivate: [PermissionGuard],
+        data: { menuCode: 'UNIT_MANAGEMENT' },
         providers: [
           provideState({ name: 'style', reducer: StyleReducer }),
           provideEffects(StyleEffect),
@@ -58,6 +63,8 @@ export const AdminRoutes: Routes = [
     children: [
       {
         path: '',
+        canActivate: [PermissionGuard],
+        data: { menuCode: 'ROLE_MANAGEMENT' },
         providers: [
           provideState({ name: 'style', reducer: StyleReducer }),
           provideEffects(StyleEffect),
@@ -69,6 +76,8 @@ export const AdminRoutes: Routes = [
       },
       {
         path: 'cau-hinh/:id',
+        canActivate: [PermissionGuard],
+        data: { menuCode: 'ROLE_MANAGEMENT' },
         providers: [
           provideState({ name: 'style', reducer: StyleReducer }),
           provideEffects(StyleEffect),
@@ -86,6 +95,8 @@ export const AdminRoutes: Routes = [
     children: [
       {
         path: '',
+        canActivate: [PermissionGuard],
+        data: { menuCode: 'FUNCTION_MANAGEMENT' },
         providers: [
           provideState({ name: 'style', reducer: StyleReducer }),
           provideEffects(StyleEffect),
@@ -103,6 +114,8 @@ export const AdminRoutes: Routes = [
     children: [
       {
         path: '',
+        canActivate: [PermissionGuard],
+        data: { menuCode: 'SCHOOL_YEAR_CONFIG' },
         providers: [
           provideState({ name: 'style', reducer: StyleReducer }),
           provideEffects(StyleEffect),
@@ -120,6 +133,8 @@ export const AdminRoutes: Routes = [
     children: [
       {
         path: '',
+        canActivate: [PermissionGuard],
+        data: { menuCode: 'GRADE_CONFIG' },
         providers: [
           provideState({ name: 'style', reducer: StyleReducer }),
           provideEffects(StyleEffect),
@@ -137,6 +152,8 @@ export const AdminRoutes: Routes = [
     children: [
       {
         path: '',
+        canActivate: [PermissionGuard],
+        data: { menuCode: 'CLASS_MANAGEMENT' },
         providers: [
           provideState({ name: 'style', reducer: StyleReducer }),
           provideEffects(StyleEffect),
@@ -152,6 +169,8 @@ export const AdminRoutes: Routes = [
     children: [
       {
         path: '',
+        canActivate: [PermissionGuard],
+        data: { menuCode: 'SUBJECT_MANAGEMENT' },
         providers: [
           provideState({ name: 'style', reducer: StyleReducer }),
           provideEffects(StyleEffect),
@@ -169,6 +188,8 @@ export const AdminRoutes: Routes = [
     children: [
       {
         path: '',
+        canActivate: [PermissionGuard],
+        data: { menuCode: 'STUDENT_PROFILE' },
         providers: [
           provideState({ name: 'style', reducer: StyleReducer }),
           provideEffects(StyleEffect),
@@ -180,6 +201,8 @@ export const AdminRoutes: Routes = [
       },
       {
         path: `${PATH.CHI_TIET}/:id`,
+        canActivate: [PermissionGuard],
+        data: { menuCode: 'STUDENT_PROFILE' },
         providers: [
           provideState({ name: 'style', reducer: StyleReducer }),
           provideEffects(StyleEffect),
@@ -191,6 +214,8 @@ export const AdminRoutes: Routes = [
       },
       {
         path: PATH.TAO_MOI,
+        canActivate: [PermissionGuard],
+        data: { menuCode: 'STUDENT_PROFILE' },
         providers: [
           provideState({ name: 'style', reducer: StyleReducer }),
           provideEffects(StyleEffect),
@@ -202,6 +227,8 @@ export const AdminRoutes: Routes = [
       },
       {
         path: `${PATH.CAP_NHAT}/:id`,
+        canActivate: [PermissionGuard],
+        data: { menuCode: 'STUDENT_PROFILE' },
         providers: [
           provideState({ name: 'style', reducer: StyleReducer }),
           provideEffects(StyleEffect),

@@ -21,6 +21,7 @@ import {
 import { NamHocService } from '@app/service/admin/nam-hoc.service';
 import { DialogNamHocComponent } from './dialog-nam-hoc/dialog-nam-hoc.component';
 import { DialogCauHinhHocKyComponent } from './dialog-cau-hinh-hoc-ky/dialog-cau-hinh-hoc-ky.component';
+import { PermissionCheckService } from '@service';
 
 @Component({
   selector: 'nam-hoc',
@@ -44,6 +45,7 @@ export class NamHocComponent extends ComponentBaseAbstract {
   periodTpl!: TemplateRef<unknown>;
 
   override readonly TYPE_FORM = TYPE_FORM;
+  readonly menuCode = 'SCHOOL_YEAR_CONFIG';
   tableConfig = {
     hasFilterPanel: true,
   };
@@ -73,16 +75,21 @@ export class NamHocComponent extends ComponentBaseAbstract {
   key = NAM_HOC_KEY;
   dataSource: NamHocResponse[] = [];
 
+  get canAdd(): boolean {
+    return this.permissionCheckService.canAdd(this.menuCode);
+  }
+
   constructor(
     protected override injector: Injector,
-    private readonly namHocService: NamHocService
+    private readonly namHocService: NamHocService,
+    private readonly permissionCheckService: PermissionCheckService
   ) {
     super(injector);
   }
 
   protected override componentInit(): void {
     this.form = this.itemControl.toFormGroup(this.$formItem);
-    this.columns = [
+    const baseColumns: MtxGridColumn[] = [
       {
         header: 'STT',
         class: 'text-center',
@@ -114,7 +121,11 @@ export class NamHocComponent extends ComponentBaseAbstract {
         class: 'text-center',
         cellTemplate: this.currentTpl,
       },
-      {
+    ];
+
+    // Chỉ thêm cột Hành động nếu có quyền
+    if (this.hasAnyActionPermission()) {
+      baseColumns.push({
         header: 'Hành động',
         field: COMMON_TABLE_KEY.ACTION,
         type: 'button',
@@ -123,7 +134,8 @@ export class NamHocComponent extends ComponentBaseAbstract {
           {
             type: 'icon',
             icon: 'settings',
-            class: 'action-view',
+            class: 'action-config',
+            iif: () => this.permissionCheckService.canConfig(this.menuCode),
             tooltip: 'Cấu hình học kỳ',
             click: (rowData: NamHocResponse) =>
               this.openSemesterConfig(rowData),
@@ -132,6 +144,7 @@ export class NamHocComponent extends ComponentBaseAbstract {
             type: 'icon',
             icon: 'edit',
             class: 'action-edit',
+            iif: () => this.permissionCheckService.canEdit(this.menuCode),
             tooltip: 'Chỉnh sửa',
             click: (rowData: NamHocResponse) =>
               this.openDialog(this.TYPE_FORM.UPDATE, rowData),
@@ -140,12 +153,15 @@ export class NamHocComponent extends ComponentBaseAbstract {
             type: 'icon',
             icon: 'delete',
             class: 'action-delete',
+            iif: () => this.permissionCheckService.canDelete(this.menuCode),
             tooltip: 'Xóa',
             click: (rowData: NamHocResponse) => this.deleteSchoolYear(rowData),
           },
         ],
-      },
-    ];
+      });
+    }
+
+    this.columns = baseColumns;
 
     this.filterData({
       pageIndex: 0,
@@ -296,5 +312,13 @@ export class NamHocComponent extends ComponentBaseAbstract {
     const [year, month, day] = raw.split('-');
     if (!year || !month || !day) return raw;
     return `${day}/${month}/${year}`;
+  }
+
+  private hasAnyActionPermission(): boolean {
+    return (
+      this.permissionCheckService.canConfig(this.menuCode) ||
+      this.permissionCheckService.canEdit(this.menuCode) ||
+      this.permissionCheckService.canDelete(this.menuCode)
+    );
   }
 }

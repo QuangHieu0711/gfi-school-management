@@ -16,6 +16,7 @@ import {
 } from '@app/model/admin/menu.model';
 import { MenuService } from '@app/service/admin/menu.service';
 import { DialogMenuComponent } from './dialog-menu/dialog-menu.component';
+import { PermissionCheckService } from '@service';
 
 @Component({
   selector: 'menu-management',
@@ -36,6 +37,7 @@ export class MenuComponent extends ComponentBaseAbstract {
   parentTpl!: TemplateRef<unknown>;
 
   override readonly TYPE_FORM = TYPE_FORM;
+  readonly menuCode = 'FUNCTION_MANAGEMENT';
   tableConfig = {
     hasFilterPanel: true,
     showPaginator: false,
@@ -48,9 +50,14 @@ export class MenuComponent extends ComponentBaseAbstract {
   private treeRows: MenuTreeRow[] = [];
   private readonly expandedIds = new Set<unknown>();
 
+  get canAdd(): boolean {
+    return this.permissionCheckService.canAdd(this.menuCode);
+  }
+
   constructor(
     protected override injector: Injector,
-    private readonly menuService: MenuService
+    private readonly menuService: MenuService,
+    private readonly permissionCheckService: PermissionCheckService
   ) {
     super(injector);
   }
@@ -101,6 +108,7 @@ export class MenuComponent extends ComponentBaseAbstract {
             type: 'icon',
             icon: 'edit',
             class: 'action-edit',
+            iif: () => this.permissionCheckService.canEdit(this.menuCode),
             tooltip: 'Chỉnh sửa',
             click: (rowData: MenuTreeRow) =>
               this.openDialog(this.TYPE_FORM.UPDATE, rowData),
@@ -109,6 +117,7 @@ export class MenuComponent extends ComponentBaseAbstract {
             type: 'icon',
             icon: 'delete',
             class: 'action-delete',
+            iif: () => this.permissionCheckService.canDelete(this.menuCode),
             tooltip: 'Xóa',
             click: (rowData: MenuTreeRow) => this.deleteMenu(rowData),
           },

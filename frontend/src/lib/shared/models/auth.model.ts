@@ -85,11 +85,13 @@ export interface IRule {
   ruleId: number; // ID gốc từ API
   roleId: number;
   moduleId: ID_TYPE;
+  menuCode?: string;
   isView: number;
   isAdd: number;
   isEdit: number;
   isDelete: number;
   isDownload: number;
+  isConfig: number;
   isApprove: number;
   name: string;
   url: string;

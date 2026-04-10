@@ -22,6 +22,7 @@ import {
 import { KhoiService } from '@app/service/admin/khoi.service';
 import { LopService } from '@app/service/admin/lop.service';
 import { HocSinhService } from '@app/service/admin/hoc-sinh.service';
+import { PermissionCheckService } from '@service';
 
 @Component({
   selector: 'hoc-sinh',
@@ -38,6 +39,7 @@ import { HocSinhService } from '@app/service/admin/hoc-sinh.service';
   ],
 })
 export class HocSinhComponent extends ComponentBaseAbstract {
+  readonly menuCode = 'STUDENT_PROFILE';
   dataSource: HocSinhResponse[] = [];
   key = HOC_SINH_KEY;
   $formItem: FormType[] = HOC_SINH_FILTER_FORM.map((item) => ({
@@ -57,12 +59,25 @@ export class HocSinhComponent extends ComponentBaseAbstract {
   classOptions: IOptions[] = [];
   gradeOptions: IOptions[] = [];
 
+  get canAdd(): boolean {
+    return this.permissionCheckService.canAdd(this.menuCode);
+  }
+
+  get canEdit(): boolean {
+    return this.permissionCheckService.canEdit(this.menuCode);
+  }
+
+  get canDelete(): boolean {
+    return this.permissionCheckService.canDelete(this.menuCode);
+  }
+
   constructor(
     protected override injector: Injector,
     private readonly hocSinhService: HocSinhService,
     private readonly lopService: LopService,
     private readonly khoiService: KhoiService,
-    private readonly routerService: Router
+    private readonly routerService: Router,
+    private readonly permissionCheckService: PermissionCheckService
   ) {
     super(injector);
   }

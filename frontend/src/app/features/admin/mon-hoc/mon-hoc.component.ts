@@ -15,6 +15,7 @@ import {
 } from '@app/model/admin/mon-hoc.model';
 import { MonHocService } from '@app/service/admin/mon-hoc.service';
 import { DialogMonHocComponent } from './dialog-mon-hoc/dialog-mon-hoc.component';
+import { PermissionCheckService } from '@service';
 
 @Component({
   selector: 'mon-hoc',
@@ -32,6 +33,7 @@ export class MonHocComponent extends ComponentBaseAbstract {
   statusTpl!: TemplateRef<unknown>;
 
   override readonly TYPE_FORM = TYPE_FORM;
+  readonly menuCode = 'SUBJECT_MANAGEMENT';
   tableConfig = {
     hasFilterPanel: true,
   };
@@ -41,9 +43,14 @@ export class MonHocComponent extends ComponentBaseAbstract {
   dataSource: MonHocResponse[] = [];
   showAdvancedFilters = false;
 
+  get canAdd(): boolean {
+    return this.permissionCheckService.canAdd(this.menuCode);
+  }
+
   constructor(
     protected override injector: Injector,
-    private readonly monHocService: MonHocService
+    private readonly monHocService: MonHocService,
+    private readonly permissionCheckService: PermissionCheckService
   ) {
     super(injector);
   }
@@ -84,6 +91,7 @@ export class MonHocComponent extends ComponentBaseAbstract {
             type: 'icon',
             icon: 'edit',
             class: 'action-edit',
+            iif: () => this.permissionCheckService.canEdit(this.menuCode),
             tooltip: 'Chỉnh sửa',
             click: (rowData: MonHocResponse) =>
               this.openDialog(this.TYPE_FORM.UPDATE, rowData),
@@ -92,6 +100,7 @@ export class MonHocComponent extends ComponentBaseAbstract {
             type: 'icon',
             icon: 'delete',
             class: 'action-delete',
+            iif: () => this.permissionCheckService.canDelete(this.menuCode),
             tooltip: 'Xóa',
             click: (rowData: MonHocResponse) => this.deleteMonHoc(rowData),
           },

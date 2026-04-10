@@ -10,3 +10,5 @@ export * from './storage.service';
 export * from './icon.service';
 export * from './animation-scheduler.service';
 export * from './api-error-toast.service';
+export * from './permission-check.service';
+export * from './permission.service';

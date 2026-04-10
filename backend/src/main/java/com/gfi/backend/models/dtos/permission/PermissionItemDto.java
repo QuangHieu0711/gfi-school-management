@@ -22,4 +22,5 @@ public class PermissionItemDto {
     private Integer isEdit;
     private Integer isDelete;
     private Integer isDownload;
+    private Integer isConfig;
 }

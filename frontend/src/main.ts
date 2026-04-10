@@ -4,35 +4,34 @@ import { AppComponent } from './app/app.component';
 
 import 'bootstrap';
 
-import { setAssetPath } from '@arcgis/map-components';
-import esriConfig from '@arcgis/core/config';
+// import { setAssetPath } from '@arcgis/map-components';
+// import esriConfig from '@arcgis/core/config';
 
-import { defineCustomElements } from '@esri/calcite-components/dist/loader';
+// import { defineCustomElements } from '@esri/calcite-components/dist/loader';
 
 const base = document.querySelector('base')?.getAttribute('href') ?? '/';
 
 /**
- * ArcGIS map-components CSS
+ * ArcGIS map-components CSS - Disabled, not needed
  */
-const arcgisStyles = document.createElement('link');
-arcgisStyles.rel = 'stylesheet';
-arcgisStyles.href = `${base}assets/arcgis/main.css`;
-document.head.appendChild(arcgisStyles);
+// const arcgisStyles = document.createElement('link');
+// arcgisStyles.rel = 'stylesheet';
+// document.head.appendChild(arcgisStyles);
 
 /**
- * Map-components assets path
+ * Map-components assets path - Disabled
  */
-setAssetPath(`${base}assets/arcgis`);
+// setAssetPath(`${base}assets/arcgis`);
 
 /**
- * ArcGIS JS SDK assets path
+ * ArcGIS JS SDK assets path - Disabled
  */
-esriConfig.assetsPath = `${base}assets/esri`;
+// esriConfig.assetsPath = `${base}assets/esri`;
 
 /**
- * Calcite components
+ * Calcite components - Disabled
  */
-defineCustomElements(window);
+// defineCustomElements(window);
 
 /**
  * Bootstrap Angular

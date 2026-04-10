@@ -70,6 +70,7 @@ export class CauHinhVaiTroComponent extends ComponentBaseAbstract {
     PERMISSION_KEY.IS_EDIT,
     PERMISSION_KEY.IS_DELETE,
     PERMISSION_KEY.IS_DOWNLOAD,
+    PERMISSION_KEY.IS_CONFIG,
   ];
 
   roleId: ID_TYPE | null = null;
@@ -225,6 +226,7 @@ export class CauHinhVaiTroComponent extends ComponentBaseAbstract {
         isEdit: row.originalState.isEdit,
         isDelete: row.originalState.isDelete,
         isDownload: row.originalState.isDownload,
+        isConfig: row.originalState.isConfig,
       };
 
       this.syncRowState(nextRow);
@@ -417,12 +419,14 @@ export class CauHinhVaiTroComponent extends ComponentBaseAbstract {
       isDelete: permission?.isDelete ?? 0,
       isApprove: 0,
       isDownload: permission?.isDownload ?? 0,
+      isConfig: permission?.isConfig ?? 0,
       originalState: {
         isView: permission?.isView ?? 0,
         isAdd: permission?.isAdd ?? 0,
         isEdit: permission?.isEdit ?? 0,
         isDelete: permission?.isDelete ?? 0,
         isDownload: permission?.isDownload ?? 0,
+        isConfig: permission?.isConfig ?? 0,
       },
     };
 
@@ -525,6 +529,7 @@ export class CauHinhVaiTroComponent extends ComponentBaseAbstract {
       isEdit: row.isEdit,
       isDelete: row.isDelete,
       isDownload: row.isDownload,
+      isConfig: row.isConfig,
     };
   }
 
@@ -535,6 +540,7 @@ export class CauHinhVaiTroComponent extends ComponentBaseAbstract {
       isEdit: 'Sửa',
       isDelete: 'Xóa',
       isDownload: 'Tải',
+      isConfig: 'Cấu hình',
     };
 
     return headers[field];

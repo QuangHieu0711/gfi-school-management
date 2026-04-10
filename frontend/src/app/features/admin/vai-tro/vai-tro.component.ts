@@ -15,6 +15,7 @@ import {
 } from '@app/model/admin/vai-tro.model';
 import { VaiTroService } from '@app/service/admin/vai-tro.service';
 import { DialogVaiTroComponent } from './dialog-vai-tro/dialog-vai-tro.component';
+import { PermissionCheckService } from '@service';
 
 @Component({
   selector: 'vai-tro',
@@ -32,6 +33,7 @@ export class VaiTroComponent extends ComponentBaseAbstract {
   statusTpl!: TemplateRef<unknown>;
 
   override readonly TYPE_FORM = TYPE_FORM;
+  readonly menuCode = 'ROLE_MANAGEMENT';
   tableConfig = {
     hasFilterPanel: true,
   };
@@ -40,9 +42,14 @@ export class VaiTroComponent extends ComponentBaseAbstract {
   key = VAI_TRO_KEY;
   dataSource: VaiTroResponse[] = [];
 
+  get canAdd(): boolean {
+    return this.permissionCheckService.canAdd(this.menuCode);
+  }
+
   constructor(
     protected override injector: Injector,
-    private readonly vaiTroService: VaiTroService
+    private readonly vaiTroService: VaiTroService,
+    private readonly permissionCheckService: PermissionCheckService
   ) {
     super(injector);
   }
@@ -83,6 +90,7 @@ export class VaiTroComponent extends ComponentBaseAbstract {
             type: 'icon',
             icon: 'settings',
             class: 'action-config',
+            iif: () => this.permissionCheckService.canConfig(this.menuCode),
             tooltip: 'Cấu hình vai trò',
             click: (rowData: VaiTroResponse) =>
               this.openPermissionConfig(rowData),
@@ -99,6 +107,7 @@ export class VaiTroComponent extends ComponentBaseAbstract {
             type: 'icon',
             icon: 'edit',
             class: 'action-edit',
+            iif: () => this.permissionCheckService.canEdit(this.menuCode),
             tooltip: 'Chỉnh sửa',
             click: (rowData: VaiTroResponse) =>
               this.openDialog(this.TYPE_FORM.UPDATE, rowData),
@@ -107,6 +116,7 @@ export class VaiTroComponent extends ComponentBaseAbstract {
             type: 'icon',
             icon: 'delete',
             class: 'action-delete',
+            iif: () => this.permissionCheckService.canDelete(this.menuCode),
             tooltip: 'Xóa',
             click: (rowData: VaiTroResponse) => this.deleteRole(rowData),
           },

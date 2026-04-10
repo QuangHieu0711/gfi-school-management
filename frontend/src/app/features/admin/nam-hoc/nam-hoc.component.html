@@ -9,17 +9,19 @@
   (queryChange)="filterData($event)">
   <ng-container custom-buttons>
     <div class="flex gap-2 items-center">
-      <button
-        color="primary"
-        matButton="filled"
-        class="btn-tight"
-        (click)="openDialog(TYPE_FORM.CREATE)">
-        <app-icon
-          icon="add_box"
-          [size]="18"
-          class="btn-icon" />
-        Thêm mới
-      </button>
+      @if (canAdd) {
+        <button
+          color="primary"
+          matButton="filled"
+          class="btn-tight"
+          (click)="openDialog(TYPE_FORM.CREATE)">
+          <app-icon
+            icon="add_box"
+            [size]="18"
+            class="btn-icon" />
+          Thêm mới
+        </button>
+      }
     </div>
   </ng-container>
 

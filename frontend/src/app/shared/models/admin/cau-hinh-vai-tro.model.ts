@@ -9,7 +9,8 @@ export type PermissionToggleKey =
   | PERMISSION_KEY.IS_ADD
   | PERMISSION_KEY.IS_EDIT
   | PERMISSION_KEY.IS_DELETE
-  | PERMISSION_KEY.IS_DOWNLOAD;
+  | PERMISSION_KEY.IS_DOWNLOAD
+  | PERMISSION_KEY.IS_CONFIG;
 
 export interface PermissionMatrixRow extends MenuResponse {
   permissionId?: ID_TYPE;
@@ -24,6 +25,7 @@ export interface PermissionMatrixRow extends MenuResponse {
   isDelete: number;
   isApprove: number;
   isDownload: number;
+  isConfig: number;
   originalState: Record<PermissionToggleKey, number>;
 }
 

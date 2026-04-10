@@ -28,13 +28,11 @@ export const HOC_KY_API_ENDPOINT = {
 
 export interface HocKyFilter {
   [HOC_KY_KEY.SCHOOL_YEAR_ID]?: ID_TYPE;
-  [HOC_KY_KEY.CODE]?: string;
-  [HOC_KY_KEY.NAME]?: string;
-  [HOC_KY_KEY.STATUS]?: number;
 }
 
 export interface HocKyFilterRequest extends TableRequest {
   pageNow?: number;
+  [HOC_KY_KEY.SCHOOL_YEAR_ID]?: ID_TYPE;
   filter?: HocKyFilter;
 }
 
@@ -63,28 +61,6 @@ export interface HocKyResponse extends TableDataSource {
   [HOC_KY_KEY.IS_CURRENT]?: boolean;
   [HOC_KY_KEY.DESCRIPTION]?: string;
 }
-
-export const HOC_KY_FILTER_FORM = [
-  TEXT_CONTROL({
-    controlName: HOC_KY_KEY.CODE,
-    placeholder: 'Tìm theo mã học kỳ',
-    required: false,
-    maxLength: 50,
-  }),
-  TEXT_CONTROL({
-    controlName: HOC_KY_KEY.NAME,
-    placeholder: 'Tìm theo tên học kỳ',
-    required: false,
-    maxLength: 255,
-  }),
-  SELECT_CONTROL({
-    controlName: HOC_KY_KEY.STATUS,
-    placeholder: 'Trạng thái',
-    required: false,
-    clearable: true,
-    listOption: SCHOOL_YEAR_STATUS_OPTIONS,
-  }),
-];
 
 export const HOC_KY_FORM = [
   TEXT_CONTROL({

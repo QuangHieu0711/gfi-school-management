@@ -158,12 +158,6 @@ public class SemesterServiceImpl implements SemesterService {
             if (filter.getSchoolYearId() != null) {
                 predicates.add(cb.equal(schoolYearJoin.get("id"), filter.getSchoolYearId()));
             }
-            if (filter.getStatus() != null) {
-                predicates.add(cb.equal(root.get("status"), filter.getStatus()));
-            }
-            if (filter.getIsCurrent() != null) {
-                predicates.add(cb.equal(root.get("isCurrent"), filter.getIsCurrent()));
-            }
             return cb.and(predicates.toArray(new Predicate[0]));
         };
     }

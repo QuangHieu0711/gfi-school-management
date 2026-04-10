@@ -1,4 +1,10 @@
-import { Component, Inject, Injector, TemplateRef, ViewChild } from '@angular/core';
+import {
+  Component,
+  Inject,
+  Injector,
+  TemplateRef,
+  ViewChild,
+} from '@angular/core';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { AppDialogComponent } from '@components/app-dialog/app-dialog.component';
 import { AppTableComponent } from '@components/app-table/app-table.component';
@@ -74,34 +80,30 @@ export class DialogCauHinhHocKyComponent extends ComponentBaseAbstract {
   }
 
   filterData(pageChangeEvent?: TableQueryEvent) {
-    const payload = {
-      pageSize: pageChangeEvent?.pageSize ?? this.pageSize,
-      pageNow: (pageChangeEvent?.pageIndex ?? 0) + 1,
-      filter: {
-        schoolYearId: this.data.schoolYearId,
-      },
-    };
-
     this.pageIndex = pageChangeEvent?.pageIndex ?? 0;
     this.pageSize = pageChangeEvent?.pageSize ?? this.pageSize;
 
-    this.hocKyService.filter(payload).subscribe({
-      next: ({ data }) => {
-        const items = Array.isArray(data) ? data : data?.items || [];
-        this.dataSource = items;
-        this.dataSourceTotal = Array.isArray(data)
-          ? data.length
-          : data?.recordTotal || items.length;
-      },
-      error: (error) => {
-        this.toastr.error(
-          error?.error?.userMessage ??
-            error?.error?.message ??
-            'Kh\u00f4ng t\u1ea3i \u0111\u01b0\u1ee3c danh s\u00e1ch h\u1ecdc k\u1ef3',
-          'Th\u1ea5t b\u1ea1i'
-        );
-      },
-    });
+    this.hocKyService
+      .filter({
+        schoolYearId: this.data.schoolYearId,
+      })
+      .subscribe({
+        next: ({ data }) => {
+          const items = Array.isArray(data) ? data : data?.items || [];
+          this.dataSource = items;
+          this.dataSourceTotal = Array.isArray(data)
+            ? data.length
+            : data?.recordTotal || items.length;
+        },
+        error: (error) => {
+          this.toastr.error(
+            error?.error?.userMessage ??
+              error?.error?.message ??
+              'Không tải được danh sách học kỳ',
+            'Thất bại'
+          );
+        },
+      });
   }
 
   openCreateDialog() {
@@ -152,17 +154,17 @@ export class DialogCauHinhHocKyComponent extends ComponentBaseAbstract {
   deleteSemester(rowData: HocKyResponse) {
     this.dialog.confirm(
       {
-        title: 'X\u00e1c nh\u1eadn',
-        message: `B\u1ea1n c\u00f3 ch\u1eafc ch\u1eafn mu\u1ed1n x\u00f3a h\u1ecdc k\u1ef3 ${
+        title: 'Xác nhận',
+        message: `Bạn có chắc chắn muốn xóa học kỳ ${
           rowData[HOC_KY_KEY.NAME]
-        } kh\u00f4ng?`,
+        } không?`,
       },
       (confirmed?: boolean) => {
         if (!confirmed) return;
 
         this.hocKyService.delete(rowData[HOC_KY_KEY.ID]).subscribe({
           next: () => {
-            this.toastr.success('X\u00f3a th\u00e0nh c\u00f4ng', 'Th\u00e0nh c\u00f4ng');
+            this.toastr.success('Xóa thành công', 'Thành công');
             this.filterData({
               pageIndex: 0,
               pageSize: this.pageSize,
@@ -172,8 +174,8 @@ export class DialogCauHinhHocKyComponent extends ComponentBaseAbstract {
             this.toastr.error(
               error?.error?.userMessage ??
                 error?.error?.message ??
-                'X\u00f3a th\u1ea5t b\u1ea1i',
-              'Th\u1ea5t b\u1ea1i'
+                'Xóa thất bại',
+              'Thất bại'
             );
           },
         });

@@ -19,6 +19,7 @@ import { LopService } from '@app/service/admin/lop.service';
 import { NamHocService } from '@app/service/admin/nam-hoc.service';
 import { DialogCauHinhMonHocLopComponent } from './dialog-cau-hinh-mon-hoc/dialog-cau-hinh-mon-hoc.component';
 import { DialogLopComponent } from './dialog-lop/dialog-lop.component';
+import { PermissionCheckService } from '@service';
 
 @Component({
   selector: 'lop',
@@ -36,6 +37,7 @@ export class LopComponent extends ComponentBaseAbstract {
   statusTpl!: TemplateRef<unknown>;
 
   override readonly TYPE_FORM = TYPE_FORM;
+  readonly menuCode = 'CLASS_MANAGEMENT';
   tableConfig = {
     hasFilterPanel: true,
   };
@@ -45,12 +47,17 @@ export class LopComponent extends ComponentBaseAbstract {
   dataSource: LopResponse[] = [];
   showAdvancedFilters = false;
 
+  get canAdd(): boolean {
+    return this.permissionCheckService.canAdd(this.menuCode);
+  }
+
   constructor(
     protected override injector: Injector,
     private readonly lopService: LopService,
     private readonly donViService: DonViService,
     private readonly khoiService: KhoiService,
-    private readonly namHocService: NamHocService
+    private readonly namHocService: NamHocService,
+    private readonly permissionCheckService: PermissionCheckService
   ) {
     super(injector);
   }
@@ -109,6 +116,7 @@ export class LopComponent extends ComponentBaseAbstract {
             type: 'icon',
             icon: 'edit',
             class: 'action-edit',
+            iif: () => this.permissionCheckService.canEdit(this.menuCode),
             tooltip: 'Chỉnh sửa',
             click: (rowData: LopResponse) =>
               this.openDialog(this.TYPE_FORM.UPDATE, rowData),
@@ -116,7 +124,8 @@ export class LopComponent extends ComponentBaseAbstract {
           {
             type: 'icon',
             icon: 'assignment',
-            class: 'action-view',
+            class: 'action-config',
+            iif: () => this.permissionCheckService.canConfig(this.menuCode),
             tooltip: 'Cấu hình môn học',
             click: (rowData: LopResponse) => this.openSubjectConfig(rowData),
           },
@@ -124,6 +133,7 @@ export class LopComponent extends ComponentBaseAbstract {
             type: 'icon',
             icon: 'delete',
             class: 'action-delete',
+            iif: () => this.permissionCheckService.canDelete(this.menuCode),
             tooltip: 'Xóa',
             click: (rowData: LopResponse) => this.deleteLop(rowData),
           },

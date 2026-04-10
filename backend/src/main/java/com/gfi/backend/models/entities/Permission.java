@@ -41,6 +41,9 @@ public class Permission {
     private Integer isDownload;
 
     @Column(nullable = false)
+    private Integer isConfig;
+
+    @Column(nullable = false)
     private Integer isEdit;
 
     @Column(nullable = false)
@@ -79,6 +82,9 @@ public class Permission {
         }
         if (isDownload == null) {
             isDownload = 0;
+        }
+        if (isConfig == null) {
+            isConfig = 0;
         }
         if (isEdit == null) {
             isEdit = 0;

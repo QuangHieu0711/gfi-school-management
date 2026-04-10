@@ -15,6 +15,7 @@ import {
 import { KhoiService } from '@app/service/admin/khoi.service';
 import { DialogCauHinhMonHocComponent } from './dialog-cau-hinh-mon-hoc/dialog-cau-hinh-mon-hoc.component';
 import { DialogKhoiComponent } from './dialog-khoi/dialog-khoi.component';
+import { PermissionCheckService } from '@service';
 
 @Component({
   selector: 'khoi',
@@ -32,6 +33,7 @@ export class KhoiComponent extends ComponentBaseAbstract {
   statusTpl!: TemplateRef<unknown>;
 
   override readonly TYPE_FORM = TYPE_FORM;
+  readonly menuCode = 'GRADE_CONFIG';
   tableConfig = {
     hasFilterPanel: true,
   };
@@ -40,9 +42,14 @@ export class KhoiComponent extends ComponentBaseAbstract {
   key = KHOI_KEY;
   dataSource: KhoiResponse[] = [];
 
+  get canAdd(): boolean {
+    return this.permissionCheckService.canAdd(this.menuCode);
+  }
+
   constructor(
     protected override injector: Injector,
-    private readonly khoiService: KhoiService
+    private readonly khoiService: KhoiService,
+    private readonly permissionCheckService: PermissionCheckService
   ) {
     super(injector);
   }
@@ -96,6 +103,7 @@ export class KhoiComponent extends ComponentBaseAbstract {
             type: 'icon',
             icon: 'edit',
             class: 'action-edit',
+            iif: () => this.permissionCheckService.canEdit(this.menuCode),
             tooltip: 'Chỉnh sửa',
             click: (rowData: KhoiResponse) =>
               this.openDialog(this.TYPE_FORM.UPDATE, rowData),
@@ -104,6 +112,7 @@ export class KhoiComponent extends ComponentBaseAbstract {
             type: 'icon',
             icon: 'assignment',
             class: 'action-config',
+            iif: () => this.permissionCheckService.canConfig(this.menuCode),
             tooltip: 'Cấu hình môn học',
             click: (rowData: KhoiResponse) => this.openSubjectConfig(rowData),
           },
@@ -111,6 +120,7 @@ export class KhoiComponent extends ComponentBaseAbstract {
             type: 'icon',
             icon: 'delete',
             class: 'action-delete',
+            iif: () => this.permissionCheckService.canDelete(this.menuCode),
             tooltip: 'Xóa',
             click: (rowData: KhoiResponse) => this.deleteKhoi(rowData),
           },

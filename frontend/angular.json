@@ -35,18 +35,6 @@
               {
                 "glob": "**/*",
                 "input": "public"
-              },
-
-              {
-                "glob": "**/*",
-                "input": "node_modules/@arcgis/core/assets",
-                "output": "assets/esri"
-              },
-
-              {
-                "glob": "**/*",
-                "input": "node_modules/@arcgis/map-components/dist/cdn/assets",
-                "output": "assets/arcgis"
               }
             ],
 
@@ -66,7 +54,13 @@
               "includePaths": ["src/lib/shared/styles/components"]
             },
 
-            "scripts": []
+            "scripts": [],
+
+            "optimization": {
+              "scripts": true,
+              "styles": true,
+              "fonts": true
+            }
           },
 
           "configurations": {
@@ -149,7 +143,6 @@
               "node_modules/ngx-toastr/toastr.css",
               "node_modules/normalize.css/normalize.css",
               "node_modules/primeicons/primeicons.css",
-              "node_modules/@arcgis/core/assets/esri/themes/light/main.css",
               "src/lib/shared/styles/theme.css",
               "src/lib/shared/styles/material.css",
               "src/lib/shared/styles/style.css",

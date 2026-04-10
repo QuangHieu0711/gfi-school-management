@@ -21,10 +21,12 @@ public class TokenService implements ITokenService {
         String refreshToken = tokenProvider.generateRefreshToken(userDetails);
 
         return TokenResponse.builder()
-                .accessToken(accessToken)
-                .refreshToken(refreshToken)
-                .tokenType("Bearer")
-                .expiresIn(tokenProvider.extractExpiration(accessToken).getTime())
+                .token(TokenResponse.TokenInfo.builder()
+                        .accessToken(accessToken)
+                        .refreshToken(refreshToken)
+                        .tokenType("Bearer")
+                        .expiresAt(tokenProvider.extractExpiration(accessToken).getTime())
+                        .build())
                 .build();
     }
 }

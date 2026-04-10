@@ -28,6 +28,11 @@ public class PermissionSaveRequest {
     @Max(value = 1, message = "Giá trị chỉ được là 0 hoặc 1")
     private Integer isDownload;
 
+    @NotNull(message = "isConfig không được để trống")
+    @Min(value = 0, message = "Giá trị chỉ được là 0 hoặc 1")
+    @Max(value = 1, message = "Giá trị chỉ được là 0 hoặc 1")
+    private Integer isConfig;
+
     @NotNull(message = "isEdit không được để trống")
     @Min(value = 0, message = "Giá trị chỉ được là 0 hoặc 1")
     @Max(value = 1, message = "Giá trị chỉ được là 0 hoặc 1")

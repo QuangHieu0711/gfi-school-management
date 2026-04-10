@@ -833,43 +833,45 @@ export class TaoMoiHocSinhComponent extends ComponentBaseAbstract {
       schoolYears: this.namHocService.getOptions(),
       classes: this.lopService.getOptions(),
       provinces: this.diaChiHanhChinhService.getProvinces(),
-    }).subscribe(({ units, schoolYears, classes, provinces }: InitialHocSinhFormData) => {
-      this.unitOptions = (units.data ?? []).map((item) => ({
-        value: item.id,
-        label: item.name,
-      }));
-      this.genderItem.options = this.genderOptions;
-      this.studentStatusItem.options = this.studentStatusOptions;
-      this.admissionTypeItem.options = this.admissionTypeOptions;
-      this.unitItem.options = this.unitOptions;
-      this.schoolYearOptions = (schoolYears.data ?? []).map((item) => ({
-        value: item.id,
-        label: item.name,
-      }));
-      this.schoolYearItem.options = this.schoolYearOptions;
-      this.classOptions = (classes.data ?? []).map((item) => ({
-        value: item.id,
-        label: item.name,
-      }));
-      this.classItem.options = this.classOptions;
-      this.enrollmentStatusItem.options = this.enrollmentStatusOptions;
-      this.studyModeItem.options = this.studyModeOptions;
-      this.ethnicityItem.options = DAN_TOC_OPTIONS;
-      this.provinceOptions = (provinces.provinces ?? []).map((item) => {
-        this.provinceLookup.set(item.code, item);
-        return {
-          value: item.code,
-          label:
-            `${item.administrativeLevel ?? item.type ?? ''} ${item.name}`.trim(),
-        };
-      });
-      this.permanentProvinceItem.options = this.provinceOptions;
-      this.temporaryProvinceItem.options = this.provinceOptions;
+    }).subscribe(
+      ({ units, schoolYears, classes, provinces }: InitialHocSinhFormData) => {
+        this.unitOptions = (units.data ?? []).map((item) => ({
+          value: item.id,
+          label: item.name,
+        }));
+        this.genderItem.options = this.genderOptions;
+        this.studentStatusItem.options = this.studentStatusOptions;
+        this.admissionTypeItem.options = this.admissionTypeOptions;
+        this.unitItem.options = this.unitOptions;
+        this.schoolYearOptions = (schoolYears.data ?? []).map((item) => ({
+          value: item.id,
+          label: item.name,
+        }));
+        this.schoolYearItem.options = this.schoolYearOptions;
+        this.classOptions = (classes.data ?? []).map((item) => ({
+          value: item.id,
+          label: item.name,
+        }));
+        this.classItem.options = this.classOptions;
+        this.enrollmentStatusItem.options = this.enrollmentStatusOptions;
+        this.studyModeItem.options = this.studyModeOptions;
+        this.ethnicityItem.options = DAN_TOC_OPTIONS;
+        this.provinceOptions = (provinces.provinces ?? []).map((item) => {
+          this.provinceLookup.set(item.code, item);
+          return {
+            value: item.code,
+            label:
+              `${item.administrativeLevel ?? item.type ?? ''} ${item.name}`.trim(),
+          };
+        });
+        this.permanentProvinceItem.options = this.provinceOptions;
+        this.temporaryProvinceItem.options = this.provinceOptions;
 
-      if (this.pathType === this.TYPE_FORM.UPDATE && this.studentId) {
-        this.loadStudentDetail(this.studentId);
+        if (this.pathType === this.TYPE_FORM.UPDATE && this.studentId) {
+          this.loadStudentDetail(this.studentId);
+        }
       }
-    });
+    );
 
     this.bindAddressSelects();
   }
@@ -974,7 +976,9 @@ export class TaoMoiHocSinhComponent extends ComponentBaseAbstract {
       },
       error: (error) => {
         this.toastr.error(
-          error?.error?.userMessage ?? error?.error?.message ?? 'Tai du lieu that bai',
+          error?.error?.userMessage ??
+            error?.error?.message ??
+            'Tai du lieu that bai',
           'That bai'
         );
       },
@@ -1074,7 +1078,8 @@ export class TaoMoiHocSinhComponent extends ComponentBaseAbstract {
         hasParentInternet: !!data.profile?.hasParentInternet,
         hasParentSmartphone: !!data.profile?.hasParentSmartphone,
         foreignLanguageProgram: data.profile?.foreignLanguageProgram ?? '',
-        foreignLanguageCertificate: data.profile?.foreignLanguageCertificate ?? '',
+        foreignLanguageCertificate:
+          data.profile?.foreignLanguageCertificate ?? '',
         informaticsCertificate: data.profile?.informaticsCertificate ?? '',
         careerOrientation: data.profile?.careerOrientation ?? '',
         vocationalOrientation: data.profile?.vocationalOrientation ?? '',

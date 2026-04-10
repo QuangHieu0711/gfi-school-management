@@ -16,6 +16,7 @@ import {
   TEXT_CONTROL,
 } from '@model/form-control.model';
 import { COMMON_TABLE_KEY, TableQueryEvent } from '@model/table.model';
+import { IRule } from '@model/auth.model';
 import { defaultExportFileName, saveBlobAsFile } from '@utils/file-util';
 
 import {
@@ -28,10 +29,11 @@ import { NguoiDungService } from '@app/service/admin/nguoi-dung.service';
 import { VaiTroService } from '@app/service/admin/vai-tro.service';
 import { DialogImportComponent } from './dialog-import/dialog-import.component';
 import { DialogThemNguoiDungComponent } from './dialog-them-nguoi-dung/dialog-them-nguoi-dung.component';
-import { PermissionService } from './../../../../lib/core/services/permission.service';
+import { PermissionCheckService, PermissionService } from '@service';
 
 @Component({
   selector: 'nguoi-dung',
+  standalone: true,
   templateUrl: './nguoi-dung.component.html',
   styleUrls: ['./nguoi-dung.component.scss'],
   imports: [
@@ -48,6 +50,7 @@ export class NguoiDungComponent extends ComponentBaseAbstract {
   statusTpl!: TemplateRef<unknown>;
 
   permissionUrl = '/Admin/NguoiDung';
+  readonly menuCode = 'ACCOUNT_MANAGEMENT';
   tableConfig = {
     hasFilterPanel: true,
   };
@@ -89,12 +92,21 @@ export class NguoiDungComponent extends ComponentBaseAbstract {
   dataSource: NguoiDungResponse[] = [];
   matButton: any;
 
+  get canAdd(): boolean {
+    return this.permissionCheckService.canAdd(this.menuCode);
+  }
+
+  get canDownload(): boolean {
+    return this.permissionCheckService.canDownload(this.menuCode);
+  }
+
   constructor(
     protected override injector: Injector,
     private readonly nguoiDungService: NguoiDungService,
     private readonly donViService: DonViService,
     private readonly vaiTroService: VaiTroService,
     private readonly authService: AuthService,
+    private readonly permissionCheckService: PermissionCheckService,
     public permission: PermissionService
   ) {
     super(injector);
@@ -104,7 +116,7 @@ export class NguoiDungComponent extends ComponentBaseAbstract {
   protected override componentInit(): void {
     this.permission.rules$
       .pipe(
-        filter((rules) => rules.length > 0),
+        filter((rules: IRule[]) => rules.length > 0),
         take(1)
       )
       .subscribe();
@@ -165,6 +177,7 @@ export class NguoiDungComponent extends ComponentBaseAbstract {
         header: 'Hành động',
         field: COMMON_TABLE_KEY.ACTION,
         type: 'button',
+        class: 'text-center',
         buttons: [
           {
             type: 'icon',
@@ -202,7 +215,7 @@ export class NguoiDungComponent extends ComponentBaseAbstract {
             icon: 'edit',
             class: 'action-edit',
             tooltip: 'Chỉnh sửa',
-            iif: () => this.permission.canEdit(this.permissionUrl),
+            iif: () => this.permissionCheckService.canEdit(this.menuCode),
             click: (rowData: NguoiDungResponse) =>
               this.openDialog(this.TYPE_FORM.UPDATE, rowData),
           },
@@ -211,7 +224,7 @@ export class NguoiDungComponent extends ComponentBaseAbstract {
             icon: 'delete',
             class: 'action-delete',
             tooltip: 'Xóa',
-            iif: () => this.permission.canDelete(this.permissionUrl),
+            iif: () => this.permissionCheckService.canDelete(this.menuCode),
             click: (rowData: NguoiDungResponse) =>
               this.dialog.confirm(
                 {

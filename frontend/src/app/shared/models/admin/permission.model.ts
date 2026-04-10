@@ -15,6 +15,7 @@ export enum PERMISSION_KEY {
   IS_EDIT = 'isEdit',
   IS_DELETE = 'isDelete',
   IS_DOWNLOAD = 'isDownload',
+  IS_CONFIG = 'isConfig',
 }
 
 export const PERMISSION_API_ENDPOINT = {
@@ -39,6 +40,7 @@ export interface PermissionFormRequest {
   [PERMISSION_KEY.IS_EDIT]: number;
   [PERMISSION_KEY.IS_DELETE]: number;
   [PERMISSION_KEY.IS_DOWNLOAD]: number;
+  [PERMISSION_KEY.IS_CONFIG]: number;
 }
 
 export type PermissionBulkFormRequest = PermissionFormRequest[];
@@ -57,4 +59,5 @@ export interface PermissionResponse {
   [PERMISSION_KEY.IS_EDIT]: number;
   [PERMISSION_KEY.IS_DELETE]: number;
   [PERMISSION_KEY.IS_DOWNLOAD]: number;
+  [PERMISSION_KEY.IS_CONFIG]: number;
 }

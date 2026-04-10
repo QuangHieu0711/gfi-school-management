@@ -32,6 +32,10 @@ import {
 import { ID_TYPE, IResponse } from '@model/response.model';
 import { StorageService } from '@service';
 
+import {
+  PermissionCheckService,
+  UserPermission,
+} from './permission-check.service';
 import { PermissionService } from './permission.service';
 
 @Injectable({ providedIn: 'root' })
@@ -67,7 +71,8 @@ export class AuthService {
     httpBackend: HttpBackend,
     private readonly storageService: StorageService,
     private readonly router: Router,
-    private readonly permissionService: PermissionService
+    private readonly permissionService: PermissionService,
+    private readonly permissionCheckService: PermissionCheckService
   ) {
     this.rawHttp = new HttpClient(httpBackend);
     this.restoreStoredSession();
@@ -166,6 +171,7 @@ export class AuthService {
     this.storageService.remove('userInfo', 'all');
 
     this.permissionService.setRules([]);
+    this.permissionCheckService.clearPermissions();
     this.currentUserSubject.next(null);
     this.isLoggedInSubject.next(false);
 
@@ -243,6 +249,9 @@ export class AuthService {
     this.currentUserSubject.next(storedUser);
     this.isLoggedInSubject.next(true);
     this.permissionService.setRules(storedUser.role.rules ?? []);
+    this.permissionCheckService.setPermissions(
+      this.mapRulesToPermissions(storedUser.role.rules ?? [])
+    );
   }
 
   private setLocalSession(user: ICurrentUser, rememberMe: boolean): void {
@@ -259,6 +268,9 @@ export class AuthService {
     this.currentUserSubject.next(userWithRemember);
     this.isLoggedInSubject.next(true);
     this.permissionService.setRules(userWithRemember.role.rules ?? []);
+    this.permissionCheckService.setPermissions(
+      this.mapRulesToPermissions(userWithRemember.role.rules ?? [])
+    );
   }
 
   private createFakeUser(username = 'admin'): ICurrentUser {
@@ -345,11 +357,13 @@ export class AuthService {
         ruleId: Number(item.id ?? item.menuId ?? 0),
         roleId: Number(item.roleId ?? 0),
         moduleId: item.menuId ?? 0,
+        menuCode: item.menuCode ?? '',
         isView: Number(item.isView ?? 0),
         isAdd: Number(item.isAdd ?? 0),
         isEdit: Number(item.isEdit ?? 0),
         isDelete: Number(item.isDelete ?? 0),
         isDownload: Number(item.isDownload ?? 0),
+        isConfig: Number(item.isConfig ?? 0),
         isApprove: 0,
         name: item.menuName ?? '',
         url: item.menuUrl ?? '',
@@ -361,6 +375,26 @@ export class AuthService {
         ordinal: Number(item.ordinal ?? 0),
         icon: item.icon ?? '',
       }));
+  }
+
+  private mapRulesToPermissions(rules: IRule[]): UserPermission[] {
+    return rules.map((rule) => ({
+      id: rule.ruleId,
+      roleId: rule.roleId,
+      menuId: rule.moduleId,
+      menuCode: rule.menuCode ?? '',
+      menuName: rule.name,
+      menuUrl: rule.url,
+      parentId: rule.pid ?? null,
+      icon: rule.icon,
+      ordinal: rule.ordinal,
+      isView: Number(rule.isView ?? 0),
+      isAdd: Number(rule.isAdd ?? 0),
+      isEdit: Number(rule.isEdit ?? 0),
+      isDelete: Number(rule.isDelete ?? 0),
+      isDownload: Number(rule.isDownload ?? 0),
+      isConfig: Number(rule.isConfig ?? 0),
+    }));
   }
 
   private normalizeRoleName(role?: string): UserRole {
@@ -378,6 +412,7 @@ export class AuthService {
         isEdit: 1,
         isDelete: 1,
         isDownload: 1,
+        isConfig: 1,
         isApprove: 1,
         name: 'Nguoi dung',
         url: 'NguoiDung',
@@ -414,6 +449,7 @@ interface BackendPermissionItem {
   id?: ID_TYPE | null;
   roleId?: ID_TYPE;
   menuId?: ID_TYPE;
+  menuCode?: string | null;
   menuName?: string | null;
   menuUrl?: string | null;
   parentId?: ID_TYPE | null;
@@ -424,4 +460,5 @@ interface BackendPermissionItem {
   isEdit?: number;
   isDelete?: number;
   isDownload?: number;
+  isConfig?: number;
 }

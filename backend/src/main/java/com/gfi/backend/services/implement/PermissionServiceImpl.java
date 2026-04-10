@@ -86,7 +86,8 @@ public class PermissionServiceImpl implements PermissionService {
             }
 
             applyRequest(permission, request.getMenuId(), request.getRoleId(), request.getIsAdd(),
-                    request.getIsDelete(), request.getIsDownload(), request.getIsEdit(), request.getIsView());
+                    request.getIsDelete(), request.getIsDownload(), request.getIsConfig(), request.getIsEdit(),
+                    request.getIsView());
 
             if (isNewPermission) {
                 permission.setCreatedBy(currentUsername);
@@ -134,11 +135,12 @@ public class PermissionServiceImpl implements PermissionService {
                 .isEdit(0)
                 .isDelete(0)
                 .isDownload(0)
+                .isConfig(0)
                 .build();
     }
 
     private void applyRequest(Permission permission, Long menuId, Long roleId, Integer isAdd,
-            Integer isDelete, Integer isDownload, Integer isEdit, Integer isView) {
+            Integer isDelete, Integer isDownload, Integer isConfig, Integer isEdit, Integer isView) {
         Menu menu = menuRepository.findById(menuId)
                 .orElseThrow(() -> new UserMessageException(CommonErrorCode.MENU_NOT_FOUND));
         Role role = roleRepository.findById(roleId)
@@ -149,6 +151,7 @@ public class PermissionServiceImpl implements PermissionService {
         permission.setIsAdd(isAdd);
         permission.setIsDelete(isDelete);
         permission.setIsDownload(isDownload);
+        permission.setIsConfig(isConfig);
         permission.setIsEdit(isEdit);
         permission.setIsView(isView);
     }
@@ -157,6 +160,7 @@ public class PermissionServiceImpl implements PermissionService {
         return isEnabled(request.getIsAdd())
                 || isEnabled(request.getIsDelete())
                 || isEnabled(request.getIsDownload())
+                || isEnabled(request.getIsConfig())
                 || isEnabled(request.getIsEdit())
                 || isEnabled(request.getIsView());
     }
@@ -196,6 +200,7 @@ public class PermissionServiceImpl implements PermissionService {
                 .isEdit(permission.getIsEdit())
                 .isDelete(permission.getIsDelete())
                 .isDownload(permission.getIsDownload())
+                .isConfig(permission.getIsConfig())
                 .build();
     }
 

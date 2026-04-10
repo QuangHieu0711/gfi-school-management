@@ -66,4 +66,8 @@ export class PermissionService {
   canDelete(url: string) {
     return this.has(url, 'isDelete');
   }
+
+  canConfig(url: string) {
+    return this.has(url, 'isConfig');
+  }
 }

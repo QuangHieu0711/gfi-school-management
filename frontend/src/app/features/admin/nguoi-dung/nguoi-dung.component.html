@@ -9,7 +9,7 @@
   (queryChange)="filterData($event)">
   <ng-container custom-buttons>
     <div class="flex gap-2 items-center">
-      @if (permission.canAdd(permissionUrl)) {
+      @if (canAdd) {
         <button
           color="primary"
           matButton
@@ -23,7 +23,7 @@
           Thêm mới
         </button>
       }
-      @if (permission.canAdd(permissionUrl)) {
+      @if (canAdd) {
         <button
           class="btn-tight"
           color="primary"
@@ -37,7 +37,7 @@
           Kết nạp
         </button>
       }
-      @if (permission.canView(permissionUrl)) {
+      @if (canDownload) {
         <button
           color="primary"
           matButton
@@ -50,6 +50,8 @@
             class="btn-icon" />
           Xuất Excel
         </button>
+      }
+      @if (canDownload) {
         <button
           color="primary"
           matButton
@@ -87,7 +89,7 @@
           <button
             color="dark"
             matIconButton="text"
-            matTooltip="Tìm kiếm"
+            matTooltip="TÃ¬m kiáº¿m"
             type="submit">
             <app-icon
               icon="svg:search"

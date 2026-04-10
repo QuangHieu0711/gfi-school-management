@@ -34,9 +34,6 @@ export class DialogHocKyComponent extends ComponentBaseAbstract {
       id?: ID_TYPE;
       schoolYearId: ID_TYPE;
       schoolYearName?: string;
-    } = {
-      type: TYPE_FORM.CREATE,
-      schoolYearId: 0,
     }
   ) {
     super(injector);
@@ -96,7 +93,10 @@ export class DialogHocKyComponent extends ComponentBaseAbstract {
     const endDate = this.toApiDate(value[HOC_KY_KEY.END_DATE]);
 
     if (!startDate || !endDate) {
-      this.toastr.error('Ngày bắt đầu và ngày kết thúc không hợp lệ', 'Thất bại');
+      this.toastr.error(
+        'Ngày bắt đầu và ngày kết thúc không hợp lệ',
+        'Thất bại'
+      );
       return null;
     }
 
