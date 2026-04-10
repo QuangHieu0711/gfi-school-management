@@ -50,6 +50,11 @@ export class MenuService {
     return this.optionsRequest$;
   }
 
+  getOptionsFresh() {
+    this.clearOptionsCache();
+    return this.getOptions();
+  }
+
   create(payload: MenuFormRequest) {
     return this.http
       .post<IResponse<MenuResponse>>(this.baseUrl, payload, {

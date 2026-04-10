@@ -99,14 +99,6 @@ export class MenuComponent extends ComponentBaseAbstract {
         buttons: [
           {
             type: 'icon',
-            icon: 'visibility',
-            class: 'action-view',
-            tooltip: 'Chi tiết',
-            click: (rowData: MenuTreeRow) =>
-              this.openDialog(this.TYPE_FORM.DETAIL, rowData),
-          },
-          {
-            type: 'icon',
             icon: 'edit',
             class: 'action-edit',
             iif: () => this.permissionCheckService.canEdit(this.menuCode),

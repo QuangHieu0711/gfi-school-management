@@ -1,5 +1,7 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Component, Inject, Injector } from '@angular/core';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
+import { forkJoin } from 'rxjs';
 import { TYPE_FORM, TYPE_FORM_KEY } from '@constant/constant';
 import { SVG_ICONS } from '@constant/icons';
 import { AppDialogComponent } from '@components/app-dialog/app-dialog.component';
@@ -54,8 +56,8 @@ export class DialogMenuComponent extends ComponentBaseAbstract {
   }
 
   protected override componentInit(): void {
-    this.findFormControl(this.$formItem, MENU_KEY.ICON).options = this.iconOptions;
-    this.loadParentOptions();
+    this.findFormControl(this.$formItem, MENU_KEY.ICON).options =
+      this.iconOptions;
 
     switch (this.data.type) {
       case this.TYPE_FORM.UPDATE:
@@ -71,7 +73,27 @@ export class DialogMenuComponent extends ComponentBaseAbstract {
     }
 
     if (this.data.type !== this.TYPE_FORM.CREATE && this.data.id != null) {
-      this.getDetail();
+      forkJoin({
+        detail: this.menuService.getById(this.data.id),
+        options: this.menuService.getOptionsFresh(),
+      }).subscribe({
+        next: ({ detail, options }) => {
+          this.parentOptions = this.normalizeParentOptions(options.data ?? []);
+          this.currentData = this.normalizeMenuResponse(detail.data);
+          this.form.patchValue(this.normalizeFormData(this.currentData));
+          this.applyParentOptions();
+        },
+        error: (error) => {
+          this.toastr.error(
+            error?.error?.userMessage ??
+              error?.error?.message ??
+              'Không tải được dữ liệu',
+            'Thất bại'
+          );
+        },
+      });
+    } else {
+      this.loadParentOptions();
     }
   }
 
@@ -101,28 +123,10 @@ export class DialogMenuComponent extends ComponentBaseAbstract {
     this.data.type = this.TYPE_FORM.UPDATE;
   }
 
-  private getDetail() {
-    this.menuService.getById(this.data.id!).subscribe({
-      next: ({ data }) => {
-        this.currentData = data;
-        this.form.patchValue(this.normalizeFormData(data));
-        this.applyParentOptions();
-      },
-      error: (error) => {
-        this.toastr.error(
-          error?.error?.userMessage ??
-            error?.error?.message ??
-            'Không tải được chi tiết chức năng',
-          'Thất bại'
-        );
-      },
-    });
-  }
-
   private loadParentOptions() {
-    this.menuService.getOptions().subscribe({
+    this.menuService.getOptionsFresh().subscribe({
       next: ({ data }) => {
-        this.parentOptions = data ?? [];
+        this.parentOptions = this.normalizeParentOptions(data ?? []);
         this.applyParentOptions();
       },
       error: () => {
@@ -139,7 +143,8 @@ export class DialogMenuComponent extends ComponentBaseAbstract {
   private applyParentOptions() {
     const currentId = this.currentData?.[MENU_KEY.ID];
     const currentParentId =
-      this.form.getRawValue()?.[MENU_KEY.PARENT_ID] ?? this.currentData?.parentId;
+      this.form.getRawValue()?.[MENU_KEY.PARENT_ID] ??
+      this.currentData?.[MENU_KEY.PARENT_ID];
 
     this.findFormControl(this.$formItem, MENU_KEY.PARENT_ID).options = [
       {
@@ -150,10 +155,7 @@ export class DialogMenuComponent extends ComponentBaseAbstract {
         .filter((item) => item.id !== currentId)
         .map((item) => ({
           value: item.id,
-          label:
-            item.parentId != null
-              ? `${item.name} (${item.code})`
-              : `${item.name} (${item.code}) - menu gốc`,
+          label: this.getParentOptionLabel(item),
         })),
     ];
 
@@ -170,13 +172,67 @@ export class DialogMenuComponent extends ComponentBaseAbstract {
   }
 
   private normalizeFormData(data: MenuResponse) {
+    const parentId =
+      data[MENU_KEY.PARENT_ID] ??
+      this.parentOptions.find(
+        (item) => item.code === data[MENU_KEY.PARENT_CODE]
+      )?.id ??
+      null;
+
     return {
       ...data,
-      [MENU_KEY.PARENT_ID]: data[MENU_KEY.PARENT_ID] ?? '',
+      [MENU_KEY.PARENT_ID]: parentId ?? '',
       [MENU_KEY.ICON]: data[MENU_KEY.ICON] ?? null,
       [MENU_KEY.ORDINAL]: data[MENU_KEY.ORDINAL] ?? 1,
       [MENU_KEY.URL]: data[MENU_KEY.URL] ?? '',
     };
+  }
+
+  private normalizeMenuResponse(raw: any): MenuResponse {
+    return {
+      ...raw,
+      [MENU_KEY.ID]: raw?.id ?? raw?.menuId,
+      [MENU_KEY.CODE]: raw?.code ?? raw?.menuCode,
+      [MENU_KEY.NAME]: raw?.name ?? raw?.menuName,
+      [MENU_KEY.ICON]: raw?.icon ?? raw?.menuIcon ?? null,
+      [MENU_KEY.URL]: raw?.url ?? raw?.menuUrl ?? null,
+      [MENU_KEY.ORDINAL]: raw?.ordinal ?? raw?.sortOrder ?? 1,
+      [MENU_KEY.PARENT_ID]: raw?.parentId ?? raw?.parentMenuId ?? null,
+      [MENU_KEY.PARENT_CODE]:
+        raw?.parentCode ?? raw?.menuParentCode ?? raw?.parentMenuCode ?? null,
+    };
+  }
+
+  private normalizeParentOptions(items: any[]): MenuOptionResponse[] {
+    const normalized = (items ?? []).map((raw) => ({
+      id: raw?.id ?? raw?.menuId,
+      code: raw?.code ?? raw?.menuCode ?? null,
+      name: raw?.name ?? raw?.menuName ?? '',
+      parentId: raw?.parentId ?? raw?.parentMenuId ?? null,
+      parentCode: raw?.parentCode ?? raw?.parentMenuCode ?? null,
+    }));
+
+    const codeToId = new Map(
+      normalized
+        .filter((item) => item.code != null && item.id != null)
+        .map((item) => [item.code, item.id as ID_TYPE])
+    );
+
+    return normalized
+      .filter((item) => item.id != null && item.name)
+      .map((item) => ({
+        id: item.id as ID_TYPE,
+        code: item.code,
+        name: item.name,
+        parentId:
+          item.parentId ??
+          (item.parentCode ? (codeToId.get(item.parentCode) ?? null) : null),
+      }));
+  }
+
+  private getParentOptionLabel(item: MenuOptionResponse): string {
+    const codeLabel = item.code ? ` (${item.code})` : '';
+    return item.parentId != null ? `${item.name}${codeLabel}` : item.name;
   }
 
   private handleCreate(payload: MenuFormRequest) {

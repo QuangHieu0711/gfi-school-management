@@ -1,6 +1,5 @@
 package com.gfi.backend.models.dtos.menu;
 
-import java.time.LocalDateTime;
 
 import lombok.Builder;
 import lombok.Data;
@@ -16,8 +15,4 @@ public class MenuDetailDto {
     private String url;
     private String icon;
     private Integer ordinal;
-    private LocalDateTime createdAt;
-    private String createdBy;
-    private LocalDateTime updatedAt;
-    private String updatedBy;
 }
