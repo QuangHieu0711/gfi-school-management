@@ -27,7 +27,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 
 @RestController
 @RequestMapping("/api/auth")
-@Tag(name = "Authentication")
+@Tag(name = "Xác thực - Authentication")
 public class AuthController extends ApiBaseController {
     private final AuthenticationManager authenticationManager;
     private final ITokenService tokenService;

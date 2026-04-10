@@ -21,7 +21,7 @@ import lombok.RequiredArgsConstructor;
 @RestController
 @RequestMapping("/api/classroom-subjects")
 @RequiredArgsConstructor
-@Tag(name = "ClassroomSubject")
+@Tag(name = "Quản lý cấu hình môn học theo lớp -ClassroomSubject")
 public class ClassroomSubjectController extends ApiBaseController {
 
     private final ClassroomSubjectService classroomSubjectService;

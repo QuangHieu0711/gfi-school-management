@@ -22,6 +22,7 @@ import com.gfi.backend.models.dtos.role.RoleUpdateRequest;
 import com.gfi.backend.models.entities.Role;
 import com.gfi.backend.models.global.CommonErrorCode;
 import com.gfi.backend.models.mappers.RoleMapper;
+import com.gfi.backend.repositories.DataPermissionRepository;
 import com.gfi.backend.repositories.PermissionRepository;
 import com.gfi.backend.repositories.RoleRepository;
 import com.gfi.backend.repositories.UserRepository;
@@ -48,6 +49,7 @@ public class RoleServiceImpl implements RoleService {
     private final RoleRepository roleRepository;
     private final UserRepository userRepository;
     private final PermissionRepository permissionRepository;
+    private final DataPermissionRepository dataPermissionRepository;
     private final RoleSpecification roleSpecification;
     private final RoleMapper roleMapper;
 
@@ -150,6 +152,9 @@ public class RoleServiceImpl implements RoleService {
             throw new UserMessageException(CommonErrorCode.ROLE_IN_USE);
         }
         if (permissionRepository.countByRoleId(id) > 0) {
+            throw new UserMessageException(CommonErrorCode.ROLE_IN_USE);
+        }
+        if (dataPermissionRepository.countByRoleId(id) > 0) {
             throw new UserMessageException(CommonErrorCode.ROLE_IN_USE);
         }
 

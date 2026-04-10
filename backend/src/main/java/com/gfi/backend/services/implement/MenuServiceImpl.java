@@ -16,6 +16,7 @@ import com.gfi.backend.models.dtos.menu.MenuListItemDto;
 import com.gfi.backend.models.dtos.menu.MenuUpdateRequest;
 import com.gfi.backend.models.entities.Menu;
 import com.gfi.backend.models.global.CommonErrorCode;
+import com.gfi.backend.repositories.DataPermissionRepository;
 import com.gfi.backend.repositories.MenuRepository;
 import com.gfi.backend.repositories.PermissionRepository;
 import com.gfi.backend.repositories.specifications.MenuSpecification;
@@ -34,6 +35,7 @@ public class MenuServiceImpl implements MenuService {
 
     private final MenuRepository menuRepository;
     private final PermissionRepository permissionRepository;
+    private final DataPermissionRepository dataPermissionRepository;
     private final MenuSpecification menuSpecification;
 
     @Override
@@ -99,6 +101,9 @@ public class MenuServiceImpl implements MenuService {
 
         // Kiểm tra nếu menu đang được sử dụng trong permissions
         if (permissionRepository.countByMenuId(id) > 0) {
+            throw new UserMessageException(CommonErrorCode.MENU_IN_USE);
+        }
+        if (dataPermissionRepository.countByMenuId(id) > 0) {
             throw new UserMessageException(CommonErrorCode.MENU_IN_USE);
         }
 
