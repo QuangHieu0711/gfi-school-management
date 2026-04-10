@@ -6,6 +6,8 @@ import lombok.Getter;
 public enum CommonErrorCode {
     INVALID_CREDENTIALS(1000, "Tên đăng nhập hoặc mật khẩu không chính xác"),
     USERNAME_ALREADY_EXISTS(1001, "Tên đăng nhập đã tồn tại"),
+    EMAIL_ALREADY_EXISTS(2004, "Email đã tồn tại"),
+    PHONE_ALREADY_EXISTS(2005, "Số điện thoại đã tồn tại"),
     ROLE_CODE_ALREADY_EXISTS(1002, "Mã vai trò đã tồn tại"),
     ROLE_NAME_ALREADY_EXISTS(1003, "Tên vai trò đã tồn tại"),
     USER_NOT_FOUND(1004, "Không tìm thấy người dùng"),
