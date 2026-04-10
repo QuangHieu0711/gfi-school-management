@@ -4,7 +4,12 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { NAVIGATOR_ENDPOINT } from '@constant/navigator';
 import { MATERIAL_MODULE } from '@modules';
-import { AuthService, DialogService, ToastService } from '@service';
+import {
+  AuthService,
+  DialogService,
+  PermissionCheckService,
+  ToastService,
+} from '@service';
 import { sha256 } from '@utils/utils';
 
 @Component({
@@ -15,6 +20,72 @@ import { sha256 } from '@utils/utils';
   imports: [CommonModule, ReactiveFormsModule, ...MATERIAL_MODULE],
 })
 export class LoginComponent {
+  private readonly defaultRedirects = [
+    {
+      menuCode: 'ACCOUNT_MANAGEMENT',
+      commands: [
+        NAVIGATOR_ENDPOINT.ADMIN.BASE_PATH,
+        NAVIGATOR_ENDPOINT.ADMIN.NGUOI_DUNG.BASE_PATH,
+      ],
+    },
+    {
+      menuCode: 'UNIT_MANAGEMENT',
+      commands: [
+        NAVIGATOR_ENDPOINT.ADMIN.BASE_PATH,
+        NAVIGATOR_ENDPOINT.ADMIN.DON_VI.BASE_PATH,
+      ],
+    },
+    {
+      menuCode: 'ROLE_MANAGEMENT',
+      commands: [
+        NAVIGATOR_ENDPOINT.ADMIN.BASE_PATH,
+        NAVIGATOR_ENDPOINT.ADMIN.VAI_TRO.BASE_PATH,
+      ],
+    },
+    {
+      menuCode: 'FUNCTION_MANAGEMENT',
+      commands: [
+        NAVIGATOR_ENDPOINT.ADMIN.BASE_PATH,
+        NAVIGATOR_ENDPOINT.ADMIN.MENU.BASE_PATH,
+      ],
+    },
+    {
+      menuCode: 'SCHOOL_YEAR_CONFIG',
+      commands: [
+        NAVIGATOR_ENDPOINT.ADMIN.BASE_PATH,
+        NAVIGATOR_ENDPOINT.ADMIN.NAM_HOC.BASE_PATH,
+      ],
+    },
+    {
+      menuCode: 'GRADE_CONFIG',
+      commands: [
+        NAVIGATOR_ENDPOINT.ADMIN.BASE_PATH,
+        NAVIGATOR_ENDPOINT.ADMIN.KHOI.BASE_PATH,
+      ],
+    },
+    {
+      menuCode: 'CLASS_MANAGEMENT',
+      commands: [
+        NAVIGATOR_ENDPOINT.ADMIN.BASE_PATH,
+        NAVIGATOR_ENDPOINT.ADMIN.LOP.BASE_PATH,
+      ],
+    },
+    {
+      menuCode: 'SUBJECT_MANAGEMENT',
+      commands: [
+        NAVIGATOR_ENDPOINT.ADMIN.BASE_PATH,
+        NAVIGATOR_ENDPOINT.ADMIN.MON_HOC.BASE_PATH,
+      ],
+    },
+    {
+      menuCode: 'STUDENT_PROFILE',
+      commands: [
+        NAVIGATOR_ENDPOINT.ADMIN.BASE_PATH,
+        NAVIGATOR_ENDPOINT.ADMIN.HOC_SINH.BASE_PATH,
+      ],
+    },
+  ] as const;
+
   readonly logoUrl = 'config/Logo_login.png';
   showPassword = false;
 
@@ -24,6 +95,7 @@ export class LoginComponent {
     private readonly fb: FormBuilder,
     private readonly authService: AuthService,
     private readonly dialogService: DialogService,
+    private readonly permissionCheckService: PermissionCheckService,
     private readonly toastService: ToastService,
     private readonly router: Router
   ) {
@@ -49,10 +121,7 @@ export class LoginComponent {
         })
         .subscribe({
           next: () => {
-            void this.router.navigate([
-              NAVIGATOR_ENDPOINT.ADMIN.BASE_PATH,
-              NAVIGATOR_ENDPOINT.ADMIN.NGUOI_DUNG.BASE_PATH,
-            ]);
+            void this.router.navigate(this.getFirstAccessibleRoute());
           },
           error: (error) => {
             const message =
@@ -79,5 +148,15 @@ export class LoginComponent {
 
   togglePasswordVisibility(): void {
     this.showPassword = !this.showPassword;
+  }
+
+  private getFirstAccessibleRoute(): string[] {
+    const firstAllowed = this.defaultRedirects.find(({ menuCode }) =>
+      this.permissionCheckService.canView(menuCode)
+    );
+
+    return firstAllowed?.commands
+      ? [...firstAllowed.commands]
+      : [NAVIGATOR_ENDPOINT.ACCESS_DENIED];
   }
 }

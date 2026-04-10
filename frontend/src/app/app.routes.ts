@@ -12,12 +12,14 @@ export const routes: Routes = [
   {
     path: NAVIGATOR_ENDPOINT.LOGIN,
     loadComponent: () =>
-      import('@features/auth/login/login.component').then((m) => m.LoginComponent),
+      import('@features/auth/login/login.component').then(
+        (m) => m.LoginComponent
+      ),
   },
   {
     path: NAVIGATOR_ENDPOINT.ADMIN.BASE_PATH,
     component: LayoutComponent,
-    canActivate: [AdminGuard], // guarding token
+    // canActivate: [AdminGuard], // guarding token
     loadChildren: () =>
       import('@features/admin/admin.routes').then((m) => m.AdminRoutes),
   },

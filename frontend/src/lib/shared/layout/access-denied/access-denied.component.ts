@@ -1,13 +1,29 @@
+import { CommonModule, Location } from '@angular/common';
 import { Component } from '@angular/core';
-import { RouterModule } from '@angular/router';
-import { IconComponent } from '@components/app-icon/app-icon.component';
-import { ComponentBaseAbstract } from '@layout';
-import { MATERIAL_MODULE } from '@modules';
-import { TranslateModule } from '@ngx-translate/core';
+import { Router } from '@angular/router';
 
 @Component({
-  selector: 'access-denied-component',
+  selector: 'app-access-denied',
+  standalone: true,
+  imports: [CommonModule],
   templateUrl: './access-denied.component.html',
-  imports: [...MATERIAL_MODULE, RouterModule, TranslateModule, IconComponent],
+  styleUrls: ['./access-denied.component.scss'],
 })
-export class AccessDeniedComponent extends ComponentBaseAbstract {}
+export class AccessDeniedComponent {
+  constructor(
+    private readonly router: Router,
+    private readonly location: Location
+  ) {}
+
+  goHome(): void {
+    this.router.navigate(['/']);
+  }
+
+  goLogin(): void {
+    this.router.navigate(['/login']);
+  }
+
+  goBack(): void {
+    this.location.back();
+  }
+}

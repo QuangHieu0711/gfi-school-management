@@ -31,7 +31,11 @@ export class DialogVaiTroComponent extends ComponentBaseAbstract {
     private readonly dialogRef: MatDialogRef<DialogVaiTroComponent>,
     private readonly vaiTroService: VaiTroService,
     @Inject(MAT_DIALOG_DATA)
-    public data: { type: TYPE_FORM_KEY; id?: ID_TYPE; data?: VaiTroResponse } = {
+    public data: {
+      type: TYPE_FORM_KEY;
+      id?: ID_TYPE;
+      data?: VaiTroResponse;
+    } = {
       type: TYPE_FORM.CREATE,
     }
   ) {

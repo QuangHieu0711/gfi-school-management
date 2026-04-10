@@ -12,10 +12,10 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.PrePersist;
-import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 
 @Entity
 @Table(name = "semesters", uniqueConstraints = {
@@ -23,8 +23,9 @@ import lombok.Data;
         @UniqueConstraint(name = "uk_semesters_school_year_name", columnNames = { "school_year_id", "name" }),
         @UniqueConstraint(name = "uk_semesters_school_year_order", columnNames = { "school_year_id", "semester_order" })
 })
-@Data
-public class Semester {
+@Getter
+@Setter
+public class Semester extends BaseEntity {
 
     // Khóa chính
     @Id
@@ -68,34 +69,14 @@ public class Semester {
     @Column(length = 500)
     private String description;
 
-    // Thông tin audit
-    @Column
-    private LocalDateTime createdAt;
-
-    @Column(length = 255)
-    private String createdBy;
-
-    @Column
-    private LocalDateTime updatedAt;
-
-    @Column(length = 255)
-    private String updatedBy;
-
     @PrePersist
     public void prePersist() {
-        if (createdAt == null) {
-            createdAt = LocalDateTime.now();
-        }
+        super.prePersist();
         if (status == null) {
             status = 0;
         }
         if (isCurrent == null) {
             isCurrent = Boolean.FALSE;
         }
-    }
-
-    @PreUpdate
-    public void preUpdate() {
-        updatedAt = LocalDateTime.now();
     }
 }

@@ -1,22 +1,59 @@
-<div
-  class="wrapper fixed top-0 right-0 bottom-0 left-0 flex justify-center items-center gap-8">
-  <div class="p-16">
-    <h1
-      class="text-night-500 font-black font-heading uppercase !text-[16rem] !m-0">
-      403
-    </h1>
-    <h5 class="text-night-600 font-black font-heading uppercase">
-      {{ 'error.unauthorized.title' | translate }}
-    </h5>
-    <p class="text-night-900 mb-4 font-light italic text-xl">
-      {{ 'error.unauthorized.message' | translate }}
-    </p>
-    <button
-      color="night"
-      matButton="filled"
-      [routerLink]="['/']">
-      <app-icon icon="chevron_left" />
-      {{ 'error.backToHomePage' | translate }}
-    </button>
+<div class="access-denied-page">
+  <div class="bg-glow bg-glow-left"></div>
+  <div class="bg-glow bg-glow-right"></div>
+  <div class="overlay"></div>
+
+  <div class="access-card">
+    <div class="icon-wrap">
+      <div class="icon-circle">
+        <svg viewBox="0 0 24 24" fill="none" class="lock-icon" aria-hidden="true">
+          <path
+            d="M8 10V7a4 4 0 1 1 8 0v3"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+          <rect
+            x="5"
+            y="10"
+            width="14"
+            height="10"
+            rx="2"
+            stroke="currentColor"
+            stroke-width="1.8"
+          />
+          <circle cx="12" cy="15" r="1.2" fill="currentColor" />
+        </svg>
+      </div>
+
+      <span class="status-badge">403</span>
+    </div>
+
+    <div class="content">
+      <h1>Bạn không có quyền truy cập</h1>
+
+      <p class="description">
+        Tài khoản hiện tại chưa được cấp quyền truy cập nội dung này.
+        Hãy quay lại trang trước, đăng nhập bằng tài khoản phù hợp
+        hoặc liên hệ quản trị viên để được hỗ trợ.
+      </p>
+
+      <div class="info-box">
+        <div class="info-title">Có thể do một trong các lý do sau:</div>
+
+        <ul>
+          <li>Tài khoản của bạn chưa được gán quyền cho chức năng này</li>
+          <li>Phiên đăng nhập đã hết hạn hoặc không hợp lệ</li>
+          <li>Bạn đang truy cập sai vai trò hoặc sai đơn vị</li>
+        </ul>
+      </div>
+
+      <div class="actions">
+        <button type="button" class="btn btn-primary" (click)="goLogin()">
+          Đăng nhập lại
+        </button>
+      </div>
+    </div>
   </div>
 </div>

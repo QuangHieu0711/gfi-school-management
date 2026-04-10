@@ -1,5 +1,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { HttpBackend, HttpClient, HttpHeaders, HttpRequest } from '@angular/common/http';
+import {
+  HttpBackend,
+  HttpClient,
+  HttpHeaders,
+  HttpRequest,
+} from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Router } from '@angular/router';
 import {
@@ -13,10 +18,7 @@ import {
   throwError,
 } from 'rxjs';
 
-import {
-  ACCESS_TOKEN_KEY,
-  REFRESH_TOKEN_KEY,
-} from '@constant/constant';
+import { ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY } from '@constant/constant';
 import { environment } from '@env/environment';
 import { NAVIGATOR_ENDPOINT } from '@constant/navigator';
 import {
@@ -97,7 +99,10 @@ export class AuthService {
   }
 
   isAuthenticated(): boolean {
-    return !!this.currentUserSubject.value || this.storageService.has('userInfo', 'all');
+    return (
+      !!this.currentUserSubject.value ||
+      this.storageService.has('userInfo', 'all')
+    );
   }
 
   isTokenExpired(_token?: string): boolean {
@@ -149,8 +154,8 @@ export class AuthService {
       .pipe(
         switchMap((response) =>
           this.fetchRulesByRoleId(
-            response?.data?.roleId,
-            response?.data?.accessToken ?? ''
+            response?.data?.user?.role?.id,
+            response?.data?.token?.accessToken ?? ''
           ).pipe(
             map((rules) =>
               this.mapLoginResponseToUser(response, payload.username, rules)
@@ -193,7 +198,9 @@ export class AuthService {
     } as IRefreshTokenResponse);
   }
 
-  changePassword(_payload: IChangePasswordRequest): Observable<IChangePasswordResponse> {
+  changePassword(
+    _payload: IChangePasswordRequest
+  ): Observable<IChangePasswordResponse> {
     this.clearMustChangePassword();
     return of({
       success: true,
@@ -257,8 +264,14 @@ export class AuthService {
   private setLocalSession(user: ICurrentUser, rememberMe: boolean): void {
     const userWithRemember = { ...user, rememberMe };
 
-    this.setAccessToken((user as ICurrentUserWithTokens).accessToken ?? '', rememberMe);
-    this.setRefreshToken((user as ICurrentUserWithTokens).refreshToken ?? '', rememberMe);
+    this.setAccessToken(
+      (user as ICurrentUserWithTokens).accessToken ?? '',
+      rememberMe
+    );
+    this.setRefreshToken(
+      (user as ICurrentUserWithTokens).refreshToken ?? '',
+      rememberMe
+    );
     this.storageService.set(
       'userInfo',
       userWithRemember,
@@ -273,53 +286,34 @@ export class AuthService {
     );
   }
 
-  private createFakeUser(username = 'admin'): ICurrentUser {
-    return {
-      id: 1,
-      username,
-      name: 'Local Admin',
-      email: 'admin@local.dev',
-      role: {
-        id: 1,
-        name: UserRole.ADMIN,
-        rules: this.getDefaultRules(),
-      },
-      donVi: {
-        maDonVi: 'DV001',
-        tenDonVi: 'Don vi local',
-        tenVietTat: 'LOCAL',
-        role: [],
-      },
-      rememberMe: true,
-    };
-  }
-
   private mapLoginResponseToUser(
     response: BackendLoginEnvelope,
     username: string,
     rules: IRule[]
   ): ICurrentUserWithTokens {
     const data = response?.data;
-    const normalizedRole = this.normalizeRoleName(data?.role);
+    const user = data?.user;
+    const token = data?.token;
+    const normalizedRole = this.normalizeRoleName(user?.role?.name);
 
     return {
-      id: data?.userId ?? 0,
+      id: user?.id ?? 0,
       username,
-      name: data?.fullName ?? username,
-      email: '',
+      name: user?.fullName ?? username,
+      email: user?.email ?? '',
       role: {
-        id: data?.roleId ?? 0,
+        id: user?.role?.id ?? 0,
         name: normalizedRole,
         rules,
       },
       donVi: {
-        maDonVi: '',
-        tenDonVi: '',
+        maDonVi: user?.unit?.code ?? '',
+        tenDonVi: user?.unit?.name ?? '',
         tenVietTat: '',
         role: [],
       },
-      accessToken: data?.accessToken ?? '',
-      refreshToken: data?.refreshToken ?? '',
+      accessToken: token?.accessToken ?? '',
+      refreshToken: token?.refreshToken ?? '',
     };
   }
 
@@ -398,7 +392,9 @@ export class AuthService {
   }
 
   private normalizeRoleName(role?: string): UserRole {
-    return role?.toUpperCase() === 'ROLE_ADMIN' ? UserRole.ADMIN : UserRole.ADMIN;
+    return role?.toUpperCase() === 'ROLE_ADMIN'
+      ? UserRole.ADMIN
+      : UserRole.ADMIN;
   }
 
   private getDefaultRules(): IRule[] {
@@ -428,15 +424,30 @@ export class AuthService {
 interface BackendLoginEnvelope {
   code?: number;
   data?: {
-    accessToken?: string;
-    refreshToken?: string;
-    tokenType?: string;
-    expiresIn?: number;
-    role?: string;
-    roleId?: number;
-    roleName?: string;
-    fullName?: string;
-    userId?: number;
+    token?: {
+      accessToken?: string;
+      refreshToken?: string;
+      tokenType?: string;
+      expiresAt?: number;
+    };
+    user?: {
+      id?: number;
+      username?: string;
+      fullName?: string;
+      email?: string;
+      phone?: string;
+      status?: number;
+      role?: {
+        id?: number;
+        code?: string;
+        name?: string;
+      };
+      unit?: {
+        id?: number;
+        code?: string;
+        name?: string;
+      };
+    };
   };
 }
 

@@ -12,17 +12,18 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.PrePersist;
-import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 
 @Entity
 @Table(name = "student_enrollments", uniqueConstraints = {
         @UniqueConstraint(name = "uk_student_enrollment", columnNames = { "student_id", "school_year_id" })
 })
-@Data
-public class StudentEnrollment {
+@Getter
+@Setter
+public class StudentEnrollment extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -62,23 +63,9 @@ public class StudentEnrollment {
     @Column
     private Boolean isTwoSessionsPerDay;
 
-    @Column
-    private LocalDateTime createdAt;
-
-    @Column(length = 255)
-    private String createdBy;
-
-    @Column
-    private LocalDateTime updatedAt;
-
-    @Column(length = 255)
-    private String updatedBy;
-
     @PrePersist
     public void prePersist() {
-        if (createdAt == null) {
-            createdAt = LocalDateTime.now();
-        }
+        super.prePersist();
         if (isRepeater == null) {
             isRepeater = Boolean.FALSE;
         }
@@ -88,10 +75,5 @@ public class StudentEnrollment {
         if (isTwoSessionsPerDay == null) {
             isTwoSessionsPerDay = Boolean.FALSE;
         }
-    }
-
-    @PreUpdate
-    public void preUpdate() {
-        updatedAt = LocalDateTime.now();
     }
 }

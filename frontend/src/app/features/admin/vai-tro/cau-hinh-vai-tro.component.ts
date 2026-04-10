@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { CommonModule } from '@angular/common';
 import { Component, Injector, TemplateRef, ViewChild } from '@angular/core';
 import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
@@ -306,10 +307,11 @@ export class CauHinhVaiTroComponent extends ComponentBaseAbstract {
           const permissionItems = this.normalizePermissionItems(
             permissions.data
           );
+          const normalizedMenus = this.normalizeMenus(menus.data ?? []);
 
           this.allRows = this.buildMatrixRows(
             this.roleId!,
-            menus.data ?? [],
+            normalizedMenus,
             permissionItems
           );
           this.dirtyRowIds.clear();
@@ -345,6 +347,16 @@ export class CauHinhVaiTroComponent extends ComponentBaseAbstract {
     return data?.items ?? data?.data ?? [];
   }
 
+  private normalizeMenus(items: any[]): MenuResponse[] {
+    // Map parentCode → parentId
+    const codeToId = new Map((items ?? []).map((item) => [item.code, item.id]));
+
+    return (items ?? []).map((raw) => ({
+      ...raw,
+      parentId: raw.parentCode ? (codeToId.get(raw.parentCode) ?? null) : null,
+    }));
+  }
+
   private buildMatrixRows(
     roleId: ID_TYPE,
     menus: MenuResponse[],
@@ -377,15 +389,15 @@ export class CauHinhVaiTroComponent extends ComponentBaseAbstract {
         this.createMatrixRow(roleId, menu, permissionMap.get(menu.id), level)
       );
 
-      const children = [...(childrenMap.get(menu.id) ?? [])].sort((a, b) =>
-        `${a.name}`.localeCompare(`${b.name}`, 'vi')
+      const children = [...(childrenMap.get(menu.id) ?? [])].sort(
+        (a, b) => (a.ordinal ?? 0) - (b.ordinal ?? 0)
       );
 
       children.forEach((child) => visitNode(child, level + 1));
     };
 
     [...roots]
-      .sort((a, b) => `${a.name}`.localeCompare(`${b.name}`, 'vi'))
+      .sort((a, b) => (a.ordinal ?? 0) - (b.ordinal ?? 0))
       .forEach((root) => visitNode(root, 0));
 
     menus

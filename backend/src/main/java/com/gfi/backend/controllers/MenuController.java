@@ -14,8 +14,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.gfi.backend.models.dtos.common.LookupItemDto;
 import com.gfi.backend.models.dtos.menu.MenuCreateRequest;
+import com.gfi.backend.models.dtos.menu.MenuDetailDto;
 import com.gfi.backend.models.dtos.menu.MenuFilterDto;
-import com.gfi.backend.models.dtos.menu.MenuItemDto;
+import com.gfi.backend.models.dtos.menu.MenuListItemDto;
 import com.gfi.backend.models.dtos.menu.MenuUpdateRequest;
 import com.gfi.backend.models.global.ApiResult;
 import com.gfi.backend.services.interfaces.MenuService;
@@ -35,7 +36,7 @@ public class MenuController extends ApiBaseController {
 
     @PostMapping("/search")
     @Operation(summary = "Danh sach menu", description = "Lay danh sach menu theo tu khoa, khong phan trang.")
-    public ResponseEntity<ApiResult<List<MenuItemDto>>> search(@RequestBody(required = false) MenuFilterDto request) {
+    public ResponseEntity<ApiResult<List<MenuListItemDto>>> search(@RequestBody(required = false) MenuFilterDto request) {
         MenuFilterDto safeRequest = request == null ? new MenuFilterDto() : request;
         return executeApiResult(() -> ApiResult.success(menuService.search(safeRequest), "Lay danh sach menu thanh cong"));
     }
@@ -48,19 +49,19 @@ public class MenuController extends ApiBaseController {
 
     @GetMapping("/{id}")
     @Operation(summary = "Chi tiet menu", description = "Lay chi tiet menu theo ID.")
-    public ResponseEntity<ApiResult<MenuItemDto>> getById(@PathVariable Long id) {
+    public ResponseEntity<ApiResult<MenuDetailDto>> getById(@PathVariable Long id) {
         return executeApiResult(() -> ApiResult.success(menuService.getById(id), "Lay chi tiet menu thanh cong"));
     }
 
     @PostMapping
     @Operation(summary = "Them menu", description = "Them menu moi.")
-    public ResponseEntity<ApiResult<MenuItemDto>> create(@Valid @RequestBody MenuCreateRequest request) {
+    public ResponseEntity<ApiResult<MenuDetailDto>> create(@Valid @RequestBody MenuCreateRequest request) {
         return executeApiResult(() -> ApiResult.success(menuService.create(request), "Them menu thanh cong"));
     }
 
     @PutMapping("/{id}")
     @Operation(summary = "Cap nhat menu", description = "Cap nhat thong tin menu.")
-    public ResponseEntity<ApiResult<MenuItemDto>> update(@PathVariable Long id, @Valid @RequestBody MenuUpdateRequest request) {
+    public ResponseEntity<ApiResult<MenuDetailDto>> update(@PathVariable Long id, @Valid @RequestBody MenuUpdateRequest request) {
         return executeApiResult(() -> ApiResult.success(menuService.update(id, request), "Cap nhat menu thanh cong"));
     }
 

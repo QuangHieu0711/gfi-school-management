@@ -183,6 +183,7 @@ export class DialogMenuComponent extends ComponentBaseAbstract {
     this.menuService.create(payload).subscribe({
       next: () => {
         this.toastr.success('Lưu thành công', 'Thành công');
+        this.menuService.notifyMenuChanged();
         this.dialogRef.close(true);
       },
       error: (error) => {
@@ -198,6 +199,7 @@ export class DialogMenuComponent extends ComponentBaseAbstract {
     this.menuService.update(this.data.id!, payload).subscribe({
       next: () => {
         this.toastr.success('Cập nhật thành công', 'Thành công');
+        this.menuService.notifyMenuChanged();
         this.dialogRef.close(true);
       },
       error: (error) => {

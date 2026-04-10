@@ -109,12 +109,14 @@ export const NGUOI_DUNG_FORM = (requiredPassword = false) => [
     label: 'Đơn vị',
     placeholder: 'Đơn vị',
     required: true,
+    clearable: true,
   }),
   SELECT_CONTROL({
     controlName: NGUOI_DUNG_KEY.STATUS,
     label: 'Trạng thái',
     placeholder: 'Trạng thái',
     required: true,
+    clearable: true,
     listOption: [
       { value: 1, label: 'Hoạt động' },
       { value: 0, label: 'Không hoạt động' },
@@ -125,6 +127,7 @@ export const NGUOI_DUNG_FORM = (requiredPassword = false) => [
     label: 'Vai trò',
     placeholder: 'Vai trò',
     required: true,
+    clearable: true,
     listOption: [],
   }),
 ];

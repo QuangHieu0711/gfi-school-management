@@ -1,7 +1,6 @@
 package com.gfi.backend.models.entities;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -12,17 +11,18 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.PrePersist;
-import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 
 @Entity
 @Table(name = "students", uniqueConstraints = {
         @UniqueConstraint(name = "uk_students_student_code", columnNames = "student_code")
 })
-@Data
-public class Student {
+@Getter
+@Setter
+public class Student extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -99,30 +99,11 @@ public class Student {
     @JoinColumn(name = "unit_id", nullable = false, foreignKey = @ForeignKey(name = "fk_students_unit"))
     private Unit unit;
 
-    @Column
-    private LocalDateTime createdAt;
-
-    @Column(length = 255)
-    private String createdBy;
-
-    @Column
-    private LocalDateTime updatedAt;
-
-    @Column(length = 255)
-    private String updatedBy;
-
     @PrePersist
     public void prePersist() {
-        if (createdAt == null) {
-            createdAt = LocalDateTime.now();
-        }
+        super.prePersist();
         if (nationality == null || nationality.isBlank()) {
             nationality = "Việt Nam";
         }
-    }
-
-    @PreUpdate
-    public void preUpdate() {
-        updatedAt = LocalDateTime.now();
     }
 }

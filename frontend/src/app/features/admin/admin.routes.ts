@@ -159,7 +159,9 @@ export const AdminRoutes: Routes = [
           provideEffects(StyleEffect),
         ],
         loadComponent: () =>
-          import('@features/admin/lop/lop.component').then((m) => m.LopComponent),
+          import('@features/admin/lop/lop.component').then(
+            (m) => m.LopComponent
+          ),
       },
     ],
   },

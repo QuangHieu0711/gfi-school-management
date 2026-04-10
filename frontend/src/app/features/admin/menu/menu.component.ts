@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Component, Injector, TemplateRef, ViewChild } from '@angular/core';
 import { MtxGridColumn } from '@ng-matero/extensions/grid';
 
@@ -228,8 +229,8 @@ export class MenuComponent extends ComponentBaseAbstract {
       if (visited.has(node.id)) return;
       visited.add(node.id);
 
-      const children = [...(childrenMap.get(node.id) ?? [])].sort((a, b) =>
-        `${a.name}`.localeCompare(`${b.name}`, 'vi')
+      const children = [...(childrenMap.get(node.id) ?? [])].sort(
+        (a, b) => (a.ordinal ?? 0) - (b.ordinal ?? 0)
       );
       const parent = node.parentId != null ? itemMap.get(node.parentId) : null;
 
@@ -244,7 +245,7 @@ export class MenuComponent extends ComponentBaseAbstract {
     };
 
     [...roots]
-      .sort((a, b) => `${a.name}`.localeCompare(`${b.name}`, 'vi'))
+      .sort((a, b) => (a.ordinal ?? 0) - (b.ordinal ?? 0))
       .forEach((root) => appendNode(root, 0));
 
     items
@@ -286,10 +287,40 @@ export class MenuComponent extends ComponentBaseAbstract {
     return parentRow ? this.isRowVisible(parentRow) : true;
   }
 
+  private normalizeMenus(items: any[]): MenuResponse[] {
+    const normalized = (items ?? []).map((raw) => ({
+      ...raw,
+      id: raw.menuId ?? raw.id,
+      name: raw.menuName ?? raw.name,
+      code: raw.menuCode ?? raw.code,
+      url: raw.menuUrl ?? raw.url,
+      parentCode: raw.parentCode ?? raw.menuParentCode ?? null,
+    }));
+
+    // Dedup theo id
+    const uniqueMap = new Map<unknown, any>();
+    normalized.forEach((item) => {
+      if (!uniqueMap.has(item.id)) {
+        uniqueMap.set(item.id, item);
+      }
+    });
+
+    const deduped = Array.from(uniqueMap.values());
+
+    // Map parentCode → parentId
+    const codeToId = new Map(deduped.map((item) => [item.code, item.id]));
+    return deduped.map((item) => ({
+      ...item,
+      parentId: item.parentCode
+        ? (codeToId.get(item.parentCode) ?? null)
+        : null,
+    }));
+  }
+
   private loadMenus() {
     this.menuService.filter({}).subscribe({
       next: ({ data }) => {
-        this.allMenus = data ?? [];
+        this.allMenus = this.normalizeMenus(data ?? []);
         this.applyTreeFilter();
       },
       error: (error) => {
