@@ -13,6 +13,9 @@ import com.gfi.backend.models.entities.Semester;
 @Repository
 public interface SemesterRepository extends JpaRepository<Semester, Long>, JpaSpecificationExecutor<Semester> {
     long countBySchoolYearId(Long schoolYearId);
+    
+    java.util.List<Semester> findBySchoolYearId(Long schoolYearId);
+    
     Optional<Semester> findBySchoolYearIdAndCode(Long schoolYearId, String code);
     Optional<Semester> findBySchoolYearIdAndName(Long schoolYearId, String name);
     Optional<Semester> findBySchoolYearIdAndSemesterOrder(Long schoolYearId, Integer semesterOrder);

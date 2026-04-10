@@ -1,13 +1,11 @@
 package com.gfi.backend.services.implement;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
+import java.time.LocalDateTime;
 import java.util.List;
 
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,52 +20,76 @@ import com.gfi.backend.models.entities.Semester;
 import com.gfi.backend.models.global.CommonErrorCode;
 import com.gfi.backend.repositories.SchoolYearRepository;
 import com.gfi.backend.repositories.SemesterRepository;
+import com.gfi.backend.repositories.specifications.SemesterSpecification;
 import com.gfi.backend.services.interfaces.SemesterService;
+import com.gfi.backend.utils.SecurityUtils;
 
 import jakarta.persistence.criteria.Join;
 import jakarta.persistence.criteria.JoinType;
 import jakarta.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;
 
+/**
+ * Service xử lý logic quản lý học kỳ.
+ * 
+ * Trách nhiệm tách biệt:
+ * - Logic query: SemesterSpecification
+ * - Validate & load relations: private helpers
+ * - Security: SecurityUtils
+ */
 @Service
 @RequiredArgsConstructor
 public class SemesterServiceImpl implements SemesterService {
 
     private final SemesterRepository semesterRepository;
     private final SchoolYearRepository schoolYearRepository;
+    private final SemesterSpecification semesterSpecification;
 
+    // Tìm kiếm và phân trang học kỳ với filter
     @Override
+    @Transactional(readOnly = true)
     public List<SemesterItemDto> search(SemesterFilterDto filter) {
         SemesterFilterDto safeFilter = filter == null ? new SemesterFilterDto() : filter;
-        return semesterRepository.findAll(buildSpecification(safeFilter), Sort.by(Sort.Direction.DESC, "id"))
+        return semesterRepository
+                .findAll(semesterSpecification.buildSpecification(safeFilter), Sort.by(Sort.Direction.DESC, "id"))
                 .stream()
                 .map(this::toDto)
                 .toList();
     }
 
+    // Danh sách học kỳ cho dropdown/combobox
     @Override
+    @Transactional(readOnly = true)
     public List<LookupItemDto> getOptions(Long schoolYearId) {
         Specification<Semester> specification = (root, query, cb) -> schoolYearId == null
                 ? cb.conjunction()
                 : cb.equal(root.join("schoolYear", JoinType.INNER).get("id"), schoolYearId);
 
-        return semesterRepository.findAll(specification, Sort.by(Sort.Direction.ASC, "semesterOrder").and(Sort.by(Sort.Direction.ASC, "id")))
+        return semesterRepository
+                .findAll(specification,
+                        Sort.by(Sort.Direction.ASC, "semesterOrder").and(Sort.by(Sort.Direction.ASC, "id")))
                 .stream()
                 .map(item -> LookupItemDto.builder().id(item.getId()).name(item.getName()).build())
                 .toList();
     }
 
+    // Chi tiết học kỳ theo ID
     @Override
+    @Transactional(readOnly = true)
     public SemesterItemDto getById(Long id) {
         return toDto(findSemester(id));
     }
 
+    // Thêm mới học kỳ
     @Override
     @Transactional
     public SemesterItemDto create(SemesterCreateRequest request) {
         validateDateRange(request.getStartDate(), request.getEndDate());
         SchoolYear schoolYear = findSchoolYear(request.getSchoolYearId());
-        validateSemesterUnique(request.getSchoolYearId(), normalize(request.getCode()), normalize(request.getName()), request.getSemesterOrder(), null);
+        validateSemesterWithinSchoolYearDates(request.getStartDate(), request.getEndDate(), schoolYear);
+        validateSemesterUnique(request.getSchoolYearId(), normalize(request.getCode()), normalize(request.getName()),
+                request.getSemesterOrder(), null);
+        validateNoOverlappingSemester(request.getSchoolYearId(), request.getStartDate(), request.getEndDate(), null);
 
         Semester semester = new Semester();
         semester.setSchoolYear(schoolYear);
@@ -86,13 +108,17 @@ public class SemesterServiceImpl implements SemesterService {
         return toDto(saved);
     }
 
+    // Cập nhật học kỳ
     @Override
     @Transactional
     public SemesterItemDto update(Long id, SemesterUpdateRequest request) {
         validateDateRange(request.getStartDate(), request.getEndDate());
         Semester semester = findSemester(id);
         SchoolYear schoolYear = findSchoolYear(request.getSchoolYearId());
-        validateSemesterUnique(request.getSchoolYearId(), normalize(request.getCode()), normalize(request.getName()), request.getSemesterOrder(), id);
+        validateSemesterWithinSchoolYearDates(request.getStartDate(), request.getEndDate(), schoolYear);
+        validateSemesterUnique(request.getSchoolYearId(), normalize(request.getCode()), normalize(request.getName()),
+                request.getSemesterOrder(), id);
+        validateNoOverlappingSemester(request.getSchoolYearId(), request.getStartDate(), request.getEndDate(), id);
 
         semester.setSchoolYear(schoolYear);
         semester.setCode(normalize(request.getCode()));
@@ -110,12 +136,20 @@ public class SemesterServiceImpl implements SemesterService {
         return toDto(saved);
     }
 
+    // Xóa học kỳ (soft delete)
     @Override
     @Transactional
     public void delete(Long id) {
-        semesterRepository.delete(findSemester(id));
+        Semester semester = findSemester(id);
+
+        // Xóa mềm: đánh dấu xóa thay vì hard delete
+        semester.setDeletedFlag(1);
+        semester.setDeletedAt(LocalDateTime.now());
+        semester.setDeletedBy(SecurityUtils.getCurrentUsername());
+        semesterRepository.save(semester);
     }
 
+    // Kiểm tra tính duy nhất của mã, tên và thứ tự học kỳ trong năm học
     private void validateSemesterUnique(Long schoolYearId, String code, String name, Integer semesterOrder, Long id) {
         semesterRepository.findBySchoolYearIdAndCode(schoolYearId, code)
                 .filter(item -> id == null || !item.getId().equals(id))
@@ -134,6 +168,7 @@ public class SemesterServiceImpl implements SemesterService {
                 });
     }
 
+    // Đánh dấu học kỳ là "hiện tại" và bỏ đánh dấu các học kỳ khác
     private void applyCurrentFlag(Semester semester) {
         if (Boolean.TRUE.equals(semester.getIsCurrent())) {
             semesterRepository.clearCurrentExcept(semester.getId());
@@ -148,18 +183,6 @@ public class SemesterServiceImpl implements SemesterService {
     private Semester findSemester(Long id) {
         return semesterRepository.findById(id)
                 .orElseThrow(() -> new UserMessageException(CommonErrorCode.SEMESTER_NOT_FOUND));
-    }
-
-    private Specification<Semester> buildSpecification(SemesterFilterDto filter) {
-        return (root, query, cb) -> {
-            List<Predicate> predicates = new ArrayList<>();
-            Join<Object, Object> schoolYearJoin = root.join("schoolYear", JoinType.INNER);
-
-            if (filter.getSchoolYearId() != null) {
-                predicates.add(cb.equal(schoolYearJoin.get("id"), filter.getSchoolYearId()));
-            }
-            return cb.and(predicates.toArray(new Predicate[0]));
-        };
     }
 
     private SemesterItemDto toDto(Semester semester) {
@@ -185,23 +208,69 @@ public class SemesterServiceImpl implements SemesterService {
         }
     }
 
+    /**
+     * Kiểm tra thời gian học kỳ phải nằm trong khoảng thời gian của năm học.
+     */
+    private void validateSemesterWithinSchoolYearDates(LocalDate semesterStart, LocalDate semesterEnd,
+            SchoolYear schoolYear) {
+        if (semesterStart != null && schoolYear.getStartDate() != null
+                && semesterStart.isBefore(schoolYear.getStartDate())) {
+            throw new UserMessageException(CommonErrorCode.SEMESTER_START_DATE_INVALID);
+        }
+        if (semesterEnd != null && schoolYear.getEndDate() != null && semesterEnd.isAfter(schoolYear.getEndDate())) {
+            throw new UserMessageException(CommonErrorCode.SEMESTER_END_DATE_INVALID);
+        }
+    }
+
+    /**
+     * Kiểm tra học kỳ không được overlapping với học kỳ khác trong cùng năm học.
+     */
+    private void validateNoOverlappingSemester(Long schoolYearId, LocalDate startDate, LocalDate endDate,
+            Long excludeId) {
+        List<Semester> existingSemesters = semesterRepository.findBySchoolYearId(schoolYearId);
+        for (Semester existing : existingSemesters) {
+            // Bỏ qua semester hiện tại (khi update)
+            if (excludeId != null && existing.getId().equals(excludeId)) {
+                continue;
+            }
+            // Bỏ qua semester đã xóa
+            if (existing.getDeletedFlag() == 1) {
+                continue;
+            }
+            // Kiểm tra overlap: startDate < existing.endDate AND endDate >
+            // existing.startDate
+            if (startDate != null && endDate != null &&
+                    startDate.isBefore(existing.getEndDate()) && endDate.isAfter(existing.getStartDate())) {
+                throw new UserMessageException(CommonErrorCode.SEMESTER_DATE_OVERLAP);
+            }
+        }
+    }
+
+    /**
+     * Kiểm tra string có nội dung hay không.
+     */
     private boolean hasText(String value) {
         return value != null && !value.trim().isEmpty();
     }
 
+    /**
+     * Chuẩn hóa string: trim.
+     */
     private String normalize(String value) {
         return value == null ? null : value.trim();
     }
 
+    /**
+     * Chuẩn hóa string nullable: return null nếu rỗng hoặc whitespace.
+     */
     private String normalizeNullable(String value) {
         return hasText(value) ? value.trim() : null;
     }
 
+    /**
+     * Lấy username người dùng hiện tại từ security context.
+     */
     private String getCurrentUsername() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication == null || authentication.getName() == null || "anonymousUser".equals(authentication.getName())) {
-            return "SYSTEM";
-        }
-        return authentication.getName();
+        return SecurityUtils.getCurrentUsername();
     }
 }

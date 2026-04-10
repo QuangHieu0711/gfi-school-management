@@ -35,38 +35,74 @@ public class SchoolYearController extends ApiBaseController {
 
     private final SchoolYearService schoolYearService;
 
+    /**
+     * Danh sách năm học với phân trang và filter.
+     *
+     * @param request yêu cầu tìm kiếm chứa điều kiện lọc và phân trang
+     * @return trang danh sách năm học
+     */
     @PostMapping("/search")
-    @Operation(summary = "Danh sách năm học", description = "lấy danh sách năm học có phân trang và filter.")
+    @Operation(summary = "Danh sách năm học", description = "Lấy danh sách năm học có phân trang và filter.")
     public ResponseEntity<ApiResult<PageResponseDto<SchoolYearItemDto, SchoolYearFilterDto>>> search(
             @RequestBody(required = false) PageRequestDto<SchoolYearFilterDto> request) {
         PageRequestDto<SchoolYearFilterDto> safeRequest = request == null ? new PageRequestDto<>() : request;
         return executeApiResult(() -> ApiResult.success(schoolYearService.search(safeRequest), "Hiển thị danh sách năm học thành công"));
     }
 
+    /**
+     * Danh sách năm học cho dropdown/combobox.
+     *
+     * @return danh sách id và tên năm học
+     */
     @GetMapping("/options")
     @Operation(summary = "Danh sách năm học cho combobox", description = "Lấy danh sách id và tên năm học.")
     public ResponseEntity<ApiResult<List<LookupItemDto>>> getOptions() {
         return executeApiResult(() -> ApiResult.success(schoolYearService.getOptions(), "Hiển thị danh sách năm học thành công"));
     }
 
+    /**
+     * Chi tiết năm học theo ID.
+     *
+     * @param id ID của năm học
+     * @return thông tin chi tiết năm học
+     */
     @GetMapping("/{id}")
     @Operation(summary = "Chi tiết năm học", description = "Lấy thông tin năm học theo id.")
     public ResponseEntity<ApiResult<SchoolYearItemDto>> getById(@PathVariable Long id) {
         return executeApiResult(() -> ApiResult.success(schoolYearService.getById(id), "Hiển thị chi tiết năm học thành công"));
     }
 
+    /**
+     * Tạo năm học mới.
+     *
+     * @param request dữ liệu năm học cần tạo
+     * @return thông tin chi tiết năm học vừa tạo
+     */
     @PostMapping
     @Operation(summary = "Thêm năm học", description = "Tạo mới năm học.")
     public ResponseEntity<ApiResult<SchoolYearItemDto>> create(@Valid @RequestBody SchoolYearCreateRequest request) {
         return executeApiResult(() -> ApiResult.success(schoolYearService.create(request), "Thêm năm học thành công"));
     }
 
+    /**
+     * Cập nhật năm học theo ID.
+     *
+     * @param id ID của năm học
+     * @param request dữ liệu cần cập nhật
+     * @return thông tin chi tiết năm học sau cập nhật
+     */
     @PutMapping("/{id}")
     @Operation(summary = "Sửa năm học", description = "Cập nhật năm học theo id.")
     public ResponseEntity<ApiResult<SchoolYearItemDto>> update(@PathVariable Long id, @Valid @RequestBody SchoolYearUpdateRequest request) {
         return executeApiResult(() -> ApiResult.success(schoolYearService.update(id, request), "Cập nhật năm học thành công"));
     }
 
+    /**
+     * Xóa năm học theo ID.
+     *
+     * @param id ID của năm học
+     * @return thông báo xóa thành công
+     */
     @DeleteMapping("/{id}")
     @Operation(summary = "Xóa năm học", description = "Xóa năm học theo id.")
     public ResponseEntity<ApiResult<String>> delete(@PathVariable Long id) {

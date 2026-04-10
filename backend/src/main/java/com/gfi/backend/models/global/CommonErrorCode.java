@@ -51,6 +51,10 @@ public enum CommonErrorCode {
     MENU_HAS_CHILDREN(1042, "Menu đang có menu con, không thể xóa"),
     PERMISSION_NOT_FOUND(1043, "Không tìm thấy permission"),
     PERMISSION_ALREADY_EXISTS(1044, "Permission đã tồn tại cho role và menu này"),
+    SEMESTER_START_DATE_INVALID(1045, "Ngày bắt đầu học kỳ không được trước ngày bắt đầu năm học"),
+    SEMESTER_END_DATE_INVALID(1046, "Ngày kết thúc học kỳ không được sau ngày kết thúc năm học"),
+    SEMESTER_DATE_OVERLAP(1047, "Thời gian học kỳ trùng lặp với học kỳ khác trong năm học"),
+    SCHOOL_YEAR_DATE_OVERLAP(1048, "Thời gian năm học trùng lặp với năm học khác"),
     ACCESS_DENIED(1403, "Bạn không có quyền truy cập tài nguyên này"),
     BAD_REQUEST(1400, "Dữ liệu không hợp lệ, vui lòng kiểm tra lại"),
     INTERNAL_SERVER_ERROR(1500, "Lỗi hệ thống, vui lòng thử lại sau.");

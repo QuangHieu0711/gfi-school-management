@@ -1,15 +1,13 @@
 package com.gfi.backend.services.implement;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
+import java.time.LocalDateTime;
 import java.util.List;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,12 +24,21 @@ import com.gfi.backend.models.global.CommonErrorCode;
 import com.gfi.backend.repositories.ClassroomRepository;
 import com.gfi.backend.repositories.SchoolYearRepository;
 import com.gfi.backend.repositories.SemesterRepository;
+import com.gfi.backend.repositories.specifications.SchoolYearSpecification;
 import com.gfi.backend.services.interfaces.SchoolYearService;
 import com.gfi.backend.utils.PageableUtils;
+import com.gfi.backend.utils.SecurityUtils;
 
-import jakarta.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;
 
+/**
+ * Service xử lý logic quản lý năm học.
+ * 
+ * Trách nhiệm tách biệt:
+ * - Logic query: SchoolYearSpecification
+ * - Validate & load relations: private helpers
+ * - Security: SecurityUtils
+ */
 @Service
 @RequiredArgsConstructor
 public class SchoolYearServiceImpl implements SchoolYearService {
@@ -39,15 +46,18 @@ public class SchoolYearServiceImpl implements SchoolYearService {
     private final SchoolYearRepository schoolYearRepository;
     private final SemesterRepository semesterRepository;
     private final ClassroomRepository classroomRepository;
+    private final SchoolYearSpecification schoolYearSpecification;
 
+    // Tìm kiếm và phân trang năm học với filter
     @Override
+    @Transactional(readOnly = true)
     public PageResponseDto<SchoolYearItemDto, SchoolYearFilterDto> search(PageRequestDto<SchoolYearFilterDto> request) {
         SchoolYearFilterDto filter = request.getFilter() == null ? new SchoolYearFilterDto() : request.getFilter();
         int pageSize = normalizePageSize(request.getPageSize());
         int pageNow = normalizePageNow(request.getPageNow());
         Pageable pageable = PageableUtils.newestFirst(pageNow, pageSize);
 
-        Page<SchoolYear> page = schoolYearRepository.findAll(buildSpecification(filter), pageable);
+        Page<SchoolYear> page = schoolYearRepository.findAll(schoolYearSpecification.buildSpecification(filter), pageable);
         List<SchoolYearItemDto> items = page.getContent().stream().map(this::toDto).toList();
 
         return PageResponseDto.<SchoolYearItemDto, SchoolYearFilterDto>builder()
@@ -60,7 +70,9 @@ public class SchoolYearServiceImpl implements SchoolYearService {
                 .build();
     }
 
+    // Danh sách năm học cho dropdown/combobox
     @Override
+    @Transactional(readOnly = true)
     public List<LookupItemDto> getOptions() {
         return schoolYearRepository.findAll(Sort.by(Sort.Direction.DESC, "startDate").and(Sort.by(Sort.Direction.DESC, "id")))
                 .stream()
@@ -68,15 +80,19 @@ public class SchoolYearServiceImpl implements SchoolYearService {
                 .toList();
     }
 
+    // Chi tiết năm học theo ID
     @Override
+    @Transactional(readOnly = true)
     public SchoolYearItemDto getById(Long id) {
         return toDto(findSchoolYear(id));
     }
 
+    // Thêm mới năm học
     @Override
     @Transactional
     public SchoolYearItemDto create(SchoolYearCreateRequest request) {
         validateDateRange(request.getStartDate(), request.getEndDate());
+        validateNoOverlappingSchoolYear(request.getStartDate(), request.getEndDate(), null);
         String code = normalize(request.getCode());
         String name = normalize(request.getName());
         ensureCodeUnique(code, null);
@@ -97,10 +113,12 @@ public class SchoolYearServiceImpl implements SchoolYearService {
         return toDto(saved);
     }
 
+    // Cập nhật năm học
     @Override
     @Transactional
     public SchoolYearItemDto update(Long id, SchoolYearUpdateRequest request) {
         validateDateRange(request.getStartDate(), request.getEndDate());
+        validateNoOverlappingSchoolYear(request.getStartDate(), request.getEndDate(), id);
         SchoolYear schoolYear = findSchoolYear(id);
         String code = normalize(request.getCode());
         String name = normalize(request.getName());
@@ -121,6 +139,7 @@ public class SchoolYearServiceImpl implements SchoolYearService {
         return toDto(saved);
     }
 
+    // Xóa năm học (soft delete). Kiểm tra không được xóa nếu còn học kỳ hoặc lớp học.
     @Override
     @Transactional
     public void delete(Long id) {
@@ -131,9 +150,15 @@ public class SchoolYearServiceImpl implements SchoolYearService {
         if (classroomRepository.countBySchoolYearId(id) > 0) {
             throw new UserMessageException(CommonErrorCode.SCHOOL_YEAR_IN_USE);
         }
-        schoolYearRepository.delete(schoolYear);
+
+        // Xóa mềm: đánh dấu xóa thay vì hard delete
+        schoolYear.setDeletedFlag(1);
+        schoolYear.setDeletedAt(LocalDateTime.now());
+        schoolYear.setDeletedBy(SecurityUtils.getCurrentUsername());
+        schoolYearRepository.save(schoolYear);
     }
 
+    // Kiểm tra mã năm học phải duy nhất
     private void ensureCodeUnique(String code, Long id) {
         schoolYearRepository.findByCode(code)
                 .filter(item -> id == null || !item.getId().equals(id))
@@ -142,6 +167,7 @@ public class SchoolYearServiceImpl implements SchoolYearService {
                 });
     }
 
+    // Kiểm tra tên năm học phải duy nhất
     private void ensureNameUnique(String name, Long id) {
         schoolYearRepository.findByName(name)
                 .filter(item -> id == null || !item.getId().equals(id))
@@ -150,6 +176,7 @@ public class SchoolYearServiceImpl implements SchoolYearService {
                 });
     }
 
+    // Đánh dấu năm học là "hiện tại" và bỏ đánh dấu các năm học khác
     private void applyCurrentFlag(SchoolYear schoolYear) {
         if (Boolean.TRUE.equals(schoolYear.getIsCurrent())) {
             schoolYearRepository.clearCurrentExcept(schoolYear.getId());
@@ -159,26 +186,6 @@ public class SchoolYearServiceImpl implements SchoolYearService {
     private SchoolYear findSchoolYear(Long id) {
         return schoolYearRepository.findById(id)
                 .orElseThrow(() -> new UserMessageException(CommonErrorCode.SCHOOL_YEAR_NOT_FOUND));
-    }
-
-    private Specification<SchoolYear> buildSpecification(SchoolYearFilterDto filter) {
-        return (root, query, cb) -> {
-            List<Predicate> predicates = new ArrayList<>();
-            if (hasText(filter.getSchoolYear())) {
-                String keyword = "%" + filter.getSchoolYear().trim().toLowerCase() + "%";
-                predicates.add(cb.or(
-                        cb.like(cb.lower(root.get("code")), keyword),
-                        cb.like(cb.lower(root.get("name")), keyword),
-                        cb.like(cb.lower(root.get("description")), keyword)));
-            }
-            if (filter.getStatus() != null) {
-                predicates.add(cb.equal(root.get("status"), filter.getStatus()));
-            }
-            if (filter.getIsCurrent() != null) {
-                predicates.add(cb.equal(root.get("isCurrent"), filter.getIsCurrent()));
-            }
-            return cb.and(predicates.toArray(new Predicate[0]));
-        };
     }
 
     private SchoolYearItemDto toDto(SchoolYear schoolYear) {
@@ -200,31 +207,67 @@ public class SchoolYearServiceImpl implements SchoolYearService {
         }
     }
 
-    private int normalizePageSize(Integer pageSize) {
-        return pageSize == null || pageSize <= 0 ? 10 : pageSize;
+    /**
+     * Kiểm tra năm học không được overlapping với năm học khác.
+     */
+    private void validateNoOverlappingSchoolYear(LocalDate startDate, LocalDate endDate, Long excludeId) {
+        List<SchoolYear> existingSchoolYears = schoolYearRepository.findAll();
+        for (SchoolYear existing : existingSchoolYears) {
+            // Bỏ qua năm học hiện tại (khi update)
+            if (excludeId != null && existing.getId().equals(excludeId)) {
+                continue;
+            }
+            // Bỏ qua năm học đã xóa
+            if (existing.getDeletedFlag() == 1) {
+                continue;
+            }
+            // Kiểm tra overlap: startDate < existing.endDate AND endDate > existing.startDate
+            if (startDate != null && endDate != null &&
+                    startDate.isBefore(existing.getEndDate()) && endDate.isAfter(existing.getStartDate())) {
+                throw new UserMessageException(CommonErrorCode.SCHOOL_YEAR_DATE_OVERLAP);
+            }
+        }
     }
 
-    private int normalizePageNow(Integer pageNow) {
-        return pageNow == null || pageNow <= 0 ? 1 : pageNow;
-    }
-
+    /**
+     * Kiểm tra string có nội dung hay không.
+     */
     private boolean hasText(String value) {
         return value != null && !value.trim().isEmpty();
     }
 
+    /**
+     * Chuẩn hóa string: trim.
+     */
     private String normalize(String value) {
         return value == null ? null : value.trim();
     }
 
+    /**
+     * Chuẩn hóa string nullable: return null nếu rỗng hoặc whitespace.
+     */
     private String normalizeNullable(String value) {
         return hasText(value) ? value.trim() : null;
     }
 
+    /**
+     * Lấy username người dùng hiện tại từ security context.
+     */
     private String getCurrentUsername() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication == null || authentication.getName() == null || "anonymousUser".equals(authentication.getName())) {
-            return "SYSTEM";
-        }
-        return authentication.getName();
+        return SecurityUtils.getCurrentUsername();
+    }
+
+    /**
+     * Chuẩn hóa kích thước trang phân trang.
+     */
+    private int normalizePageSize(Integer pageSize) {
+        return pageSize == null || pageSize <= 0 ? 10 : pageSize;
+    }
+
+    /**
+     * Chuẩn hóa số trang hiện tại.
+     */
+    private int normalizePageNow(Integer pageNow) {
+        return pageNow == null || pageNow <= 0 ? 1 : pageNow;
     }
 }
