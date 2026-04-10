@@ -40,6 +40,9 @@ public class UnitSpecification {
                 predicates.add(cb.equal(root.get("status"), filter.getStatus()));
             }
 
+            // Luôn loại bỏ các unit đã xóa (xóa mềm)
+            predicates.add(cb.equal(root.get("deletedFlag"), 0));
+
             return cb.and(predicates.toArray(new Predicate[0]));
         };
     }

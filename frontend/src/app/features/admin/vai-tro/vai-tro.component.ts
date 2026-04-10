@@ -71,10 +71,6 @@ export class VaiTroComponent extends ComponentBaseAbstract {
         field: VAI_TRO_KEY.ROLE_NAME,
       },
       {
-        header: 'Mô tả',
-        field: VAI_TRO_KEY.DESCRIPTION,
-      },
-      {
         header: 'Trạng thái',
         field: VAI_TRO_KEY.STATUS,
         class: 'text-center',
@@ -172,7 +168,6 @@ export class VaiTroComponent extends ComponentBaseAbstract {
         data: {
           type,
           id: rowData?.[VAI_TRO_KEY.ID],
-          data: rowData,
         },
       },
       (result?: boolean) => {

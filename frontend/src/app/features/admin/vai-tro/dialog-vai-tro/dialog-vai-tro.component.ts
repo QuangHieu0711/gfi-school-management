@@ -57,9 +57,22 @@ export class DialogVaiTroComponent extends ComponentBaseAbstract {
         break;
     }
 
-    if (this.data.type !== this.TYPE_FORM.CREATE && this.data.data) {
-      this.currentData = this.data.data;
-      this.form.patchValue(this.data.data);
+    if (this.data.type !== this.TYPE_FORM.CREATE && this.data.id) {
+      // Gọi getById() để lấy dữ liệu đầy đủ
+      this.vaiTroService.getById(this.data.id).subscribe({
+        next: ({ data }) => {
+          this.currentData = data;
+          this.form.patchValue(data);
+        },
+        error: (error) => {
+          this.toastr.error(
+            error?.error?.userMessage ??
+              error?.error?.message ??
+              'Lấy dữ liệu thất bại',
+            'Thất bại'
+          );
+        },
+      });
     }
   }
 

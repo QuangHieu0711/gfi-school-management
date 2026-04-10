@@ -1,5 +1,6 @@
 package com.gfi.backend.services.implement;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 import org.springframework.data.domain.Page;
@@ -135,7 +136,7 @@ public class UnitServiceImpl implements UnitService {
         return unitMapper.toDetailDto(unitRepository.save(unit));
     }
 
-    // Xóa đơn vị
+    // ==================== XÓA ====================
     @Override
     @Transactional
     public void delete(Long id) {
@@ -150,7 +151,11 @@ public class UnitServiceImpl implements UnitService {
             throw new UserMessageException(CommonErrorCode.UNIT_IN_USE);
         }
 
-        unitRepository.delete(unit);
+        // Xóa mềm: đánh dấu xóa
+        unit.setDeletedFlag(1);
+        unit.setDeletedAt(LocalDateTime.now());
+        unit.setDeletedBy(SecurityUtils.getCurrentUsername());
+        unitRepository.save(unit);
     }
 
     /**

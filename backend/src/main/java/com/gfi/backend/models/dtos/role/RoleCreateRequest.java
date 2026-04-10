@@ -9,19 +9,19 @@ import lombok.Data;
 
 @Data
 public class RoleCreateRequest {
-    @NotBlank(message = "Ma role khong duoc de trong")
-    @Size(max = 50, message = "Ma role toi da 50 ky tu")
+    @NotBlank(message = "Mã vai trò không được để trống")
+    @Size(max = 50, message = "Mã vai trò tối đa 50 ký tự")
     private String code;
 
-    @NotBlank(message = "Ten role khong duoc de trong")
-    @Size(max = 100, message = "Ten role toi da 100 ky tu")
+    @NotBlank(message = "Tên vai trò không được để trống")
+    @Size(max = 100, message = "Tên vai trò tối đa 100 ký tự")
     private String roleName;
 
-    @Size(max = 255, message = "Mo ta toi da 255 ky tu")
+    @Size(max = 255, message = "Mô tả tối đa 255 ký tự")
     private String description;
 
-    @NotNull(message = "Trang thai khong duoc de trong")
-    @Min(value = 0, message = "Trang thai chi duoc la 0 hoac 1")
-    @Max(value = 1, message = "Trang thai chi duoc la 0 hoac 1")
+    @NotNull(message = "Trạng thái không được để trống")
+    @Min(value = 0, message = "Trạng thái chỉ được là 0 hoặc 1")
+    @Max(value = 1, message = "Trạng thái chỉ được là 0 hoặc 1")
     private Integer status;
 }

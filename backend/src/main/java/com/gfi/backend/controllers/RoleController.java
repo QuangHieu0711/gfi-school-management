@@ -16,8 +16,9 @@ import com.gfi.backend.models.dtos.common.LookupItemDto;
 import com.gfi.backend.models.dtos.common.PageRequestDto;
 import com.gfi.backend.models.dtos.common.PageResponseDto;
 import com.gfi.backend.models.dtos.role.RoleCreateRequest;
+import com.gfi.backend.models.dtos.role.RoleDetailDto;
 import com.gfi.backend.models.dtos.role.RoleFilterDto;
-import com.gfi.backend.models.dtos.role.RoleItemDto;
+import com.gfi.backend.models.dtos.role.RoleListItemDto;
 import com.gfi.backend.models.dtos.role.RoleUpdateRequest;
 import com.gfi.backend.models.global.ApiResult;
 import com.gfi.backend.services.interfaces.RoleService;
@@ -35,38 +36,74 @@ public class RoleController extends ApiBaseController {
 
     private final RoleService roleService;
 
+    /**
+     * Danh sách vai trò với phân trang và filter.
+     *
+     * @param request yêu cầu tìm kiếm chứa điều kiện lọc và phân trang
+     * @return trang danh sách vai trò cơ bản (id, code, roleName, status)
+     */
     @PostMapping("/search")
-    @Operation(summary = "Danh sách vai trò", description = "Lay danh sach vai trò co phan trang va filter.")
-    public ResponseEntity<ApiResult<PageResponseDto<RoleItemDto, RoleFilterDto>>> search(
+    @Operation(summary = "Danh sách vai trò", description = "Lấy danh sách vai trò có phân trang và filter.")
+    public ResponseEntity<ApiResult<PageResponseDto<RoleListItemDto, RoleFilterDto>>> search(
             @RequestBody(required = false) PageRequestDto<RoleFilterDto> request) {
         PageRequestDto<RoleFilterDto> safeRequest = request == null ? new PageRequestDto<>() : request;
-        return executeApiResult(() -> ApiResult.success(roleService.search(safeRequest), "Hien thi danh sach vai trò thanh cong"));
+        return executeApiResult(() -> ApiResult.success(roleService.search(safeRequest), "Hiển thị danh sách vai trò thành công"));
     }
 
+    /**
+     * Danh sách vai trò cho dropdown/combobox.
+     *
+     * @return danh sách id và tên vai trò
+     */
     @GetMapping("/options")
-    @Operation(summary = "Danh sach vai trò cho combobox", description = "Lấy danh sách id và tên vai trò.")
+    @Operation(summary = "Danh sách vai trò cho combobox", description = "Lấy danh sách id và tên vai trò.")
     public ResponseEntity<ApiResult<List<LookupItemDto>>> getOptions() {
-        return executeApiResult(() -> ApiResult.success(roleService.getOptions(), "Hiển thi danh sach vai trò thành công"));
+        return executeApiResult(() -> ApiResult.success(roleService.getOptions(), "Hiển thị danh sách vai trò thành công"));
     }
 
+    /**
+     * Chi tiết vai trò theo id.
+     *
+     * @param id ID của vai trò
+     * @return thông tin chi tiết vai trò (tất cả trường)
+     */
     @GetMapping("/{id}")
     @Operation(summary = "Chi tiết vai trò", description = "Lấy thông tin vai trò theo id.")
-    public ResponseEntity<ApiResult<RoleItemDto>> getById(@PathVariable Long id) {
-        return executeApiResult(() -> ApiResult.success(roleService.getById(id), "Hiển thi chi tiet vai trò thành công"));
+    public ResponseEntity<ApiResult<RoleDetailDto>> getById(@PathVariable Long id) {
+        return executeApiResult(() -> ApiResult.success(roleService.getById(id), "Hiển thị chi tiết vai trò thành công"));
     }
 
+    /**
+     * Tạo mới vai trò.
+     *
+     * @param request dữ liệu vai trò cần tạo
+     * @return thông tin chi tiết vai trò vừa tạo
+     */
     @PostMapping
     @Operation(summary = "Thêm vai trò", description = "Tạo mới vai trò.")
-    public ResponseEntity<ApiResult<RoleItemDto>> create(@Valid @RequestBody RoleCreateRequest request) {
+    public ResponseEntity<ApiResult<RoleDetailDto>> create(@Valid @RequestBody RoleCreateRequest request) {
         return executeApiResult(() -> ApiResult.success(roleService.create(request), "Thêm vai trò thành công"));
     }
 
+    /**
+     * Cập nhật vai trò theo id.
+     *
+     * @param id ID của vai trò
+     * @param request dữ liệu vai trò cần cập nhật
+     * @return thông tin chi tiết vai trò sau cập nhật
+     */
     @PutMapping("/{id}")
     @Operation(summary = "Sửa vai trò", description = "Cập nhật vai trò theo id.")
-    public ResponseEntity<ApiResult<RoleItemDto>> update(@PathVariable Long id, @Valid @RequestBody RoleUpdateRequest request) {
+    public ResponseEntity<ApiResult<RoleDetailDto>> update(@PathVariable Long id, @Valid @RequestBody RoleUpdateRequest request) {
         return executeApiResult(() -> ApiResult.success(roleService.update(id, request), "Cập nhật vai trò thành công"));
     }
 
+    /**
+     * Xóa vai trò theo id.
+     *
+     * @param id ID của vai trò
+     * @return thông báo xóa thành công
+     */
     @DeleteMapping("/{id}")
     @Operation(summary = "Xóa vai trò", description = "Xóa vai trò theo id.")
     public ResponseEntity<ApiResult<String>> delete(@PathVariable Long id) {
