@@ -1,21 +1,19 @@
 package com.gfi.backend.services.implement;
 
-import java.util.ArrayList;
+import java.time.LocalDateTime;
 import java.util.List;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
-import org.springframework.data.jpa.domain.Specification;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.gfi.backend.controllers.exceptions.UserMessageException;
 import com.gfi.backend.models.dtos.classroom.ClassroomCreateRequest;
+import com.gfi.backend.models.dtos.classroom.ClassroomDetailDto;
 import com.gfi.backend.models.dtos.classroom.ClassroomFilterDto;
-import com.gfi.backend.models.dtos.classroom.ClassroomItemDto;
+import com.gfi.backend.models.dtos.classroom.ClassroomListItemDto;
 import com.gfi.backend.models.dtos.classroom.ClassroomUpdateRequest;
 import com.gfi.backend.models.dtos.common.LookupItemDto;
 import com.gfi.backend.models.dtos.common.PageRequestDto;
@@ -29,15 +27,22 @@ import com.gfi.backend.repositories.ClassroomRepository;
 import com.gfi.backend.repositories.GradeLevelRepository;
 import com.gfi.backend.repositories.SchoolYearRepository;
 import com.gfi.backend.repositories.UnitRepository;
+import com.gfi.backend.repositories.specifications.ClassroomSpecification;
 import com.gfi.backend.services.interfaces.ClassroomService;
 import com.gfi.backend.services.interfaces.ClassroomSubjectService;
 import com.gfi.backend.utils.PageableUtils;
+import com.gfi.backend.utils.SecurityUtils;
 
-import jakarta.persistence.criteria.Join;
-import jakarta.persistence.criteria.JoinType;
-import jakarta.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;
 
+/**
+ * Service xử lý logic quản lý lớp học.
+ * 
+ * Trách nhiệm tách biệt:
+ * - Logic query: ClassroomSpecification
+ * - Validate & load relations: private helpers
+ * - Security: SecurityUtils
+ */
 @Service
 @RequiredArgsConstructor
 public class ClassroomServiceImpl implements ClassroomService {
@@ -47,18 +52,21 @@ public class ClassroomServiceImpl implements ClassroomService {
     private final GradeLevelRepository gradeLevelRepository;
     private final SchoolYearRepository schoolYearRepository;
     private final ClassroomSubjectService classroomSubjectService;
+    private final ClassroomSpecification classroomSpecification;
 
+    // Tìm kiếm và phân trang lớp học với filter
     @Override
-    public PageResponseDto<ClassroomItemDto, ClassroomFilterDto> search(PageRequestDto<ClassroomFilterDto> request) {
+    @Transactional(readOnly = true)
+    public PageResponseDto<ClassroomListItemDto, ClassroomFilterDto> search(PageRequestDto<ClassroomFilterDto> request) {
         ClassroomFilterDto filter = request.getFilter() == null ? new ClassroomFilterDto() : request.getFilter();
         int pageSize = normalizePageSize(request.getPageSize());
         int pageNow = normalizePageNow(request.getPageNow());
         Pageable pageable = PageableUtils.newestFirst(pageNow, pageSize);
 
-        Page<Classroom> page = classroomRepository.findAll(buildSpecification(filter), pageable);
-        List<ClassroomItemDto> items = page.getContent().stream().map(this::toDto).toList();
+        Page<Classroom> page = classroomRepository.findAll(classroomSpecification.buildSpecification(filter), pageable);
+        List<ClassroomListItemDto> items = page.getContent().stream().map(this::toListItemDto).toList();
 
-        return PageResponseDto.<ClassroomItemDto, ClassroomFilterDto>builder()
+        return PageResponseDto.<ClassroomListItemDto, ClassroomFilterDto>builder()
                 .pageSize(pageSize)
                 .pageNow(pageNow)
                 .filter(filter)
@@ -68,23 +76,27 @@ public class ClassroomServiceImpl implements ClassroomService {
                 .build();
     }
 
+    // Danh sách lớp học cho dropdown/combobox
     @Override
+    @Transactional(readOnly = true)
     public List<LookupItemDto> getOptions(Long unitId, Long gradeLevelId, Long schoolYearId) {
-        Specification<Classroom> specification = buildSpecificationForOptions(unitId, gradeLevelId, schoolYearId);
-        return classroomRepository.findAll(specification, Sort.by(Sort.Direction.ASC, "name").and(Sort.by(Sort.Direction.ASC, "id")))
+        return classroomRepository.findAll(classroomSpecification.buildSpecificationForOptions(unitId, gradeLevelId, schoolYearId), Sort.by(Sort.Direction.ASC, "name").and(Sort.by(Sort.Direction.ASC, "id")))
                 .stream()
                 .map(item -> LookupItemDto.builder().id(item.getId()).name(item.getName()).build())
                 .toList();
     }
 
+    // Chi tiết lớp học theo ID
     @Override
-    public ClassroomItemDto getById(Long id) {
-        return toDto(findClassroom(id));
+    @Transactional(readOnly = true)
+    public ClassroomDetailDto getById(Long id) {
+        return toDetailDto(findClassroom(id));
     }
 
+    // Thêm mới lớp học
     @Override
     @Transactional
-    public ClassroomItemDto create(ClassroomCreateRequest request) {
+    public ClassroomDetailDto create(ClassroomCreateRequest request) {
         Unit unit = findUnit(request.getUnitId());
         GradeLevel gradeLevel = findGradeLevel(request.getGradeLevelId());
         SchoolYear schoolYear = findSchoolYear(request.getSchoolYearId());
@@ -101,15 +113,16 @@ public class ClassroomServiceImpl implements ClassroomService {
         classroom.setSchoolYear(schoolYear);
         classroom.setStatus(request.getStatus());
         classroom.setDescription(normalizeNullable(request.getDescription()));
-        classroom.setCreatedBy(getCurrentUsername());
+        classroom.setCreatedBy(SecurityUtils.getCurrentUsername());
         Classroom savedClassroom = classroomRepository.save(classroom);
         classroomSubjectService.syncFromGradeLevel(savedClassroom);
-        return toDto(savedClassroom);
+        return toDetailDto(savedClassroom);
     }
 
+    // Cập nhật lớp học
     @Override
     @Transactional
-    public ClassroomItemDto update(Long id, ClassroomUpdateRequest request) {
+    public ClassroomDetailDto update(Long id, ClassroomUpdateRequest request) {
         Classroom classroom = findClassroom(id);
         Unit unit = findUnit(request.getUnitId());
         GradeLevel gradeLevel = findGradeLevel(request.getGradeLevelId());
@@ -127,19 +140,26 @@ public class ClassroomServiceImpl implements ClassroomService {
         classroom.setSchoolYear(schoolYear);
         classroom.setStatus(request.getStatus());
         classroom.setDescription(normalizeNullable(request.getDescription()));
-        classroom.setUpdatedBy(getCurrentUsername());
+        classroom.setUpdatedBy(SecurityUtils.getCurrentUsername());
         Classroom savedClassroom = classroomRepository.save(classroom);
         if (gradeLevelChanged) {
             classroomSubjectService.syncFromGradeLevel(savedClassroom);
         }
-        return toDto(savedClassroom);
+        return toDetailDto(savedClassroom);
     }
 
+    // Xóa lớp học (soft delete). Kiểm tra không được xóa nếu còn học sinh hoặc cấu hình môn học.
     @Override
     @Transactional
     public void delete(Long id) {
+        Classroom classroom = findClassroom(id);
         classroomSubjectService.clearByClassroomId(id);
-        classroomRepository.delete(findClassroom(id));
+
+        // Xóa mềm: đánh dấu xóa thay vì hard delete
+        classroom.setDeletedFlag(1);
+        classroom.setDeletedAt(LocalDateTime.now());
+        classroom.setDeletedBy(SecurityUtils.getCurrentUsername());
+        classroomRepository.save(classroom);
     }
 
     private Classroom findClassroom(Long id) {
@@ -162,6 +182,7 @@ public class ClassroomServiceImpl implements ClassroomService {
                 .orElseThrow(() -> new UserMessageException(CommonErrorCode.SCHOOL_YEAR_NOT_FOUND));
     }
 
+    // Kiểm tra mã lớp học phải duy nhất
     private void validateUnique(Long unitId, Long gradeLevelId, Long schoolYearId, String code, String name, Long id) {
         classroomRepository.findByUnitIdAndGradeLevelIdAndSchoolYearIdAndCode(unitId, gradeLevelId, schoolYearId, code)
                 .filter(item -> id == null || !item.getId().equals(id))
@@ -175,62 +196,21 @@ public class ClassroomServiceImpl implements ClassroomService {
                 });
     }
 
-    private Specification<Classroom> buildSpecification(ClassroomFilterDto filter) {
-        return (root, query, cb) -> {
-            List<Predicate> predicates = new ArrayList<>();
-            Join<Object, Object> unitJoin = root.join("unit", JoinType.INNER);
-            Join<Object, Object> gradeLevelJoin = root.join("gradeLevel", JoinType.INNER);
-            Join<Object, Object> schoolYearJoin = root.join("schoolYear", JoinType.INNER);
-
-            if (hasText(filter.getClassName())) {
-                String keyword = "%" + filter.getClassName().trim().toLowerCase() + "%";
-                predicates.add(cb.or(
-                        cb.like(cb.lower(root.get("code")), keyword),
-                        cb.like(cb.lower(root.get("name")), keyword),
-                        cb.like(cb.lower(root.get("description")), keyword),
-                        cb.like(cb.lower(unitJoin.get("code")), keyword),
-                        cb.like(cb.lower(unitJoin.get("name")), keyword),
-                        cb.like(cb.lower(gradeLevelJoin.get("code")), keyword),
-                        cb.like(cb.lower(gradeLevelJoin.get("name")), keyword),
-                        cb.like(cb.lower(schoolYearJoin.get("code")), keyword),
-                        cb.like(cb.lower(schoolYearJoin.get("name")), keyword)));
-            }
-            if (filter.getUnitId() != null) {
-                predicates.add(cb.equal(unitJoin.get("id"), filter.getUnitId()));
-            }
-            if (filter.getGradeLevelId() != null) {
-                predicates.add(cb.equal(gradeLevelJoin.get("id"), filter.getGradeLevelId()));
-            }
-            if (filter.getSchoolYearId() != null) {
-                predicates.add(cb.equal(schoolYearJoin.get("id"), filter.getSchoolYearId()));
-            }
-            if (filter.getStatus() != null) {
-                predicates.add(cb.equal(root.get("status"), filter.getStatus()));
-            }
-            return cb.and(predicates.toArray(new Predicate[0]));
-        };
+    private ClassroomDetailDto toDetailDto(Classroom classroom) {
+        return ClassroomDetailDto.builder()
+                .id(classroom.getId())
+                .code(classroom.getCode())
+                .name(classroom.getName())
+                .unitId(classroom.getUnit() == null ? null : classroom.getUnit().getId())
+                .gradeLevelId(classroom.getGradeLevel() == null ? null : classroom.getGradeLevel().getId())
+                .schoolYearId(classroom.getSchoolYear() == null ? null : classroom.getSchoolYear().getId())
+                .status(classroom.getStatus())
+                .description(classroom.getDescription())
+                .build();
     }
 
-    private Specification<Classroom> buildSpecificationForOptions(Long unitId, Long gradeLevelId, Long schoolYearId) {
-        return (root, query, cb) -> {
-            List<Predicate> predicates = new ArrayList<>();
-
-            if (unitId != null) {
-                predicates.add(cb.equal(root.join("unit", JoinType.INNER).get("id"), unitId));
-            }
-            if (gradeLevelId != null) {
-                predicates.add(cb.equal(root.join("gradeLevel", JoinType.INNER).get("id"), gradeLevelId));
-            }
-            if (schoolYearId != null) {
-                predicates.add(cb.equal(root.join("schoolYear", JoinType.INNER).get("id"), schoolYearId));
-            }
-
-            return cb.and(predicates.toArray(new Predicate[0]));
-        };
-    }
-
-    private ClassroomItemDto toDto(Classroom classroom) {
-        return ClassroomItemDto.builder()
+    private ClassroomListItemDto toListItemDto(Classroom classroom) {
+        return ClassroomListItemDto.builder()
                 .id(classroom.getId())
                 .code(classroom.getCode())
                 .name(classroom.getName())
@@ -238,35 +218,47 @@ public class ClassroomServiceImpl implements ClassroomService {
                 .gradeLevelName(classroom.getGradeLevel() == null ? null : classroom.getGradeLevel().getName())
                 .schoolYearName(classroom.getSchoolYear() == null ? null : classroom.getSchoolYear().getName())
                 .status(classroom.getStatus())
-                .description(classroom.getDescription())
                 .build();
     }
 
+    /**
+     * Chuẩn hóa kích thước trang phân trang.
+     */
     private int normalizePageSize(Integer pageSize) {
-        return pageSize == null || pageSize <= 0 ? 10 : pageSize;
+        if (pageSize == null || pageSize <= 0) {
+            return 20; // Default page size
+        }
+        return Math.min(pageSize, 100); // Max 100 items per page
     }
 
+    /**
+     * Chuẩn hóa số trang hiện tại.
+     */
     private int normalizePageNow(Integer pageNow) {
-        return pageNow == null || pageNow <= 0 ? 1 : pageNow;
+        if (pageNow == null || pageNow < 0) {
+            return 0; // Default first page
+        }
+        return pageNow;
     }
 
+    /**
+     * Kiểm tra string có nội dung hay không.
+     */
     private boolean hasText(String value) {
         return value != null && !value.trim().isEmpty();
     }
 
+    /**
+     * Chuẩn hóa string: trim.
+     */
     private String normalize(String value) {
         return value == null ? null : value.trim();
     }
 
+    /**
+     * Chuẩn hóa string nullable: return null nếu rỗng hoặc whitespace.
+     */
     private String normalizeNullable(String value) {
         return hasText(value) ? value.trim() : null;
-    }
-
-    private String getCurrentUsername() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication == null || authentication.getName() == null || "anonymousUser".equals(authentication.getName())) {
-            return "SYSTEM";
-        }
-        return authentication.getName();
     }
 }

@@ -24,9 +24,7 @@ import com.gfi.backend.repositories.specifications.SemesterSpecification;
 import com.gfi.backend.services.interfaces.SemesterService;
 import com.gfi.backend.utils.SecurityUtils;
 
-import jakarta.persistence.criteria.Join;
 import jakarta.persistence.criteria.JoinType;
-import jakarta.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;
 
 /**

@@ -13,7 +13,9 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity
@@ -24,6 +26,8 @@ import lombok.Setter;
 })
 @Getter
 @Setter
+@AllArgsConstructor
+@NoArgsConstructor
 public class Semester extends BaseEntity {
 
     // Khóa chính

@@ -132,17 +132,11 @@ public class ClassroomSubjectServiceImpl implements ClassroomSubjectService {
                         .build())
                 .toList();
 
-        List<Long> subjectIds = subjects.stream()
-                .filter(ClassroomSubjectItemDto::getSelected)
-                .map(ClassroomSubjectItemDto::getSubjectId)
-                .toList();
-
         return ClassroomSubjectConfigDto.builder()
                 .classroomId(classroom.getId())
                 .classroomName(classroom.getName())
                 .gradeLevelId(classroom.getGradeLevel().getId())
                 .gradeLevelName(classroom.getGradeLevel().getName())
-                .subjectIds(subjectIds)
                 .subjects(subjects)
                 .build();
     }

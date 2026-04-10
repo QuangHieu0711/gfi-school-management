@@ -7,20 +7,20 @@ import lombok.Data;
 
 @Data
 public class SubjectUpdateRequest {
-    @NotBlank(message = "Ma mon hoc khong duoc de trong")
-    @Size(max = 50, message = "Ma mon hoc toi da 50 ky tu")
+    @NotBlank(message = "Mã môn học không được để trống")
+    @Size(max = 50, message = "Mã môn học tối đa 50 ký tự")
     private String code;
 
-    @NotBlank(message = "Ten mon hoc khong duoc de trong")
-    @Size(max = 255, message = "Ten mon hoc toi da 255 ky tu")
+    @NotBlank(message = "Tên môn học không được để trống")
+    @Size(max = 255, message = "Tên môn học tối đa 255 ký tự")
     private String name;
 
-    @NotNull(message = "Loai mon hoc khong duoc de trong")
+    @NotNull(message = "Loại môn học không được để trống")
     private Integer type;
 
-    @Size(max = 500, message = "Ghi chu toi da 500 ky tu")
+    @Size(max = 500, message = "Ghi chú tối đa 500 ký tự")
     private String description;
 
-    @NotNull(message = "Trang thai khong duoc de trong")
+    @NotNull(message = "Trạng thái không được để trống")
     private Integer status;
 }

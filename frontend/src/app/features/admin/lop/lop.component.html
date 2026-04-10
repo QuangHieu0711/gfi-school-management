@@ -35,6 +35,15 @@
             [item]="findFormControl($formItem, key.NAME)"
             [form]="form"></app-text-control>
           <app-select-control
+            [item]="findFormControl($formItem, key.SCHOOL_YEAR_ID)"
+            [form]="form"></app-select-control>
+          <app-select-control
+            [item]="findFormControl($formItem, key.GRADE_LEVEL_ID)"
+            [form]="form"></app-select-control>
+          <app-select-control
+            [item]="findFormControl($formItem, key.UNIT_ID)"
+            [form]="form"></app-select-control>
+          <app-select-control
             [item]="findFormControl($formItem, key.STATUS)"
             [form]="form"></app-select-control>
           <div class="flex gap-1 items-center">

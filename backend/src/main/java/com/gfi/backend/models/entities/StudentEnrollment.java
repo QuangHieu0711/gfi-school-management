@@ -1,7 +1,6 @@
 package com.gfi.backend.models.entities;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -14,15 +13,19 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity
+@Getter
+@Setter
+@AllArgsConstructor
+@NoArgsConstructor
 @Table(name = "student_enrollments", uniqueConstraints = {
         @UniqueConstraint(name = "uk_student_enrollment", columnNames = { "student_id", "school_year_id" })
 })
-@Getter
-@Setter
 public class StudentEnrollment extends BaseEntity {
 
     @Id

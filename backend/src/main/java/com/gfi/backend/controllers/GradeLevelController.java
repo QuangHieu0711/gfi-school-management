@@ -17,7 +17,8 @@ import com.gfi.backend.models.dtos.common.PageRequestDto;
 import com.gfi.backend.models.dtos.common.PageResponseDto;
 import com.gfi.backend.models.dtos.gradelevel.GradeLevelCreateRequest;
 import com.gfi.backend.models.dtos.gradelevel.GradeLevelFilterDto;
-import com.gfi.backend.models.dtos.gradelevel.GradeLevelItemDto;
+import com.gfi.backend.models.dtos.gradelevel.GradeLevelDetailDto;
+import com.gfi.backend.models.dtos.gradelevel.GradeLevelListItemDto;
 import com.gfi.backend.models.dtos.gradelevel.GradeLevelUpdateRequest;
 import com.gfi.backend.models.global.ApiResult;
 import com.gfi.backend.services.interfaces.GradeLevelService;
@@ -27,6 +28,10 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
+/**
+ * REST Controller quản lý khối lớp.
+ * Xử lý HTTP requests cho các phép CRUD khối lớp.
+ */
 @RestController
 @RequestMapping("/api/grade-levels")
 @RequiredArgsConstructor
@@ -35,38 +40,74 @@ public class GradeLevelController extends ApiBaseController {
 
     private final GradeLevelService gradeLevelService;
 
+    /**
+     * Tìm kiếm và phân trang khối lớp với filter.
+     * Trả về list view chứa thông tin tối thiểu.
+     */
     @PostMapping("/search")
     @Operation(summary = "Danh sách khối", description = "Lấy danh sách khối có phân trang và filter.")
-    public ResponseEntity<ApiResult<PageResponseDto<GradeLevelItemDto, GradeLevelFilterDto>>> search(
+    public ResponseEntity<ApiResult<PageResponseDto<GradeLevelListItemDto, GradeLevelFilterDto>>> search(
             @RequestBody(required = false) PageRequestDto<GradeLevelFilterDto> request) {
         PageRequestDto<GradeLevelFilterDto> safeRequest = request == null ? new PageRequestDto<>() : request;
-        return executeApiResult(() -> ApiResult.success(gradeLevelService.search(safeRequest), "Hiển thị danh sách khối thành công"));
+        return executeApiResult(
+                () -> ApiResult.success(gradeLevelService.search(safeRequest), "Hiển thị danh sách khối thành công"));
     }
 
+    /**
+     * Lấy danh sách khối lớp cho combobox.
+     * Trả về id và tên khối lớp để hiển thị trong dropdown.
+     */
     @GetMapping("/options")
     @Operation(summary = "Danh sách khối cho combobox", description = "Lấy danh sách id và tên khối.")
     public ResponseEntity<ApiResult<List<LookupItemDto>>> getOptions() {
-        return executeApiResult(() -> ApiResult.success(gradeLevelService.getOptions(), "Hiển thị danh sách khối thành công"));
+        return executeApiResult(
+                () -> ApiResult.success(gradeLevelService.getOptions(), "Hiển thị danh sách khối thành công"));
     }
 
+    /**
+     * Lấy chi tiết khối lớp theo ID.
+     * Trả về đầy đủ thông tin khối lớp bao gồm quan hệ.
+     */
     @GetMapping("/{id}")
     @Operation(summary = "Chi tiết khối", description = "Lấy thông tin khối theo id.")
-    public ResponseEntity<ApiResult<GradeLevelItemDto>> getById(@PathVariable Long id) {
-        return executeApiResult(() -> ApiResult.success(gradeLevelService.getById(id), "Hiển thị chi tiết khối thành công"));
+    public ResponseEntity<ApiResult<GradeLevelDetailDto>> getById(@PathVariable Long id) {
+        return executeApiResult(
+                () -> ApiResult.success(gradeLevelService.getById(id), "Hiển thị chi tiết khối thành công"));
     }
 
+    /**
+     * Tạo khối lớp mới.
+     * 
+     * @param request DTO chứa thông tin cần thiết để tạo khối lớp.
+     * @return
+     */
     @PostMapping
     @Operation(summary = "Thêm khối", description = "Tạo mới khối.")
-    public ResponseEntity<ApiResult<GradeLevelItemDto>> create(@Valid @RequestBody GradeLevelCreateRequest request) {
+    public ResponseEntity<ApiResult<GradeLevelDetailDto>> create(@Valid @RequestBody GradeLevelCreateRequest request) {
         return executeApiResult(() -> ApiResult.success(gradeLevelService.create(request), "Thêm khối thành công"));
     }
 
+    /**
+     * Cập nhật khối lớp hiện có.
+     * 
+     * @param id      ID của khối lớp cần cập nhật.
+     * @param request DTO chứa thông tin cần thiết để cập nhật khối lớp.
+     * @return
+     */
     @PutMapping("/{id}")
     @Operation(summary = "Sửa khối", description = "Cập nhật khối theo id.")
-    public ResponseEntity<ApiResult<GradeLevelItemDto>> update(@PathVariable Long id, @Valid @RequestBody GradeLevelUpdateRequest request) {
-        return executeApiResult(() -> ApiResult.success(gradeLevelService.update(id, request), "Cập nhật khối thành công"));
+    public ResponseEntity<ApiResult<GradeLevelDetailDto>> update(@PathVariable Long id,
+            @Valid @RequestBody GradeLevelUpdateRequest request) {
+        return executeApiResult(
+                () -> ApiResult.success(gradeLevelService.update(id, request), "Cập nhật khối thành công"));
     }
 
+    /**
+     * Xóa (xóa mềm) khối lớp theo ID.
+     * 
+     * @param id ID của khối lớp cần xóa.
+     * @return
+     */
     @DeleteMapping("/{id}")
     @Operation(summary = "Xóa khối", description = "Xóa khối theo id.")
     public ResponseEntity<ApiResult<String>> delete(@PathVariable Long id) {

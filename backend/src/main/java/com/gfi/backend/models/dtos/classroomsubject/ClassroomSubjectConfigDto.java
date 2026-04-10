@@ -12,6 +12,5 @@ public class ClassroomSubjectConfigDto {
     private String classroomName;
     private Long gradeLevelId;
     private String gradeLevelName;
-    private List<Long> subjectIds;
     private List<ClassroomSubjectItemDto> subjects;
 }

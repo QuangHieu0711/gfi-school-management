@@ -15,7 +15,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.gfi.backend.models.dtos.classroom.ClassroomCreateRequest;
 import com.gfi.backend.models.dtos.classroom.ClassroomFilterDto;
-import com.gfi.backend.models.dtos.classroom.ClassroomItemDto;
+import com.gfi.backend.models.dtos.classroom.ClassroomDetailDto;
+import com.gfi.backend.models.dtos.classroom.ClassroomListItemDto;
 import com.gfi.backend.models.dtos.classroom.ClassroomUpdateRequest;
 import com.gfi.backend.models.dtos.common.LookupItemDto;
 import com.gfi.backend.models.dtos.common.PageRequestDto;
@@ -28,6 +29,10 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
+/**
+ * REST Controller quản lý lớp học.
+ * Xử lý HTTP requests cho các phép CRUD lớp học.
+ */
 @RestController
 @RequestMapping("/api/classes")
 @RequiredArgsConstructor
@@ -36,41 +41,68 @@ public class ClassroomController extends ApiBaseController {
 
     private final ClassroomService classroomService;
 
+    /**
+     * Tìm kiếm và phân trang lớp học với filter.
+     * Trả về list view chứa thông tin tối thiểu.
+     */
     @PostMapping("/search")
     @Operation(summary = "Danh sách lớp", description = "Lấy danh sách lớp có phân trang và filter.")
-    public ResponseEntity<ApiResult<PageResponseDto<ClassroomItemDto, ClassroomFilterDto>>> search(
+    public ResponseEntity<ApiResult<PageResponseDto<ClassroomListItemDto, ClassroomFilterDto>>> search(
             @RequestBody(required = false) PageRequestDto<ClassroomFilterDto> request) {
         PageRequestDto<ClassroomFilterDto> safeRequest = request == null ? new PageRequestDto<>() : request;
-        return executeApiResult(() -> ApiResult.success(classroomService.search(safeRequest), "Hiển thị danh sách lớp thành công"));
+        return executeApiResult(
+                () -> ApiResult.success(classroomService.search(safeRequest), "Hiển thị danh sách lớp thành công"));
     }
 
+    /**
+     * Lấy danh sách lớp học cho combobox.
+     * Trả về id và tên lớp học để hiển thị trong dropdown.
+     * Cho phép filter theo đơn vị, khối lớp, năm học để chỉ lấy các lớp phù hợp.
+     */
     @GetMapping("/options")
     @Operation(summary = "Danh sách lớp cho combobox", description = "Lấy danh sách id và tên lớp.")
     public ResponseEntity<ApiResult<List<LookupItemDto>>> getOptions(
             @RequestParam(required = false) Long unitId,
             @RequestParam(required = false) Long gradeLevelId,
             @RequestParam(required = false) Long schoolYearId) {
-        return executeApiResult(() -> ApiResult.success(classroomService.getOptions(unitId, gradeLevelId, schoolYearId), "Hiển thị danh sách lớp thành công"));
+        return executeApiResult(() -> ApiResult.success(classroomService.getOptions(unitId, gradeLevelId, schoolYearId),
+                "Hiển thị danh sách lớp thành công"));
     }
 
+    /**
+     * Lấy chi tiết lớp học theo ID.
+     * Trả về đầy đủ thông tin lớp học bao gồm quan hệ.
+     */
     @GetMapping("/{id}")
     @Operation(summary = "Chi tiết lớp", description = "Lấy thông tin lớp theo id.")
-    public ResponseEntity<ApiResult<ClassroomItemDto>> getById(@PathVariable Long id) {
-        return executeApiResult(() -> ApiResult.success(classroomService.getById(id), "Hiển thị chi tiết lớp thành công"));
+    public ResponseEntity<ApiResult<ClassroomDetailDto>> getById(@PathVariable Long id) {
+        return executeApiResult(
+                () -> ApiResult.success(classroomService.getById(id), "Hiển thị chi tiết lớp thành công"));
     }
 
+    /**
+     * Tạo lớp học mới.
+     */
     @PostMapping
     @Operation(summary = "Thêm lớp", description = "Tạo mới lớp.")
-    public ResponseEntity<ApiResult<ClassroomItemDto>> create(@Valid @RequestBody ClassroomCreateRequest request) {
+    public ResponseEntity<ApiResult<ClassroomDetailDto>> create(@Valid @RequestBody ClassroomCreateRequest request) {
         return executeApiResult(() -> ApiResult.success(classroomService.create(request), "Thêm lớp thành công"));
     }
 
+    /**
+     * Cập nhật lớp học hiện có.
+     */
     @PutMapping("/{id}")
     @Operation(summary = "Sửa lớp", description = "Cập nhật lớp theo id.")
-    public ResponseEntity<ApiResult<ClassroomItemDto>> update(@PathVariable Long id, @Valid @RequestBody ClassroomUpdateRequest request) {
-        return executeApiResult(() -> ApiResult.success(classroomService.update(id, request), "Cập nhật lớp thành công"));
+    public ResponseEntity<ApiResult<ClassroomDetailDto>> update(@PathVariable Long id,
+            @Valid @RequestBody ClassroomUpdateRequest request) {
+        return executeApiResult(
+                () -> ApiResult.success(classroomService.update(id, request), "Cập nhật lớp thành công"));
     }
 
+    /**
+     * Xóa (xóa mềm) lớp học theo ID.
+     */
     @DeleteMapping("/{id}")
     @Operation(summary = "Xóa lớp", description = "Xóa lớp theo id.")
     public ResponseEntity<ApiResult<String>> delete(@PathVariable Long id) {

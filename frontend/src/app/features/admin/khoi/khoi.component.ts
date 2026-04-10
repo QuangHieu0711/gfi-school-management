@@ -76,10 +76,6 @@ export class KhoiComponent extends ComponentBaseAbstract {
         class: 'text-center',
       },
       {
-        header: 'Mô tả',
-        field: KHOI_KEY.DESCRIPTION,
-      },
-      {
         header: 'Trạng thái',
         field: KHOI_KEY.STATUS,
         class: 'text-center',

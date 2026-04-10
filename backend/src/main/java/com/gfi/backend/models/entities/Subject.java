@@ -8,14 +8,20 @@ import jakarta.persistence.Id;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
-import lombok.Data;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @Entity
+@Getter
+@Setter
+@AllArgsConstructor
+@NoArgsConstructor
 @Table(name = "subjects", uniqueConstraints = {
         @UniqueConstraint(name = "uk_subjects_code", columnNames = "code"),
         @UniqueConstraint(name = "uk_subjects_name", columnNames = "name")
 })
-@Data
 public class Subject extends BaseEntity {
 
     @Id

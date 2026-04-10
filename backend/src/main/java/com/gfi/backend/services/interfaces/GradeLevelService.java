@@ -7,14 +7,15 @@ import com.gfi.backend.models.dtos.common.PageRequestDto;
 import com.gfi.backend.models.dtos.common.PageResponseDto;
 import com.gfi.backend.models.dtos.gradelevel.GradeLevelCreateRequest;
 import com.gfi.backend.models.dtos.gradelevel.GradeLevelFilterDto;
-import com.gfi.backend.models.dtos.gradelevel.GradeLevelItemDto;
+import com.gfi.backend.models.dtos.gradelevel.GradeLevelDetailDto;
+import com.gfi.backend.models.dtos.gradelevel.GradeLevelListItemDto;
 import com.gfi.backend.models.dtos.gradelevel.GradeLevelUpdateRequest;
 
 public interface GradeLevelService {
-    PageResponseDto<GradeLevelItemDto, GradeLevelFilterDto> search(PageRequestDto<GradeLevelFilterDto> request);
+    PageResponseDto<GradeLevelListItemDto, GradeLevelFilterDto> search(PageRequestDto<GradeLevelFilterDto> request);
     List<LookupItemDto> getOptions();
-    GradeLevelItemDto getById(Long id);
-    GradeLevelItemDto create(GradeLevelCreateRequest request);
-    GradeLevelItemDto update(Long id, GradeLevelUpdateRequest request);
+    GradeLevelDetailDto getById(Long id);
+    GradeLevelDetailDto create(GradeLevelCreateRequest request);
+    GradeLevelDetailDto update(Long id, GradeLevelUpdateRequest request);
     void delete(Long id);
 }

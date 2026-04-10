@@ -53,9 +53,20 @@ export class ApiErrorInterceptor implements HttpInterceptor {
         // Skip intercepting i18n JSON file requests
         if (req.url.includes('assets/i18n/')) return throwError(() => error);
 
+        const isAuthRequest = [
+          AUTH_API_ENDPOINT.AUTH_TOKEN,
+          AUTH_API_ENDPOINT.REFRESH_TOKEN,
+        ].some((url) => req.url.includes(url));
+
         // If unauthorized and not a login request, queue the request for token refresh
-        if (error.status === 401 && ![AUTH_API_ENDPOINT.AUTH_TOKEN, AUTH_API_ENDPOINT.REFRESH_TOKEN].some((url) => req.url.includes(url)))
+        if (error.status === 401 && !isAuthRequest)
           return new Observable<HttpEvent<T>>((observer) => this.requestQueue.next({ req, next, observer } as QueuedRequest<unknown>));
+
+        // Backend currently returns 403 when the access token is expired.
+        // In that case, clear the local session and redirect to login.
+        if (error.status === 403 && !isAuthRequest && this.authService.isAuthenticated()) {
+          this.authService.handleLogout();
+        }
 
         // Otherwise, show appropriate error message
         return this.handleErrorRequest(error, context);
