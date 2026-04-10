@@ -24,6 +24,7 @@ public class UserMapper {
                 .status(user.getStatus())
                 .roleName(user.getRole() == null ? null : user.getRole().getRoleName())
                 .unitName(user.getUnit() == null ? null : user.getUnit().getName())
+                .email(user.getEmail() == null ? null : user.getEmail())
                 .build();
     }
 

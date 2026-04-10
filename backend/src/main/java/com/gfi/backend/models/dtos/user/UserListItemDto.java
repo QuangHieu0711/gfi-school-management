@@ -16,4 +16,5 @@ public class UserListItemDto {
     private Integer status;
     private String roleName;
     private String unitName;
+    private String email;
 }

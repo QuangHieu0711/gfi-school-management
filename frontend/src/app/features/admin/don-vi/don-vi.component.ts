@@ -74,14 +74,6 @@ export class DonViComponent extends ComponentBaseAbstract {
         field: DON_VI_KEY.ADDRESS,
       },
       {
-        header: 'Số điện thoại',
-        field: DON_VI_KEY.PHONE,
-      },
-      {
-        header: 'Email',
-        field: DON_VI_KEY.EMAIL,
-      },
-      {
         header: 'Trạng thái',
         field: DON_VI_KEY.STATUS,
         class: 'text-center',

@@ -1,36 +1,45 @@
 package com.gfi.backend.services.implement;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
-import org.springframework.data.jpa.domain.Specification;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import com.gfi.backend.controllers.exceptions.UserMessageException;
 import com.gfi.backend.models.dtos.common.LookupItemDto;
 import com.gfi.backend.models.dtos.common.PageRequestDto;
 import com.gfi.backend.models.dtos.common.PageResponseDto;
 import com.gfi.backend.models.dtos.unit.UnitCreateRequest;
+import com.gfi.backend.models.dtos.unit.UnitDetailDto;
 import com.gfi.backend.models.dtos.unit.UnitFilterDto;
-import com.gfi.backend.models.dtos.unit.UnitItemDto;
+import com.gfi.backend.models.dtos.unit.UnitListItemDto;
 import com.gfi.backend.models.dtos.unit.UnitUpdateRequest;
 import com.gfi.backend.models.entities.Unit;
 import com.gfi.backend.models.global.CommonErrorCode;
+import com.gfi.backend.models.mappers.UnitMapper;
 import com.gfi.backend.repositories.ClassroomRepository;
 import com.gfi.backend.repositories.UnitRepository;
 import com.gfi.backend.repositories.UserRepository;
+import com.gfi.backend.repositories.specifications.UnitSpecification;
 import com.gfi.backend.services.interfaces.UnitService;
 import com.gfi.backend.utils.PageableUtils;
+import com.gfi.backend.utils.SecurityUtils;
 
-import jakarta.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;
 
+/**
+ * Service xử lý logic quản lý đơn vị.
+ * 
+ * Trách nhiệm tách biệt:
+ * - Logic query: UnitSpecification
+ * - Logic mapping: UnitMapper
+ * - Validate & load relations: private helpers
+ * - Security: SecurityUtils
+ */
 @Service
 @RequiredArgsConstructor
 public class UnitServiceImpl implements UnitService {
@@ -38,20 +47,24 @@ public class UnitServiceImpl implements UnitService {
     private final UnitRepository unitRepository;
     private final UserRepository userRepository;
     private final ClassroomRepository classroomRepository;
+    private final UnitSpecification unitSpecification;
+    private final UnitMapper unitMapper;
 
+    // Tìm kiếm và phân trang units với filter
     @Override
-    public PageResponseDto<UnitItemDto, UnitFilterDto> search(PageRequestDto<UnitFilterDto> request) {
+    @Transactional(readOnly = true)
+    public PageResponseDto<UnitListItemDto, UnitFilterDto> search(PageRequestDto<UnitFilterDto> request) {
         UnitFilterDto filter = request.getFilter() == null ? new UnitFilterDto() : request.getFilter();
         int pageSize = normalizePageSize(request.getPageSize());
         int pageNow = normalizePageNow(request.getPageNow());
         Pageable pageable = PageableUtils.newestFirst(pageNow, pageSize);
 
-        Page<Unit> page = unitRepository.findAll(buildSpecification(filter), pageable);
-        List<UnitItemDto> items = page.getContent().stream()
-                .map(this::toDto)
+        Page<Unit> page = unitRepository.findAll(unitSpecification.buildSpecification(filter), pageable);
+        List<UnitListItemDto> items = page.getContent().stream()
+                .map(unitMapper::toListItemDto)
                 .toList();
 
-        return PageResponseDto.<UnitItemDto, UnitFilterDto>builder()
+        return PageResponseDto.<UnitListItemDto, UnitFilterDto>builder()
                 .pageSize(pageSize)
                 .pageNow(pageNow)
                 .filter(filter)
@@ -61,7 +74,9 @@ public class UnitServiceImpl implements UnitService {
                 .build();
     }
 
+    // Lấy danh sách đơn vị cho dropdown/combobox
     @Override
+    @Transactional(readOnly = true)
     public List<LookupItemDto> getOptions() {
         return unitRepository.findAll(Sort.by(Sort.Direction.ASC, "name")).stream()
                 .map(unit -> LookupItemDto.builder()
@@ -71,20 +86,21 @@ public class UnitServiceImpl implements UnitService {
                 .toList();
     }
 
+    // Chi tiết đơn vị theo ID
     @Override
-    public UnitItemDto getById(Long id) {
+    @Transactional(readOnly = true)
+    public UnitDetailDto getById(Long id) {
         Unit unit = unitRepository.findById(id)
                 .orElseThrow(() -> new UserMessageException(CommonErrorCode.UNIT_NOT_FOUND));
-        return toDto(unit);
+        return unitMapper.toDetailDto(unit);
     }
 
+    // Thêm mới đơn vị
     @Override
     @Transactional
-    public UnitItemDto create(UnitCreateRequest request) {
+    public UnitDetailDto create(UnitCreateRequest request) {
         String code = normalize(request.getCode());
-        if (unitRepository.existsByCode(code)) {
-            throw new UserMessageException(CommonErrorCode.UNIT_CODE_ALREADY_EXISTS);
-        }
+        validateCodeDuplicate(code, null);
 
         Unit unit = new Unit();
         unit.setCode(code);
@@ -93,22 +109,20 @@ public class UnitServiceImpl implements UnitService {
         unit.setPhone(normalizeNullable(request.getPhone()));
         unit.setEmail(normalizeNullable(request.getEmail()));
         unit.setStatus(request.getStatus());
-        unit.setCreatedBy(getCurrentUsername());
-        return toDto(unitRepository.save(unit));
+        unit.setCreatedBy(SecurityUtils.getCurrentUsername());
+
+        return unitMapper.toDetailDto(unitRepository.save(unit));
     }
 
+    // Cập nhật đơn vị
     @Override
     @Transactional
-    public UnitItemDto update(Long id, UnitUpdateRequest request) {
+    public UnitDetailDto update(Long id, UnitUpdateRequest request) {
         Unit unit = unitRepository.findById(id)
                 .orElseThrow(() -> new UserMessageException(CommonErrorCode.UNIT_NOT_FOUND));
 
         String code = normalize(request.getCode());
-        unitRepository.findByCode(code)
-                .filter(found -> !found.getId().equals(id))
-                .ifPresent(found -> {
-                    throw new UserMessageException(CommonErrorCode.UNIT_CODE_ALREADY_EXISTS);
-                });
+        validateCodeDuplicate(code, id);
 
         unit.setCode(code);
         unit.setName(normalize(request.getName()));
@@ -116,16 +130,19 @@ public class UnitServiceImpl implements UnitService {
         unit.setPhone(normalizeNullable(request.getPhone()));
         unit.setEmail(normalizeNullable(request.getEmail()));
         unit.setStatus(request.getStatus());
-        unit.setUpdatedBy(getCurrentUsername());
-        return toDto(unitRepository.save(unit));
+        unit.setUpdatedBy(SecurityUtils.getCurrentUsername());
+
+        return unitMapper.toDetailDto(unitRepository.save(unit));
     }
 
+    // Xóa đơn vị
     @Override
     @Transactional
     public void delete(Long id) {
         Unit unit = unitRepository.findById(id)
                 .orElseThrow(() -> new UserMessageException(CommonErrorCode.UNIT_NOT_FOUND));
 
+        // Kiểm tra unit có được sử dụng không
         if (userRepository.countByUnitId(id) > 0) {
             throw new UserMessageException(CommonErrorCode.UNIT_IN_USE);
         }
@@ -136,61 +153,48 @@ public class UnitServiceImpl implements UnitService {
         unitRepository.delete(unit);
     }
 
-    private Specification<Unit> buildSpecification(UnitFilterDto filter) {
-        return (root, query, cb) -> {
-            List<Predicate> predicates = new ArrayList<>();
-
-            if (hasText(filter.getUnitName())) {
-                String keyword = "%" + filter.getUnitName().trim().toLowerCase() + "%";
-                predicates.add(cb.or(
-                        cb.like(cb.lower(root.get("code")), keyword),
-                        cb.like(cb.lower(root.get("name")), keyword)));
-            }
-            if (filter.getStatus() != null) {
-                predicates.add(cb.equal(root.get("status"), filter.getStatus()));
-            }
-
-            return cb.and(predicates.toArray(new Predicate[0]));
-        };
+    /**
+     * Validate code không trùng.
+     * Khi update: excludeId cho phép unit giữ nguyên code của chính nó.
+     * 
+     * @param code mã unit cần check
+     * @param excludeId ID unit loại trừ (null khi create)
+     */
+    private void validateCodeDuplicate(String code, Long excludeId) {
+        boolean isDuplicate = excludeId == null
+                ? unitRepository.existsByCode(code)
+                : unitRepository.existsByCodeAndIdNot(code, excludeId);
+        
+        if (isDuplicate) {
+            throw new UserMessageException(CommonErrorCode.UNIT_CODE_ALREADY_EXISTS);
+        }
     }
 
-    private UnitItemDto toDto(Unit unit) {
-        return UnitItemDto.builder()
-                .id(unit.getId())
-                .code(unit.getCode())
-                .name(unit.getName())
-                .address(unit.getAddress())
-                .phone(unit.getPhone())
-                .email(unit.getEmail())
-                .status(unit.getStatus())
-                .build();
-    }
-
+    /**
+     * Chuẩn hóa kích thước trang phân trang.
+     */
     private int normalizePageSize(Integer pageSize) {
         return pageSize == null || pageSize <= 0 ? 10 : pageSize;
     }
 
+    /**
+     * Chuẩn hóa số trang hiện tại.
+     */
     private int normalizePageNow(Integer pageNow) {
         return pageNow == null || pageNow <= 0 ? 1 : pageNow;
     }
 
-    private boolean hasText(String value) {
-        return value != null && !value.trim().isEmpty();
-    }
-
+    /**
+     * Chuẩn hóa string: trim.
+     */
     private String normalize(String value) {
         return value == null ? null : value.trim();
     }
 
+    /**
+     * Chuẩn hóa string nullable: return null nếu rỗng hoặc whitespace.
+     */
     private String normalizeNullable(String value) {
-        return hasText(value) ? value.trim() : null;
-    }
-
-    private String getCurrentUsername() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication == null || authentication.getName() == null || "anonymousUser".equals(authentication.getName())) {
-            return "SYSTEM";
-        }
-        return authentication.getName();
+        return StringUtils.hasText(value) ? value.trim() : null;
     }
 }
