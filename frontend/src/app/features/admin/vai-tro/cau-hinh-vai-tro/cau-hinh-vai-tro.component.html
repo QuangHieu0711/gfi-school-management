@@ -26,7 +26,7 @@
 
     <mat-tab-group
       class="permission-tabs"
-      [selectedIndex]="activeTab === 'function' ? 0 : 1"
+      [selectedIndex]="activeTab === 'function' ? 0 : activeTab === 'data' ? 1 : 2"
       [preserveContent]="true"
       (selectedIndexChange)="setActiveTab($event)">
       <mat-tab>
@@ -62,6 +62,23 @@
             [menusSnapshot]="menusSnapshot"
             (dirtyStateChange)="onDirtyStateChange($event)">
           </phan-quyen-du-lieu>
+        </section>
+      </mat-tab>
+
+      <mat-tab>
+        <ng-template mat-tab-label>
+          <app-icon
+            icon="assignment"
+            [size]="18"
+            class="tab-icon"></app-icon>
+          <span>Vai trò được phép gán</span>
+        </ng-template>
+        <section class="tab-panel">
+          <phan-quyen-vai-tro
+            [roleId]="roleId"
+            [roleDetail]="roleDetail"
+            (dirtyStateChange)="onDirtyStateChange($event)">
+          </phan-quyen-vai-tro>
         </section>
       </mat-tab>
     </mat-tab-group>

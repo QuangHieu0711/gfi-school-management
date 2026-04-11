@@ -22,6 +22,8 @@ export enum NGUOI_DUNG_KEY {
 export const NGUOI_DUNG_API_ENDPOINT = {
   BASE_PATH: 'users',
   FILTER: 'search',
+  OPTIONS: 'unit-options',
+  ROLE: 'role-options',
 };
 
 export interface NguoiDungFilterRequest extends TableRequest {

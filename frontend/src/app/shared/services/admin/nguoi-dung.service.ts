@@ -1,5 +1,9 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-import { HttpClient, HttpContext, HttpHeaders, HttpResponse } from '@angular/common/http';
+import {
+  HttpClient,
+  HttpContext,
+  HttpHeaders,
+  HttpResponse,
+} from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { ERROR_CONTEXT } from '@constant/error.registry';
 import { environment } from '@env/environment';
@@ -9,8 +13,9 @@ import {
   NguoiDungFormRequest,
   NguoiDungResponse,
 } from '@app/model/admin/nguoi-dung.model';
-import { HttpOptions, ID_TYPE, IResponse, ITableResponse } from '@model/response.model';
+import { ID_TYPE, IResponse, ITableResponse } from '@model/response.model';
 import { Observable, of } from 'rxjs';
+import { DonViOptionResponse } from '@app/model/admin/don-vi.model';
 
 @Injectable({ providedIn: 'root' })
 export class NguoiDungService {
@@ -31,18 +36,33 @@ export class NguoiDungService {
   }
 
   getById(id: ID_TYPE) {
-    return this.http.get<IResponse<NguoiDungResponse>>(`${this.baseUrl}/${id}`, {
-      context: this.silentContext,
-    });
+    return this.http.get<IResponse<NguoiDungResponse>>(
+      `${this.baseUrl}/${id}`,
+      {
+        context: this.silentContext,
+      }
+    );
   }
 
-  create(payload: NguoiDungFormRequest, _options?: HttpOptions) {
+  getCreateUserUnitOptions() {
+    return this.http.get<IResponse<DonViOptionResponse[]>>(
+      `${this.baseUrl}/${NGUOI_DUNG_API_ENDPOINT.OPTIONS}`
+    );
+  }
+
+  getCreateUserRoleOptions() {
+    return this.http.get<IResponse<DonViOptionResponse[]>>(
+      `${this.baseUrl}/${NGUOI_DUNG_API_ENDPOINT.ROLE}`
+    );
+  }
+
+  create(payload: NguoiDungFormRequest) {
     return this.http.post<IResponse<NguoiDungResponse>>(this.baseUrl, payload, {
       context: this.silentContext,
     });
   }
 
-  update(payload: NguoiDungFormRequest, _options?: HttpOptions) {
+  update(payload: NguoiDungFormRequest) {
     return this.http.put<IResponse<NguoiDungResponse>>(
       `${this.baseUrl}/${payload.id}`,
       this.omitId(payload),

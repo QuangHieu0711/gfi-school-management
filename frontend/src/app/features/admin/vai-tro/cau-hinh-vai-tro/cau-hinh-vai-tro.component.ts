@@ -15,6 +15,7 @@ import { MenuService } from '@app/service/admin/menu.service';
 import { VaiTroService } from '@app/service/admin/vai-tro.service';
 import { PhanQuyenChucNangComponent } from '../phan-quyen-chuc-nang/phan-quyen-chuc-nang.component';
 import { PhanQuyenDuLieuComponent } from '../phan-quyen-du-lieu/phan-quyen-du-lieu.component';
+import { PhanQuyenVaiTroComponent } from '../phan-quyen-vai-tro/phan-quyen-vai-tro.component';
 
 @Component({
   selector: 'cau-hinh-vai-tro',
@@ -26,11 +27,12 @@ import { PhanQuyenDuLieuComponent } from '../phan-quyen-du-lieu/phan-quyen-du-li
     IconComponent,
     PhanQuyenChucNangComponent,
     PhanQuyenDuLieuComponent,
+    PhanQuyenVaiTroComponent,
     ...MATERIAL_MODULE,
   ],
 })
 export class CauHinhVaiTroComponent extends ComponentBaseAbstract {
-  activeTab: 'function' | 'data' = 'function';
+  activeTab: 'function' | 'data' | 'role' = 'function';
   roleId: ID_TYPE | null = null;
   roleDetail?: VaiTroResponse;
   menusSnapshot: MenuResponse[] = [];
@@ -52,7 +54,8 @@ export class CauHinhVaiTroComponent extends ComponentBaseAbstract {
     const tabParam = this.activatedRoute.snapshot.queryParamMap.get('tab');
 
     // Default to 'function' tab, allow override from URL
-    this.activeTab = tabParam === 'data' ? 'data' : 'function';
+    this.activeTab =
+      tabParam === 'data' ? 'data' : tabParam === 'role' ? 'role' : 'function';
 
     if (this.roleId == null) {
       this.toastr.error('Không tìm thấy vai trò cần cấu hình', 'Thất bại');
@@ -63,7 +66,7 @@ export class CauHinhVaiTroComponent extends ComponentBaseAbstract {
   }
 
   setActiveTab(index: number) {
-    this.activeTab = index === 0 ? 'function' : 'data';
+    this.activeTab = index === 0 ? 'function' : index === 1 ? 'data' : 'role';
     // Update URL query parameter
     this.router.navigate([], {
       relativeTo: this.activatedRoute,

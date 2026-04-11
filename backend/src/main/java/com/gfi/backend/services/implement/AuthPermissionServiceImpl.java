@@ -181,6 +181,7 @@ public class AuthPermissionServiceImpl implements AuthPermissionService {
                 // If no regular permission exists, create a data-only menu entry
                 MenuPermissionDto menuDto = MenuPermissionDto.builder()
                         .menuCode(dataPermission.getMenu().getCode())
+                        .menuName(dataPermission.getMenu().getName())
                         .path(dataPermission.getMenu().getUrl())
                         .icon(dataPermission.getMenu().getIcon())
                         .level(dataPermission.getMenu().getOrdinal())

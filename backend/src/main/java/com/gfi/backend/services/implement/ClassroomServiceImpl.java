@@ -33,6 +33,7 @@ import com.gfi.backend.services.interfaces.ClassroomSubjectService;
 import com.gfi.backend.utils.PageableUtils;
 import com.gfi.backend.utils.SecurityUtils;
 import com.gfi.backend.utils.ScopeFilterUtils;
+import com.gfi.backend.models.security.FeatureKey;
 
 import lombok.RequiredArgsConstructor;
 
@@ -54,6 +55,9 @@ public class ClassroomServiceImpl implements ClassroomService {
     private final SchoolYearRepository schoolYearRepository;
     private final ClassroomSubjectService classroomSubjectService;
     private final ClassroomSpecification classroomSpecification;
+    
+    // Feature key cho phân quyền
+    private static final String FEATURE = FeatureKey.CLASSROOM_MANAGEMENT.getCode();
 
     // Tìm kiếm và phân trang lớp học với filter
     @Override
@@ -66,7 +70,7 @@ public class ClassroomServiceImpl implements ClassroomService {
         Pageable pageable = PageableUtils.newestFirst(pageNow, pageSize);
 
         // Lấy danh sách unitId được phép truy cập từ scope để áp dụng filter
-        List<Long> allowedUnitIds = ScopeFilterUtils.getScopesForQuery("CLASS_MANAGEMENT");
+        List<Long> allowedUnitIds = ScopeFilterUtils.getScopesForQuery(FEATURE);
 
         Page<ClassroomListItemDto> page;
         if (ScopeFilterUtils.isScopeUnrestricted(allowedUnitIds)) {
@@ -107,7 +111,7 @@ public class ClassroomServiceImpl implements ClassroomService {
         Classroom classroom = findClassroom(id);
 
         // Enforce scope: validate classroom's unit is within allowed scopes
-        ScopeFilterUtils.validateAccess("CLASS_MANAGEMENT", classroom.getUnit().getId());
+        ScopeFilterUtils.validateAccess(FEATURE, classroom.getUnit().getId());
 
         return toDetailDto(classroom);
     }
@@ -146,7 +150,7 @@ public class ClassroomServiceImpl implements ClassroomService {
 
         // Enforce scope: validate classroom's unit is within allowed scopes before
         // allowing update
-        ScopeFilterUtils.validateAccess("CLASS_MANAGEMENT", classroom.getUnit().getId());
+        ScopeFilterUtils.validateAccess(FEATURE, classroom.getUnit().getId());
 
         Unit unit = findUnit(request.getUnitId());
         GradeLevel gradeLevel = findGradeLevel(request.getGradeLevelId());
@@ -182,7 +186,7 @@ public class ClassroomServiceImpl implements ClassroomService {
 
         // Enforce scope: validate classroom's unit is within allowed scopes before
         // allowing delete
-        ScopeFilterUtils.validateAccess("CLASS_MANAGEMENT", classroom.getUnit().getId());
+        ScopeFilterUtils.validateAccess(FEATURE, classroom.getUnit().getId());
 
         classroomSubjectService.clearByClassroomId(id);
 

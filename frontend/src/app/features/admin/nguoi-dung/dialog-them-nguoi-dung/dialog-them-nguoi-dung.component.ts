@@ -51,24 +51,30 @@ export class DialogThemNguoiDungComponent extends ComponentBaseAbstract {
   }
 
   protected override componentInit(): void {
-    forkJoin({
-      units: this.donViService.getOptions(),
-      roles: this.vaiTroService.getOptions(),
-    }).subscribe(({ units, roles }) => {
-      this.findFormControl(this.$formItem, NGUOI_DUNG_KEY.UNIT_ID).options = (
-        units.data ?? []
-      ).map((item) => ({
-        value: item.id,
-        label: item.name,
-      }));
+    // Only load options when creating or updating
+    if (
+      this.data.type === this.TYPE_FORM.CREATE ||
+      this.data.type === this.TYPE_FORM.UPDATE
+    ) {
+      forkJoin({
+        units: this.nguoiDungService.getCreateUserUnitOptions(),
+        roles: this.nguoiDungService.getCreateUserRoleOptions(),
+      }).subscribe(({ units, roles }) => {
+        this.findFormControl(this.$formItem, NGUOI_DUNG_KEY.UNIT_ID).options = (
+          units.data ?? []
+        ).map((item) => ({
+          value: item.id,
+          label: item.name,
+        }));
 
-      this.findFormControl(this.$formItem, NGUOI_DUNG_KEY.ROLE_ID).options = (
-        roles.data ?? []
-      ).map((item) => ({
-        value: item.id,
-        label: item.name,
-      }));
-    });
+        this.findFormControl(this.$formItem, NGUOI_DUNG_KEY.ROLE_ID).options = (
+          roles.data ?? []
+        ).map((item) => ({
+          value: item.id,
+          label: item.name,
+        }));
+      });
+    }
 
     switch (this.data.type) {
       case this.TYPE_FORM.UPDATE:
@@ -128,39 +134,35 @@ export class DialogThemNguoiDungComponent extends ComponentBaseAbstract {
   }
 
   handleCreate(payload: NguoiDungFormRequest) {
-    this.nguoiDungService
-      .create(payload, { customError: { silent: true } })
-      .subscribe({
-        next: () => {
-          this.toastr.success('Lưu thành công!', 'Thành công');
-          this.dialogRef.close(true);
-          this.form.reset();
-        },
-        error: (error) => {
-          this.toastr.error(
-            error.error?.userMessage ?? 'Có lỗi xảy ra',
-            'Thất bại'
-          );
-        },
-      });
+    this.nguoiDungService.create(payload).subscribe({
+      next: () => {
+        this.toastr.success('Lưu thành công!', 'Thành công');
+        this.dialogRef.close(true);
+        this.form.reset();
+      },
+      error: (error) => {
+        this.toastr.error(
+          error.error?.userMessage ?? 'Có lỗi xảy ra',
+          'Thất bại'
+        );
+      },
+    });
   }
 
   handleUpdate(payload: NguoiDungFormRequest) {
-    this.nguoiDungService
-      .update(payload, { customError: { silent: true } })
-      .subscribe({
-        next: () => {
-          this.toastr.success('Lưu thành công!', 'Thành công');
-          this.dialogRef.close(true);
-          this.form.reset();
-        },
-        error: (error: HttpErrorResponse) => {
-          const message =
-            error.error?.userMessage || error.message || 'Lưu dữ liệu thất bại';
+    this.nguoiDungService.update(payload).subscribe({
+      next: () => {
+        this.toastr.success('Lưu thành công!', 'Thành công');
+        this.dialogRef.close(true);
+        this.form.reset();
+      },
+      error: (error: HttpErrorResponse) => {
+        const message =
+          error.error?.userMessage || error.message || 'Lưu dữ liệu thất bại';
 
-          this.toastr.error(message, 'Thất bại');
-        },
-      });
+        this.toastr.error(message, 'Thất bại');
+      },
+    });
   }
 
   switchUpdate() {

@@ -1,0 +1,75 @@
+<section class="permission-panel">
+  <div class="permission-toolbar">
+    <div class="permission-search">
+      <app-form-control
+        [form]="searchForm"
+        (submitEvent)="submitSearch()">
+        <div class="search-row">
+          <div class="search-input">
+            <app-text-control
+              [item]="findFormControl(searchItems, key.CODE)"
+              [form]="searchForm"></app-text-control>
+          </div>
+
+          <div class="search-actions">
+            <button
+              color="dark"
+              matIconButton="text"
+              matTooltip="Tìm kiếm"
+              type="submit">
+              <app-icon icon="svg:search" color="#858585" />
+            </button>
+            <button
+              color="dark"
+              matIconButton="text"
+              matTooltip="Làm mới"
+              type="button"
+              (click)="resetSearch()">
+              <app-icon icon="svg:cached" color="#858585" />
+            </button>
+          </div>
+        </div>
+      </app-form-control>
+    </div>
+
+    <div class="toolbar-actions">
+      <button
+        color="primary"
+        matButton="outlined"
+        type="button"
+        [disabled]="false"
+        (click)="resetChanges()">
+        Hủy
+      </button>
+      <button
+        color="primary"
+        matButton="filled"
+        type="button"
+        [disabled]="false"
+        (click)="saveChanges()">
+        Lưu
+      </button>
+    </div>
+  </div>
+
+  <section class="tab-panel">
+    <app-table
+      tableTitle=""
+      [loading]="loading || saving"
+      [total]="tableData.length"
+      [tableConfig]="tableConfig"
+      [dataSource]="tableData"
+      [tableColumns]="columns">
+    </app-table>
+  </section>
+</section>
+
+<ng-template
+  #toggleTpl
+  let-row
+  let-col="colDef">
+  <mat-slide-toggle
+    [checked]="!!(col?.field && row[col.field])"
+    (change)="onToggleChange(row, $event, col?.field)">
+  </mat-slide-toggle>
+</ng-template>

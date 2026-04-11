@@ -29,6 +29,8 @@ import com.gfi.backend.repositories.specifications.UnitSpecification;
 import com.gfi.backend.services.interfaces.UnitService;
 import com.gfi.backend.utils.PageableUtils;
 import com.gfi.backend.utils.SecurityUtils;
+import com.gfi.backend.utils.ScopeFilterUtils;
+import com.gfi.backend.models.security.FeatureKey;
 
 import lombok.RequiredArgsConstructor;
 
@@ -50,6 +52,9 @@ public class UnitServiceImpl implements UnitService {
     private final ClassroomRepository classroomRepository;
     private final UnitSpecification unitSpecification;
     private final UnitMapper unitMapper;
+    
+    // Feature key cho phân quyền
+    private static final String FEATURE = FeatureKey.UNIT_MANAGEMENT.getCode();
 
     // Tìm kiếm và phân trang units với filter
     @Override
@@ -79,7 +84,24 @@ public class UnitServiceImpl implements UnitService {
     @Override
     @Transactional(readOnly = true)
     public List<LookupItemDto> getOptions() {
-        return unitRepository.findAll(Sort.by(Sort.Direction.ASC, "name")).stream()
+        // Get allowed unit scopes for current user
+        List<Long> allowedUnitIds = ScopeFilterUtils.getScopesForQuery(FEATURE);
+        
+        List<Unit> units;
+        if (ScopeFilterUtils.isScopeUnrestricted(allowedUnitIds)) {
+            // Unrestricted: get all active units
+            units = unitRepository.findAll(Sort.by(Sort.Direction.ASC, "name")).stream()
+                    .filter(u -> u.getStatus() != null && u.getStatus() == 1 && 
+                                 (u.getDeletedFlag() == null || u.getDeletedFlag() == 0))
+                    .toList();
+        } else {
+            units = unitRepository.findByIdInOrderByName(allowedUnitIds).stream()
+                    .filter(u -> u.getStatus() != null && u.getStatus() == 1 && 
+                                 (u.getDeletedFlag() == null || u.getDeletedFlag() == 0))
+                    .toList();
+        }
+        
+        return units.stream()
                 .map(unit -> LookupItemDto.builder()
                         .id(unit.getId())
                         .name(unit.getName())
@@ -136,7 +158,7 @@ public class UnitServiceImpl implements UnitService {
         return unitMapper.toDetailDto(unitRepository.save(unit));
     }
 
-    // ==================== XÓA ====================
+    // Xóa đơn vị (xóa mềm)
     @Override
     @Transactional
     public void delete(Long id) {

@@ -12,6 +12,7 @@ import org.springframework.util.StringUtils;
 import com.gfi.backend.controllers.exceptions.UserMessageException;
 import com.gfi.backend.models.dtos.common.PageRequestDto;
 import com.gfi.backend.models.dtos.common.PageResponseDto;
+import com.gfi.backend.models.dtos.common.LookupItemDto;
 import com.gfi.backend.models.dtos.user.UserCreateRequest;
 import com.gfi.backend.models.dtos.user.UserDetailDto;
 import com.gfi.backend.models.dtos.user.UserFilterDto;
@@ -30,7 +31,11 @@ import com.gfi.backend.services.interfaces.UserService;
 import com.gfi.backend.utils.PageableUtils;
 import com.gfi.backend.utils.PasswordUtils;
 import com.gfi.backend.utils.SecurityUtils;
+import com.gfi.backend.utils.SecurityContextUtils;
 import com.gfi.backend.utils.ScopeFilterUtils;
+import com.gfi.backend.models.security.UserScopes;
+import com.gfi.backend.models.security.FeatureKey;
+import com.gfi.backend.repositories.RoleAssignmentPermissionRepository;
 
 import lombok.RequiredArgsConstructor;
 
@@ -50,8 +55,64 @@ public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final UnitRepository unitRepository;
+    private final RoleAssignmentPermissionRepository roleAssignmentPermissionRepository;
     private final UserSpecification userSpecification;
     private final UserMapper userMapper;
+    
+    // Feature key cho phân quyền - match với DB (ACCOUNT_MANAGEMENT)
+    private static final String FEATURE = FeatureKey.ACCOUNT_MANAGEMENT.getCode();
+
+    /**
+     * Lấy danh sách unit options cho form tạo người dùng.
+     * Chỉ trả về unit mà user hiện tại có quyền tạo.
+     * - Nếu unrestricted (ALL scope): trả về tất cả units có status=1
+     * - Nếu restricted: trả về units từ allowed unit IDs
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public List<LookupItemDto> getUnitOptionsForCreateUser() {
+        // Check functional access: USER_MANAGEMENT
+        ScopeFilterUtils.checkAccess(FEATURE);
+
+        // Get allowed unit scopes for this user
+        List<Long> allowedUnitIds = ScopeFilterUtils.getScopesForQuery(FEATURE);
+
+        List<Unit> units;
+        if (ScopeFilterUtils.isScopeUnrestricted(allowedUnitIds)) {
+            // Unrestricted: get all active, non-deleted units
+            units = unitRepository.findByStatusAndDeletedFlagOrderByName(1, 0);
+        } else {
+            // Restricted: get units from allowed IDs (also filter by status and deleted flag)
+            units = unitRepository.findByIdInAndStatusAndDeletedFlagOrderByName(allowedUnitIds, 1, 0);
+        }
+
+        // Map to LookupItemDto
+        return units.stream()
+                .map(unit -> LookupItemDto.builder()
+                        .id(unit.getId())
+                        .name(unit.getName())
+                        .build())
+                .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<LookupItemDto> getRoleOptionsForCreateUser() {
+        ScopeFilterUtils.checkAccess(FEATURE);
+
+        UserScopes userScopes = SecurityContextUtils.getCurrentUserScopes()
+                .orElseThrow(() -> new UserMessageException(CommonErrorCode.ACCESS_DENIED));
+
+        List<Role> roles = roleAssignmentPermissionRepository
+                .findAssignableRolesForCreate(userScopes.getRoleId());
+
+        return roles.stream()
+                .map(role -> LookupItemDto.builder()
+                        .id(role.getId())
+                        .name(role.getRoleName())
+                        .build())
+                .toList();
+    }
 
     // Danh sách & tìm kiếm có phân trang
     @Override
@@ -63,7 +124,7 @@ public class UserServiceImpl implements UserService {
         Pageable pageable = PageableUtils.newestFirst(pageNow, pageSize);
 
         // Apply scope filtering: auto filter by allowed units
-        List<Long> allowedUnitIds = ScopeFilterUtils.getScopesForQuery("ACCOUNT_MANAGEMENT");
+        List<Long> allowedUnitIds = ScopeFilterUtils.getScopesForQuery(FEATURE);
 
         Page<User> page;
         if (ScopeFilterUtils.isScopeUnrestricted(allowedUnitIds)) {
@@ -99,7 +160,7 @@ public class UserServiceImpl implements UserService {
         
         // Enforce scope: validate user's unit is within allowed scopes
         if (user.getUnit() != null) {
-            ScopeFilterUtils.validateAccess("ACCOUNT_MANAGEMENT", user.getUnit().getId());
+            ScopeFilterUtils.validateAccess(FEATURE, user.getUnit().getId());
         }
         
         return userMapper.toDetailDto(user);
@@ -109,13 +170,66 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional
     public UserDetailDto create(UserCreateRequest request) {
+        // Step 1: Check functional permission
+        ScopeFilterUtils.checkAccess(FEATURE);
+
+        // Step 2: Get current user scopes (already loaded by UserScopesLoadingFilter)
+        UserScopes userScopes = SecurityContextUtils.getCurrentUserScopes()
+                .orElseThrow(() -> new UserMessageException(CommonErrorCode.ACCESS_DENIED));
+        
+        // Step 3: Get allowed unit scopes
+        List<Long> allowedUnitIds = ScopeFilterUtils.getScopesForQuery(FEATURE);
+
+        // Step 4: Handle unit assignment
+        Long unitIdToAssign = request.getUnitId();
+        
+        // If SCHOOL_ADMIN, auto-assign current user's unit if not specified
+        if ("SCHOOL_ADMIN".equals(userScopes.getRoleCode())) {
+            if (unitIdToAssign == null) {
+                // No unit specified, use current user's unit from scope
+                unitIdToAssign = ScopeFilterUtils.isScopeUnrestricted(allowedUnitIds) 
+                        ? null 
+                        : (allowedUnitIds.isEmpty() ? null : allowedUnitIds.get(0));
+            } else {
+                // Unit specified, validate it's within SCHOOL_ADMIN's allowed scope
+                if (!allowedUnitIds.contains(unitIdToAssign)) {
+                    throw new UserMessageException(CommonErrorCode.ACCESS_DENIED.getCode(),
+                            "SCHOOL_ADMIN chỉ được tạo tài khoản cho đơn vị của mình");
+                }
+            }
+        } else if (unitIdToAssign != null) {
+            // For non-SCHOOL_ADMIN roles, validate unitId is within allowed scopes
+            if (!ScopeFilterUtils.isScopeUnrestricted(allowedUnitIds) && 
+                !allowedUnitIds.contains(unitIdToAssign)) {
+                throw new UserMessageException(CommonErrorCode.ACCESS_DENIED.getCode(),
+                        "Không được tạo tài khoản cho đơn vị này");
+            }
+        }
+
+        // Step 5: Validate role-assignment permission: can current user assign requested role?
+        boolean canAssignRole = roleAssignmentPermissionRepository
+            .existsByCreatorRoleIdAndTargetRoleIdAndCanCreateAndStatusAndDeletedFlag(
+                userScopes.getRoleId(),
+                request.getRoleId(),
+                1,
+                1,
+                0
+            );
+
+        if (!canAssignRole) {
+            throw new UserMessageException(CommonErrorCode.ACCESS_DENIED.getCode(),
+                "Bạn không được phép gán vai trò này");
+        }
+
+        // Step 6: Validate other duplicates
         String username = normalize(request.getUsername());
         validateUsernameDuplicate(username, null);
         validateEmailDuplicate(normalizeNullable(request.getEmail()), null);
         validatePhoneDuplicate(normalizeNullable(request.getPhone()), null);
 
+        // Step 7: Create user
         Role role = getRoleById(request.getRoleId());
-        Unit unit = getUnitById(request.getUnitId());
+        Unit unit = unitIdToAssign != null ? getUnitById(unitIdToAssign) : null;
 
         User user = new User();
         user.setUsername(username);
@@ -141,7 +255,7 @@ public class UserServiceImpl implements UserService {
 
         // Enforce scope: validate user's unit is within allowed scopes before allowing update
         if (user.getUnit() != null) {
-            ScopeFilterUtils.validateAccess("ACCOUNT_MANAGEMENT", user.getUnit().getId());
+            ScopeFilterUtils.validateAccess(FEATURE, user.getUnit().getId());
         }
 
         String username = normalize(request.getUsername());
@@ -151,6 +265,26 @@ public class UserServiceImpl implements UserService {
 
         Role role = getRoleById(request.getRoleId());
         Unit unit = getUnitById(request.getUnitId());
+
+        // If role is changing, validate current user can update to target role
+        if (!user.getRole().getId().equals(request.getRoleId())) {
+            UserScopes userScopes = SecurityContextUtils.getCurrentUserScopes()
+                .orElseThrow(() -> new UserMessageException(CommonErrorCode.ACCESS_DENIED));
+
+            boolean canUpdateRole = roleAssignmentPermissionRepository
+                .existsByCreatorRoleIdAndTargetRoleIdAndCanUpdateAndStatusAndDeletedFlag(
+                    userScopes.getRoleId(),
+                    request.getRoleId(),
+                    1,
+                    1,
+                    0
+                );
+
+            if (!canUpdateRole) {
+            throw new UserMessageException(CommonErrorCode.ACCESS_DENIED.getCode(),
+                "Bạn không được phép cập nhật sang vai trò này");
+            }
+        }
 
         applyCommonFields(user, request, role, unit);
         applyPasswordIfPresent(user, request.getPassword());
@@ -168,7 +302,7 @@ public class UserServiceImpl implements UserService {
 
         // Enforce scope: validate user's unit is within allowed scopes before allowing delete
         if (user.getUnit() != null) {
-            ScopeFilterUtils.validateAccess("ACCOUNT_MANAGEMENT", user.getUnit().getId());
+            ScopeFilterUtils.validateAccess(FEATURE, user.getUnit().getId());
         }
 
         // Xóa mềm: đánh dấu xóa 
