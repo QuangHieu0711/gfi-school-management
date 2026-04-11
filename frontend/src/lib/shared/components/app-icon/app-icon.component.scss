@@ -3,3 +3,10 @@
 .svg-icon {
   @apply flex justify-center items-center;
 }
+
+mat-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  vertical-align: middle;
+}

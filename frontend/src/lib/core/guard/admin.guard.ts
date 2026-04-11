@@ -1,7 +1,7 @@
 import { inject } from '@angular/core';
 import { CanActivateFn } from '@angular/router';
 import { AuthService } from '@service';
-import { catchError, map, of } from 'rxjs';
+import { catchError, filter, map, of } from 'rxjs';
 import { Store } from '@ngrx/store';
 import { UserInfoAction } from '@store/user-info';
 import { ICurrentUser, UserRole } from '@model/auth.model';
@@ -29,13 +29,25 @@ export const AdminGuard: CanActivateFn = () => {
   const currentUser = getObsValue(store.select((state) => state.userInfo));
 
   // If user info is already available, check if they are an admin
-  if (currentUser.id) return isAdmin(currentUser) ? true : basePath;
+  if (currentUser?.id) return isAdmin(currentUser) ? true : basePath;
 
   // If not available, fetch user info and update the store
   return authService.getCurrentUser().pipe(
+    filter((data) => !!data),
     map((data) => {
-      store.dispatch(UserInfoAction.Update({ newState: data }));
-      return isAdmin(data) ? true : basePath;
+      const currentUserData: ICurrentUser = {
+        id: data!.id,
+        username: data!.username,
+        fullName: data!.fullName,
+        email: data!.email,
+        phone: data!.phone,
+        status: data!.status,
+        role: data!.role,
+        unit: data!.unit,
+        rememberMe: data!.rememberMe,
+      };
+      store.dispatch(UserInfoAction.Update({ newState: currentUserData }));
+      return isAdmin(currentUserData) ? true : basePath;
     }),
     catchError(() => of(loginPath))
   );
@@ -44,6 +56,6 @@ export const AdminGuard: CanActivateFn = () => {
 /**
  * Utility function to check if the current user has the ADMIN role.
  */
-const isAdmin = (currentUser: ICurrentUser): boolean => {
-  return currentUser.role.name === UserRole.ADMIN;
+const isAdmin = (currentUser: ICurrentUser | null): boolean => {
+  return !!currentUser && currentUser.role.name === UserRole.ADMIN;
 };

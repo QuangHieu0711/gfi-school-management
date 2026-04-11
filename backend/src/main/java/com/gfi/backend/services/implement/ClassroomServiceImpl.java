@@ -32,6 +32,7 @@ import com.gfi.backend.services.interfaces.ClassroomService;
 import com.gfi.backend.services.interfaces.ClassroomSubjectService;
 import com.gfi.backend.utils.PageableUtils;
 import com.gfi.backend.utils.SecurityUtils;
+import com.gfi.backend.utils.ScopeFilterUtils;
 
 import lombok.RequiredArgsConstructor;
 
@@ -57,14 +58,27 @@ public class ClassroomServiceImpl implements ClassroomService {
     // Tìm kiếm và phân trang lớp học với filter
     @Override
     @Transactional(readOnly = true)
-    public PageResponseDto<ClassroomListItemDto, ClassroomFilterDto> search(PageRequestDto<ClassroomFilterDto> request) {
+    public PageResponseDto<ClassroomListItemDto, ClassroomFilterDto> search(
+            PageRequestDto<ClassroomFilterDto> request) {
         ClassroomFilterDto filter = request.getFilter() == null ? new ClassroomFilterDto() : request.getFilter();
         int pageSize = normalizePageSize(request.getPageSize());
         int pageNow = normalizePageNow(request.getPageNow());
         Pageable pageable = PageableUtils.newestFirst(pageNow, pageSize);
 
-        Page<Classroom> page = classroomRepository.findAll(classroomSpecification.buildSpecification(filter), pageable);
-        List<ClassroomListItemDto> items = page.getContent().stream().map(this::toListItemDto).toList();
+        // Lấy danh sách unitId được phép truy cập từ scope để áp dụng filter
+        List<Long> allowedUnitIds = ScopeFilterUtils.getScopesForQuery("CLASS_MANAGEMENT");
+
+        Page<ClassroomListItemDto> page;
+        if (ScopeFilterUtils.isScopeUnrestricted(allowedUnitIds)) {
+            // Unrestricted (ALL scope): use specification as is
+            Page<Classroom> classrooms = classroomRepository.findAll(classroomSpecification.buildSpecification(filter),
+                    pageable);
+            page = classrooms.map(this::toListItemDto);
+        } else {
+            // Restricted: filter by allowed units directly
+            Page<Classroom> classrooms = classroomRepository.findByUnitIdIn(allowedUnitIds, pageable);
+            page = classrooms.map(this::toListItemDto);
+        }
 
         return PageResponseDto.<ClassroomListItemDto, ClassroomFilterDto>builder()
                 .pageSize(pageSize)
@@ -72,15 +86,15 @@ public class ClassroomServiceImpl implements ClassroomService {
                 .filter(filter)
                 .pageTotal(page.getTotalPages())
                 .recordTotal(page.getTotalElements())
-                .items(items)
+                .items(page.getContent())
                 .build();
     }
 
-    // Danh sách lớp học cho dropdown/combobox
+    // Lấy danh sách lớp học theo các bộ lọc để dropdown
     @Override
     @Transactional(readOnly = true)
     public List<LookupItemDto> getOptions(Long unitId, Long gradeLevelId, Long schoolYearId) {
-        return classroomRepository.findAll(classroomSpecification.buildSpecificationForOptions(unitId, gradeLevelId, schoolYearId), Sort.by(Sort.Direction.ASC, "name").and(Sort.by(Sort.Direction.ASC, "id")))
+        return classroomRepository.findByUnitIdAndGradeLevelIdAndSchoolYearId(unitId, gradeLevelId, schoolYearId)
                 .stream()
                 .map(item -> LookupItemDto.builder().id(item.getId()).name(item.getName()).build())
                 .toList();
@@ -90,7 +104,12 @@ public class ClassroomServiceImpl implements ClassroomService {
     @Override
     @Transactional(readOnly = true)
     public ClassroomDetailDto getById(Long id) {
-        return toDetailDto(findClassroom(id));
+        Classroom classroom = findClassroom(id);
+
+        // Enforce scope: validate classroom's unit is within allowed scopes
+        ScopeFilterUtils.validateAccess("CLASS_MANAGEMENT", classroom.getUnit().getId());
+
+        return toDetailDto(classroom);
     }
 
     // Thêm mới lớp học
@@ -124,12 +143,18 @@ public class ClassroomServiceImpl implements ClassroomService {
     @Transactional
     public ClassroomDetailDto update(Long id, ClassroomUpdateRequest request) {
         Classroom classroom = findClassroom(id);
+
+        // Enforce scope: validate classroom's unit is within allowed scopes before
+        // allowing update
+        ScopeFilterUtils.validateAccess("CLASS_MANAGEMENT", classroom.getUnit().getId());
+
         Unit unit = findUnit(request.getUnitId());
         GradeLevel gradeLevel = findGradeLevel(request.getGradeLevelId());
         SchoolYear schoolYear = findSchoolYear(request.getSchoolYearId());
         String code = normalize(request.getCode());
         String name = normalize(request.getName());
-        boolean gradeLevelChanged = classroom.getGradeLevel() == null || !classroom.getGradeLevel().getId().equals(gradeLevel.getId());
+        boolean gradeLevelChanged = classroom.getGradeLevel() == null
+                || !classroom.getGradeLevel().getId().equals(gradeLevel.getId());
 
         validateUnique(unit.getId(), gradeLevel.getId(), schoolYear.getId(), code, name, id);
 
@@ -148,11 +173,17 @@ public class ClassroomServiceImpl implements ClassroomService {
         return toDetailDto(savedClassroom);
     }
 
-    // Xóa lớp học (soft delete). Kiểm tra không được xóa nếu còn học sinh hoặc cấu hình môn học.
+    // Xóa lớp học (soft delete). Kiểm tra không được xóa nếu còn học sinh hoặc cấu
+    // hình môn học.
     @Override
     @Transactional
     public void delete(Long id) {
         Classroom classroom = findClassroom(id);
+
+        // Enforce scope: validate classroom's unit is within allowed scopes before
+        // allowing delete
+        ScopeFilterUtils.validateAccess("CLASS_MANAGEMENT", classroom.getUnit().getId());
+
         classroomSubjectService.clearByClassroomId(id);
 
         // Xóa mềm: đánh dấu xóa thay vì hard delete

@@ -22,7 +22,8 @@ import { MatProgressSpinner } from '@angular/material/progress-spinner';
              [mat-mini-fab][loading], [matMiniFab][loading]`,
 })
 export class ButtonLoadingDirective implements OnChanges {
-  private readonly _elementRef = inject<ElementRef<HTMLButtonElement>>(ElementRef);
+  private readonly _elementRef =
+    inject<ElementRef<HTMLButtonElement>>(ElementRef);
   private readonly _viewContainerRef = inject(ViewContainerRef);
   private readonly _renderer = inject(Renderer2);
 
@@ -54,7 +55,10 @@ export class ButtonLoadingDirective implements OnChanges {
       this.spinner = this._viewContainerRef.createComponent(MatProgressSpinner);
       this.spinner.instance.diameter = 24;
       this.spinner.instance.mode = 'indeterminate';
-      this._renderer.appendChild(this._elementRef.nativeElement, this.spinner.instance._elementRef.nativeElement);
+      this._renderer.appendChild(
+        this._elementRef.nativeElement,
+        this.spinner.instance._elementRef.nativeElement
+      );
     }
   }
 

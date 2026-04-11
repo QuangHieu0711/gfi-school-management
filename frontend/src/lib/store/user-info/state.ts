@@ -3,17 +3,22 @@ import { ICurrentUser } from '@model/auth.model';
 export const INITIAL_STATE: ICurrentUser = {
   id: '',
   username: '',
-  name: '',
+  fullName: '',
   email: '',
+  phone: '',
+  status: 0,
   role: {
     id: '',
+    code: '',
     name: '',
     rules: [],
   },
-  donVi: {
-    maDonVi: '',
-    tenDonVi: '',
-    tenVietTat: '',
-    role: [],
+  unit: {
+    id: '',
+    code: '',
+    name: '',
+  },
+  permissions: {
+    menus: [],
   },
 };

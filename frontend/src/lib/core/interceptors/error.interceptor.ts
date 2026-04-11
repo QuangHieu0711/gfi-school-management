@@ -1,7 +1,28 @@
 import { Injectable } from '@angular/core';
-import { HttpInterceptor, HttpRequest, HttpHandler, HttpEvent, HttpErrorResponse } from '@angular/common/http';
-import { Observable, BehaviorSubject, throwError, timer, Subject, Observer } from 'rxjs';
-import { retry, catchError, filter, switchMap, take, concatMap, tap, finalize } from 'rxjs/operators';
+import {
+  HttpInterceptor,
+  HttpRequest,
+  HttpHandler,
+  HttpEvent,
+  HttpErrorResponse,
+} from '@angular/common/http';
+import {
+  Observable,
+  BehaviorSubject,
+  throwError,
+  Subject,
+  Observer,
+} from 'rxjs';
+import {
+  retry,
+  catchError,
+  filter,
+  switchMap,
+  take,
+  concatMap,
+  tap,
+  finalize,
+} from 'rxjs/operators';
 import { AuthService, LanguageService, ToastService } from '@service';
 import { AUTH_API_ENDPOINT } from '@model/auth.model';
 import { ErrorHandlingContext, QueuedRequest } from '@model/response.model';
@@ -35,7 +56,10 @@ export class ApiErrorInterceptor implements HttpInterceptor {
    * @param next The next handler in the chain.
    * @returns An observable of the HTTP event.
    */
-  intercept<T>(req: HttpRequest<T>, next: HttpHandler): Observable<HttpEvent<T>> {
+  intercept<T>(
+    req: HttpRequest<T>,
+    next: HttpHandler
+  ): Observable<HttpEvent<T>> {
     const context: ErrorHandlingContext = req.context.get(ERROR_CONTEXT);
     return next.handle(req).pipe(
       // Retry failed GET requests (server errors) up to MAX_RETRY times with delay
@@ -60,11 +84,21 @@ export class ApiErrorInterceptor implements HttpInterceptor {
 
         // If unauthorized and not a login request, queue the request for token refresh
         if (error.status === 401 && !isAuthRequest)
-          return new Observable<HttpEvent<T>>((observer) => this.requestQueue.next({ req, next, observer } as QueuedRequest<unknown>));
+          return new Observable<HttpEvent<T>>((observer) =>
+            this.requestQueue.next({
+              req,
+              next,
+              observer,
+            } as QueuedRequest<unknown>)
+          );
 
         // Backend currently returns 403 when the access token is expired.
         // In that case, clear the local session and redirect to login.
-        if (error.status === 403 && !isAuthRequest && this.authService.isAuthenticated()) {
+        if (
+          error.status === 403 &&
+          !isAuthRequest &&
+          this.authService.isAuthenticated()
+        ) {
           this.authService.handleLogout();
         }
 
@@ -79,19 +113,30 @@ export class ApiErrorInterceptor implements HttpInterceptor {
    * @param error The HTTP error response.
    * @returns An observable that throws the error.
    */
-  private handleErrorRequest(error: HttpErrorResponse, context?: ErrorHandlingContext): Observable<never> {
+  private handleErrorRequest(
+    error: HttpErrorResponse,
+    context?: ErrorHandlingContext
+  ): Observable<never> {
     console.error('Error:', error);
     if (context?.silent) return throwError(() => error);
 
     // Try to find handler by exact status + code first
-    const code = error?.error?.code;
+    // Default to 'UNKNOWN' if error body is null or doesn't contain a code
+    const code = error?.error?.code ?? 'UNKNOWN';
     const status = error.status;
     const t = this.languageService.instant.bind(this.languageService);
 
-    const handler = ERROR_REGISTRY[status]?.[code] ?? ERROR_REGISTRY[status]?.['DEFAULT'] ?? ERROR_REGISTRY['DEFAULT']?.['DEFAULT'];
+    const handler =
+      ERROR_REGISTRY[status]?.[code] ??
+      ERROR_REGISTRY[status]?.['DEFAULT'] ??
+      ERROR_REGISTRY['DEFAULT']?.['DEFAULT'];
 
     if (handler) handler(this.toast, t, error);
-    else console.warn(`No error handler found for status ${status} and code ${code}`, error);
+    else
+      console.warn(
+        `No error handler found for status ${status} and code ${code}`,
+        error
+      );
 
     return throwError(() => error);
   }
@@ -101,7 +146,9 @@ export class ApiErrorInterceptor implements HttpInterceptor {
    * This method is called when a request is queued for token refresh.
    */
   private processQueue(): void {
-    this.requestQueue.pipe(concatMap((queued) => this.handleQueuedRequest(queued))).subscribe();
+    this.requestQueue
+      .pipe(concatMap((queued) => this.handleQueuedRequest(queued)))
+      .subscribe();
   }
 
   /**
@@ -109,7 +156,9 @@ export class ApiErrorInterceptor implements HttpInterceptor {
    * @param queued The queued request containing the original request, next handler, and observer.
    * @returns An observable of the HTTP event.
    */
-  private handleQueuedRequest<T>(queued: QueuedRequest<T>): Observable<HttpEvent<T>> {
+  private handleQueuedRequest<T>(
+    queued: QueuedRequest<T>
+  ): Observable<HttpEvent<T>> {
     const { req, next, observer } = queued;
 
     if (!this.isRefreshing) {

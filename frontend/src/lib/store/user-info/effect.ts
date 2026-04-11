@@ -1,8 +1,9 @@
 import { inject, Injectable } from '@angular/core';
 import { Actions, createEffect, ofType } from '@ngrx/effects';
 import { UserInfoAction } from '.';
-import { catchError, map, switchMap, throwError } from 'rxjs';
+import { catchError, filter, map, switchMap, throwError } from 'rxjs';
 import { AuthService } from '@service';
+import { ICurrentUser } from '@model/auth.model';
 
 @Injectable()
 export class UserInfoEffect {
@@ -15,7 +16,22 @@ export class UserInfoEffect {
       ofType(UserInfoAction.GetCurrentUser),
       switchMap(() => {
         return this.authService.getCurrentUser().pipe(
-          map((data) => UserInfoAction.Update({ newState: data })),
+          filter((data) => !!data),
+          map((data) => {
+            const currentUserData: ICurrentUser = {
+              id: data!.id,
+              username: data!.username,
+              fullName: data!.fullName,
+              email: data!.email,
+              phone: data!.phone,
+              status: data!.status,
+              role: data!.role,
+              unit: data!.unit,
+              permissions: data!.permissions,
+              rememberMe: data!.rememberMe,
+            };
+            return UserInfoAction.Update({ newState: currentUserData });
+          }),
           catchError((error) => throwError(() => error))
         );
       })

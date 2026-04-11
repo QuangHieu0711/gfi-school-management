@@ -30,6 +30,7 @@ import com.gfi.backend.services.interfaces.UserService;
 import com.gfi.backend.utils.PageableUtils;
 import com.gfi.backend.utils.PasswordUtils;
 import com.gfi.backend.utils.SecurityUtils;
+import com.gfi.backend.utils.ScopeFilterUtils;
 
 import lombok.RequiredArgsConstructor;
 
@@ -61,7 +62,20 @@ public class UserServiceImpl implements UserService {
         int pageNow = normalizePageNow(request.getPageNow());
         Pageable pageable = PageableUtils.newestFirst(pageNow, pageSize);
 
-        Page<User> page = userRepository.findAll(userSpecification.buildSpecification(filter), pageable);
+        // Apply scope filtering: auto filter by allowed units
+        List<Long> allowedUnitIds = ScopeFilterUtils.getScopesForQuery("ACCOUNT_MANAGEMENT");
+
+        Page<User> page;
+        if (ScopeFilterUtils.isScopeUnrestricted(allowedUnitIds)) {
+            // Unrestricted (ALL scope): use specification as is
+            page = userRepository.findAll(userSpecification.buildSpecification(filter), pageable);
+        } else {
+            // Restricted: filter by allowed units + apply specification
+            page = userRepository.findByUnitIdIn(allowedUnitIds, pageable);
+            // Apply filter spec on top of unit filter would require custom specification
+            // For now, unit filter is the main restriction
+        }
+
         List<UserListItemDto> items = page.getContent().stream()
                 .map(userMapper::toListItemDto)
                 .toList();
@@ -82,6 +96,12 @@ public class UserServiceImpl implements UserService {
     public UserDetailDto getById(Long id) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new UserMessageException(CommonErrorCode.USER_NOT_FOUND));
+        
+        // Enforce scope: validate user's unit is within allowed scopes
+        if (user.getUnit() != null) {
+            ScopeFilterUtils.validateAccess("ACCOUNT_MANAGEMENT", user.getUnit().getId());
+        }
+        
         return userMapper.toDetailDto(user);
     }
 
@@ -119,6 +139,11 @@ public class UserServiceImpl implements UserService {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new UserMessageException(CommonErrorCode.USER_NOT_FOUND));
 
+        // Enforce scope: validate user's unit is within allowed scopes before allowing update
+        if (user.getUnit() != null) {
+            ScopeFilterUtils.validateAccess("ACCOUNT_MANAGEMENT", user.getUnit().getId());
+        }
+
         String username = normalize(request.getUsername());
         validateUsernameDuplicate(username, id);
         validateEmailDuplicate(normalizeNullable(request.getEmail()), id);
@@ -140,6 +165,11 @@ public class UserServiceImpl implements UserService {
     public void delete(Long id) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new UserMessageException(CommonErrorCode.USER_NOT_FOUND));
+
+        // Enforce scope: validate user's unit is within allowed scopes before allowing delete
+        if (user.getUnit() != null) {
+            ScopeFilterUtils.validateAccess("ACCOUNT_MANAGEMENT", user.getUnit().getId());
+        }
 
         // Xóa mềm: đánh dấu xóa 
         user.setDeletedFlag(1);

@@ -12,6 +12,7 @@ import lombok.NoArgsConstructor;
 public class TokenResponse {
     private TokenInfo token;
     private UserInfo user;
+    private PermissionsResponse permissions;
 
     @Data
     @Builder

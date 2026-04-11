@@ -2,10 +2,12 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  ElementRef,
   EventEmitter,
   Input,
   OnDestroy,
   Output,
+  ViewChild,
 } from '@angular/core';
 import {
   MtxGridColumn,
@@ -54,6 +56,9 @@ import { MtxGridCellTemplate } from '@ng-matero/extensions/grid';
  * - Supports i18n for pin options and labels
  */
 export class AppTableComponent implements OnDestroy {
+  @ViewChild('gridWrapper', { static: true })
+  private gridWrapper?: ElementRef<HTMLElement>;
+
   /** Title displayed above the table */
   @Input() tableTitle = '';
   @Input() headerTemplate: MtxGridCellTemplate | Record<string, any> = {};
@@ -61,12 +66,15 @@ export class AppTableComponent implements OnDestroy {
   /** Internal dataSource with 1-based rowIndex injected for display */
   private _dataSource: TableDataSource[] = [];
   private _requestedRowSelected: TableDataSource[] = [];
+  private pendingScrollTop: number | null = null;
 
   /** Table rows input; rowIndex is attached on assignment */
   @Input()
   set dataSource(value: TableDataSource[]) {
+    this.captureScrollPosition();
     this._dataSource = this.attachRowIndex(value);
     this.syncRowSelected();
+    this.restoreScrollPosition();
   }
   get dataSource(): TableDataSource[] {
     return this._dataSource;
@@ -319,5 +327,39 @@ export class AppTableComponent implements OnDestroy {
     );
 
     this._rowSelected = this._dataSource.filter((row) => selectedIds.has(row.id));
+  }
+
+  private captureScrollPosition(): void {
+    const scrollContainer = this.getScrollContainer();
+    if (!scrollContainer) return;
+
+    this.pendingScrollTop = scrollContainer.scrollTop;
+  }
+
+  private restoreScrollPosition(): void {
+    if (this.pendingScrollTop == null) return;
+
+    const scrollTop = this.pendingScrollTop;
+    this.pendingScrollTop = null;
+
+    requestAnimationFrame(() => {
+      const scrollContainer = this.getScrollContainer();
+      if (!scrollContainer) return;
+
+      scrollContainer.scrollTop = scrollTop;
+    });
+  }
+
+  private getScrollContainer(): HTMLElement | null {
+    const wrapper = this.gridWrapper?.nativeElement;
+    if (!wrapper) return null;
+
+    return (
+      wrapper.querySelector('.mtx-grid-content') ??
+      wrapper.querySelector('.mtx-grid-main') ??
+      wrapper.querySelector('.mat-mdc-table-container') ??
+      wrapper.querySelector('.cdk-virtual-scroll-viewport') ??
+      null
+    );
   }
 }

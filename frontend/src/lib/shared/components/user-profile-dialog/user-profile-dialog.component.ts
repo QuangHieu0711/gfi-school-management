@@ -91,9 +91,9 @@ export class UserProfileDialogComponent {
     this.userDisplayInfo = {
       username: user.username || 'N/A',
       email: user.email || 'N/A',
-      name: user.name || 'N/A',
-      maDonVi: user.donVi?.maDonVi || 'N/A',
-      tenDonVi: user.donVi?.tenDonVi || 'N/A',
+      name: user.fullName || 'N/A',
+      maDonVi: user.unit?.code || 'N/A',
+      tenDonVi: user.unit?.name || 'N/A',
       role: user.role?.name || 'N/A',
     };
   }

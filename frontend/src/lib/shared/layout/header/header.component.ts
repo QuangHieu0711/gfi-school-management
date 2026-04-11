@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 // import { Component, Injector } from '@angular/core';
 // import { CommonModule } from '@angular/common';
 // import { IconComponent } from '@components/app-icon/app-icon.component';
@@ -135,6 +134,8 @@ import { UserProfileDialogComponent } from '@components/user-profile-dialog/user
 import { NotificationDetailDialogComponent } from './notification-detail-dialog/notification-detail-dialog.component';
 import { Observable } from 'rxjs';
 import { ICurrentUser } from '@model/auth.model';
+import { UserInfoAction } from '@store/user-info';
+import { NAVIGATOR_ENDPOINT } from '@constant/navigator';
 
 interface HeaderNotificationItem {
   id: number;
@@ -187,7 +188,7 @@ export class HeaderComponent extends ComponentBaseAbstract implements OnInit {
 
   // Thêm property để template có thể access user observable
   get user$(): Observable<ICurrentUser | null> {
-    return this.authService.currentUser$;
+    return this.authService.currentUser$ as Observable<ICurrentUser | null>;
   }
 
   constructor(
@@ -328,5 +329,23 @@ export class HeaderComponent extends ComponentBaseAbstract implements OnInit {
 
   logout() {
     this.authService.logout();
+    // Clear store
+    this.store.dispatch(
+      UserInfoAction.Update({
+        newState: {
+          id: '',
+          username: '',
+          fullName: '',
+          email: '',
+          phone: '',
+          status: 0,
+          role: { id: 0, code: '', name: '', rules: [] },
+          unit: { id: '', code: '', name: '' },
+          permissions: { menus: [] },
+        },
+      })
+    );
+    // Navigate to login
+    this.router.navigateByUrl(`/${NAVIGATOR_ENDPOINT.LOGIN}`);
   }
 }

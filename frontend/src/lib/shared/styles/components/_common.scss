@@ -28,11 +28,8 @@
 // Icon styles
 // Ensure icons are displayed inline and fit their content
 app-icon {
-  width: fit-content;
-  min-width: 24px;
-  height: fit-content;
-  min-height: 24px;
   display: inline-flex;
   justify-content: center;
   align-items: center;
+  vertical-align: middle;
 }

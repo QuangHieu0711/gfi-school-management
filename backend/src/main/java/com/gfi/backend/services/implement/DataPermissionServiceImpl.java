@@ -29,23 +29,28 @@ import com.gfi.backend.repositories.RoleRepository;
 import com.gfi.backend.services.interfaces.DataPermissionService;
 import com.gfi.backend.utils.SecurityUtils;
 
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 
 /**
  * Dịch vụ quản lý phân quyền dữ liệu cho các vai trò
  * Xử lý phân quyền cấp độ menu và scope cho từng role
  */
 @Service
-@RequiredArgsConstructor
 public class DataPermissionServiceImpl implements DataPermissionService {
 
-    private final DataPermissionRepository dataPermissionRepository;
-    private final RoleRepository roleRepository;
-    private final MenuRepository menuRepository;
+    @Autowired
+    private DataPermissionRepository dataPermissionRepository;
+
+    @Autowired
+    private RoleRepository roleRepository;
+
+    @Autowired
+    private MenuRepository menuRepository;
 
     /**
      * Lấy danh sách phân quyền theo role ID
      * Bao gồm cả quyền trên menu cha nếu có quyền menu con
+     * 
      * @param roleId ID của role
      * @return Danh sách phân quyền (menu + scope)
      */
@@ -75,6 +80,7 @@ public class DataPermissionServiceImpl implements DataPermissionService {
     /**
      * Lưu/cập nhật phân quyền dữ liệu cho các role
      * Hỗ trợ batch save với validation unique (roleId + menuId)
+     * 
      * @param requests Danh sách request phân quyền
      * @return Danh sách phân quyền sau khi lưu
      */
@@ -92,7 +98,8 @@ public class DataPermissionServiceImpl implements DataPermissionService {
             validateScopes(request.getScopes());
             roleIds.add(request.getRoleId());
 
-            DataPermission dataPermission = dataPermissionRepository.findByRoleIdAndMenuId(request.getRoleId(), request.getMenuId())
+            DataPermission dataPermission = dataPermissionRepository
+                    .findByRoleIdAndMenuId(request.getRoleId(), request.getMenuId())
                     .orElse(null);
 
             if (!isEnabled(request.getStatus())) {
@@ -125,6 +132,7 @@ public class DataPermissionServiceImpl implements DataPermissionService {
     /**
      * Xác định các scope type mà user có quyền thực hiện
      * Dùng để kiểm tra quyền dữ liệu ở mức độ chi tiết
+     * 
      * @param roleId ID của role
      * @param menuId ID của menu
      * @param userId ID của user
@@ -150,9 +158,10 @@ public class DataPermissionServiceImpl implements DataPermissionService {
 
     /**
      * Thêm các menu cha vào kết quả nếu có menu con được phân quyền
+     * 
      * @param resultMap Map chứa kết quả phân quyền
-     * @param role Role hiện tại
-     * @param menu Menu để tìm các menu cha
+     * @param role      Role hiện tại
+     * @param menu      Menu để tìm các menu cha
      */
     private void appendParentMenus(Map<Long, DataPermissionItemDto> resultMap, Role role, Menu menu) {
         Menu currentParent = menu.getParentMenu();
@@ -164,6 +173,7 @@ public class DataPermissionServiceImpl implements DataPermissionService {
 
     /**
      * Chuyển đổi menu cha thành DTO (status = 0 vì không có phân quyền trực tiếp)
+     * 
      * @param role Role
      * @param menu Menu cha
      * @return DTO với status = 0
@@ -188,12 +198,14 @@ public class DataPermissionServiceImpl implements DataPermissionService {
 
     /**
      * Áp dụng dữ liệu từ request vào entity DataPermission
-     * @param dataPermission Entity DataPermission
-     * @param request Request chứa dữ liệu phân quyền
+     * 
+     * @param dataPermission  Entity DataPermission
+     * @param request         Request chứa dữ liệu phân quyền
      * @param currentUsername User hiện tại
-     * @param isNew True nếu là tạo mới, False nếu là cập nhật
+     * @param isNew           True nếu là tạo mới, False nếu là cập nhật
      */
-    private void applyRequest(DataPermission dataPermission, DataPermissionSaveRequest request, String currentUsername, boolean isNew) {
+    private void applyRequest(DataPermission dataPermission, DataPermissionSaveRequest request, String currentUsername,
+            boolean isNew) {
         Menu menu = menuRepository.findById(request.getMenuId())
                 .orElseThrow(() -> new UserMessageException(CommonErrorCode.MENU_NOT_FOUND));
         Role role = roleRepository.findById(request.getRoleId())
@@ -224,6 +236,7 @@ public class DataPermissionServiceImpl implements DataPermissionService {
 
     /**
      * Validate danh sách scope: không trống, không trùng lặp
+     * 
      * @param scopes Danh sách scope request
      * @throws UserMessageException Nếu validation thất bại
      */
@@ -242,6 +255,7 @@ public class DataPermissionServiceImpl implements DataPermissionService {
 
     /**
      * Chuẩn hóa scope type: trim + uppercase
+     * 
      * @param scopeType Scope type cần chuẩn hóa
      * @return Scope type sau khi chuẩn hóa
      */
@@ -254,6 +268,7 @@ public class DataPermissionServiceImpl implements DataPermissionService {
 
     /**
      * Kiểm tra xem status có được enable (= 1) không
+     * 
      * @param value Giá trị status
      * @return True nếu status = 1
      */
@@ -263,6 +278,7 @@ public class DataPermissionServiceImpl implements DataPermissionService {
 
     /**
      * Validate batch request: không null, không trống
+     * 
      * @param requests Danh sách request
      * @throws UserMessageException Nếu validation thất bại
      */
@@ -274,9 +290,10 @@ public class DataPermissionServiceImpl implements DataPermissionService {
 
     /**
      * Đảm bảo cặp (roleId, menuId) không trùng lặp trong batch
+     * 
      * @param uniquePairs Set chứa các cặp unique
-     * @param roleId Role ID
-     * @param menuId Menu ID
+     * @param roleId      Role ID
+     * @param menuId      Menu ID
      * @throws UserMessageException Nếu cặp đã tồn tại
      */
     private void ensureUniquePair(Set<String> uniquePairs, Long roleId, Long menuId) {
@@ -288,6 +305,7 @@ public class DataPermissionServiceImpl implements DataPermissionService {
 
     /**
      * Chuyển đổi DataPermission entity thành DTO
+     * 
      * @param dataPermission Entity DataPermission
      * @return DTO chứa thông tin phân quyền + scope
      */
@@ -298,7 +316,8 @@ public class DataPermissionServiceImpl implements DataPermissionService {
                 .roleCode(dataPermission.getRole().getCode())
                 .roleName(dataPermission.getRole().getRoleName())
                 .menuId(dataPermission.getMenu().getId())
-                .parentId(dataPermission.getMenu().getParentMenu() == null ? null : dataPermission.getMenu().getParentMenu().getId())
+                .parentId(dataPermission.getMenu().getParentMenu() == null ? null
+                        : dataPermission.getMenu().getParentMenu().getId())
                 .menuCode(dataPermission.getMenu().getCode())
                 .menuName(dataPermission.getMenu().getName())
                 .menuUrl(dataPermission.getMenu().getUrl())
@@ -314,5 +333,5 @@ public class DataPermissionServiceImpl implements DataPermissionService {
                         .toList())
                 .build();
     }
-
 }
+

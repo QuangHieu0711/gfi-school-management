@@ -148,7 +148,7 @@ import { UserInfoAction } from '@store/user-info';
 import { IconComponent } from '@components/app-icon/app-icon.component';
 import { MENU } from '@constant/menu';
 import { getObsValue } from '@utils/utils';
-import { ICurrentUser, IRule, UserRole } from '@model/auth.model';
+import { ICurrentUser, IMenuPermission, UserRole } from '@model/auth.model';
 
 @Component({
   selector: 'app-layout-component',
@@ -164,6 +164,7 @@ import { ICurrentUser, IRule, UserRole } from '@model/auth.model';
   ],
 })
 export class LayoutComponent extends ComponentBaseAbstract {
+  Number = Number; // Expose global Number for template
   private readonly SIDEBAR_COLLAPSED_KEY = 'layout.sidebar.collapsed';
   isExpanded = true;
   isSidebarCollapsed = false;
@@ -174,14 +175,7 @@ export class LayoutComponent extends ComponentBaseAbstract {
   private isPermissionDrivenSidebar = false;
   userInfo = getObsValue(this.store.select((state) => state.userInfo));
 
-  private readonly TREE_MODULE_PREFIXES = [
-    '/Admin',
-    '/tai-lieu-nguyen-thuy',
-    '/bao-cao-dia-chat',
-    '/de-an-phuong-an',
-    '/dong-cua-mo',
-    '/quan-tri-tai-nguyen',
-  ];
+  private readonly TREE_MODULE_PREFIXES = ['/Admin'];
   private lastTopPath = '';
   private readonly destroy$ = new Subject<void>();
 
@@ -280,10 +274,8 @@ export class LayoutComponent extends ComponentBaseAbstract {
         distinctUntilChanged((a, b) => JSON.stringify(a) === JSON.stringify(b)),
         takeUntil(this.destroy$)
       )
-      // .subscribe((navigator) => {
-      //   this.treeDataSource = navigator ?? [];
-      // });
       .subscribe((navigator) => {
+        // Only use navigator if permissions-driven sidebar is not active
         if (this.isPermissionDrivenSidebar) {
           return;
         }
@@ -314,12 +306,11 @@ export class LayoutComponent extends ComponentBaseAbstract {
         }),
         filter((u) => !!u?.id),
         distinctUntilChanged((a, b) => a.id === b.id),
-
         takeUntil(this.destroy$)
       )
       .subscribe((userInfo) => {
         this.getMenuByRole(userInfo);
-        this.syncSidebarFromPermissions(userInfo.role.rules ?? []);
+        this.syncSidebarFromPermissions(userInfo.permissions?.menus ?? []);
       });
   }
 
@@ -355,178 +346,7 @@ export class LayoutComponent extends ComponentBaseAbstract {
   isNodeActiveUrl(url: string, queryParams?: Record<string, any>): boolean {
     if (!url) return false;
 
-    const currentPathOnly = this.router.url.split('?')[0];
     const targetPath = url.startsWith('/') ? url : `/${url}`;
-    const currentQ = this.route.snapshot.queryParams || {};
-
-    // =========================
-    // TLNT rules
-    // =========================
-    const TLNT_ROOT = '/tai-lieu-nguyen-thuy';
-    const TLNT_LANDING = '/tai-lieu-nguyen-thuy/vung-mo';
-
-    if (targetPath === TLNT_ROOT) {
-      //chỉ sáng khi đúng landing và chưa chọn vùng
-      return currentPathOnly === TLNT_LANDING && !currentQ['idVungMo'];
-    }
-
-    if (
-      targetPath === TLNT_LANDING &&
-      (!queryParams || Object.keys(queryParams).length === 0)
-    ) {
-      return false;
-    }
-
-    // =========================
-    // BCDC rules
-    // =========================
-    const BCDC_ROOT = '/bao-cao-dia-chat';
-    const BCDC_LANDING = '/bao-cao-dia-chat/vung-mo';
-
-    // Root module url (/bao-cao-dia-chat) nếu menu của bạn trỏ về đây
-    if (targetPath === BCDC_ROOT) {
-      return currentPathOnly === BCDC_LANDING;
-    }
-
-    // Root "Báo cáo địa chất" (node không có queryParams)
-    if (
-      targetPath === BCDC_LANDING &&
-      (!queryParams || Object.keys(queryParams).length === 0)
-    ) {
-      if (currentPathOnly !== BCDC_LANDING) return false;
-
-      const currentQ = this.route.snapshot.queryParams || {};
-      //sáng khi landing và KHÔNG chọn vùng (không có idVungMo)
-      return !currentQ['idVungMo'];
-    }
-
-    if (targetPath === BCDC_LANDING && queryParams?.['idVungMo'] != null) {
-      if (currentPathOnly !== BCDC_LANDING) return false;
-
-      const currentQ = this.route.snapshot.queryParams || {};
-      return (
-        String(currentQ['idKhoangSan'] ?? '') ===
-          String(queryParams['idKhoangSan'] ?? '') &&
-        String(currentQ['idVungMo'] ?? '') ===
-          String(queryParams['idVungMo'] ?? '')
-      );
-    }
-    // =========================
-    // DAPA rules
-    // =========================
-    const DAPA_ROOT = '/de-an-phuong-an';
-    const DAPA_LANDING = '/de-an-phuong-an/vung-mo';
-    const DAPA_TIEN_DO_THI_CONG =
-      '/de-an-phuong-an/dapa-quan-ly-tien-do-thi-cong';
-    const DAPA_CHI_TIET_TIEN_DO = '/de-an-phuong-an/chi-tiet-tien-do-thi-cong';
-
-    // Root module url (/de-an-phuong-an)
-    if (targetPath === DAPA_ROOT) {
-      return currentPathOnly === DAPA_LANDING;
-    }
-
-    // Root "Đề án phương án" (node không có queryParams)
-    if (
-      targetPath === DAPA_LANDING &&
-      (!queryParams || Object.keys(queryParams).length === 0)
-    ) {
-      if (currentPathOnly !== DAPA_LANDING) return false;
-      return !currentQ['idVungMo']; // sáng khi landing và chưa chọn vùng
-    }
-
-    // Region node: phải check cả idKhoangSan và idVungMo
-    if (targetPath === DAPA_LANDING && queryParams?.['idVungMo'] != null) {
-      if (currentPathOnly !== DAPA_LANDING) return false;
-
-      return (
-        String(currentQ['idKhoangSan'] ?? '') ===
-          String(queryParams['idKhoangSan'] ?? '') &&
-        String(currentQ['idVungMo'] ?? '') ===
-          String(queryParams['idVungMo'] ?? '')
-      );
-    }
-
-    if (targetPath === DAPA_TIEN_DO_THI_CONG && queryParams) {
-      if (currentPathOnly === DAPA_TIEN_DO_THI_CONG) {
-        return (
-          String(currentQ['idKhoangSan'] ?? '') ===
-            String(queryParams['idKhoangSan'] ?? '') &&
-          String(currentQ['idKhuMo'] ?? '') ===
-            String(queryParams['idKhuMo'] ?? '') &&
-          String(currentQ['dean'] ?? '') === String(queryParams['dean'] ?? '')
-        );
-      }
-      if (currentPathOnly === DAPA_CHI_TIET_TIEN_DO) {
-        return (
-          String(currentQ['idKhoangSan'] ?? '') ===
-            String(queryParams['idKhoangSan'] ?? '') &&
-          String(currentQ['dean'] ?? '') === String(queryParams['dean'] ?? '')
-        );
-      }
-      return false;
-    }
-    const QTTN_ROOT = '/quan-tri-tai-nguyen';
-
-    if (targetPath === QTTN_ROOT) {
-      return currentPathOnly.startsWith(QTTN_ROOT);
-    }
-
-    // =========================
-    // DAKT (Dự án khai thác) rules
-    // =========================
-    const DAKT_ROOT = '/du-an-khai-thac';
-    const DAKT_LANDING = '/du-an-khai-thac/vung-mo';
-
-    // Root module url (/du-an-khai-thac)
-    if (targetPath === DAKT_ROOT) {
-      return currentPathOnly === DAKT_LANDING;
-    }
-
-    // Root "Đóng cửa mỏ" (node không có queryParams)
-    if (
-      targetPath === DAKT_LANDING &&
-      (!queryParams || Object.keys(queryParams).length === 0)
-    ) {
-      if (currentPathOnly !== DAKT_LANDING) return false;
-      return !currentQ['idVungMo']; // sáng khi landing và chưa chọn vùng
-    }
-
-    if (targetPath === DAKT_LANDING && queryParams?.['idVungMo'] != null) {
-      if (currentPathOnly !== DAKT_LANDING) return false;
-
-      return (
-        String(currentQ['idVungMo'] ?? '') ===
-        String(queryParams['idVungMo'] ?? '')
-      );
-    }
-    // =========================
-    // DCM (Đóng cửa mỏ) rules
-    // =========================
-    const DCM_ROOT = '/dong-cua-mo';
-    const DCM_LANDING = '/dong-cua-mo/vung-mo';
-
-    // Root module url (/dong-cua-mo)
-    if (targetPath === DCM_ROOT) {
-      return currentPathOnly === DCM_LANDING;
-    }
-
-    // Root "Đóng cửa mỏ" (node không có queryParams)
-    if (
-      targetPath === DCM_LANDING &&
-      (!queryParams || Object.keys(queryParams).length === 0)
-    ) {
-      if (currentPathOnly !== DCM_LANDING) return false;
-      return !currentQ['idVungMo']; // sáng khi landing và chưa chọn vùng
-    }
-
-    if (targetPath === DCM_LANDING && queryParams?.['idVungMo'] != null) {
-      if (currentPathOnly !== DCM_LANDING) return false;
-
-      return (
-        String(currentQ['idVungMo'] ?? '') ===
-        String(queryParams['idVungMo'] ?? '')
-      );
-    }
 
     // ===== default behavior =====
     const pathOk = this.router.isActive(targetPath, {
@@ -599,7 +419,10 @@ export class LayoutComponent extends ComponentBaseAbstract {
       return;
     }
 
-    this.treeDataSource = this.filterTreeByKeyword(this.allTreeDataSource, keyword);
+    this.treeDataSource = this.filterTreeByKeyword(
+      this.allTreeDataSource,
+      keyword
+    );
   }
 
   private filterTreeByKeyword(nodes: TreeNode[], keyword: string): TreeNode[] {
@@ -607,7 +430,9 @@ export class LayoutComponent extends ComponentBaseAbstract {
       .map((node) => {
         const children = Array.isArray(node.children) ? node.children : [];
         const filteredChildren = this.filterTreeByKeyword(children, keyword);
-        const selfMatched = `${node.name ?? ''}`.toLowerCase().includes(keyword);
+        const selfMatched = `${node.name ?? ''}`
+          .toLowerCase()
+          .includes(keyword);
 
         if (!selfMatched && filteredChildren.length === 0) {
           return null;
@@ -622,8 +447,8 @@ export class LayoutComponent extends ComponentBaseAbstract {
       .filter((node): node is TreeNode => node !== null);
   }
 
-  private syncSidebarFromPermissions(rules: IRule[]): void {
-    if (!rules.length) {
+  private syncSidebarFromPermissions(menus: IMenuPermission[]): void {
+    if (!menus.length) {
       this.isPermissionDrivenSidebar = false;
       this.allTreeDataSource = [];
       this.treeDataSource = [];
@@ -631,70 +456,56 @@ export class LayoutComponent extends ComponentBaseAbstract {
     }
 
     this.isPermissionDrivenSidebar = true;
-    this.allTreeDataSource = this.buildSidebarTreeFromRules(rules);
+    this.allTreeDataSource = this.buildSidebarTreeFromMenus(menus);
     this.applySidebarSearch();
   }
 
-  private buildSidebarTreeFromRules(rules: IRule[]): TreeNode[] {
-    const orderedRules = [...rules].sort((a, b) => {
-      const ordinalCompare = Number(a.ordinal ?? 0) - Number(b.ordinal ?? 0);
-      if (ordinalCompare !== 0) return ordinalCompare;
-      return Number(a.moduleId ?? 0) - Number(b.moduleId ?? 0);
-    });
-    const ruleMap = new Map<string, IRule>();
+  private buildSidebarTreeFromMenus(menus: IMenuPermission[]): TreeNode[] {
+    const mapNode = (
+      menu: IMenuPermission,
+      ordinalFallback: number,
+      level = 0
+    ): TreeNode | null => {
+      // Process children first
+      const children = (menu.children ?? [])
+        .map((child, index) => mapNode(child, index, level + 1))
+        .filter((node): node is TreeNode => node !== null);
 
-    orderedRules.forEach((rule) => {
-      ruleMap.set(String(rule.moduleId), rule);
-    });
+      const parentCanView = Number(menu.actions?.isView ?? 0) === 1;
 
-    const visibleIds = new Set<string>();
-    orderedRules.forEach((rule) => {
-      if (Number(rule.isView) !== 1) {
-        return;
+      // Skip if no view permission AND no children to display
+      if (!parentCanView && children.length === 0) {
+        return null;
       }
 
-      let current: IRule | undefined = rule;
-      while (current) {
-        visibleIds.add(String(current.moduleId));
-        const parentId: string | null =
-          current.pid == null || current.pid === 0 ? null : String(current.pid);
-        current = parentId ? ruleMap.get(parentId) : undefined;
+      const url =
+        typeof menu.path === 'string' && menu.path.trim() !== ''
+          ? this.ensureLeadingSlash(menu.path)
+          : null;
+
+      // Skip if no URL and no children
+      if (!url && children.length === 0) {
+        return null;
       }
-    });
 
-    const nodeMap = new Map<string, TreeNode>();
-    orderedRules
-      .filter((rule) => visibleIds.has(String(rule.moduleId)))
-      .forEach((rule) => {
-        nodeMap.set(String(rule.moduleId), {
-          id: rule.moduleId,
-          parentId: rule.pid ?? null,
-          name: rule.name,
-          url: rule.url ? this.ensureLeadingSlash(rule.url) : null,
-          icon: rule.icon || 'menu',
-          ordinal: Number(rule.ordinal ?? 0),
-          children: [],
-        });
-      });
+      return {
+        id: menu.menuCode,
+        parentId: menu.parentMenuId ?? null,
+        name: this.getMenuLabel(menu.menuCode),
+        url: parentCanView ? url : null, // Only set URL if has view permission
+        icon: menu.icon || 'menu',
+        ordinal: Number(menu.level ?? ordinalFallback),
+        level,
+        expanded: children.length > 0,
+        children,
+      };
+    };
 
-    const roots: TreeNode[] = [];
-    orderedRules
-      .filter((rule) => nodeMap.has(String(rule.moduleId)))
-      .forEach((rule) => {
-        const node = nodeMap.get(String(rule.moduleId))!;
-        const parentId =
-          rule.pid == null || rule.pid === 0 ? null : String(rule.pid);
-        const parentNode = parentId ? nodeMap.get(parentId) : undefined;
-
-        if (parentNode) {
-          (parentNode.children ??= []).push(node);
-          return;
-        }
-
-        roots.push(node);
-      });
-
-    return this.sortTreeNodes(roots);
+    return this.sortTreeNodes(
+      menus
+        .map((menu, index) => mapNode(menu, index, 0))
+        .filter((node): node is TreeNode => node !== null)
+    );
   }
 
   private sortTreeNodes(nodes: TreeNode[]): TreeNode[] {
@@ -711,6 +522,7 @@ export class LayoutComponent extends ComponentBaseAbstract {
 
         return {
           ...node,
+          level: Number(node['level'] ?? 0),
           expanded: children.length > 0,
           children,
         };
@@ -719,5 +531,25 @@ export class LayoutComponent extends ComponentBaseAbstract {
 
   private ensureLeadingSlash(url: string): string {
     return url.startsWith('/') ? url : `/${url}`;
+  }
+
+  private getMenuLabel(menuCode?: string): string {
+    const map: Record<string, string> = {
+      USER_ADMIN: 'Quản trị người dùng',
+      ACCOUNT_MANAGEMENT: 'Quản lý tài khoản',
+      UNIT_MANAGEMENT: 'Quản lý đơn vị',
+      SYSTEM_CONFIG: 'Cấu hình hệ thống',
+      ROLE_MANAGEMENT: 'Quản lý vai trò',
+      FUNCTION_MANAGEMENT: 'Quản lý chức năng',
+      SCHOOL_YEAR_CONFIG: 'Cấu hình năm học',
+      GRADE_CONFIG: 'Cấu hình khối',
+      ACADEMIC_MANAGEMENT: 'Quản lý học tập',
+      CLASS_MANAGEMENT: 'Quản lý lớp',
+      SUBJECT_MANAGEMENT: 'Quản lý môn học',
+      STUDENT: 'Học sinh',
+      STUDENT_PROFILE: 'Hồ sơ học sinh',
+    };
+
+    return map[menuCode ?? ''] ?? menuCode ?? '';
   }
 }

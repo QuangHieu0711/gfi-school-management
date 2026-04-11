@@ -18,6 +18,16 @@ export enum AUTH_API_ENDPOINT {
   CAPTCHA = 'public/auth/captcha',
 }
 
+/**
+ * Interface cho Token Response từ BE login
+ */
+export interface ITokenResponse {
+  accessToken: string;
+  refreshToken: string;
+  tokenType: string;
+  expiresAt: number;
+}
+
 export interface ILoginResponse {
   [ACCESS_TOKEN_KEY]: string;
   [REFRESH_TOKEN_KEY]: string;
@@ -56,6 +66,68 @@ export interface ILoginPayload {
 export interface ILoginErrorWithCaptcha {
   requireCaptcha: boolean;
   loginFailCount: number;
+}
+
+/**
+ * Interface cho Menu Actions từ response login
+ */
+export interface IMenuActions {
+  isView?: number;
+  isAdd?: number;
+  isEdit?: number;
+  isDelete?: number;
+  isDownload?: number;
+  isConfig?: number;
+}
+
+/**
+ * Interface cho Data Scope từ response login
+ */
+export interface IDataScope {
+  scopeType: string;
+  scopeValues?: (ID_TYPE | number)[];
+}
+
+/**
+ * Interface cho Menu/Permission từ response login
+ */
+export interface IMenuPermission {
+  menuCode: string;
+  menuName?: string;
+  path: string | null;
+  icon?: string | null;
+  level?: number | null;
+  parentMenuId?: ID_TYPE | null;
+  actions: IMenuActions;
+  dataScopes?: IDataScope[];
+  children?: IMenuPermission[];
+}
+
+/**
+ * Interface cho Permissions response từ login
+ */
+export interface IPermissionsResponse {
+  menus: IMenuPermission[];
+}
+
+/**
+ * Interface cho Login response data từ BE
+ */
+export interface ILoginDataResponse {
+  token: ITokenResponse;
+  user: ICurrentUser;
+  permissions: IPermissionsResponse;
+}
+
+/**
+ * Interface cho Full Login response từ BE (wrapper)
+ */
+export interface ILoginApiResponse {
+  code: number;
+  data: ILoginDataResponse;
+  status: boolean;
+  traceID: string;
+  userMessage: string;
 }
 
 export interface IRefreshTokenResponse extends ILoginResponse {
@@ -100,19 +172,27 @@ export interface IRule {
   ordinal: number;
   icon: string;
 
-  // Các trường quan trọng để check quyền màn hình
-  module?: string; // VD: "TLNT"
-  categoryId?: string; // VD: "LK"
-  idKhumo?: string; // VD: "KM0025" (Lưu ý: API viết chữ m thường)
-
-  isViewMap?: number;
-  isEditMap?: number;
+  // Dữ liệu phân quyền dữ liệu
+  dataScopes?: {
+    scopeType?: string;
+    scopeValues?: number[];
+  }[];
 }
 
 export interface IRole {
   id: ID_TYPE;
+  code?: string; // VD: "SCHOOL_ADMIN"
   name: string;
   rules?: IRule[];
+}
+
+/**
+ * Interface cho Unit (đơn vị/trường) từ response login
+ */
+export interface IUnit {
+  id: ID_TYPE;
+  code: string;
+  name: string;
 }
 
 /**
@@ -121,15 +201,13 @@ export interface IRole {
 export interface ICurrentUser {
   id: ID_TYPE;
   username: string;
-  name: string;
+  fullName: string;
   email: string;
+  phone?: string;
+  status: number;
   role: IRole;
-  donVi: {
-    maDonVi: string;
-    tenDonVi: string;
-    tenVietTat: string;
-    role: IDonViKhuMo[];
-  };
+  unit: IUnit;
+  permissions?: IPermissionsResponse;
   rememberMe?: boolean;
 }
 

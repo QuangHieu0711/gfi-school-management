@@ -69,11 +69,14 @@ export class AppTableMergeComponent implements AfterViewInit, OnDestroy {
 
   /** Internal dataSource with 1-based rowIndex injected for display */
   private _dataSource: TableDataSource[] = [];
+  private pendingScrollTop: number | null = null;
 
   /** Table rows input; rowIndex is attached on assignment */
   @Input()
   set dataSource(value: TableDataSource[]) {
+    this.captureScrollPosition();
     this._dataSource = this.attachRowIndex(value);
+    this.restoreScrollPosition();
   }
   get dataSource(): TableDataSource[] {
     return this._dataSource;
@@ -618,5 +621,39 @@ export class AppTableMergeComponent implements AfterViewInit, OnDestroy {
       this.renderer.setAttribute(th, 'data-moved-rowspan', '1');
       th.classList.add('moved-rowspan-cell');
     }
+  }
+
+  private captureScrollPosition(): void {
+    const scrollContainer = this.getScrollContainer();
+    if (!scrollContainer) return;
+
+    this.pendingScrollTop = scrollContainer.scrollTop;
+  }
+
+  private restoreScrollPosition(): void {
+    if (this.pendingScrollTop == null) return;
+
+    const scrollTop = this.pendingScrollTop;
+    this.pendingScrollTop = null;
+
+    requestAnimationFrame(() => {
+      const scrollContainer = this.getScrollContainer();
+      if (!scrollContainer) return;
+
+      scrollContainer.scrollTop = scrollTop;
+    });
+  }
+
+  private getScrollContainer(): HTMLElement | null {
+    const wrapper = this.gridWrapperRef?.nativeElement as HTMLElement | undefined;
+    if (!wrapper) return null;
+
+    return (
+      wrapper.querySelector('.mtx-grid-content') ??
+      wrapper.querySelector('.mtx-grid-main') ??
+      wrapper.querySelector('.mat-mdc-table-container') ??
+      wrapper.querySelector('.cdk-virtual-scroll-viewport') ??
+      null
+    );
   }
 }

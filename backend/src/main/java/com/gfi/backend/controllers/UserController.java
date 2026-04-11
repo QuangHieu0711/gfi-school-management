@@ -42,11 +42,11 @@ public class UserController extends ApiBaseController {
      * Trả về list view chứa thông tin tối thiểu.
      */
     @PostMapping("/search")
-    @Operation(summary = "Danh sách người dùng", description = "Lấy danh sách người dùng có phân trang và filter.")
     public ResponseEntity<ApiResult<PageResponseDto<UserListItemDto, UserFilterDto>>> search(
             @RequestBody(required = false) PageRequestDto<UserFilterDto> request) {
         PageRequestDto<UserFilterDto> safeRequest = request == null ? new PageRequestDto<>() : request;
-        return executeApiResult(() -> ApiResult.success(userService.search(safeRequest), "Hiển thị danh sách người dùng thành công"));
+        return executeApiResult(
+                () -> ApiResult.success(userService.search(safeRequest), "Hiển thị danh sách người dùng thành công"));
     }
 
     /**
@@ -56,7 +56,8 @@ public class UserController extends ApiBaseController {
     @GetMapping("/{id}")
     @Operation(summary = "Chi tiết người dùng", description = "Lấy thông tin người dùng theo id.")
     public ResponseEntity<ApiResult<UserDetailDto>> getById(@PathVariable Long id) {
-        return executeApiResult(() -> ApiResult.success(userService.getById(id), "Hiển thị chi tiết người dùng thành công"));
+        return executeApiResult(
+                () -> ApiResult.success(userService.getById(id), "Hiển thị chi tiết người dùng thành công"));
     }
 
     /**
@@ -73,8 +74,10 @@ public class UserController extends ApiBaseController {
      */
     @PutMapping("/{id}")
     @Operation(summary = "Sửa người dùng", description = "Cập nhật người dùng theo id.")
-    public ResponseEntity<ApiResult<UserDetailDto>> update(@PathVariable Long id, @Valid @RequestBody UserUpdateRequest request) {
-        return executeApiResult(() -> ApiResult.success(userService.update(id, request), "Cập nhật người dùng thành công"));
+    public ResponseEntity<ApiResult<UserDetailDto>> update(@PathVariable Long id,
+            @Valid @RequestBody UserUpdateRequest request) {
+        return executeApiResult(
+                () -> ApiResult.success(userService.update(id, request), "Cập nhật người dùng thành công"));
     }
 
     /**

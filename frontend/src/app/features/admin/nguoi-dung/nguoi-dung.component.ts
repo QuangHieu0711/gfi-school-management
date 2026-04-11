@@ -100,6 +100,21 @@ export class NguoiDungComponent extends ComponentBaseAbstract {
     return this.permissionCheckService.canDownload(this.menuCode);
   }
 
+  get hasAllScope(): boolean {
+    return this.permissionCheckService.hasScope(this.menuCode, 'ALL');
+  }
+
+  get hasUnitScope(): boolean {
+    return this.permissionCheckService.hasScope(this.menuCode, 'UNIT');
+  }
+
+  get allowedUnitIds(): number[] {
+    return this.permissionCheckService.getAllowedScopeValues(
+      this.menuCode,
+      'UNIT'
+    );
+  }
+
   constructor(
     protected override injector: Injector,
     private readonly nguoiDungService: NguoiDungService,
@@ -124,12 +139,29 @@ export class NguoiDungComponent extends ComponentBaseAbstract {
     this.form = this.itemControl.toFormGroup(this.$formItem);
 
     this.donViService.getOptions().subscribe(({ data }) => {
-      this.findFormControl(this.$formItem, NGUOI_DUNG_KEY.UNIT_ID).options = (
-        data ?? []
-      ).map((item) => ({
+      let options = (data ?? []).map((item) => ({
         value: item.id,
         label: item.name,
       }));
+
+      if (!this.hasAllScope && this.hasUnitScope) {
+        options = options.filter((x) =>
+          this.allowedUnitIds.includes(Number(x.value))
+        );
+      }
+
+      const control = this.findFormControl(
+        this.$formItem,
+        NGUOI_DUNG_KEY.UNIT_ID
+      );
+      control.options = options;
+
+      if (!this.hasAllScope && this.hasUnitScope) {
+        this.form.patchValue({
+          [NGUOI_DUNG_KEY.UNIT_ID]: this.allowedUnitIds,
+        });
+        control.disabled = true;
+      }
     });
 
     this.vaiTroService.getOptions().subscribe(({ data }) => {
@@ -193,7 +225,7 @@ export class NguoiDungComponent extends ComponentBaseAbstract {
                 (confirmed) => {
                   if (confirmed) {
                     this.authService
-                      .resetPassword(rowData?.[NGUOI_DUNG_KEY.ID])
+                      .resetPassword(Number(rowData?.[NGUOI_DUNG_KEY.ID]))
                       .subscribe({
                         next: () => {
                           this.toastr.success(
@@ -201,8 +233,8 @@ export class NguoiDungComponent extends ComponentBaseAbstract {
                             'Thành công'
                           );
                         },
-                        error: (err) => {
-                          this.toastr.error(err.message, 'Lỗi');
+                        error: () => {
+                          this.toastr.error('Có lỗi xảy ra', 'Lỗi');
                         },
                       });
                   }
@@ -234,7 +266,7 @@ export class NguoiDungComponent extends ComponentBaseAbstract {
                 (confirmed?: boolean) => {
                   if (confirmed) {
                     this.nguoiDungService
-                      .delete(rowData?.[NGUOI_DUNG_KEY.ID])
+                      .delete(Number(rowData?.[NGUOI_DUNG_KEY.ID]))
                       .subscribe({
                         next: () => {
                           this.toastr.success('Xóa thành công', 'Thành công');
@@ -341,7 +373,7 @@ export class NguoiDungComponent extends ComponentBaseAbstract {
   ): NguoiDungFilterRequest {
     const formValues = this.form.getRawValue();
 
-    return {
+    const payload: NguoiDungFilterRequest = {
       pageSize: pageChangeEvent?.pageSize ?? this.pageSize,
       pageNow: (pageChangeEvent?.pageIndex ?? this.pageIndex) + 1,
       filter: {
@@ -351,6 +383,12 @@ export class NguoiDungComponent extends ComponentBaseAbstract {
         [NGUOI_DUNG_KEY.STATUS]: formValues[NGUOI_DUNG_KEY.STATUS],
       },
     };
+
+    if (!this.hasAllScope && this.hasUnitScope) {
+      payload.filter![NGUOI_DUNG_KEY.UNIT_ID] = this.allowedUnitIds;
+    }
+
+    return payload;
   }
 
   private buildExportPayload(exportType: 'PDF' | 'EXCEL') {

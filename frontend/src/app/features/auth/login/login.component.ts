@@ -117,11 +117,10 @@ export class LoginComponent {
         .login({
           username: value.username ?? '',
           password: hashedPassword,
-          deviceType: 'web',
         })
         .subscribe({
-          next: () => {
-            void this.router.navigate(this.getFirstAccessibleRoute());
+          next: (user) => {
+            void this.router.navigate(this.getFirstAccessibleRoute(user));
           },
           error: (error) => {
             const message =
@@ -150,13 +149,38 @@ export class LoginComponent {
     this.showPassword = !this.showPassword;
   }
 
-  private getFirstAccessibleRoute(): string[] {
-    const firstAllowed = this.defaultRedirects.find(({ menuCode }) =>
-      this.permissionCheckService.canView(menuCode)
+  private getFirstAccessibleRoute(user?: {
+    role?: { rules?: Array<{ menuCode?: string; isView?: number }> };
+    permissions?: {
+      menus?: any[];
+    };
+  }): string[] {
+    const userRules = user?.role?.rules ?? [];
+    const visibleMenuCodes = new Set(
+      this.flattenMenus(user?.permissions?.menus ?? [])
+        .filter((menu: any) => Number(menu?.actions?.isView ?? 0) === 1)
+        .map((menu: any) => (menu?.menuCode ?? '').trim().toUpperCase())
+    );
+    const firstAllowed = this.defaultRedirects.find(
+      ({ menuCode }) =>
+        this.permissionCheckService.canView(menuCode) ||
+        visibleMenuCodes.has(menuCode) ||
+        userRules.some(
+          (rule) =>
+            (rule.menuCode ?? '').trim().toUpperCase() === menuCode &&
+            Number(rule.isView ?? 0) === 1
+        )
     );
 
     return firstAllowed?.commands
       ? [...firstAllowed.commands]
       : [NAVIGATOR_ENDPOINT.ACCESS_DENIED];
+  }
+
+  private flattenMenus(menus: any[]): any[] {
+    return (menus ?? []).flatMap((menu: any) => [
+      menu,
+      ...this.flattenMenus(menu?.children ?? []),
+    ]);
   }
 }

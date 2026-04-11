@@ -12,40 +12,43 @@
           </div>
 
           <div class="search-actions">
-            <button
-              color="dark"
-              matIconButton="text"
-              matTooltip="Tìm kiếm"
-              type="submit">
-              <app-icon icon="svg:search" color="#858585" />
-            </button>
-            <button
-              color="dark"
-              matIconButton="text"
-              matTooltip="Làm mới"
-              type="button"
-              (click)="resetSearch()">
-              <app-icon icon="svg:cached" color="#858585" />
-            </button>
-            <button
-              color="primary"
-              matButton="outlined"
-              type="button"
-              [disabled]="false"
-              (click)="resetChanges()">
-              Hủy
-            </button>
-            <button
-              color="primary"
-              matButton="filled"
-              type="button"
-              [disabled]="false"
-              (click)="saveChanges()">
-              Lưu
-            </button>
+              <button
+                color="dark"
+                matIconButton="text"
+                matTooltip="Tìm kiếm"
+                type="submit">
+                <app-icon icon="svg:search" color="#858585" />
+              </button>
+              <button
+                color="dark"
+                matIconButton="text"
+                matTooltip="Làm mới"
+                type="button"
+                (click)="resetSearch()">
+                <app-icon icon="svg:cached" color="#858585" />
+              </button>
           </div>
         </div>
       </app-form-control>
+    </div>
+
+    <div class="toolbar-actions">
+      <button
+        color="primary"
+        matButton="outlined"
+        type="button"
+        [disabled]="false"
+        (click)="resetChanges()">
+        Hủy
+      </button>
+      <button
+        color="primary"
+        matButton="filled"
+        type="button"
+        [disabled]="false"
+        (click)="saveChanges()">
+        Lưu
+      </button>
     </div>
   </div>
 
@@ -104,9 +107,11 @@
 <ng-template
   #pathTpl
   let-row>
-  <span
-    title="{{ row?.url }}"
-    class="code-color path-text">{{ row?.url | slice:0:20 }}{{ (row?.url?.length ?? 0) > 20 ? '...' : '' }}</span>
+  @if (row?.url) {
+    <span
+      title="{{ row?.url }}"
+      class="code-color path-text">{{ row?.url | slice:0:20 }}{{ (row?.url?.length ?? 0) > 20 ? '...' : '' }}</span>
+  }
 </ng-template>
 
 <ng-template

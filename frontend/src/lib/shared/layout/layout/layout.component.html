@@ -59,6 +59,7 @@
     <a
       class="flex items-center gap-2 nav-link cursor-pointer tree-link"
       [class.tree-link-collapsed]="isSidebarCollapsed"
+      [style.padding-left.px]="isSidebarCollapsed ? null : 12 + (Number(data?.level ?? 0) * 20)"
       [class.tree-link-active]="isTreeNodeActive(data)"
       [matTooltip]="isSidebarCollapsed ? data.name : ''"
       matTooltipPosition="right"
@@ -82,6 +83,7 @@
     <span
       class="cursor-pointer flex items-center gap-2 nav-link tree-link"
       [class.tree-link-collapsed]="isSidebarCollapsed"
+      [style.padding-left.px]="isSidebarCollapsed ? null : 12 + (Number(data?.level ?? 0) * 20)"
       [matTooltip]="isSidebarCollapsed ? data.name : ''"
       matTooltipPosition="right"
       [class.tree-link-active]="isTreeNodeActive(data)">

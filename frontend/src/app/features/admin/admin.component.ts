@@ -6,9 +6,8 @@ import { takeUntil } from 'rxjs';
 import { NAVIGATOR_ENDPOINT } from '@constant/navigator';
 import { ComponentBaseAbstract } from '@layout';
 import { NavigatorAction } from '@store/navigator';
+import { PermissionService } from '@service';
 
-import { MenuResponse } from '@app/model/admin/menu.model';
-import { MenuService } from '@app/service/admin/menu.service';
 import { MenuItem } from './admin.interface';
 
 @Component({
@@ -19,66 +18,63 @@ import { MenuItem } from './admin.interface';
 export class AdminComponent extends ComponentBaseAbstract {
   constructor(
     protected override injector: Injector,
-    private readonly menuService: MenuService
+    private readonly permissionService: PermissionService
   ) {
     super(injector);
   }
 
   protected override componentInit(): void {
-    queueMicrotask(() => this.loadDynamicMenu());
-    this.menuService.menuChanged$
+    queueMicrotask(() => this.loadMenuFromPermissions());
+    this.permissionService.rules$
       .pipe(takeUntil(this.ngUnsubscribe))
-      .subscribe(() => this.loadDynamicMenu());
+      .subscribe(() => this.loadMenuFromPermissions());
   }
 
-  private loadDynamicMenu() {
-    this.menuService.filter({}).subscribe({
-      next: ({ data }) => {
-        const dynamicMenu = this.buildMenuTree(data ?? []);
-
-        this.store.dispatch(
-          NavigatorAction.Update({
-            newState: dynamicMenu as any,
-          })
-        );
-      },
-    });
+  private loadMenuFromPermissions() {
+    const rules = this.permissionService.rules;
+    const menu = this.buildMenuFromRules(rules);
+    this.store.dispatch(
+      NavigatorAction.Update({
+        newState: menu as any,
+      })
+    );
   }
 
-  private buildMenuTree(items: MenuResponse[]): MenuItem[] {
-    const normalizedItems = items.map((item) => ({
-      ...item,
-      url: this.normalizeMenuUrl(item.code, item.url),
-      icon: item.icon || this.getFallbackIcon(item.code),
-    }));
+  private buildMenuFromRules(rules: any[]): MenuItem[] {
+    const menuConfigMap: Record<string, { name: string; ordinal: number }> = {
+      ACCOUNT_MANAGEMENT: { name: 'Quản lý người dùng', ordinal: 1 },
+      UNIT_MANAGEMENT: { name: 'Quản lý đơn vị', ordinal: 2 },
+      ROLE_MANAGEMENT: { name: 'Quản lý vai trò', ordinal: 3 },
+      FUNCTION_MANAGEMENT: { name: 'Quản lý menu', ordinal: 4 },
+      SCHOOL_YEAR_CONFIG: { name: 'Quản lý năm học', ordinal: 5 },
+      GRADE_CONFIG: { name: 'Quản lý khối', ordinal: 6 },
+      CLASS_MANAGEMENT: { name: 'Quản lý lớp', ordinal: 7 },
+      SUBJECT_MANAGEMENT: { name: 'Quản lý môn học', ordinal: 8 },
+      STUDENT_PROFILE: { name: 'Quản lý học sinh', ordinal: 9 },
+    };
 
-    const itemMap = new Map<string | number, MenuItem>();
-
-    normalizedItems.forEach((item) => {
-      itemMap.set(item.id, {
-        key: item.code,
-        id: item.id,
-        parentId: item.parentId,
-        name: item.name,
-        icon: item.icon ?? undefined,
-        url: item.url ?? undefined,
-        expanded: true,
-        children: [],
-      } as MenuItem);
-    });
-
-    const roots: MenuItem[] = [];
-
-    normalizedItems.forEach((item) => {
-      const node = itemMap.get(item.id)!;
-      if (item.parentId != null && itemMap.has(item.parentId)) {
-        itemMap.get(item.parentId)!.children!.push(node);
-      } else {
-        roots.push(node);
-      }
-    });
-
-    return roots;
+    return (
+      rules
+        .filter((rule) => rule.isView === 1 && rule.menuCode)
+        .map((rule) => {
+          const config = menuConfigMap[rule.menuCode] || {
+            name: rule.name || rule.menuCode,
+            ordinal: 999,
+          };
+          return {
+            key: rule.menuCode,
+            id: rule.pathId,
+            name: config.name,
+            icon: this.getFallbackIcon(rule.menuCode),
+            url: this.normalizeMenuUrl(rule.menuCode, rule.url),
+            expanded: true,
+            ordinal: config.ordinal,
+          } as MenuItem & { ordinal: number };
+        })
+        .sort((a, b) => a.ordinal - b.ordinal)
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        .map(({ ordinal: _ordinal, ...item }) => item as MenuItem)
+    );
   }
 
   private normalizeMenuUrl(

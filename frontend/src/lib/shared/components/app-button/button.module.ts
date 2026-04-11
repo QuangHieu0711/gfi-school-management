@@ -5,7 +5,12 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { ButtonLoadingDirective } from './button-loading.directive';
 
 @NgModule({
-  imports: [CommonModule, MatButtonModule, MatProgressSpinnerModule, ButtonLoadingDirective],
+  imports: [
+    CommonModule,
+    MatButtonModule,
+    MatProgressSpinnerModule,
+    ButtonLoadingDirective,
+  ],
   exports: [MatButtonModule, MatProgressSpinnerModule, ButtonLoadingDirective],
 })
 export class ButtonModule {}

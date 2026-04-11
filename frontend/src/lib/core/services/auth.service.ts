@@ -1,343 +1,334 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import {
-  HttpBackend,
-  HttpClient,
-  HttpHeaders,
-  HttpRequest,
-} from '@angular/common/http';
+import { BehaviorSubject, Observable, of, map, catchError } from 'rxjs';
+import { HttpRequest, HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { Router } from '@angular/router';
-import {
-  BehaviorSubject,
-  Observable,
-  catchError,
-  map,
-  of,
-  switchMap,
-  tap,
-  throwError,
-} from 'rxjs';
 
 import { ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY } from '@constant/constant';
-import { environment } from '@env/environment';
-import { NAVIGATOR_ENDPOINT } from '@constant/navigator';
+import { PermissionCheckService, StorageService } from '@service';
 import {
-  AUTH_KEY,
-  ICaptchaResponse,
-  IChangePasswordRequest,
-  IChangePasswordResponse,
+  AUTH_API_ENDPOINT,
   ICurrentUser,
-  IRefreshTokenResponse,
+  IMenuPermission,
   IRule,
-  UserRole,
 } from '@model/auth.model';
-import { ID_TYPE, IResponse } from '@model/response.model';
-import { StorageService } from '@service';
 
-import {
-  PermissionCheckService,
-  UserPermission,
-} from './permission-check.service';
-import { PermissionService } from './permission.service';
+import { UserPermission } from './permission-check.service';
+
+interface ICurrentUserWithTokens extends ICurrentUser {
+  accessToken: string;
+  refreshToken: string;
+}
+
+interface BackendPermissionItem {
+  id?: number;
+  menuId?: number;
+  roleId?: number;
+  menuCode?: string;
+  menuName?: string;
+  menuUrl?: string;
+  parentId?: number;
+  icon?: string;
+  ordinal?: number;
+  isView?: number;
+  isAdd?: number;
+  isEdit?: number;
+  isDelete?: number;
+  isDownload?: number;
+  isConfig?: number;
+}
 
 @Injectable({ providedIn: 'root' })
 export class AuthService {
-  private readonly forceChangePasswordKey = 'force_change_password';
-  private readonly authBaseUrl = `${environment.host_api}/auth`;
-  private readonly rawHttp: HttpClient;
-
-  private readonly isLoggedInSubject = new BehaviorSubject<boolean>(false);
   private readonly currentUserSubject =
-    new BehaviorSubject<ICurrentUser | null>(null);
+    new BehaviorSubject<ICurrentUserWithTokens | null>(null);
+  public readonly currentUser$ = this.currentUserSubject.asObservable();
 
-  public isLoggedIn$ = this.isLoggedInSubject.asObservable();
-  public currentUser$ = this.currentUserSubject.asObservable();
+  constructor(
+    private storageService: StorageService,
+    private http: HttpClient,
+    private permissionCheckService: PermissionCheckService
+  ) {}
 
-  get username(): string {
-    return this.currentUserSubject.value?.username ?? '';
+  // Restore session from storage into memory
+  restoreStoredSession(): void {
+    const userInfo = this.storageService.get(
+      'userInfo',
+      'all'
+    ) as ICurrentUserWithTokens | null;
+    if (userInfo) {
+      this.currentUserSubject.next(userInfo);
+      this.permissionCheckService.setPermissions(
+        this.mapRulesToPermissions(userInfo.role?.rules ?? [])
+      );
+      // Menus đã được lưu trong userInfo.permissions.menus, component sẽ lấy từ store
+    }
   }
 
-  get currentUser(): ICurrentUser | null {
-    return this.currentUserSubject.value;
+  mapLoginResponseToUser(
+    response: any,
+    username: string,
+    rules: IRule[]
+  ): ICurrentUserWithTokens {
+    const token = response?.data?.token ?? {};
+    const user = response?.data?.user ?? {};
+    const menus = this.normalizeMenus(response?.data?.permissions?.menus ?? []);
+    return {
+      id: user.id,
+      username,
+      fullName: user.fullName,
+      email: user.email,
+      phone: user.phone,
+      status: user.status,
+      role: {
+        id: user.role?.id,
+        code: user.role?.code,
+        name: user.role?.name,
+        rules,
+      },
+      unit: user.unit ?? { id: '', code: '', name: '' },
+      permissions: { menus },
+      accessToken: String(token.accessToken ?? ''),
+      refreshToken: String(token.refreshToken ?? ''),
+    };
   }
 
-  get mustChangePassword(): boolean {
-    return (
-      this.storageService.get<boolean>(this.forceChangePasswordKey, 'all') ===
-      true
+  setLocalSession(user: ICurrentUserWithTokens, rememberMe: boolean): void {
+    const remember = !!rememberMe;
+    this.storageService.set(
+      ACCESS_TOKEN_KEY,
+      user.accessToken,
+      remember ? 'local' : 'session'
+    );
+    this.storageService.set(
+      REFRESH_TOKEN_KEY,
+      user.refreshToken,
+      remember ? 'local' : 'session'
+    );
+    this.storageService.set(
+      'userInfo',
+      { ...user, rememberMe: remember },
+      remember ? 'local' : 'session'
+    );
+    this.currentUserSubject.next(user);
+    this.permissionCheckService.setPermissions(
+      this.mapRulesToPermissions(user.role?.rules ?? [])
     );
   }
 
-  constructor(
-    private readonly http: HttpClient,
-    httpBackend: HttpBackend,
-    private readonly storageService: StorageService,
-    private readonly router: Router,
-    private readonly permissionService: PermissionService,
-    private readonly permissionCheckService: PermissionCheckService
-  ) {
-    this.rawHttp = new HttpClient(httpBackend);
-    this.restoreStoredSession();
+  // Public API expected by the rest of the app
+  get currentUser(): ICurrentUserWithTokens | null {
+    return this.currentUserSubject.value;
   }
 
   getAccessToken(): string {
-    return this.storageService.get<string>(ACCESS_TOKEN_KEY, 'all') ?? '';
-  }
-
-  getRefreshToken(): string {
-    return this.storageService.get<string>(REFRESH_TOKEN_KEY, 'all') ?? '';
+    return (
+      this.currentUser?.accessToken ??
+      (this.storageService.get(ACCESS_TOKEN_KEY) as string) ??
+      ''
+    );
   }
 
   addTokenHeader<T>(request: HttpRequest<T>, token?: string): HttpRequest<T> {
     if (!token) return request;
-
-    return request.clone({
-      setHeaders: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
+    try {
+      return request.clone({
+        setHeaders: { Authorization: `Bearer ${token}` },
+      });
+    } catch {
+      return request;
+    }
   }
 
   isAuthenticated(): boolean {
-    return (
-      !!this.currentUserSubject.value ||
-      this.storageService.has('userInfo', 'all')
-    );
+    return !!this.currentUser || !!this.storageService.get(ACCESS_TOKEN_KEY);
   }
 
-  isTokenExpired(_token?: string): boolean {
-    return false;
+  getCurrentUser(): Observable<ICurrentUserWithTokens | null> {
+    const user = this.currentUserSubject.value;
+    if (!user) return of(null);
+    return of(user);
   }
 
-  setAccessToken(token: string, rememberMe = false): void {
-    this.storageService.set(
-      ACCESS_TOKEN_KEY,
-      token,
-      rememberMe ? 'local' : 'session'
-    );
-  }
-
-  setRefreshToken(token: string, rememberMe = false): void {
-    this.storageService.set(
-      REFRESH_TOKEN_KEY,
-      token,
-      rememberMe ? 'local' : 'session'
-    );
-  }
-
-  clearTokens(): void {
-    this.storageService.remove(ACCESS_TOKEN_KEY, 'all');
-    this.storageService.remove(REFRESH_TOKEN_KEY, 'all');
-  }
-
-  getCaptcha(): Observable<ICaptchaResponse> {
-    return of({
-      imageBase64: '',
-      key: 'local-captcha-disabled',
-    });
-  }
-
-  login(
-    payload: {
-      [AUTH_KEY.USERNAME]: string;
-      [AUTH_KEY.PASSWORD]: string;
-      deviceType: string;
-      captchaCode?: string;
-    },
-    rememberMe = false
-  ): Observable<ICurrentUser> {
-    return this.rawHttp
-      .post<BackendLoginEnvelope>(`${this.authBaseUrl}/login`, {
-        username: payload.username,
-        password: payload.password,
-      })
-      .pipe(
-        switchMap((response) =>
-          this.fetchRulesByRoleId(
-            response?.data?.user?.role?.id,
-            response?.data?.token?.accessToken ?? ''
-          ).pipe(
-            map((rules) =>
-              this.mapLoginResponseToUser(response, payload.username, rules)
-            )
-          )
-        ),
-        tap((user) => this.setLocalSession(user, rememberMe))
-      );
-  }
+  mustChangePassword = false;
 
   logout(): void {
     this.handleLogout();
   }
 
   handleLogout(): void {
-    this.clearTokens();
-    this.clearMustChangePassword();
+    this.storageService.remove(ACCESS_TOKEN_KEY, 'all');
+    this.storageService.remove(REFRESH_TOKEN_KEY, 'all');
     this.storageService.remove('userInfo', 'all');
-
-    this.permissionService.setRules([]);
-    this.permissionCheckService.clearPermissions();
     this.currentUserSubject.next(null);
-    this.isLoggedInSubject.next(false);
-
-    void this.router.navigate([NAVIGATOR_ENDPOINT.LOGIN]);
+    this.permissionCheckService.clearPermissions();
   }
 
-  refreshToken(): Observable<IRefreshTokenResponse> {
+  refreshToken(): Observable<{
+    accessToken: string;
+    refreshToken: string;
+    tokenType: string;
+    expiresAt: number;
+  }> {
     const accessToken = this.getAccessToken();
-    const refreshToken = this.getRefreshToken();
-
-    if (!accessToken || !refreshToken) {
-      return throwError(() => new Error('Refresh token not available'));
-    }
-
-    return of({
-      accessToken,
-      refreshToken,
-      isFirstLogin: false,
-    } as IRefreshTokenResponse);
+    const refreshToken =
+      this.currentUser?.refreshToken ??
+      (this.storageService.get(REFRESH_TOKEN_KEY) as string) ??
+      '';
+    return of({ accessToken, refreshToken, tokenType: 'Bearer', expiresAt: 0 });
   }
 
-  changePassword(
-    _payload: IChangePasswordRequest
-  ): Observable<IChangePasswordResponse> {
-    this.clearMustChangePassword();
-    return of({
-      success: true,
-      message: 'Password changed locally',
-    });
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  resetPassword(_accountId: number): Observable<any> {
+    return of({ success: true, message: 'Password reset locally' });
   }
 
-  getCurrentUser(): Observable<ICurrentUser> {
-    const user =
-      this.currentUserSubject.value ??
-      this.storageService.get<ICurrentUser>('userInfo', 'all');
-
-    if (!user) {
-      return of(null as unknown as ICurrentUser);
-    }
-
-    this.setLocalSession(user, !!user.rememberMe);
-    return of(user);
-  }
-
-  clearMustChangePassword(): void {
-    this.storageService.remove(this.forceChangePasswordKey, 'all');
-  }
-
-  markMustChangePassword(): void {
-    this.setMustChangePassword(true);
-  }
-
-  getUserRules(): Observable<IRule[]> {
-    return of(this.currentUserSubject.value?.role.rules ?? []);
-  }
-
-  resetPassword(_accountId: ID_TYPE): Observable<any> {
-    return of({
-      success: true,
-      message: 'Reset password locally',
-    });
-  }
-
-  private setMustChangePassword(value: boolean): void {
-    if (value) {
-      this.storageService.set(this.forceChangePasswordKey, true, 'all');
-      return;
-    }
-
-    this.clearMustChangePassword();
-  }
-
-  private restoreStoredSession(): void {
-    const storedUser = this.storageService.get<ICurrentUser>('userInfo', 'all');
-    if (!storedUser) return;
-
-    this.currentUserSubject.next(storedUser);
-    this.isLoggedInSubject.next(true);
-    this.permissionService.setRules(storedUser.role.rules ?? []);
-    this.permissionCheckService.setPermissions(
-      this.mapRulesToPermissions(storedUser.role.rules ?? [])
-    );
-  }
-
-  private setLocalSession(user: ICurrentUser, rememberMe: boolean): void {
-    const userWithRemember = { ...user, rememberMe };
-
-    this.setAccessToken(
-      (user as ICurrentUserWithTokens).accessToken ?? '',
-      rememberMe
-    );
-    this.setRefreshToken(
-      (user as ICurrentUserWithTokens).refreshToken ?? '',
-      rememberMe
-    );
-    this.storageService.set(
-      'userInfo',
-      userWithRemember,
-      rememberMe ? 'local' : 'session'
-    );
-
-    this.currentUserSubject.next(userWithRemember);
-    this.isLoggedInSubject.next(true);
-    this.permissionService.setRules(userWithRemember.role.rules ?? []);
-    this.permissionCheckService.setPermissions(
-      this.mapRulesToPermissions(userWithRemember.role.rules ?? [])
-    );
-  }
-
-  private mapLoginResponseToUser(
-    response: BackendLoginEnvelope,
-    username: string,
-    rules: IRule[]
-  ): ICurrentUserWithTokens {
-    const data = response?.data;
-    const user = data?.user;
-    const token = data?.token;
-    const normalizedRole = this.normalizeRoleName(user?.role?.name);
-
-    return {
-      id: user?.id ?? 0,
-      username,
-      name: user?.fullName ?? username,
-      email: user?.email ?? '',
-      role: {
-        id: user?.role?.id ?? 0,
-        name: normalizedRole,
-        rules,
-      },
-      donVi: {
-        maDonVi: user?.unit?.code ?? '',
-        tenDonVi: user?.unit?.name ?? '',
-        tenVietTat: '',
-        role: [],
-      },
-      accessToken: token?.accessToken ?? '',
-      refreshToken: token?.refreshToken ?? '',
-    };
-  }
-
-  private fetchRulesByRoleId(
-    roleId: ID_TYPE | undefined,
-    accessToken: string
-  ): Observable<IRule[]> {
-    if (roleId == null || accessToken.trim() === '') {
-      return of([]);
-    }
-
-    return this.rawHttp
-      .get<IResponse<BackendPermissionItem[]>>(
-        `${environment.host_api}/permissions/${roleId}`,
-        {
-          headers: new HttpHeaders({
-            Authorization: `Bearer ${accessToken}`,
-          }),
-        }
-      )
+  login(
+    payload: {
+      username: string;
+      password: string;
+      captchaCode?: string;
+    },
+    rememberMe = false
+  ): Observable<ICurrentUserWithTokens> {
+    return this.http
+      .post<any>(`/api/${AUTH_API_ENDPOINT.AUTH_TOKEN}`, payload)
       .pipe(
-        map((response) => this.mapPermissionsToRules(response?.data ?? [])),
-        catchError(() => of([]))
+        map((response: any) => {
+          // Extract rules from permissions
+          const menus = response?.data?.permissions?.menus ?? [];
+          const rules = this.mapMenusToRules(menus);
+
+          // Map response to user with tokens
+          const user = this.mapLoginResponseToUser(
+            response,
+            payload.username,
+            rules
+          );
+
+          // Store user and tokens in storage and subject
+          this.setLocalSession(user, rememberMe);
+
+          return user;
+        }),
+        catchError((error: any) => {
+          console.error('Login error:', error);
+          throw error;
+        })
       );
+  }
+
+  private mapMenusToRules(
+    menus: {
+      menuCode?: string;
+      path?: string;
+      actions?: {
+        isView?: number;
+        isAdd?: number;
+        isEdit?: number;
+        isDelete?: number;
+        isDownload?: number;
+        isConfig?: number;
+      };
+      icon?: string;
+      level?: number;
+      dataScopes?: { scopeType?: string; scopeValues?: number[] }[];
+    }[]
+  ): IRule[] {
+    const flatMenus = this.flattenMenus(menus);
+
+    return flatMenus.map((menu, index) => ({
+      ruleId: index + 1,
+      roleId: 0,
+      moduleId: index + 1,
+      menuCode: menu.menuCode ?? '',
+      isView: menu.actions?.isView ?? 0,
+      isAdd: menu.actions?.isAdd ?? 0,
+      isEdit: menu.actions?.isEdit ?? 0,
+      isDelete: menu.actions?.isDelete ?? 0,
+      isDownload: menu.actions?.isDownload ?? 0,
+      isConfig: menu.actions?.isConfig ?? 0,
+      isApprove: 0,
+      name: this.getMenuDisplayName(menu.menuCode ?? ''),
+      url: menu.path ?? '',
+      pathId: String(index + 1),
+      ordinal: index,
+      icon: menu.icon ?? this.getMenuIcon(menu.menuCode ?? ''),
+      pid: undefined,
+      dataScopes: (menu.dataScopes ?? []).map((ds: any) => ({
+        scopeType: ds.scopeType ?? 'ALL',
+        scopeValues: ds.scopeValues ?? [],
+      })),
+    }));
+  }
+
+  private flattenMenus(menus: any[]): any[] {
+    return (menus ?? []).flatMap((menu: any) => [
+      menu,
+      ...this.flattenMenus(menu.children ?? []),
+    ]);
+  }
+
+  private normalizeMenus(menus: any[]): IMenuPermission[] {
+    return (menus ?? []).map((menu) => ({
+      menuCode: String(menu?.menuCode ?? ''),
+      path: menu?.path ?? null,
+      icon: menu?.icon ?? this.getMenuIcon(menu?.menuCode ?? ''),
+      level: Number(menu?.level ?? 0),
+      parentMenuId: menu?.parentMenuId ?? null,
+      actions: {
+        isView: Number(menu?.actions?.isView ?? 0),
+        isAdd: Number(menu?.actions?.isAdd ?? 0),
+        isEdit: Number(menu?.actions?.isEdit ?? 0),
+        isDelete: Number(menu?.actions?.isDelete ?? 0),
+        isDownload: Number(menu?.actions?.isDownload ?? 0),
+        isConfig: Number(menu?.actions?.isConfig ?? 0),
+      },
+      dataScopes: (menu?.dataScopes ?? []).map((ds: any) => ({
+        scopeType: ds?.scopeType ?? 'ALL',
+        scopeValues: ds?.scopeValues ?? [],
+      })),
+      children: this.normalizeMenus(menu?.children ?? []),
+    }));
+  }
+
+  private getMenuDisplayName(menuCode: string): string {
+    const map: Record<string, string> = {
+      USER_ADMIN: 'Quản trị người dùng',
+      ACCOUNT_MANAGEMENT: 'Quản lý tài khoản',
+      UNIT_MANAGEMENT: 'Quản lý đơn vị',
+      SYSTEM_CONFIG: 'Cấu hình hệ thống',
+      ROLE_MANAGEMENT: 'Quản lý vai trò',
+      FUNCTION_MANAGEMENT: 'Quản lý chức năng',
+      SCHOOL_YEAR_CONFIG: 'Cấu hình năm học',
+      GRADE_CONFIG: 'Cấu hình khối',
+      ACADEMIC_MANAGEMENT: 'Quản lý học tập',
+      CLASS_MANAGEMENT: 'Quản lý lớp',
+      SUBJECT_MANAGEMENT: 'Quản lý môn học',
+      STUDENT: 'Học sinh',
+      STUDENT_PROFILE: 'Hồ sơ học sinh',
+    };
+
+    return map[menuCode] ?? menuCode;
+  }
+
+  private getMenuIcon(menuCode: string): string {
+    const map: Record<string, string> = {
+      USER_ADMIN: 'groups',
+      ACCOUNT_MANAGEMENT: 'account_circle',
+      UNIT_MANAGEMENT: 'apartment',
+      SYSTEM_CONFIG: 'settings',
+      ROLE_MANAGEMENT: 'manage_accounts',
+      FUNCTION_MANAGEMENT: 'account_tree',
+      SCHOOL_YEAR_CONFIG: 'calendar_month',
+      GRADE_CONFIG: 'menu_book',
+      ACADEMIC_MANAGEMENT: 'school',
+      CLASS_MANAGEMENT: 'meeting_room',
+      SUBJECT_MANAGEMENT: 'book',
+      STUDENT: 'school',
+      STUDENT_PROFILE: 'badge',
+    };
+
+    return map[menuCode] ?? 'menu';
   }
 
   private mapPermissionsToRules(items: BackendPermissionItem[]): IRule[] {
@@ -361,13 +352,11 @@ export class AuthService {
         isApprove: 0,
         name: item.menuName ?? '',
         url: item.menuUrl ?? '',
-        pid:
-          item.parentId == null || item.parentId === ''
-            ? undefined
-            : Number(item.parentId),
+        pid: item.parentId ?? undefined,
         pathId: String(item.menuId ?? ''),
         ordinal: Number(item.ordinal ?? 0),
         icon: item.icon ?? '',
+        dataScopes: [],
       }));
   }
 
@@ -388,88 +377,7 @@ export class AuthService {
       isDelete: Number(rule.isDelete ?? 0),
       isDownload: Number(rule.isDownload ?? 0),
       isConfig: Number(rule.isConfig ?? 0),
+      dataScopes: (rule.dataScopes ?? []).length ? rule.dataScopes : [],
     }));
   }
-
-  private normalizeRoleName(role?: string): UserRole {
-    return role?.toUpperCase() === 'ROLE_ADMIN'
-      ? UserRole.ADMIN
-      : UserRole.ADMIN;
-  }
-
-  private getDefaultRules(): IRule[] {
-    return [
-      {
-        ruleId: 1,
-        roleId: 1,
-        moduleId: 1,
-        isView: 1,
-        isAdd: 1,
-        isEdit: 1,
-        isDelete: 1,
-        isDownload: 1,
-        isConfig: 1,
-        isApprove: 1,
-        name: 'Nguoi dung',
-        url: 'NguoiDung',
-        pathId: '1',
-        ordinal: 1,
-        icon: 'group',
-        pid: 0,
-      },
-    ];
-  }
-}
-
-interface BackendLoginEnvelope {
-  code?: number;
-  data?: {
-    token?: {
-      accessToken?: string;
-      refreshToken?: string;
-      tokenType?: string;
-      expiresAt?: number;
-    };
-    user?: {
-      id?: number;
-      username?: string;
-      fullName?: string;
-      email?: string;
-      phone?: string;
-      status?: number;
-      role?: {
-        id?: number;
-        code?: string;
-        name?: string;
-      };
-      unit?: {
-        id?: number;
-        code?: string;
-        name?: string;
-      };
-    };
-  };
-}
-
-interface ICurrentUserWithTokens extends ICurrentUser {
-  accessToken?: string;
-  refreshToken?: string;
-}
-
-interface BackendPermissionItem {
-  id?: ID_TYPE | null;
-  roleId?: ID_TYPE;
-  menuId?: ID_TYPE;
-  menuCode?: string | null;
-  menuName?: string | null;
-  menuUrl?: string | null;
-  parentId?: ID_TYPE | null;
-  icon?: string | null;
-  ordinal?: number | null;
-  isView?: number;
-  isAdd?: number;
-  isEdit?: number;
-  isDelete?: number;
-  isDownload?: number;
-  isConfig?: number;
 }

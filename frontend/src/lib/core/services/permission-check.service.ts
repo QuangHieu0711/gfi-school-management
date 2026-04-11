@@ -25,6 +25,10 @@ export interface UserPermission {
   isDelete: number;
   isDownload: number;
   isConfig: number;
+  dataScopes?: Array<{
+    scopeType?: string;
+    scopeValues?: number[];
+  }>;
 }
 
 const PERMISSION_STORAGE_KEY = 'user.permissions';
@@ -102,6 +106,48 @@ export class PermissionCheckService {
 
   canConfig(menuCode: string): boolean {
     return this.can(menuCode, 'config');
+  }
+
+  /**
+   * Get allowed scope values for a specific menu code and scope type
+   * @param menuCode The menu code to check
+   * @param scopeType The scope type (UNIT, GRADE, CLASS)
+   * @returns Array of allowed scope values
+   */
+  getAllowedScopeValues(
+    menuCode: string,
+    scopeType: 'UNIT' | 'GRADE' | 'CLASS'
+  ): number[] {
+    return this.getDataScopes(menuCode)
+      .filter((x) => (x.scopeType ?? '').toUpperCase() === scopeType)
+      .flatMap((x) => x.scopeValues ?? []);
+  }
+
+  /**
+   * Check if a menu code has a specific scope type
+   * @param menuCode The menu code to check
+   * @param scopeType The scope type to verify (ALL, SELF, UNIT, GRADE, CLASS)
+   * @returns True if the menu has the specified scope
+   */
+  hasScope(
+    menuCode: string,
+    scopeType: 'ALL' | 'SELF' | 'UNIT' | 'GRADE' | 'CLASS'
+  ): boolean {
+    return this.getDataScopes(menuCode).some(
+      (x) => (x.scopeType ?? '').toUpperCase() === scopeType
+    );
+  }
+
+  /**
+   * Get all data scopes for a menu code
+   * @param menuCode The menu code to check
+   * @returns Array of data scopes
+   */
+  private getDataScopes(
+    menuCode: string
+  ): Array<{ scopeType?: string; scopeValues?: number[] }> {
+    const permission = this.findPermission(menuCode);
+    return permission?.dataScopes ?? [];
   }
 
   private findPermission(menuCode: string): UserPermission | undefined {

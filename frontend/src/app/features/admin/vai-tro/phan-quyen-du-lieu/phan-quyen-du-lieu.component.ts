@@ -191,10 +191,34 @@ export class PhanQuyenDuLieuComponent
     );
     if (!sourceRow) return;
 
-    sourceRow.scopes = sourceRow.scopes.map((scope) => ({
-      ...scope,
-      status: event.checked && scope.scopeType === scopeType ? 1 : 0,
-    }));
+    sourceRow.scopes = sourceRow.scopes.map((scope) => {
+      // Bật "Tất cả dữ liệu" thì tự tắt hết các scope còn lại
+      if (scopeType === 'ALL' && event.checked) {
+        return {
+          ...scope,
+          status: scope.scopeType === 'ALL' ? 1 : 0,
+        };
+      }
+
+      // Nếu đang bật scope khác, tắt "Tất cả dữ liệu"
+      if (scope.scopeType === 'ALL' && scopeType !== 'ALL' && event.checked) {
+        return {
+          ...scope,
+          status: 0,
+        };
+      }
+
+      // Cập nhật trạng thái scope hiện tại
+      if (scope.scopeType === scopeType) {
+        return {
+          ...scope,
+          status: event.checked ? 1 : 0,
+        };
+      }
+
+      // Giữ nguyên các scope khác (vì có thể chọn nhiều cùng lúc)
+      return scope;
+    });
 
     this.syncDataRowState(sourceRow);
     this.syncDataDirtyState(sourceRow);
