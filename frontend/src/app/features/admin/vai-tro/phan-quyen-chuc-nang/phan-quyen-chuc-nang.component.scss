@@ -1,0 +1,220 @@
+.permission-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+
+  .permission-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+
+    .permission-search {
+      flex: 1;
+      min-width: 300px;
+
+      .search-row {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+
+        .search-input {
+          flex: 1;
+        }
+
+        .search-actions {
+          display: flex;
+          gap: 8px;
+          align-items: center;
+
+          button[matButton] {
+            padding: 10px 24px !important;
+            font-size: 14px;
+            font-weight: 500;
+            min-width: auto;
+            height: 40px;
+          }
+        }
+      }
+    }
+
+    .toolbar-actions {
+      display: flex;
+      gap: 8px;
+    }
+  }
+
+  .dirty-badge {
+    padding: 4px 10px;
+    background-color: rgba(62, 143, 151, 0.1);
+    border: 1px solid var(--color-primary-500);
+    border-radius: 12px;
+    color: var(--color-primary-500);
+    font-size: 11px;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  .tab-panel {
+    width: 100%;
+  }
+}
+
+// Menu cell styling
+.menu-cell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  --menu-level: 0;
+  padding-left: calc(var(--menu-level, 0) * 20px);
+
+  &--root {
+    font-weight: 600;
+    color: #16324f;
+
+    .menu-node-icon {
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background-color: #16324f;
+      display: inline-block;
+
+      &--root {
+        width: 12px;
+        height: 12px;
+      }
+    }
+  }
+
+  &--child {
+    .menu-node-icon {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background-color: #bfd6de;
+      display: inline-block;
+
+      &--root {
+        width: 12px;
+        height: 12px;
+      }
+    }
+  }
+
+  .menu-toggle {
+    background: none;
+    border: none;
+    padding: 4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 32px;
+    height: 32px;
+    color: #16324f;
+
+    &.is-placeholder {
+      cursor: default;
+      visibility: hidden;
+    }
+
+    &:hover:not(.is-placeholder) {
+      background-color: rgba(22, 50, 79, 0.05);
+      border-radius: 4px;
+    }
+  }
+
+  .menu-copy {
+    flex: 1;
+
+    .menu-inline {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+
+      .menu-node-icon {
+        flex-shrink: 0;
+      }
+
+      .menu-node-name {
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+    }
+  }
+}
+
+.code-color {
+  color: #16324f;
+  font-family: 'Courier New', monospace;
+  font-size: 12px;
+
+  &.path-text {
+    max-width: 200px;
+    display: inline-block;
+  }
+}
+
+// Table styling
+:deep {
+  .mdc-data-table__table {
+    background-color: transparent;
+
+    thead {
+      background-color: #dcecf1;
+
+      th {
+        background-color: #dcecf1;
+        color: #16324f;
+        font-weight: 600;
+        height: 48px;
+        padding: 10px 12px;
+        border-bottom: 1px solid #bfd6de;
+        text-align: left;
+        font-size: 12px;
+      }
+    }
+
+    tbody {
+      tr {
+        height: 48px;
+        border-bottom: 1px solid #bfd6de;
+
+        &:hover {
+          background-color: #f6fafc;
+        }
+
+        td {
+          padding: 8px 12px;
+          color: #16324f;
+          font-size: 12px;
+          vertical-align: middle;
+        }
+      }
+    }
+  }
+
+  mat-slide-toggle {
+    .mdc-switch .mdc-switch__track {
+      background: #eef4f5 !important;
+      border-color: #aac6cb !important;
+    }
+
+    .mdc-switch .mdc-switch__handle::after {
+      background: #3e8f97 !important;
+    }
+
+    .mdc-switch.mdc-switch--checked .mdc-switch__track {
+      background: #3e8f97 !important;
+      border-color: #3e8f97 !important;
+    }
+
+    .mdc-switch.mdc-switch--checked .mdc-switch__handle::after {
+      background: #ffffff !important;
+    }
+  }
+}

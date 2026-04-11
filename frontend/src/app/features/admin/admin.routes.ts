@@ -83,7 +83,7 @@ export const AdminRoutes: Routes = [
           provideEffects(StyleEffect),
         ],
         loadComponent: () =>
-          import('@features/admin/vai-tro/cau-hinh-vai-tro/cau-hinh-vai-tro.component').then(
+          import('./vai-tro/cau-hinh-vai-tro/cau-hinh-vai-tro.component').then(
             (m) => m.CauHinhVaiTroComponent
           ),
       },

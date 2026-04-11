@@ -1,0 +1,132 @@
+<section class="permission-panel">
+  <div class="permission-toolbar">
+    <div class="permission-search">
+      <app-form-control
+        [form]="searchForm"
+        (submitEvent)="submitSearch()">
+        <div class="search-row">
+          <div class="search-input">
+            <app-text-control
+              [item]="findFormControl(searchItems, 'keyword')"
+              [form]="searchForm"></app-text-control>
+          </div>
+
+          <div class="search-actions">
+            <button
+              color="dark"
+              matIconButton="text"
+              matTooltip="Tìm kiếm"
+              type="submit">
+              <app-icon icon="svg:search" color="#858585" />
+            </button>
+            <button
+              color="dark"
+              matIconButton="text"
+              matTooltip="Làm mới"
+              type="button"
+              (click)="resetSearch()">
+              <app-icon icon="svg:cached" color="#858585" />
+            </button>
+            <button
+              color="primary"
+              matButton="outlined"
+              type="button"
+              [disabled]="false"
+              (click)="resetChanges()">
+              Hủy
+            </button>
+            <button
+              color="primary"
+              matButton="filled"
+              type="button"
+              [disabled]="false"
+              (click)="saveChanges()">
+              Lưu
+            </button>
+          </div>
+        </div>
+      </app-form-control>
+    </div>
+  </div>
+
+  <section class="tab-panel">
+    @if (permissionColumns.length > 0) {
+      <app-table
+        tableTitle=""
+        [loading]="loading"
+        [pageIndex]="pageIndex"
+        [pageSize]="pageSize"
+        [total]="dataSource.length"
+        [tableConfig]="tableConfig"
+        [dataSource]="dataSource"
+        [tableColumns]="permissionColumns">
+      </app-table>
+    }
+  </section>
+</section>
+
+<ng-template
+  #menuNameTpl
+  let-row>
+  <div
+    class="menu-cell"
+    [class.menu-cell--root]="(row?.level ?? 0) === 0"
+    [class.menu-cell--child]="(row?.level ?? 0) > 0"
+    [style.--menu-level]="row?.level ?? 0">
+    <button
+      type="button"
+      class="menu-toggle"
+      [class.is-placeholder]="!hasChildren(row)"
+      (click)="toggleRow(row, $event)">
+      @if (hasChildren(row)) {
+        <app-icon
+          [icon]="isExpanded(row) ? 'expand_more' : 'chevron_right'"
+          [size]="18" />
+      }
+    </button>
+    <div class="menu-copy">
+      <span class="menu-inline">
+        @if (row?.icon) {
+          <app-icon [icon]="row.icon" [size]="24" title="{{ row?.icon }}" class="menu-icon" />
+        }
+        <span class="menu-node-name">{{ row?.name }}</span>
+      </span>
+    </div>
+  </div>
+</ng-template>
+
+<ng-template
+  #menuCodeTpl
+  let-row>
+  <span title="{{ row?.code }}">{{ row?.code }}</span>
+</ng-template>
+
+<ng-template
+  #pathTpl
+  let-row>
+  <span
+    title="{{ row?.url }}"
+    class="code-color path-text">{{ row?.url | slice:0:20 }}{{ (row?.url?.length ?? 0) > 20 ? '...' : '' }}</span>
+</ng-template>
+
+<ng-template
+  #iconTpl
+  let-row>
+  <app-icon
+    [icon]="row?.icon"
+    [size]="20"
+    title="{{ row?.icon }}">
+  </app-icon>
+</ng-template>
+
+<ng-template
+  #toggleTpl
+  let-row
+  let-col="colDef">
+  @if (!isRootMenu(row)) {
+    <mat-slide-toggle
+      [checked]="col?.field === 'allPermissions' ? isAllSelected(row) : !!(col?.field && row[col.field])"
+      (change)="onTogglePermission(row, col?.field, $event)">
+    </mat-slide-toggle>
+  }
+</ng-template>
