@@ -8,6 +8,7 @@ import java.util.Set;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -35,7 +36,11 @@ import com.gfi.backend.models.entities.StudentEnrollment;
 import com.gfi.backend.models.entities.StudentGuardian;
 import com.gfi.backend.models.entities.StudentProfile;
 import com.gfi.backend.models.entities.Unit;
+import com.gfi.backend.models.enums.ActionType;
+import com.gfi.backend.models.enums.ScopeType;
 import com.gfi.backend.models.global.CommonErrorCode;
+import com.gfi.backend.models.security.FeatureKey;
+import com.gfi.backend.models.security.ResolvedScope;
 import com.gfi.backend.repositories.ClassroomRepository;
 import com.gfi.backend.repositories.SchoolYearRepository;
 import com.gfi.backend.repositories.StudentAddressRepository;
@@ -45,11 +50,13 @@ import com.gfi.backend.repositories.StudentProfileRepository;
 import com.gfi.backend.repositories.StudentRepository;
 import com.gfi.backend.repositories.UnitRepository;
 import com.gfi.backend.services.FileStorageService;
+import com.gfi.backend.services.interfaces.DataScopeFilterService;
 import com.gfi.backend.services.interfaces.StudentService;
 import com.gfi.backend.utils.PageableUtils;
 
 import jakarta.persistence.criteria.Join;
 import jakarta.persistence.criteria.JoinType;
+import jakarta.persistence.criteria.Path;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Root;
 import jakarta.persistence.criteria.Subquery;
@@ -62,6 +69,7 @@ public class StudentServiceImpl implements StudentService {
     private static final String ADDRESS_TYPE_PERMANENT = "PERMANENT";
     private static final String GUARDIAN_TYPE_FATHER = "FATHER";
     private static final String GUARDIAN_TYPE_MOTHER = "MOTHER";
+    private static final String FEATURE = FeatureKey.STUDENT.getCode();
 
     private final StudentRepository studentRepository;
     private final StudentEnrollmentRepository studentEnrollmentRepository;
@@ -72,6 +80,7 @@ public class StudentServiceImpl implements StudentService {
     private final SchoolYearRepository schoolYearRepository;
     private final ClassroomRepository classroomRepository;
     private final FileStorageService fileStorageService;
+    private final DataScopeFilterService dataScopeFilterService;
 
     @Override
     @Transactional(readOnly = true)
@@ -80,8 +89,9 @@ public class StudentServiceImpl implements StudentService {
         int pageSize = normalizePageSize(request.getPageSize());
         int pageNow = normalizePageNow(request.getPageNow());
         Pageable pageable = PageableUtils.newestFirst(pageNow, pageSize);
+        List<ResolvedScope> resolvedScopes = dataScopeFilterService.getResolvedScopes(FEATURE, ActionType.VIEW);
 
-        Page<Student> page = studentRepository.findAll(buildSpecification(filter), pageable);
+        Page<Student> page = studentRepository.findAll(buildSpecification(filter, resolvedScopes), pageable);
         List<StudentItemDto> items = page.getContent().stream().map(this::toDto).toList();
 
         return PageResponseDto.<StudentItemDto, StudentFilterDto>builder()
@@ -106,6 +116,7 @@ public class StudentServiceImpl implements StudentService {
         Unit unit = findUnit(request.getUnitId());
         SchoolYear schoolYear = findSchoolYear(request.getEnrollment().getSchoolYearId());
         Classroom classroom = findClassroom(request.getEnrollment().getClassId());
+        validateStudentScope(ActionType.ADD, unit, classroom, null);
 
         validateEnrollment(unit, schoolYear, classroom);
         validateAddressTypes(request.getAddresses());
@@ -127,13 +138,16 @@ public class StudentServiceImpl implements StudentService {
     @Override
     @Transactional(readOnly = true)
     public StudentItemDto getById(Long id) {
-        return toDto(findStudent(id));
+        Student student = findStudent(id);
+        validateStudentScope(ActionType.VIEW, student);
+        return toDto(student);
     }
 
     @Override
     @Transactional
     public StudentItemDto update(Long id, StudentCreateRequest request) {
         Student student = findStudent(id);
+        validateStudentScope(ActionType.EDIT, student);
         String studentCode = normalize(request.getStudentCode());
         studentRepository.findByStudentCode(studentCode)
                 .filter(item -> !item.getId().equals(id))
@@ -144,6 +158,7 @@ public class StudentServiceImpl implements StudentService {
         Unit unit = findUnit(request.getUnitId());
         SchoolYear schoolYear = findSchoolYear(request.getEnrollment().getSchoolYearId());
         Classroom classroom = findClassroom(request.getEnrollment().getClassId());
+        validateStudentScope(ActionType.EDIT, unit, classroom, null);
 
         validateEnrollment(unit, schoolYear, classroom);
         validateAddressTypes(request.getAddresses());
@@ -165,6 +180,7 @@ public class StudentServiceImpl implements StudentService {
     @Transactional
     public void delete(Long id) {
         Student student = findStudent(id);
+        validateStudentScope(ActionType.DELETE, student);
         studentProfileRepository.deleteByStudentId(id);
         studentGuardianRepository.deleteByStudentId(id);
         studentAddressRepository.deleteByStudentId(id);
@@ -172,11 +188,11 @@ public class StudentServiceImpl implements StudentService {
         studentRepository.delete(student);
     }
 
-    private Specification<Student> buildSpecification(StudentFilterDto filter) {
+    private Specification<Student> buildSpecification(StudentFilterDto filter, List<ResolvedScope> resolvedScopes) {
         return (root, query, cb) -> {
             query.distinct(true);
             List<Predicate> predicates = new java.util.ArrayList<>();
-            root.join("unit", JoinType.LEFT);
+            Join<Student, Unit> unitJoin = root.join("unit", JoinType.LEFT);
 
             if (hasText(filter.getFullName())) {
                 predicates.add(cb.like(cb.lower(root.get("fullName")), likeValue(filter.getFullName())));
@@ -254,6 +270,7 @@ public class StudentServiceImpl implements StudentService {
                 predicates.add(cb.exists(addressSubquery));
             }
 
+            predicates.add(buildStudentScopePredicate(query, cb, root, unitJoin, resolvedScopes));
             return cb.and(predicates.toArray(new Predicate[0]));
         };
     }
@@ -272,6 +289,115 @@ public class StudentServiceImpl implements StudentService {
     private Student findStudent(Long id) {
         return studentRepository.findById(id)
                 .orElseThrow(() -> new UserMessageException(CommonErrorCode.STUDENT_NOT_FOUND));
+    }
+
+    private void validateStudentScope(ActionType action, Student student) {
+        StudentEnrollment enrollment = findLatestEnrollment(student.getId());
+        Classroom classroom = enrollment == null ? null : enrollment.getClassroom();
+        validateStudentScope(action, student.getUnit(), classroom, student.getId());
+    }
+
+    private void validateStudentScope(ActionType action, Unit unit, Classroom classroom, Long studentId) {
+        List<ResolvedScope> resolvedScopes = dataScopeFilterService.getResolvedScopes(FEATURE, action);
+        if (!hasStudentScope(resolvedScopes, unit, classroom, studentId)) {
+            throw new AccessDeniedException(
+                    "User khong co quyen " + action + " tren student trong scope hien tai");
+        }
+    }
+
+    private boolean hasStudentScope(List<ResolvedScope> resolvedScopes, Unit unit, Classroom classroom, Long studentId) {
+        if (resolvedScopes == null || resolvedScopes.isEmpty()) {
+            return false;
+        }
+        for (ResolvedScope scope : resolvedScopes) {
+            if (scope == null) {
+                continue;
+            }
+            if (scope.isUnrestricted() || scope.getScopeType() == ScopeType.ALL) {
+                return true;
+            }
+            if (scope.getScopeIds() == null || scope.getScopeIds().isEmpty()) {
+                continue;
+            }
+            switch (scope.getScopeType()) {
+                case UNIT -> {
+                    if (unit != null && scope.getScopeIds().contains(unit.getId())) {
+                        return true;
+                    }
+                }
+                case CLASS -> {
+                    if (classroom != null && scope.getScopeIds().contains(classroom.getId())) {
+                        return true;
+                    }
+                }
+                case GRADE -> {
+                    if (classroom != null && classroom.getGradeLevel() != null
+                            && scope.getScopeIds().contains(classroom.getGradeLevel().getId())) {
+                        return true;
+                    }
+                }
+                case USER, SELF -> {
+                }
+                default -> {
+                }
+            }
+        }
+        return false;
+    }
+
+    private Predicate buildStudentScopePredicate(jakarta.persistence.criteria.CriteriaQuery<?> query,
+            jakarta.persistence.criteria.CriteriaBuilder cb,
+            Root<Student> root,
+            Join<Student, Unit> unitJoin,
+            List<ResolvedScope> resolvedScopes) {
+        if (resolvedScopes == null || resolvedScopes.isEmpty()) {
+            return cb.disjunction();
+        }
+        List<Predicate> scopePredicates = new java.util.ArrayList<>();
+        for (ResolvedScope scope : resolvedScopes) {
+            if (scope == null) {
+                continue;
+            }
+            if (scope.isUnrestricted() || scope.getScopeType() == ScopeType.ALL) {
+                return cb.conjunction();
+            }
+            if (scope.getScopeIds() == null || scope.getScopeIds().isEmpty()) {
+                continue;
+            }
+            switch (scope.getScopeType()) {
+                case UNIT -> scopePredicates.add(unitJoin.get("id").in(scope.getScopeIds()));
+                case CLASS -> scopePredicates.add(buildEnrollmentScopeExistsSubquery(query, cb, root, scope.getScopeIds(), false));
+                case GRADE -> scopePredicates.add(buildEnrollmentScopeExistsSubquery(query, cb, root, scope.getScopeIds(), true));
+                case USER, SELF -> {
+                }
+                default -> {
+                }
+            }
+        }
+        return scopePredicates.isEmpty() ? cb.disjunction() : cb.or(scopePredicates.toArray(new Predicate[0]));
+    }
+
+    private Predicate buildEnrollmentScopeExistsSubquery(jakarta.persistence.criteria.CriteriaQuery<?> query,
+            jakarta.persistence.criteria.CriteriaBuilder cb,
+            Root<Student> root,
+            Set<Long> scopeIds,
+            boolean byGrade) {
+        Subquery<Long> subquery = query.subquery(Long.class);
+        Root<StudentEnrollment> enrollmentRoot = subquery.from(StudentEnrollment.class);
+        Join<StudentEnrollment, Classroom> classroomJoin = enrollmentRoot.join("classroom", JoinType.INNER);
+        Path<?> scopePath = byGrade ? classroomJoin.get("gradeLevel").get("id") : classroomJoin.get("id");
+        subquery.select(enrollmentRoot.get("id"))
+                .where(
+                        cb.equal(enrollmentRoot.get("student").get("id"), root.get("id")),
+                        scopePath.in(scopeIds));
+        return cb.exists(subquery);
+    }
+
+    private StudentEnrollment findLatestEnrollment(Long studentId) {
+        return studentEnrollmentRepository.findByStudentIdOrderBySchoolYearIdDescIdDesc(studentId)
+                .stream()
+                .findFirst()
+                .orElse(null);
     }
 
     private Unit findUnit(Long id) {
@@ -444,10 +570,7 @@ public class StudentServiceImpl implements StudentService {
     }
 
     private StudentItemDto toDto(Student student) {
-        StudentEnrollment enrollment = studentEnrollmentRepository.findByStudentIdOrderBySchoolYearIdDescIdDesc(student.getId())
-                .stream()
-                .findFirst()
-                .orElse(null);
+        StudentEnrollment enrollment = findLatestEnrollment(student.getId());
         List<StudentAddress> addresses = studentAddressRepository.findByStudentIdOrderByIdAsc(student.getId());
         List<StudentGuardian> guardians = studentGuardianRepository.findByStudentIdOrderByIdAsc(student.getId());
         StudentProfile profile = studentProfileRepository.findByStudentId(student.getId()).orElse(null);

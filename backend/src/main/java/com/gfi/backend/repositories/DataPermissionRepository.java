@@ -30,4 +30,9 @@ public interface DataPermissionRepository extends JpaRepository<DataPermission, 
         order by dp.id asc
     """)
     List<DataPermission> findAllByRoleIdWithScopesOrderByIdAsc(@Param("roleId") Long roleId);
+
+    /**
+     * Kiểm tra xem data permission đã tồn tại cho role và menu hay chưa.
+     */
+    boolean existsByRoleIdAndMenuId(Long roleId, Long menuId);
 }

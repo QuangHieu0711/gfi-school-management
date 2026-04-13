@@ -5,34 +5,69 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
+import com.gfi.backend.models.enums.ActionType;
+import com.gfi.backend.models.enums.ScopeType;
+
 /**
  * Annotation to enforce data scope filtering on controller methods
  * 
- * Usage:
- * @GetMapping("/classrooms")
- * @DataScoped(menuCode = "CLASS_MANAGEMENT", scopeParamName = "unitId")
- * public ResponseEntity<?> getClassrooms(@RequestParam Long unitId) { ... }
+ * Hỗ trợ 2 chế độ:
  * 
- * The framework will automatically check if user has access to the specified unitId
+ * 1. Chỉ check menu access (không check scope cụ thể):
+ *    @DataScoped(feature = "CLASS_MANAGEMENT", action = ActionType.VIEW)
+ * 
+ * 2. Check menu + scope (dùng SpEL để extract scope ID):
+ *    @DataScoped(
+ *        feature = "CLASS_MANAGEMENT",
+ *        action = ActionType.VIEW,
+ *        scopeExpression = "#unitId"
+ *    )
+ *    public ResponseEntity<?> getClasses(@PathVariable Long unitId) { ... }
+ *
+ *    @DataScoped(
+ *        feature = "STUDENT_MANAGEMENT",
+ *        action = ActionType.EDIT,
+ *        scopeExpression = "#request.classId"
+ *    )
+ *    public ResponseEntity<?> update(@RequestBody StudentUpdateRequest request) { ... }
  */
 @Target(ElementType.METHOD)
 @Retention(RetentionPolicy.RUNTIME)
 public @interface DataScoped {
     
     /**
-     * Menu code to check permissions for
+     * Feature/section code (tên menu code)
+     * Ví dụ: "CLASS_MANAGEMENT", "STUDENT_MANAGEMENT", "ACCOUNT_MANAGEMENT"
      */
-    String menuCode();
+    String feature();
     
     /**
-     * Name of request parameter containing the scope ID to check
-     * Can be path variable or request parameter
+     * Hành động/action type
+     * Ví dụ: VIEW, ADD, EDIT, DELETE
      */
-    String scopeParamName() default "";
+    ActionType action() default ActionType.VIEW;
     
     /**
-     * Whether to filter list results or just check single scope access
-     * If true, the method return value will be filtered by user's allowed scopes
+     * ⚠️ NEW: Loại scope để check
+     * Default là UNIT, nhưng có thể là CLASS, GRADE, USER, SELF, v.v
+     * 
+     * Ví dụ:
+     * - scopeType = ScopeType.UNIT: check unitId
+     * - scopeType = ScopeType.CLASS: check classId
+     * - scopeType = ScopeType.SELF: check userId
      */
-    boolean autoFilter() default false;
+    ScopeType scopeType() default ScopeType.UNIT;
+    
+    /**
+     * SpEL expression để extract scope ID từ request
+     * 
+     * Ví dụ:
+     * - "#id" → extract từ @PathVariable Long id
+     * - "#unitId" → extract từ @RequestParam Long unitId
+     * - "#request.unitId" → extract từ @RequestBody request.unitId
+     * - "#filter.classId" → extract từ @RequestBody filter.classId
+     * 
+     * Để trống nếu chỉ check menu access, không check scope
+     */
+    String scopeExpression() default "";
 }

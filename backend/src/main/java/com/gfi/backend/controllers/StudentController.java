@@ -12,12 +12,14 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.gfi.backend.controllers.annotations.DataScoped;
 import com.gfi.backend.models.dtos.common.FileUploadDto;
 import com.gfi.backend.models.dtos.common.PageRequestDto;
 import com.gfi.backend.models.dtos.common.PageResponseDto;
 import com.gfi.backend.models.dtos.student.StudentCreateRequest;
 import com.gfi.backend.models.dtos.student.StudentFilterDto;
 import com.gfi.backend.models.dtos.student.StudentItemDto;
+import com.gfi.backend.models.enums.ActionType;
 import com.gfi.backend.models.global.ApiResult;
 import com.gfi.backend.services.FileStorageService;
 import com.gfi.backend.services.interfaces.StudentService;
@@ -37,6 +39,7 @@ public class StudentController extends ApiBaseController {
     private final FileStorageService fileStorageService;
 
     @PostMapping("/search")
+    @DataScoped(feature = "STUDENT", action = ActionType.VIEW)
     @Operation(summary = "Danh sách học sinh", description = "Lấy danh sách học sinh có phân trang và filter cho màn hình lưới.")
     public ResponseEntity<ApiResult<PageResponseDto<StudentItemDto, StudentFilterDto>>> search(
             @RequestBody(required = false) PageRequestDto<StudentFilterDto> request) {
@@ -46,18 +49,21 @@ public class StudentController extends ApiBaseController {
     }
 
     @PostMapping
+    @DataScoped(feature = "STUDENT", action = ActionType.ADD)
     @Operation(summary = "Thêm học sinh", description = "Tạo mới học sinh kèm thông tin nhập học, địa chỉ, người giám hộ và hồ sơ mở rộng.")
     public ResponseEntity<ApiResult<StudentItemDto>> create(@Valid @RequestBody StudentCreateRequest request) {
         return executeApiResult(() -> ApiResult.success(studentService.create(request), "Thêm học sinh thành công"));
     }
 
     @PostMapping("/upload-avatar")
+    @DataScoped(feature = "STUDENT", action = ActionType.ADD)
     @Operation(summary = "Tai anh hoc sinh", description = "Tai anh dai dien hoc sinh len server va tra ve avatarUrl.")
     public ResponseEntity<ApiResult<FileUploadDto>> uploadAvatar(@RequestParam("file") MultipartFile file) {
         return executeApiResult(() -> ApiResult.success(fileStorageService.storeStudentAvatar(file), "Tai anh thanh cong"));
     }
 
     @GetMapping("/{id}")
+    @DataScoped(feature = "STUDENT", action = ActionType.VIEW)
     @Operation(summary = "Chi tiết học sinh", description = "Lấy thông tin học sinh theo id.")
     public ResponseEntity<ApiResult<StudentItemDto>> getById(@PathVariable Long id) {
         return executeApiResult(
@@ -65,6 +71,7 @@ public class StudentController extends ApiBaseController {
     }
 
     @PutMapping("/{id}")
+    @DataScoped(feature = "STUDENT", action = ActionType.EDIT)
     @Operation(summary = "Cập nhật học sinh", description = "Cập nhật học sinh theo id.")
     public ResponseEntity<ApiResult<StudentItemDto>> update(@PathVariable Long id,
             @Valid @RequestBody StudentCreateRequest request) {
@@ -73,6 +80,7 @@ public class StudentController extends ApiBaseController {
     }
 
     @DeleteMapping("/{id}")
+    @DataScoped(feature = "STUDENT", action = ActionType.DELETE)
     @Operation(summary = "Xóa học sinh", description = "Xóa học sinh theo id.")
     public ResponseEntity<ApiResult<String>> delete(@PathVariable Long id) {
         return executeApiResult(() -> {

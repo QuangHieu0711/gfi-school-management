@@ -90,6 +90,7 @@ export class DonViComponent extends ComponentBaseAbstract {
             icon: 'visibility',
             class: 'action-view',
             tooltip: 'Chi tiết',
+            iif: () => this.permissionCheckService.canView(this.menuCode),
             click: (rowData: DonViResponse) =>
               this.openDialog(this.TYPE_FORM.DETAIL, rowData),
           },
@@ -98,6 +99,7 @@ export class DonViComponent extends ComponentBaseAbstract {
             icon: 'edit',
             class: 'action-edit',
             tooltip: 'Chỉnh sửa',
+            iif: () => this.permissionCheckService.canEdit(this.menuCode),
             click: (rowData: DonViResponse) =>
               this.openDialog(this.TYPE_FORM.UPDATE, rowData),
           },
@@ -106,6 +108,7 @@ export class DonViComponent extends ComponentBaseAbstract {
             icon: 'delete',
             class: 'action-delete',
             tooltip: 'Xóa',
+            iif: () => this.permissionCheckService.canDelete(this.menuCode),
             click: (rowData: DonViResponse) => this.deleteUnit(rowData),
           },
         ],

@@ -8,99 +8,108 @@ import org.springframework.stereotype.Component;
 
 import com.gfi.backend.models.dtos.classroom.ClassroomFilterDto;
 import com.gfi.backend.models.entities.Classroom;
+import com.gfi.backend.models.enums.ScopeType;
+import com.gfi.backend.models.security.ResolvedScope;
 
 import jakarta.persistence.criteria.Join;
 import jakarta.persistence.criteria.JoinType;
 import jakarta.persistence.criteria.Predicate;
 
-/**
- * Specification component để build query logic cho Classroom.
- * Sử dụng Criteria API để xây dựng dynamic query với filter.
- * Luôn filter: deletedFlag = 0 (soft delete)
- */
 @Component
 public class ClassroomSpecification {
 
-    /**
-     * Build Specification từ ClassroomFilterDto.
-     * Hỗ trợ filter theo:
-     * - className: keyword search across code, name, description, unit, gradeLevel, schoolYear
-     * - unitId: direct reference
-     * - gradeLevelId: direct reference
-     * - schoolYearId: direct reference
-     * - status: direct reference
-     */
-    public Specification<Classroom> buildSpecification(ClassroomFilterDto filter) {
+    public Specification<Classroom> buildSpecification(ClassroomFilterDto filter, List<ResolvedScope> resolvedScopes) {
         return (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
 
-            // JOINS (sẽ được sử dụng trong search nhưng không bắt buộc có dữ liệu)
             Join<Object, Object> unitJoin = root.join("unit", JoinType.INNER);
             Join<Object, Object> gradeLevelJoin = root.join("gradeLevel", JoinType.INNER);
             Join<Object, Object> schoolYearJoin = root.join("schoolYear", JoinType.INNER);
 
-            // Tìm kiếm theo tên hoặc mã lớp (code hoặc name)
             if (hasText(filter.getClassName())) {
                 String keyword = "%" + filter.getClassName().trim().toLowerCase() + "%";
                 predicates.add(cb.or(
                         cb.like(cb.lower(root.get("code")), keyword),
-                        cb.like(cb.lower(root.get("name")), keyword)
-                ));
+                        cb.like(cb.lower(root.get("name")), keyword)));
             }
 
-            // Tìm kiếm theo đơn vị
             if (filter.getUnitId() != null) {
                 predicates.add(cb.equal(unitJoin.get("id"), filter.getUnitId()));
             }
-
-            // Tìm kiếm theo khối
             if (filter.getGradeLevelId() != null) {
                 predicates.add(cb.equal(gradeLevelJoin.get("id"), filter.getGradeLevelId()));
             }
-            // Tìm kiếm theo năm học
             if (filter.getSchoolYearId() != null) {
                 predicates.add(cb.equal(schoolYearJoin.get("id"), filter.getSchoolYearId()));
             }
-                // Tìm kiếm theo trạng thái 
             if (filter.getStatus() != null) {
                 predicates.add(cb.equal(root.get("status"), filter.getStatus()));
             }
 
-            // SOFT DELETE: Luôn exclude deletedFlag = 1
             predicates.add(cb.equal(root.get("deletedFlag"), 0));
+            predicates.add(buildScopePredicate(root, cb, unitJoin, gradeLevelJoin, resolvedScopes));
 
             return cb.and(predicates.toArray(new Predicate[0]));
         };
     }
 
-    /**
-     * Build Specification cho getOptions() dựa trên unitId, gradeLevelId,
-     * schoolYearId.
-     */
-    public Specification<Classroom> buildSpecificationForOptions(Long unitId, Long gradeLevelId, Long schoolYearId) {
+    public Specification<Classroom> buildSpecificationForOptions(Long unitId, Long gradeLevelId, Long schoolYearId,
+            List<ResolvedScope> resolvedScopes) {
         return (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
+            Join<Object, Object> unitJoin = root.join("unit", JoinType.INNER);
+            Join<Object, Object> gradeLevelJoin = root.join("gradeLevel", JoinType.INNER);
 
             if (unitId != null) {
-                predicates.add(cb.equal(root.join("unit", JoinType.INNER).get("id"), unitId));
+                predicates.add(cb.equal(unitJoin.get("id"), unitId));
             }
             if (gradeLevelId != null) {
-                predicates.add(cb.equal(root.join("gradeLevel", JoinType.INNER).get("id"), gradeLevelId));
+                predicates.add(cb.equal(gradeLevelJoin.get("id"), gradeLevelId));
             }
             if (schoolYearId != null) {
                 predicates.add(cb.equal(root.join("schoolYear", JoinType.INNER).get("id"), schoolYearId));
             }
 
-            // SOFT DELETE: Luôn exclude deletedFlag = 1
             predicates.add(cb.equal(root.get("deletedFlag"), 0));
+            predicates.add(buildScopePredicate(root, cb, unitJoin, gradeLevelJoin, resolvedScopes));
 
             return cb.and(predicates.toArray(new Predicate[0]));
         };
     }
 
-    /**
-     * Kiểm tra string có nội dung hay không.
-     */
+    private Predicate buildScopePredicate(jakarta.persistence.criteria.Root<Classroom> root,
+            jakarta.persistence.criteria.CriteriaBuilder cb,
+            Join<Object, Object> unitJoin,
+            Join<Object, Object> gradeLevelJoin,
+            List<ResolvedScope> resolvedScopes) {
+        if (resolvedScopes == null || resolvedScopes.isEmpty()) {
+            return cb.disjunction();
+        }
+
+        List<Predicate> scopePredicates = new ArrayList<>();
+        for (ResolvedScope scope : resolvedScopes) {
+            if (scope == null) {
+                continue;
+            }
+            if (scope.isUnrestricted() || scope.getScopeType() == ScopeType.ALL) {
+                return cb.conjunction();
+            }
+            if (scope.getScopeIds() == null || scope.getScopeIds().isEmpty()) {
+                continue;
+            }
+
+            switch (scope.getScopeType()) {
+                case UNIT -> scopePredicates.add(unitJoin.get("id").in(scope.getScopeIds()));
+                case CLASS -> scopePredicates.add(root.get("id").in(scope.getScopeIds()));
+                case GRADE -> scopePredicates.add(gradeLevelJoin.get("id").in(scope.getScopeIds()));
+                default -> {
+                }
+            }
+        }
+
+        return scopePredicates.isEmpty() ? cb.disjunction() : cb.or(scopePredicates.toArray(new Predicate[0]));
+    }
+
     private boolean hasText(String value) {
         return value != null && !value.trim().isEmpty();
     }

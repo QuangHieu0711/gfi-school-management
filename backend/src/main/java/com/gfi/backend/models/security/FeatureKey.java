@@ -15,14 +15,19 @@ public enum FeatureKey {
     ROLE_MANAGEMENT("Quản lý vai trò"),
     PERMISSION_MANAGEMENT("Quản lý quyền"),
     UNIT_MANAGEMENT("Quản lý đơn vị"),
-    CLASSROOM_MANAGEMENT("Quản lý lớp học"),
-    STUDENT_MANAGEMENT("Quản lý học sinh"),
-    GRADE_MANAGEMENT("Quản lý khối"),
+    CLASS_MANAGEMENT("Quản lý lớp học"),
+    STUDENT_PROFILE("Hồ sơ học sinh"),
+    GRADE_CONFIG("Cấu hình khối"),
     GRADE_LEVEL_MANAGEMENT("Quản lý cấp học"),
     SUBJECT_MANAGEMENT("Quản lý môn học"),
-    SCHOOL_YEAR_MANAGEMENT("Quản lý năm học"),
+    SCHOOL_YEAR_CONFIG("Cấu hình năm học"),
     SEMESTER_MANAGEMENT("Quản lý học kì"),
-    DATA_PERMISSION_MANAGEMENT("Quản lý phân quyền dữ liệu");
+    ACADEMIC_MANAGEMENT("Quản lý học tập"),
+    SYSTEM_CONFIG("Cấu hình hệ thống"),
+    FUNCTION_MANAGEMENT("Quản lý chức năng"),
+    SYSTEM_ADMIN("Quản trị hệ thống"),
+    USER_ADMIN("Quản trị người dùng"),
+    STUDENT("Học sinh");
 
     private final String description;
 

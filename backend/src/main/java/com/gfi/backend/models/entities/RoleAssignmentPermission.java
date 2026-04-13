@@ -1,12 +1,16 @@
 package com.gfi.backend.models.entities;
 
-import java.time.LocalDateTime;
-
 import jakarta.persistence.*;
-import lombok.Data;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @Entity
-@Data
+@NoArgsConstructor
+@Getter
+@Setter
+@AllArgsConstructor
 @Table(
     name = "role_assignment_permissions",
     uniqueConstraints = @UniqueConstraint(
@@ -14,7 +18,7 @@ import lombok.Data;
         columnNames = {"creator_role_id", "target_role_id"}
     )
 )
-public class RoleAssignmentPermission {
+public class RoleAssignmentPermission extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -36,37 +40,4 @@ public class RoleAssignmentPermission {
 
     @Column(nullable = false)
     private Integer status = 1;
-
-    @Column(name = "deleted_flag", nullable = false)
-    private Integer deletedFlag = 0;
-
-    @Column(name = "created_at")
-    private LocalDateTime createdAt;
-
-    @Column(name = "created_by", length = 255)
-    private String createdBy;
-
-    @Column(name = "updated_at")
-    private LocalDateTime updatedAt;
-
-    @Column(name = "updated_by", length = 255)
-    private String updatedBy;
-
-    @PrePersist
-    public void prePersist() {
-        if (createdAt == null) {
-            createdAt = LocalDateTime.now();
-        }
-        if (status == null) {
-            status = 1;
-        }
-        if (deletedFlag == null) {
-            deletedFlag = 0;
-        }
-    }
-
-    @PreUpdate
-    public void preUpdate() {
-        updatedAt = LocalDateTime.now();
-    }
 }

@@ -8,6 +8,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.access.AccessDeniedException;
 
+import com.gfi.backend.models.enums.ActionType;
+import com.gfi.backend.models.enums.ScopeType;
+import com.gfi.backend.models.security.ResolvedScope;
 import com.gfi.backend.models.security.UserScopes;
 
 /**
@@ -43,6 +46,7 @@ public class ScopeFilterUtils {
 
     /**
      * Check if user has functional permission to access menu
+     * ⚠️ UPDATED: Dùng API mới hasMenuAccess() thay vì allowedMenuCodes
      * @param menuCode Menu code to check
      * @throws AccessDeniedException if user has no access to this menu
      */
@@ -52,8 +56,9 @@ public class ScopeFilterUtils {
 
         String normalizedMenuCode = normalize(menuCode);
 
-        if (userScopes.getAllowedMenuCodes() == null
-                || !userScopes.getAllowedMenuCodes().contains(normalizedMenuCode)) {
+        // ⚠️ UPDATED: Dùng hasMenuAccess() từ UserScopes
+        // Nó sẽ check allowedActionsByFeature thay vì allowedMenuCodes
+        if (!userScopes.hasMenuAccess(normalizedMenuCode)) {
             throw new AccessDeniedException("User has no access to menu: " + menuCode);
         }
 
@@ -61,55 +66,74 @@ public class ScopeFilterUtils {
     }
 
     /**
-     * Get allowed scope IDs for a specific menu from current user's scopes
+     * Get allowed scopes for a specific menu and action from current user's scopes
+     * ⚠️ UPDATED: Trả ResolvedScope thay vì List<Long>, support action-level
      * @param menuCode Menu code to get scopes for
-     * @return List of allowed scope IDs (empty list = ALL, no restriction)
+     * @param action Action type (VIEW, ADD, EDIT, DELETE)
+     * @return List of ResolvedScope objects (empty list = deny, not allow all)
      * @throws AccessDeniedException if user has no access to this menu
      */
-    public static List<Long> getRequiredScopes(String menuCode) {
+    public static List<ResolvedScope> getRequiredScopes(String menuCode, ActionType action) {
         String normalizedMenuCode = normalize(menuCode);
         
         // Skip data scope check for system/configuration menus
         if (SKIP_DATA_SCOPE_CHECK.contains(normalizedMenuCode)) {
             logger.debug("getRequiredScopes: menuCode={} is in skip list, returning ALL scopes", normalizedMenuCode);
-            return List.of();
+            // Return unrestricted scope for system menus
+            return List.of(ResolvedScope.all());
         }
         
         UserScopes userScopes = SecurityContextUtils.getCurrentUserScopes()
                 .orElseThrow(() -> new AccessDeniedException("User scopes not found in context"));
 
-        // Get scopes map first to avoid NPE in logging
-        Map<String, List<Long>> scopesByMenu = userScopes.getScopesByMenu();
-        logger.debug("getRequiredScopes: menuCode={}, availableMenus={}",
-                normalizedMenuCode,
-                scopesByMenu != null ? scopesByMenu.keySet() : List.of());
+        // ⚠️ UPDATED: Dùng getScopes() API baru, trả ResolvedScope thay vì Long
+        List<ResolvedScope> scopes = userScopes.getScopes(normalizedMenuCode, action);
+        logger.debug("getRequiredScopes: menuCode={}, action={}, resolvedScopes.size={}",
+                normalizedMenuCode, action, scopes != null ? scopes.size() : 0);
 
-        // If menu has no data permission, return ALL (empty list = no restriction)
-        // This means: menu is accessible but no data scope restriction (admin can see all)
-        if (scopesByMenu == null || !scopesByMenu.containsKey(normalizedMenuCode)) {
-            logger.debug("getRequiredScopes: menuCode={} NOT in data_permissions, returning ALL scopes", normalizedMenuCode);
-            return List.of();
-        }
-
-        List<Long> scopes = scopesByMenu.get(normalizedMenuCode);
-        logger.debug("getRequiredScopes: menuCode={}, scopes={}", normalizedMenuCode, scopes);
         return scopes;
+    }
+    
+    /**
+     * ⚠️ DEPRECATED: Use getRequiredScopes(menuCode, action) instead
+     * This overload kept for backward compatibility only
+     */
+    @Deprecated
+    public static List<Long> getRequiredScopes(String menuCode) {
+        logger.warn("getRequiredScopes(menuCode) is deprecated, use getRequiredScopes(menuCode, action) instead");
+        // Default to VIEW action for backward compat
+        List<ResolvedScope> resolvedScopes = getRequiredScopes(menuCode, ActionType.VIEW);
+        // Flatten to Long list (loses scope type info)
+        return resolvedScopes.stream()
+                .flatMap(rs -> rs.getScopeIds().stream())
+                .toList();
     }
 
     /**
-     * Check if scopes are empty (= ALL, no restriction)
+     * Check if ResolvedScope is unrestricted (allows all data)
      */
+    public static boolean isScopeUnrestricted(ResolvedScope scope) {
+        return scope != null && scope.isUnrestricted();
+    }
+    
+    /**
+     * ⚠️ DEPRECATED: Use isScopeUnrestricted(ResolvedScope) instead
+     */
+    @Deprecated
     public static boolean isScopeUnrestricted(List<Long> scopes) {
         return scopes == null || scopes.isEmpty();
     }
 
     /**
      * Validate single record access
+     * ⚠️ UPDATED: Work with ResolvedScope and support multiple scope types
      * @param menuCode Menu code to check
+     * @param action Action type (VIEW, ADD, EDIT, DELETE)
+     * @param scopeType Scope type (UNIT, CLASS, GRADE, etc)
      * @param recordScopeId The scope ID of the record (e.g., unitId, classId)
      * @throws AccessDeniedException if user cannot access this record
      */
-    public static void validateAccess(String menuCode, Long recordScopeId) {
+    public static void validateAccess(String menuCode, ActionType action, ScopeType scopeType, Long recordScopeId) {
         String normalizedMenuCode = normalize(menuCode);
         
         // Skip data scope validation for system/configuration menus
@@ -118,27 +142,46 @@ public class ScopeFilterUtils {
             return;
         }
         
-        List<Long> allowedScopes = getRequiredScopes(menuCode);
+        UserScopes userScopes = SecurityContextUtils.getCurrentUserScopes()
+                .orElseThrow(() -> new AccessDeniedException("User scopes not found in context"));
 
-        // If empty scopes (ALL), no restriction
-        if (isScopeUnrestricted(allowedScopes)) {
-            return;
-        }
-
-        // Check if record's scope is in allowed scopes
-        if (!allowedScopes.contains(recordScopeId)) {
+        // ⚠️ UPDATED: Dùng hasAccess() method từ UserScopes
+        // Nó sẽ check tất cả ResolvedScope rules với OR logic
+        if (!userScopes.hasAccess(normalizedMenuCode, action, scopeType, recordScopeId)) {
             throw new AccessDeniedException(
-                    "Access denied to " + menuCode + " with scope ID: " + recordScopeId);
+                    String.format("Access denied to %s action=%s scope=%s(id=%d)", 
+                            menuCode, action, scopeType, recordScopeId));
         }
 
-        logger.debug("validateAccess: menuCode={}, recordScopeId={}, allowed=true", menuCode, recordScopeId);
+        logger.debug("validateAccess: menuCode={}, action={}, scopeType={}, recordScopeId={}, allowed=true", 
+                menuCode, action, scopeType, recordScopeId);
+    }
+    
+    /**
+     * ⚠️ DEPRECATED: Use validateAccess(menuCode, action, scopeType, recordScopeId) instead
+     */
+    @Deprecated
+    public static void validateAccess(String menuCode, Long recordScopeId) {
+        logger.warn("validateAccess(menuCode, recordScopeId) is deprecated, use validateAccess(menuCode, action, scopeType, recordScopeId) instead");
+        // Default to VIEW action and UNIT scope for backward compat
+        validateAccess(menuCode, ActionType.VIEW, ScopeType.UNIT, recordScopeId);
     }
 
     /**
      * Get scopes for query filtering
-     * If unrestricted (ALL), returns empty list for "no filtering" behavior
-     * Otherwise returns the list of allowed scope IDs for WHERE IN clause
+     * ⚠️ UPDATED: Trả ResolvedScope để service layer có thể build proper WHERE clause
+     * @param menuCode Menu code
+     * @param action Action type (VIEW, ADD, EDIT, DELETE)
+     * @return List of ResolvedScope to use for query building
      */
+    public static List<ResolvedScope> getScopesForQuery(String menuCode, ActionType action) {
+        return getRequiredScopes(menuCode, action);
+    }
+    
+    /**
+     * ⚠️ DEPRECATED: Use getScopesForQuery(menuCode, action) instead
+     */
+    @Deprecated
     public static List<Long> getScopesForQuery(String menuCode) {
         return getRequiredScopes(menuCode);
     }

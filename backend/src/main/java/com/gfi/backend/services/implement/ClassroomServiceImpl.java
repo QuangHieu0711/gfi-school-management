@@ -5,7 +5,6 @@ import java.util.List;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,7 +21,11 @@ import com.gfi.backend.models.entities.Classroom;
 import com.gfi.backend.models.entities.GradeLevel;
 import com.gfi.backend.models.entities.SchoolYear;
 import com.gfi.backend.models.entities.Unit;
+import com.gfi.backend.models.enums.ActionType;
+import com.gfi.backend.models.enums.ScopeType;
 import com.gfi.backend.models.global.CommonErrorCode;
+import com.gfi.backend.models.security.FeatureKey;
+import com.gfi.backend.models.security.ResolvedScope;
 import com.gfi.backend.repositories.ClassroomRepository;
 import com.gfi.backend.repositories.GradeLevelRepository;
 import com.gfi.backend.repositories.SchoolYearRepository;
@@ -30,21 +33,12 @@ import com.gfi.backend.repositories.UnitRepository;
 import com.gfi.backend.repositories.specifications.ClassroomSpecification;
 import com.gfi.backend.services.interfaces.ClassroomService;
 import com.gfi.backend.services.interfaces.ClassroomSubjectService;
+import com.gfi.backend.services.interfaces.DataScopeFilterService;
 import com.gfi.backend.utils.PageableUtils;
 import com.gfi.backend.utils.SecurityUtils;
-import com.gfi.backend.utils.ScopeFilterUtils;
-import com.gfi.backend.models.security.FeatureKey;
 
 import lombok.RequiredArgsConstructor;
 
-/**
- * Service xử lý logic quản lý lớp học.
- * 
- * Trách nhiệm tách biệt:
- * - Logic query: ClassroomSpecification
- * - Validate & load relations: private helpers
- * - Security: SecurityUtils
- */
 @Service
 @RequiredArgsConstructor
 public class ClassroomServiceImpl implements ClassroomService {
@@ -55,11 +49,10 @@ public class ClassroomServiceImpl implements ClassroomService {
     private final SchoolYearRepository schoolYearRepository;
     private final ClassroomSubjectService classroomSubjectService;
     private final ClassroomSpecification classroomSpecification;
-    
-    // Feature key cho phân quyền
-    private static final String FEATURE = FeatureKey.CLASSROOM_MANAGEMENT.getCode();
+    private final DataScopeFilterService dataScopeFilterService;
 
-    // Tìm kiếm và phân trang lớp học với filter
+    private static final String FEATURE = FeatureKey.CLASS_MANAGEMENT.getCode();
+
     @Override
     @Transactional(readOnly = true)
     public PageResponseDto<ClassroomListItemDto, ClassroomFilterDto> search(
@@ -69,20 +62,11 @@ public class ClassroomServiceImpl implements ClassroomService {
         int pageNow = normalizePageNow(request.getPageNow());
         Pageable pageable = PageableUtils.newestFirst(pageNow, pageSize);
 
-        // Lấy danh sách unitId được phép truy cập từ scope để áp dụng filter
-        List<Long> allowedUnitIds = ScopeFilterUtils.getScopesForQuery(FEATURE);
-
-        Page<ClassroomListItemDto> page;
-        if (ScopeFilterUtils.isScopeUnrestricted(allowedUnitIds)) {
-            // Unrestricted (ALL scope): use specification as is
-            Page<Classroom> classrooms = classroomRepository.findAll(classroomSpecification.buildSpecification(filter),
-                    pageable);
-            page = classrooms.map(this::toListItemDto);
-        } else {
-            // Restricted: filter by allowed units directly
-            Page<Classroom> classrooms = classroomRepository.findByUnitIdIn(allowedUnitIds, pageable);
-            page = classrooms.map(this::toListItemDto);
-        }
+        List<ResolvedScope> resolvedScopes = dataScopeFilterService.getResolvedScopes(FEATURE, ActionType.VIEW);
+        Page<Classroom> classrooms = classroomRepository.findAll(
+                classroomSpecification.buildSpecification(filter, resolvedScopes),
+                pageable);
+        Page<ClassroomListItemDto> page = classrooms.map(this::toListItemDto);
 
         return PageResponseDto.<ClassroomListItemDto, ClassroomFilterDto>builder()
                 .pageSize(pageSize)
@@ -94,34 +78,31 @@ public class ClassroomServiceImpl implements ClassroomService {
                 .build();
     }
 
-    // Lấy danh sách lớp học theo các bộ lọc để dropdown
     @Override
     @Transactional(readOnly = true)
     public List<LookupItemDto> getOptions(Long unitId, Long gradeLevelId, Long schoolYearId) {
-        return classroomRepository.findByUnitIdAndGradeLevelIdAndSchoolYearId(unitId, gradeLevelId, schoolYearId)
+        List<ResolvedScope> resolvedScopes = dataScopeFilterService.getResolvedScopes(FEATURE, ActionType.VIEW);
+        return classroomRepository.findAll(
+                classroomSpecification.buildSpecificationForOptions(unitId, gradeLevelId, schoolYearId, resolvedScopes))
                 .stream()
                 .map(item -> LookupItemDto.builder().id(item.getId()).name(item.getName()).build())
                 .toList();
     }
 
-    // Chi tiết lớp học theo ID
     @Override
     @Transactional(readOnly = true)
     public ClassroomDetailDto getById(Long id) {
         Classroom classroom = findClassroom(id);
-
-        // Enforce scope: validate classroom's unit is within allowed scopes
-        ScopeFilterUtils.validateAccess(FEATURE, classroom.getUnit().getId());
-
+        validateClassroomScope(ActionType.VIEW, classroom);
         return toDetailDto(classroom);
     }
 
-    // Thêm mới lớp học
     @Override
     @Transactional
     public ClassroomDetailDto create(ClassroomCreateRequest request) {
         Unit unit = findUnit(request.getUnitId());
         GradeLevel gradeLevel = findGradeLevel(request.getGradeLevelId());
+        validateClassroomTargetScope(ActionType.ADD, unit, gradeLevel);
         SchoolYear schoolYear = findSchoolYear(request.getSchoolYearId());
         String code = normalize(request.getCode());
         String name = normalize(request.getName());
@@ -142,18 +123,15 @@ public class ClassroomServiceImpl implements ClassroomService {
         return toDetailDto(savedClassroom);
     }
 
-    // Cập nhật lớp học
     @Override
     @Transactional
     public ClassroomDetailDto update(Long id, ClassroomUpdateRequest request) {
         Classroom classroom = findClassroom(id);
-
-        // Enforce scope: validate classroom's unit is within allowed scopes before
-        // allowing update
-        ScopeFilterUtils.validateAccess(FEATURE, classroom.getUnit().getId());
+        validateClassroomScope(ActionType.EDIT, classroom);
 
         Unit unit = findUnit(request.getUnitId());
         GradeLevel gradeLevel = findGradeLevel(request.getGradeLevelId());
+        validateClassroomTargetScope(ActionType.EDIT, unit, gradeLevel);
         SchoolYear schoolYear = findSchoolYear(request.getSchoolYearId());
         String code = normalize(request.getCode());
         String name = normalize(request.getName());
@@ -177,20 +155,13 @@ public class ClassroomServiceImpl implements ClassroomService {
         return toDetailDto(savedClassroom);
     }
 
-    // Xóa lớp học (soft delete). Kiểm tra không được xóa nếu còn học sinh hoặc cấu
-    // hình môn học.
     @Override
     @Transactional
     public void delete(Long id) {
         Classroom classroom = findClassroom(id);
-
-        // Enforce scope: validate classroom's unit is within allowed scopes before
-        // allowing delete
-        ScopeFilterUtils.validateAccess(FEATURE, classroom.getUnit().getId());
+        validateClassroomScope(ActionType.DELETE, classroom);
 
         classroomSubjectService.clearByClassroomId(id);
-
-        // Xóa mềm: đánh dấu xóa thay vì hard delete
         classroom.setDeletedFlag(1);
         classroom.setDeletedAt(LocalDateTime.now());
         classroom.setDeletedBy(SecurityUtils.getCurrentUsername());
@@ -200,6 +171,69 @@ public class ClassroomServiceImpl implements ClassroomService {
     private Classroom findClassroom(Long id) {
         return classroomRepository.findById(id)
                 .orElseThrow(() -> new UserMessageException(CommonErrorCode.CLASS_NOT_FOUND));
+    }
+
+    private void validateClassroomScope(ActionType action, Classroom classroom) {
+        List<ResolvedScope> resolvedScopes = dataScopeFilterService.getResolvedScopes(FEATURE, action);
+        if (!hasClassroomAccess(resolvedScopes, classroom)) {
+            throw new org.springframework.security.access.AccessDeniedException(
+                    "User khong co quyen " + action + " tren classroom trong scope hien tai");
+        }
+    }
+
+    private void validateClassroomTargetScope(ActionType action, Unit unit, GradeLevel gradeLevel) {
+        List<ResolvedScope> resolvedScopes = dataScopeFilterService.getResolvedScopes(FEATURE, action);
+        if (!hasClassroomTargetAccess(resolvedScopes, unit, gradeLevel)) {
+            throw new org.springframework.security.access.AccessDeniedException(
+                    "User khong co quyen " + action + " tren classroom target trong scope hien tai");
+        }
+    }
+
+    private boolean hasClassroomAccess(List<ResolvedScope> resolvedScopes, Classroom classroom) {
+        if (resolvedScopes == null || resolvedScopes.isEmpty()) {
+            return false;
+        }
+        return resolvedScopes.stream().anyMatch(scope -> {
+            if (scope == null) {
+                return false;
+            }
+            if (scope.isUnrestricted() || scope.getScopeType() == ScopeType.ALL) {
+                return true;
+            }
+            if (scope.getScopeIds() == null || scope.getScopeIds().isEmpty()) {
+                return false;
+            }
+            return switch (scope.getScopeType()) {
+                case UNIT -> classroom.getUnit() != null && scope.getScopeIds().contains(classroom.getUnit().getId());
+                case CLASS -> scope.getScopeIds().contains(classroom.getId());
+                case GRADE -> classroom.getGradeLevel() != null
+                        && scope.getScopeIds().contains(classroom.getGradeLevel().getId());
+                default -> false;
+            };
+        });
+    }
+
+    private boolean hasClassroomTargetAccess(List<ResolvedScope> resolvedScopes, Unit unit, GradeLevel gradeLevel) {
+        if (resolvedScopes == null || resolvedScopes.isEmpty()) {
+            return false;
+        }
+        return resolvedScopes.stream().anyMatch(scope -> {
+            if (scope == null) {
+                return false;
+            }
+            if (scope.isUnrestricted() || scope.getScopeType() == ScopeType.ALL) {
+                return true;
+            }
+            if (scope.getScopeIds() == null || scope.getScopeIds().isEmpty()) {
+                return false;
+            }
+            return switch (scope.getScopeType()) {
+                case UNIT -> unit != null && scope.getScopeIds().contains(unit.getId());
+                case GRADE -> gradeLevel != null && scope.getScopeIds().contains(gradeLevel.getId());
+                case CLASS -> false;
+                default -> false;
+            };
+        });
     }
 
     private Unit findUnit(Long id) {
@@ -217,7 +251,6 @@ public class ClassroomServiceImpl implements ClassroomService {
                 .orElseThrow(() -> new UserMessageException(CommonErrorCode.SCHOOL_YEAR_NOT_FOUND));
     }
 
-    // Kiểm tra mã lớp học phải duy nhất
     private void validateUnique(Long unitId, Long gradeLevelId, Long schoolYearId, String code, String name, Long id) {
         classroomRepository.findByUnitIdAndGradeLevelIdAndSchoolYearIdAndCode(unitId, gradeLevelId, schoolYearId, code)
                 .filter(item -> id == null || !item.getId().equals(id))
@@ -256,43 +289,28 @@ public class ClassroomServiceImpl implements ClassroomService {
                 .build();
     }
 
-    /**
-     * Chuẩn hóa kích thước trang phân trang.
-     */
     private int normalizePageSize(Integer pageSize) {
         if (pageSize == null || pageSize <= 0) {
-            return 20; // Default page size
+            return 20;
         }
-        return Math.min(pageSize, 100); // Max 100 items per page
+        return Math.min(pageSize, 100);
     }
 
-    /**
-     * Chuẩn hóa số trang hiện tại.
-     */
     private int normalizePageNow(Integer pageNow) {
         if (pageNow == null || pageNow < 0) {
-            return 0; // Default first page
+            return 0;
         }
         return pageNow;
     }
 
-    /**
-     * Kiểm tra string có nội dung hay không.
-     */
     private boolean hasText(String value) {
         return value != null && !value.trim().isEmpty();
     }
 
-    /**
-     * Chuẩn hóa string: trim.
-     */
     private String normalize(String value) {
         return value == null ? null : value.trim();
     }
 
-    /**
-     * Chuẩn hóa string nullable: return null nếu rỗng hoặc whitespace.
-     */
     private String normalizeNullable(String value) {
         return hasText(value) ? value.trim() : null;
     }

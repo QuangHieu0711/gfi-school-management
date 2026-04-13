@@ -13,6 +13,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.gfi.backend.models.dtos.common.LookupItemDto;
+import com.gfi.backend.controllers.annotations.DataScoped;
+import com.gfi.backend.models.enums.ActionType;
 import com.gfi.backend.models.dtos.common.PageRequestDto;
 import com.gfi.backend.models.dtos.common.PageResponseDto;
 import com.gfi.backend.models.dtos.role.RoleCreateRequest;
@@ -43,6 +45,7 @@ public class RoleController extends ApiBaseController {
      * @return trang danh sách vai trò cơ bản (id, code, roleName, status)
      */
     @PostMapping("/search")
+    @DataScoped(feature = "ROLE_MANAGEMENT", action = ActionType.VIEW)
     @Operation(summary = "Danh sách vai trò", description = "Lấy danh sách vai trò có phân trang và filter.")
     public ResponseEntity<ApiResult<PageResponseDto<RoleListItemDto, RoleFilterDto>>> search(
             @RequestBody(required = false) PageRequestDto<RoleFilterDto> request) {
@@ -56,6 +59,7 @@ public class RoleController extends ApiBaseController {
      * @return danh sách id và tên vai trò
      */
     @GetMapping("/options")
+    // @DataScoped(menuCode = "ROLE_MANAGEMENT")
     @Operation(summary = "Danh sách vai trò cho combobox", description = "Lấy danh sách id và tên vai trò.")
     public ResponseEntity<ApiResult<List<LookupItemDto>>> getOptions() {
         return executeApiResult(() -> ApiResult.success(roleService.getOptions(), "Hiển thị danh sách vai trò thành công"));
@@ -68,6 +72,7 @@ public class RoleController extends ApiBaseController {
      * @return thông tin chi tiết vai trò (tất cả trường)
      */
     @GetMapping("/{id}")
+    @DataScoped(feature = "ROLE_MANAGEMENT", action = ActionType.VIEW, scopeExpression = "#id")
     @Operation(summary = "Chi tiết vai trò", description = "Lấy thông tin vai trò theo id.")
     public ResponseEntity<ApiResult<RoleDetailDto>> getById(@PathVariable Long id) {
         return executeApiResult(() -> ApiResult.success(roleService.getById(id), "Hiển thị chi tiết vai trò thành công"));
@@ -80,6 +85,7 @@ public class RoleController extends ApiBaseController {
      * @return thông tin chi tiết vai trò vừa tạo
      */
     @PostMapping
+    @DataScoped(feature = "ROLE_MANAGEMENT", action = ActionType.ADD)
     @Operation(summary = "Thêm vai trò", description = "Tạo mới vai trò.")
     public ResponseEntity<ApiResult<RoleDetailDto>> create(@Valid @RequestBody RoleCreateRequest request) {
         return executeApiResult(() -> ApiResult.success(roleService.create(request), "Thêm vai trò thành công"));
@@ -93,6 +99,7 @@ public class RoleController extends ApiBaseController {
      * @return thông tin chi tiết vai trò sau cập nhật
      */
     @PutMapping("/{id}")
+    @DataScoped(feature = "ROLE_MANAGEMENT", action = ActionType.EDIT, scopeExpression = "#id")
     @Operation(summary = "Sửa vai trò", description = "Cập nhật vai trò theo id.")
     public ResponseEntity<ApiResult<RoleDetailDto>> update(@PathVariable Long id, @Valid @RequestBody RoleUpdateRequest request) {
         return executeApiResult(() -> ApiResult.success(roleService.update(id, request), "Cập nhật vai trò thành công"));
@@ -105,6 +112,7 @@ public class RoleController extends ApiBaseController {
      * @return thông báo xóa thành công
      */
     @DeleteMapping("/{id}")
+    @DataScoped(feature = "ROLE_MANAGEMENT", action = ActionType.DELETE, scopeExpression = "#id")
     @Operation(summary = "Xóa vai trò", description = "Xóa vai trò theo id.")
     public ResponseEntity<ApiResult<String>> delete(@PathVariable Long id) {
         return executeApiResult(() -> {

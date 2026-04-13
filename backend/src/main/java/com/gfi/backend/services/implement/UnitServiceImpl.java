@@ -20,16 +20,19 @@ import com.gfi.backend.models.dtos.unit.UnitFilterDto;
 import com.gfi.backend.models.dtos.unit.UnitListItemDto;
 import com.gfi.backend.models.dtos.unit.UnitUpdateRequest;
 import com.gfi.backend.models.entities.Unit;
+import com.gfi.backend.models.enums.ActionType;
+import com.gfi.backend.models.enums.ScopeType;
 import com.gfi.backend.models.global.CommonErrorCode;
 import com.gfi.backend.models.mappers.UnitMapper;
+import com.gfi.backend.models.security.ResolvedScope;
 import com.gfi.backend.repositories.ClassroomRepository;
 import com.gfi.backend.repositories.UnitRepository;
 import com.gfi.backend.repositories.UserRepository;
 import com.gfi.backend.repositories.specifications.UnitSpecification;
+import com.gfi.backend.services.interfaces.DataScopeFilterService;
 import com.gfi.backend.services.interfaces.UnitService;
 import com.gfi.backend.utils.PageableUtils;
 import com.gfi.backend.utils.SecurityUtils;
-import com.gfi.backend.utils.ScopeFilterUtils;
 import com.gfi.backend.models.security.FeatureKey;
 
 import lombok.RequiredArgsConstructor;
@@ -52,6 +55,7 @@ public class UnitServiceImpl implements UnitService {
     private final ClassroomRepository classroomRepository;
     private final UnitSpecification unitSpecification;
     private final UnitMapper unitMapper;
+    private final DataScopeFilterService dataScopeFilterService;
     
     // Feature key cho phân quyền
     private static final String FEATURE = FeatureKey.UNIT_MANAGEMENT.getCode();
@@ -64,8 +68,9 @@ public class UnitServiceImpl implements UnitService {
         int pageSize = normalizePageSize(request.getPageSize());
         int pageNow = normalizePageNow(request.getPageNow());
         Pageable pageable = PageableUtils.newestFirst(pageNow, pageSize);
+        List<ResolvedScope> resolvedScopes = dataScopeFilterService.getResolvedScopes(FEATURE, ActionType.VIEW);
 
-        Page<Unit> page = unitRepository.findAll(unitSpecification.buildSpecification(filter), pageable);
+        Page<Unit> page = unitRepository.findAll(unitSpecification.buildSpecification(filter, resolvedScopes), pageable);
         List<UnitListItemDto> items = page.getContent().stream()
                 .map(unitMapper::toListItemDto)
                 .toList();
@@ -84,23 +89,12 @@ public class UnitServiceImpl implements UnitService {
     @Override
     @Transactional(readOnly = true)
     public List<LookupItemDto> getOptions() {
-        // Get allowed unit scopes for current user
-        List<Long> allowedUnitIds = ScopeFilterUtils.getScopesForQuery(FEATURE);
-        
-        List<Unit> units;
-        if (ScopeFilterUtils.isScopeUnrestricted(allowedUnitIds)) {
-            // Unrestricted: get all active units
-            units = unitRepository.findAll(Sort.by(Sort.Direction.ASC, "name")).stream()
-                    .filter(u -> u.getStatus() != null && u.getStatus() == 1 && 
-                                 (u.getDeletedFlag() == null || u.getDeletedFlag() == 0))
-                    .toList();
-        } else {
-            units = unitRepository.findByIdInOrderByName(allowedUnitIds).stream()
-                    .filter(u -> u.getStatus() != null && u.getStatus() == 1 && 
-                                 (u.getDeletedFlag() == null || u.getDeletedFlag() == 0))
-                    .toList();
-        }
-        
+        List<ResolvedScope> resolvedScopes = dataScopeFilterService.getResolvedScopes(FEATURE, ActionType.VIEW);
+        UnitFilterDto filter = new UnitFilterDto();
+        filter.setStatus(1);
+        List<Unit> units = unitRepository.findAll(unitSpecification.buildSpecification(filter, resolvedScopes),
+                Sort.by(Sort.Direction.ASC, "name"));
+
         return units.stream()
                 .map(unit -> LookupItemDto.builder()
                         .id(unit.getId())
@@ -115,6 +109,7 @@ public class UnitServiceImpl implements UnitService {
     public UnitDetailDto getById(Long id) {
         Unit unit = unitRepository.findById(id)
                 .orElseThrow(() -> new UserMessageException(CommonErrorCode.UNIT_NOT_FOUND));
+        validateUnitScope(ActionType.VIEW, unit.getId());
         return unitMapper.toDetailDto(unit);
     }
 
@@ -143,6 +138,7 @@ public class UnitServiceImpl implements UnitService {
     public UnitDetailDto update(Long id, UnitUpdateRequest request) {
         Unit unit = unitRepository.findById(id)
                 .orElseThrow(() -> new UserMessageException(CommonErrorCode.UNIT_NOT_FOUND));
+        validateUnitScope(ActionType.EDIT, unit.getId());
 
         String code = normalize(request.getCode());
         validateCodeDuplicate(code, id);
@@ -164,6 +160,7 @@ public class UnitServiceImpl implements UnitService {
     public void delete(Long id) {
         Unit unit = unitRepository.findById(id)
                 .orElseThrow(() -> new UserMessageException(CommonErrorCode.UNIT_NOT_FOUND));
+        validateUnitScope(ActionType.DELETE, unit.getId());
 
         // Kiểm tra unit có được sử dụng không
         if (userRepository.countByUnitId(id) > 0) {
@@ -195,6 +192,10 @@ public class UnitServiceImpl implements UnitService {
         if (isDuplicate) {
             throw new UserMessageException(CommonErrorCode.UNIT_CODE_ALREADY_EXISTS);
         }
+    }
+
+    private void validateUnitScope(ActionType action, Long unitId) {
+        dataScopeFilterService.checkDataScopeAccess(FEATURE, action, ScopeType.UNIT, unitId);
     }
 
     /**

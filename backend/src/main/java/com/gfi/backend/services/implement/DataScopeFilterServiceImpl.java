@@ -2,49 +2,73 @@ package com.gfi.backend.services.implement;
 
 import java.util.List;
 
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
+import com.gfi.backend.models.enums.ActionType;
+import com.gfi.backend.models.enums.ScopeType;
+import com.gfi.backend.models.security.ResolvedScope;
 import com.gfi.backend.models.security.UserScopes;
 import com.gfi.backend.services.interfaces.DataScopeFilterService;
 import com.gfi.backend.utils.SecurityContextUtils;
 
 /**
  * Service to check and enforce data scope permissions for current user
+ * 
+ * Tách biệt:
+ * - checkFunctionalAccess: kiểm tra user có permission action đó không
+ * - checkDataScopeAccess: kiểm tra user có access record cụ thể không
+ * - getResolvedScopes: trả list scope để filter query
  */
 @Service
 public class DataScopeFilterServiceImpl implements DataScopeFilterService {
 
     @Override
-    public boolean checkAccess(String menuCode, Long scopeId) {
+    public void checkFunctionalAccess(String featureCode, ActionType action) {
         UserScopes userScopes = SecurityContextUtils.getCurrentUserScopes()
-                .orElseThrow(() -> new RuntimeException("User scopes not found in security context"));
+                .orElseThrow(() -> new AccessDeniedException("User scopes not found in context"));
 
-        boolean hasAccess = userScopes.hasAccessToScope(menuCode, scopeId);
-        
-        if (!hasAccess) {
-            throw new org.springframework.security.access.AccessDeniedException(
-                    "User does not have access to scope: " + scopeId + " for menu: " + menuCode);
+        // ⚠️ BLOCKER FIX: Check functional permission (action capability)
+        // Không check data scope, chỉ check: user có permission action này không?
+        if (!userScopes.hasActionAccess(featureCode, action)) {
+            throw new AccessDeniedException(
+                    "User không có quyền " + action + " trên feature: " + featureCode);
         }
-        
+    }
+
+    @Override
+    public boolean checkDataScopeAccess(String featureCode, ActionType action, ScopeType scopeType, Long scopeId) {
+        UserScopes userScopes = SecurityContextUtils.getCurrentUserScopes()
+                .orElseThrow(() -> new AccessDeniedException("User scopes not found in context"));
+
+        boolean hasAccess = userScopes.hasAccess(featureCode, action, scopeType, scopeId);
+
+        if (!hasAccess) {
+            throw new AccessDeniedException(
+                    String.format("User không có quyền %s %s (scope: %s=%d)", 
+                            action, featureCode, scopeType, scopeId));
+        }
+
         return true;
     }
 
     @Override
-    public List<Long> getAllowedScopes(String menuCode) {
+    public List<ResolvedScope> getResolvedScopes(String featureCode, ActionType action) {
         return SecurityContextUtils.getCurrentUserScopes()
-                .map(userScopes -> userScopes.getScopesForMenu(menuCode))
+                .map(userScopes -> userScopes.getScopes(featureCode, action))
                 .orElse(List.of());
     }
 
     @Override
-    public boolean checkAccessToAll(String menuCode, List<Long> scopeIds) {
-        return scopeIds.stream().allMatch(scopeId -> {
-            try {
-                checkAccess(menuCode, scopeId);
-                return true;
-            } catch (Exception e) {
-                return false;
-            }
-        });
+    public void checkMenuAccess(String featureCode) {
+        UserScopes userScopes = SecurityContextUtils.getCurrentUserScopes()
+                .orElseThrow(() -> new AccessDeniedException("User scopes not found in context"));
+
+        boolean hasAccess = userScopes.hasMenuAccess(featureCode);
+        
+        if (!hasAccess) {
+            throw new AccessDeniedException(
+                    "User không có quyền truy cập vào menu: " + featureCode);
+        }
     }
 }

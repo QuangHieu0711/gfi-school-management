@@ -28,6 +28,8 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import com.gfi.backend.controllers.annotations.DataScoped;
+import com.gfi.backend.models.enums.ActionType;
 
 /**
  * REST Controller quản lý lớp học.
@@ -46,6 +48,7 @@ public class ClassroomController extends ApiBaseController {
      * Trả về list view chứa thông tin tối thiểu.
      */
     @PostMapping("/search")
+    @DataScoped(feature = "CLASS_MANAGEMENT", action = ActionType.VIEW)
     @Operation(summary = "Danh sách lớp", description = "Lấy danh sách lớp có phân trang và filter.")
     public ResponseEntity<ApiResult<PageResponseDto<ClassroomListItemDto, ClassroomFilterDto>>> search(
             @RequestBody(required = false) PageRequestDto<ClassroomFilterDto> request) {
@@ -60,6 +63,7 @@ public class ClassroomController extends ApiBaseController {
      * Cho phép filter theo đơn vị, khối lớp, năm học để chỉ lấy các lớp phù hợp.
      */
     @GetMapping("/options")
+    @DataScoped(feature = "CLASS_MANAGEMENT", action = ActionType.VIEW)
     @Operation(summary = "Danh sách lớp cho combobox", description = "Lấy danh sách id và tên lớp.")
     public ResponseEntity<ApiResult<List<LookupItemDto>>> getOptions(
             @RequestParam(required = false) Long unitId,
@@ -74,6 +78,7 @@ public class ClassroomController extends ApiBaseController {
      * Trả về đầy đủ thông tin lớp học bao gồm quan hệ.
      */
     @GetMapping("/{id}")
+    @DataScoped(feature = "CLASS_MANAGEMENT", action = ActionType.VIEW)
     @Operation(summary = "Chi tiết lớp", description = "Lấy thông tin lớp theo id.")
     public ResponseEntity<ApiResult<ClassroomDetailDto>> getById(@PathVariable Long id) {
         return executeApiResult(
@@ -84,6 +89,7 @@ public class ClassroomController extends ApiBaseController {
      * Tạo lớp học mới.
      */
     @PostMapping
+    @DataScoped(feature = "CLASS_MANAGEMENT", action = ActionType.ADD)
     @Operation(summary = "Thêm lớp", description = "Tạo mới lớp.")
     public ResponseEntity<ApiResult<ClassroomDetailDto>> create(@Valid @RequestBody ClassroomCreateRequest request) {
         return executeApiResult(() -> ApiResult.success(classroomService.create(request), "Thêm lớp thành công"));
@@ -93,6 +99,7 @@ public class ClassroomController extends ApiBaseController {
      * Cập nhật lớp học hiện có.
      */
     @PutMapping("/{id}")
+    @DataScoped(feature = "CLASS_MANAGEMENT", action = ActionType.EDIT)
     @Operation(summary = "Sửa lớp", description = "Cập nhật lớp theo id.")
     public ResponseEntity<ApiResult<ClassroomDetailDto>> update(@PathVariable Long id,
             @Valid @RequestBody ClassroomUpdateRequest request) {
@@ -104,6 +111,7 @@ public class ClassroomController extends ApiBaseController {
      * Xóa (xóa mềm) lớp học theo ID.
      */
     @DeleteMapping("/{id}")
+    @DataScoped(feature = "CLASS_MANAGEMENT", action = ActionType.DELETE)
     @Operation(summary = "Xóa lớp", description = "Xóa lớp theo id.")
     public ResponseEntity<ApiResult<String>> delete(@PathVariable Long id) {
         return executeApiResult(() -> {
