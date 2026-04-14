@@ -23,3 +23,17 @@ CREATE TABLE IF NOT EXISTS data_permission_scopes (
     updated_by VARCHAR(100),
     CONSTRAINT fk_dps_permission FOREIGN KEY (data_permission_id) REFERENCES data_permissions(id)
 );
+
+CREATE TABLE IF NOT EXISTS student_code_counters (
+    id BIGSERIAL PRIMARY KEY,
+    unit_id BIGINT NOT NULL,
+    year INTEGER NOT NULL,
+    last_number BIGINT NOT NULL DEFAULT 0,
+    created_at TIMESTAMP,
+    created_by VARCHAR(100),
+    updated_at TIMESTAMP NULL,
+    updated_by VARCHAR(100),
+    deleted_flag INTEGER NOT NULL DEFAULT 0,
+    CONSTRAINT uk_student_code_counters_unit_year UNIQUE (unit_id, year),
+    CONSTRAINT fk_student_code_counters_units FOREIGN KEY (unit_id) REFERENCES units(id)
+);

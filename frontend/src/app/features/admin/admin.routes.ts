@@ -210,7 +210,7 @@ export const AdminRoutes: Routes = [
           provideEffects(StyleEffect),
         ],
         loadComponent: () =>
-          import('./hoc-sinh/chi-tiet-hoc-sinh.component').then(
+          import('./hoc-sinh/ho-so-hoc-sinh/chi-tiet/chi-tiet-hoc-sinh.component').then(
             (m) => m.ChiTietHocSinhComponent
           ),
       },
@@ -223,7 +223,7 @@ export const AdminRoutes: Routes = [
           provideEffects(StyleEffect),
         ],
         loadComponent: () =>
-          import('./hoc-sinh/tao-moi-hoc-sinh.component').then(
+          import('./hoc-sinh/ho-so-hoc-sinh/tao-moi/tao-moi-hoc-sinh.component').then(
             (m) => m.TaoMoiHocSinhComponent
           ),
       },
@@ -236,7 +236,7 @@ export const AdminRoutes: Routes = [
           provideEffects(StyleEffect),
         ],
         loadComponent: () =>
-          import('./hoc-sinh/tao-moi-hoc-sinh.component').then(
+          import('./hoc-sinh/ho-so-hoc-sinh/tao-moi/tao-moi-hoc-sinh.component').then(
             (m) => m.TaoMoiHocSinhComponent
           ),
       },

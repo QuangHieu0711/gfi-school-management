@@ -1,0 +1,326 @@
+<div class="detail-page">
+  <div class="detail-topbar">
+    <div class="fake-tabs">
+      <button type="button" class="fake-tab active">CHI TIẾT HỒ SƠ HỌC SINH</button>
+      <button type="button" class="fake-tab">QUÁ TRÌNH HỌC TẬP</button>
+      <button type="button" class="fake-tab">KHEN THƯỞNG, KỶ LUẬT</button>
+      <button type="button" class="fake-tab">VI PHẠM, NGHỈ HỌC, MIỄN GIẢM</button>
+      <button type="button" class="fake-tab">KẾT QUẢ KHÁM SỨC KHỎE ĐỊNH KỲ</button>
+    </div>
+    <button
+      type="button"
+      color="primary"
+      matButton="outlined"
+      (click)="goBack()">
+      Quay lại
+    </button>
+  </div>
+
+  <div class="detail-layout">
+
+    <!-- ══ THÔNG TIN HỌC SINH (luôn mở) ══ -->
+    <section class="view-section">
+      <div class="section-bar">Thông tin học sinh</div>
+      <div class="section-body">
+        <div class="student-profile-layout">
+          <!-- Trái: Avatar (To hơn) -->
+          <div class="student-avatar-box">
+            @if (student?.avatarUrl) {
+              <img class="student-avatar-img" [src]="student?.avatarUrl" alt="Ảnh học sinh" />
+            } @else {
+              <div class="student-avatar-placeholder">
+                <app-icon icon="person" [size]="64"></app-icon>
+              </div>
+            }
+          </div>
+
+          <!-- Phải: Các field chia 2 cột -->
+          <div class="student-info-box">
+            <div class="info-grid">
+              <div class="info-item">
+                <span class="info-label">Mã học sinh</span>
+                <span class="info-value">{{ getField('studentCode') }}</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Họ và tên</span>
+                <span class="info-value">{{ getField('fullName') }}</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Tên</span>
+                <span class="info-value">{{ getField('firstName') }}</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Mã MOET</span>
+                <span class="info-value">{{ getField('moeCode') }}</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Ngày sinh</span>
+                <span class="info-value">{{ getField('dateOfBirth') }}</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Giới tính</span>
+                <span class="info-value">{{ formatGender() }}</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Ngày vào trường</span>
+                <span class="info-value">{{ getField('admissionDate') }}</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Trạng thái</span>
+                <span class="info-value">{{ getField('studentStatus') }}</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Đơn vị</span>
+                <span class="info-value">{{ getField('unitId') }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══ THÔNG TIN HỌC TẬP ══ -->
+    <section class="view-section">
+      <div class="section-bar collapsible" (click)="toggleSection('enrollment')">
+        <span>Thông tin học tập</span>
+        <app-icon icon="keyboard_arrow_down" [size]="20" [class.arrow-rotated]="!isSectionCollapsed('enrollment')"></app-icon>
+      </div>
+      <div class="section-body" [hidden]="isSectionCollapsed('enrollment')">
+        <div class="info-grid">
+          <div class="info-item">
+            <span class="info-label">Năm học</span>
+            <span class="info-value">{{ getEnrollment('schoolYearName') }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Lớp</span>
+            <span class="info-value">{{ getEnrollment('className') }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Ngày nhập học</span>
+            <span class="info-value">{{ getEnrollment('enrolledAt') }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Trạng thái lớp</span>
+            <span class="info-value">{{ getEnrollment('status') }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Số buổi/tuần</span>
+            <span class="info-value">{{ getEnrollment('sessionsPerWeek') }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Chế độ học</span>
+            <span class="info-value">{{ getEnrollment('studyMode') }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Lưu ban</span>
+            <span class="info-value">{{ formatBool(student?.enrollment?.isRepeater) }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Nội trú</span>
+            <span class="info-value">{{ formatBool(student?.enrollment?.isBoarding) }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Học 2 buổi/ngày</span>
+            <span class="info-value">{{ formatBool(student?.enrollment?.isTwoSessionsPerDay) }}</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══ THÔNG TIN CHUNG ══ -->
+    <section class="view-section">
+      <div class="section-bar collapsible" (click)="toggleSection('general')">
+        <span>Thông tin chung</span>
+        <app-icon icon="keyboard_arrow_down" [size]="20" [class.arrow-rotated]="!isSectionCollapsed('general')"></app-icon>
+      </div>
+      <div class="section-body" [hidden]="isSectionCollapsed('general')">
+        <div class="info-grid">
+          <div class="info-item">
+            <span class="info-label">Nơi sinh</span>
+            <span class="info-value">{{ getField('placeOfBirth') }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Dân tộc</span>
+            <span class="info-value">{{ getField('ethnicity') }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Tôn giáo</span>
+            <span class="info-value">{{ getField('religion') }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Quốc tịch</span>
+            <span class="info-value">{{ getField('nationality') }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Điện thoại</span>
+            <span class="info-value">{{ getField('mobilePhone') }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Email</span>
+            <span class="info-value">{{ getField('email') }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">CCCD</span>
+            <span class="info-value">{{ getField('identityNumber') }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Ngày cấp</span>
+            <span class="info-value">{{ getField('identityIssueDate') }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Nơi cấp</span>
+            <span class="info-value">{{ getField('identityIssuePlace') }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">BHYT</span>
+            <span class="info-value">{{ getField('healthInsuranceNumber') }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Nhóm máu</span>
+            <span class="info-value">{{ getField('bloodGroup') }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Số hộ khẩu</span>
+            <span class="info-value">{{ getField('boardingBook') }}</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══ THÔNG TIN CHA ══ -->
+    <section class="view-section">
+      <div class="section-bar collapsible" (click)="toggleSection('father')">
+        <span>Thông tin cha</span>
+        <app-icon icon="keyboard_arrow_down" [size]="20" [class.arrow-rotated]="!isSectionCollapsed('father')"></app-icon>
+      </div>
+      <div class="section-body" [hidden]="isSectionCollapsed('father')">
+        <div class="info-grid">
+          <div class="info-item">
+            <span class="info-label">Họ và tên</span>
+            <span class="info-value">{{ guardianField(father, 'fullName') }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Năm sinh</span>
+            <span class="info-value">{{ guardianField(father, 'birthYear') }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Nghề nghiệp</span>
+            <span class="info-value">{{ guardianField(father, 'occupation') }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Số điện thoại</span>
+            <span class="info-value">{{ guardianField(father, 'phone') }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Email</span>
+            <span class="info-value">{{ guardianField(father, 'email') }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">CCCD</span>
+            <span class="info-value">{{ guardianField(father, 'identityNumber') }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Là dân tộc</span>
+            <span class="info-value">{{ formatBool(father?.isEthnic) }}</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══ THÔNG TIN MẸ ══ -->
+    <section class="view-section">
+      <div class="section-bar collapsible" (click)="toggleSection('mother')">
+        <span>Thông tin mẹ</span>
+        <app-icon icon="keyboard_arrow_down" [size]="20" [class.arrow-rotated]="!isSectionCollapsed('mother')"></app-icon>
+      </div>
+      <div class="section-body" [hidden]="isSectionCollapsed('mother')">
+        <div class="info-grid">
+          <div class="info-item">
+            <span class="info-label">Họ và tên</span>
+            <span class="info-value">{{ guardianField(mother, 'fullName') }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Năm sinh</span>
+            <span class="info-value">{{ guardianField(mother, 'birthYear') }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Nghề nghiệp</span>
+            <span class="info-value">{{ guardianField(mother, 'occupation') }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Số điện thoại</span>
+            <span class="info-value">{{ guardianField(mother, 'phone') }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Email</span>
+            <span class="info-value">{{ guardianField(mother, 'email') }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">CCCD</span>
+            <span class="info-value">{{ guardianField(mother, 'identityNumber') }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">Là dân tộc</span>
+            <span class="info-value">{{ formatBool(mother?.isEthnic) }}</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+
+    <!-- ══ THÔNG TIN ĐỊA CHỈ ══ -->
+    <section class="view-section">
+      <div class="section-bar collapsible" (click)="toggleSection('address')">
+        <span>Thông tin địa chỉ</span>
+        <app-icon icon="keyboard_arrow_down" [size]="20" [class.arrow-rotated]="!isSectionCollapsed('address')"></app-icon>
+      </div>
+      <div class="section-body" [hidden]="isSectionCollapsed('address')">
+        <div class="address-grid">
+          <div>
+            <div class="address-title">Thường trú</div>
+            <div class="info-grid">
+              <div class="info-item">
+                <span class="info-label">Tỉnh/TP</span>
+                <span class="info-value">{{ addrField(permanentAddress, 'provinceName') }}</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Xã/Phường</span>
+                <span class="info-value">{{ addrField(permanentAddress, 'wardName') }}</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Thôn/Xóm</span>
+                <span class="info-value">{{ addrField(permanentAddress, 'hamletName') }}</span>
+              </div>
+              <div class="info-item full">
+                <span class="info-label">Địa chỉ chi tiết</span>
+                <span class="info-value">{{ addrField(permanentAddress, 'detailAddress') }}</span>
+              </div>
+            </div>
+          </div>
+          <div>
+            <div class="address-title">Tạm trú</div>
+            <div class="info-grid">
+              <div class="info-item">
+                <span class="info-label">Tỉnh/TP</span>
+                <span class="info-value">{{ addrField(temporaryAddress, 'provinceName') }}</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Xã/Phường</span>
+                <span class="info-value">{{ addrField(temporaryAddress, 'wardName') }}</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Thôn/Xóm</span>
+                <span class="info-value">{{ addrField(temporaryAddress, 'hamletName') }}</span>
+              </div>
+              <div class="info-item full">
+                <span class="info-label">Địa chỉ chi tiết</span>
+                <span class="info-value">{{ addrField(temporaryAddress, 'detailAddress') }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </div>
+</div>

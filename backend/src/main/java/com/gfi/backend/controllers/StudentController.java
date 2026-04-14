@@ -22,12 +22,15 @@ import com.gfi.backend.models.dtos.student.StudentItemDto;
 import com.gfi.backend.models.enums.ActionType;
 import com.gfi.backend.models.global.ApiResult;
 import com.gfi.backend.services.FileStorageService;
+import com.gfi.backend.services.interfaces.StudentCodeGeneratorService;
 import com.gfi.backend.services.interfaces.StudentService;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+
+import java.time.LocalDate;
 
 @RestController
 @RequestMapping("/api/students")
@@ -36,7 +39,7 @@ import lombok.RequiredArgsConstructor;
 public class StudentController extends ApiBaseController {
 
     private final StudentService studentService;
-    private final FileStorageService fileStorageService;
+    private final StudentCodeGeneratorService studentCodeGeneratorService;
 
     @PostMapping("/search")
     @DataScoped(feature = "STUDENT", action = ActionType.VIEW)
@@ -48,18 +51,22 @@ public class StudentController extends ApiBaseController {
                 () -> ApiResult.success(studentService.search(safeRequest), "Hiển thị danh sách học sinh thành công"));
     }
 
+    @GetMapping("/generate-code")
+    @DataScoped(feature = "STUDENT", action = ActionType.ADD)
+    @Operation(summary = "Sinh mã học sinh", description = "Sinh mã học sinh tự động theo format: HS-{UNIT_CODE}-{YEAR}-{STT}. Backend tự lấy year từ ngày hiện tại.")
+    public ResponseEntity<ApiResult<String>> generateStudentCode(@RequestParam Long unitId) {
+        return executeApiResult(() -> {
+            Integer year = LocalDate.now().getYear();
+            String studentCode = studentCodeGeneratorService.generateStudentCode(unitId, year);
+            return ApiResult.success(studentCode, "Sinh mã học sinh thành công");
+        });
+    }
+
     @PostMapping
     @DataScoped(feature = "STUDENT", action = ActionType.ADD)
     @Operation(summary = "Thêm học sinh", description = "Tạo mới học sinh kèm thông tin nhập học, địa chỉ, người giám hộ và hồ sơ mở rộng.")
     public ResponseEntity<ApiResult<StudentItemDto>> create(@Valid @RequestBody StudentCreateRequest request) {
         return executeApiResult(() -> ApiResult.success(studentService.create(request), "Thêm học sinh thành công"));
-    }
-
-    @PostMapping("/upload-avatar")
-    @DataScoped(feature = "STUDENT", action = ActionType.ADD)
-    @Operation(summary = "Tai anh hoc sinh", description = "Tai anh dai dien hoc sinh len server va tra ve avatarUrl.")
-    public ResponseEntity<ApiResult<FileUploadDto>> uploadAvatar(@RequestParam("file") MultipartFile file) {
-        return executeApiResult(() -> ApiResult.success(fileStorageService.storeStudentAvatar(file), "Tai anh thanh cong"));
     }
 
     @GetMapping("/{id}")

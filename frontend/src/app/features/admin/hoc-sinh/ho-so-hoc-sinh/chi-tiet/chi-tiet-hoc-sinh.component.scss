@@ -1,0 +1,265 @@
+.detail-page {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+  background: #f4f7f8;
+}
+
+// ── Topbar ─────────────────────────────────────────────
+.detail-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  flex: 0 0 auto;
+
+  background: #ffffff;
+  padding: 12px 16px;
+  border-bottom: 1px solid #e1e7e9;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.fake-tabs {
+  display: flex;
+  gap: 8px;
+  overflow: auto;
+}
+
+.fake-tab {
+  border: 1px solid #cfe0e5;
+  background: #ffffff;
+  color: #123746;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+
+  &.active {
+    background: #dcecf1;
+    border-color: #4f848c;
+    color: #2f6470;
+  }
+}
+
+.back-button {
+  border: 1px solid #d5dbe0;
+  background: #ffffff;
+  color: #123746;
+  min-height: 36px;
+  padding: 0 14px;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  font-size: 13px;
+
+  &:hover {
+    background: #f5f8fa;
+  }
+}
+
+// ── Layout ─────────────────────────────────────────────
+.detail-layout {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 16px;
+  max-width: 100%;
+
+  > * {
+    flex-shrink: 0;
+  }
+}
+
+// ── Section ────────────────────────────────────────────
+.view-section {
+  border: 1px solid #dcdcdc;
+  background: #fff;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.section-bar {
+  padding: 10px 16px;
+  background: #4f848c;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+
+  app-icon {
+    color: #fff;
+  }
+
+  &.collapsible {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    user-select: none;
+
+    &:hover {
+      background: #3e6d75;
+    }
+
+    app-icon {
+      transition: transform 0.25s ease;
+      display: flex;
+      align-items: center;
+      color: #fff;
+
+      &.arrow-rotated {
+        transform: rotate(180deg);
+      }
+    }
+  }
+}
+
+.section-body {
+  padding: 16px;
+  display: grid;
+  gap: 14px;
+}
+
+// ── Student profile layout (Header) ───────────────────
+.student-profile-layout {
+  display: flex;
+  gap: 32px;
+  align-items: stretch;
+}
+
+.student-avatar-box {
+  flex: 0 0 240px;
+  width: 240px;
+  height: 320px;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid #ddd;
+  background: linear-gradient(135deg, #eef5f7 0%, #d9eaee 100%);
+}
+
+.student-avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.student-avatar-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #7a9ea6;
+}
+
+.student-info-box {
+  flex: 1;
+  min-width: 0;
+  
+  .info-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+// ── Info grid (Standard) ──────────────────────────────
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px 12px;
+
+  > * { min-width: 0; }
+}
+
+.info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 10px;
+  background: #f8fafb;
+  border: 1px solid #e8edf0;
+  border-radius: 6px;
+
+  &.full {
+    grid-column: 1 / -1;
+  }
+}
+
+.info-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #7a94a0;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.info-value {
+  font-size: 13px;
+  color: #1e2c33;
+  font-weight: 500;
+  word-break: break-word;
+}
+
+// ── Address ────────────────────────────────────────────
+.address-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+}
+
+.address-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: #4f848c;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  margin-bottom: 8px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid #e0eaed;
+}
+
+// ── Responsive ─────────────────────────────────────────
+@media (max-width: 960px) {
+  .info-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .detail-topbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .info-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .address-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .student-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+// ── Mat Slide Toggle → green override ──────────
+::ng-deep .mat-mdc-slide-toggle {
+  --mdc-switch-selected-handle-color: #3aaa5c;
+  --mdc-switch-selected-track-color: rgba(58, 170, 92, 0.45);
+  --mdc-switch-selected-focus-handle-color: #2e9950;
+  --mdc-switch-selected-hover-handle-color: #2e9950;
+  --mdc-switch-selected-pressed-handle-color: #2e9950;
+  --mdc-switch-selected-focus-track-color: rgba(58, 170, 92, 0.45);
+  --mdc-switch-selected-hover-track-color: rgba(58, 170, 92, 0.45);
+  --mdc-switch-selected-pressed-track-color: rgba(58, 170, 92, 0.45);
+  --mdc-switch-selected-icon-color: #fff;
+}

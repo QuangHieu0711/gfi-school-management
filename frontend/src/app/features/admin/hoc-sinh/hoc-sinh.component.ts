@@ -6,7 +6,7 @@ import { Router } from '@angular/router';
 
 import { AppPaginatorComponent } from '@components/app-paginator/app-paginator.component';
 import { IconComponent } from '@components/app-icon/app-icon.component';
-import { PATH } from '@constant/navigator';
+import { PATH, NAVIGATOR_ENDPOINT } from '@constant/navigator';
 import { TableQueryEvent } from '@model/table.model';
 import { ComponentBaseAbstract } from '@layout';
 import { FORM_CONTROL_MODULE, MATERIAL_MODULE } from '@modules';
@@ -171,15 +171,22 @@ export class HocSinhComponent extends ComponentBaseAbstract {
 
   openDetail(student: HocSinhResponse): void {
     this.routerService.navigate(
-      ['/Admin', 'HocSinh', PATH.CHI_TIET, student[this.key.ID]],
+      [
+        '/',
+        NAVIGATOR_ENDPOINT.ADMIN.BASE_PATH,
+        NAVIGATOR_ENDPOINT.ADMIN.HOC_SINH.BASE_PATH,
+        PATH.CHI_TIET,
+        student[this.key.ID],
+      ],
       { state: { student: this.normalizeRow(student) } }
     );
   }
 
   openEdit(student: HocSinhResponse): void {
     this.routerService.navigate([
-      '/Admin',
-      'HocSinh',
+      '/',
+      NAVIGATOR_ENDPOINT.ADMIN.BASE_PATH,
+      NAVIGATOR_ENDPOINT.ADMIN.HOC_SINH.BASE_PATH,
       PATH.CAP_NHAT,
       student[this.key.ID],
     ]);
@@ -216,7 +223,12 @@ export class HocSinhComponent extends ComponentBaseAbstract {
   }
 
   openCreate(): void {
-    this.routerService.navigate(['/Admin', 'HocSinh', PATH.TAO_MOI]);
+    this.routerService.navigate([
+      '/',
+      NAVIGATOR_ENDPOINT.ADMIN.BASE_PATH,
+      NAVIGATOR_ENDPOINT.ADMIN.HOC_SINH.BASE_PATH,
+      PATH.TAO_MOI,
+    ]);
   }
 
   getStatusLabel(status?: number): string {

@@ -13,8 +13,7 @@ import lombok.Data;
 @Data
 public class StudentCreateRequest {
 
-    @NotBlank(message = "Mã học sinh không được để trống")
-    @Size(max = 50, message = "Mã học sinh tối đa 50 ký tự")
+    @Size(max = 50, message = "Mã học sinh tối đa 50 ký tự. Để trống để tự động sinh mã theo format: HS-{UNIT_CODE}-{YEAR}-{STT}")
     private String studentCode;
 
     @NotBlank(message = "Họ tên học sinh không được để trống")

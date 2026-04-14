@@ -1,7 +1,7 @@
 export const PATH = {
-  TAO_MOI: 'TaoMoi',
-  CAP_NHAT: 'CapNhat',
-  CHI_TIET: 'ChiTiet',
+  TAO_MOI: 'tao-moi',
+  CAP_NHAT: 'cap-nhat',
+  CHI_TIET: 'chi-tiet',
 };
 export const NAVIGATOR_ENDPOINT = {
   BASE_PATH: '',

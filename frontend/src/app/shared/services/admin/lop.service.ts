@@ -33,9 +33,15 @@ export class LopService {
     });
   }
 
-  getOptions() {
+  getOptions(params?: { unitId?: number | string; gradeLevelId?: number | string; schoolYearId?: number | string; }) {
+    const queryParams: Record<string, string | number> = {};
+    if (params?.unitId) queryParams['unitId'] = params.unitId;
+    if (params?.gradeLevelId) queryParams['gradeLevelId'] = params.gradeLevelId;
+    if (params?.schoolYearId) queryParams['schoolYearId'] = params.schoolYearId;
+
     return this.http.get<IResponse<LopResponse[]>>(
-      `${this.baseUrl}/${LOP_API_ENDPOINT.OPTIONS}`
+      `${this.baseUrl}/${LOP_API_ENDPOINT.OPTIONS}`,
+      { params: queryParams }
     );
   }
 

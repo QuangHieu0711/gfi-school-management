@@ -51,6 +51,7 @@ import com.gfi.backend.repositories.StudentRepository;
 import com.gfi.backend.repositories.UnitRepository;
 import com.gfi.backend.services.FileStorageService;
 import com.gfi.backend.services.interfaces.DataScopeFilterService;
+import com.gfi.backend.services.interfaces.StudentCodeGeneratorService;
 import com.gfi.backend.services.interfaces.StudentService;
 import com.gfi.backend.utils.PageableUtils;
 
@@ -81,6 +82,7 @@ public class StudentServiceImpl implements StudentService {
     private final ClassroomRepository classroomRepository;
     private final FileStorageService fileStorageService;
     private final DataScopeFilterService dataScopeFilterService;
+    private final StudentCodeGeneratorService studentCodeGeneratorService;
 
     @Override
     @Transactional(readOnly = true)
@@ -107,16 +109,26 @@ public class StudentServiceImpl implements StudentService {
     @Override
     @Transactional
     public StudentItemDto create(StudentCreateRequest request) {
-        String studentCode = normalize(request.getStudentCode());
-        studentRepository.findByStudentCode(studentCode)
-                .ifPresent(item -> {
-                    throw new UserMessageException(CommonErrorCode.STUDENT_CODE_ALREADY_EXISTS);
-                });
-
         Unit unit = findUnit(request.getUnitId());
         SchoolYear schoolYear = findSchoolYear(request.getEnrollment().getSchoolYearId());
         Classroom classroom = findClassroom(request.getEnrollment().getClassId());
         validateStudentScope(ActionType.ADD, unit, classroom, null);
+
+        // Sinh mã học sinh tự động nếu không cung cấp
+        String studentCode;
+        String providedCode = normalize(request.getStudentCode());
+        if (providedCode == null || providedCode.isEmpty()) {
+            // Sinh mã tự động theo format: HS-{UNIT_CODE}-{YEAR}-{STT}
+            Integer year = schoolYear.getStartDate().getYear();
+            studentCode = studentCodeGeneratorService.generateStudentCode(unit.getId(), year);
+        } else {
+            studentCode = providedCode;
+            // Kiểm tra mã không được trùng
+            studentRepository.findByStudentCode(studentCode)
+                    .ifPresent(item -> {
+                        throw new UserMessageException(CommonErrorCode.STUDENT_CODE_ALREADY_EXISTS);
+                    });
+        }
 
         validateEnrollment(unit, schoolYear, classroom);
         validateAddressTypes(request.getAddresses());
@@ -124,10 +136,22 @@ public class StudentServiceImpl implements StudentService {
 
         Student student = new Student();
         applyStudentFields(student, request, unit);
+        student.setStudentCode(studentCode);
+        
+        // Xử lý avatarUrl nếu có
+        if (request.getAvatarUrl() != null && !request.getAvatarUrl().isBlank()) {
+            String avatarUrl = fileStorageService.storeStudentAvatarFromDataUrl(
+                    request.getAvatarUrl(),
+                    unit.getName(),
+                    schoolYear.getName());
+            student.setAvatarUrl(avatarUrl);
+        }
+        
         student.setCreatedBy(getCurrentUsername());
         Student savedStudent = studentRepository.save(student);
 
-        StudentEnrollment savedEnrollment = saveOrUpdateEnrollment(savedStudent, schoolYear, classroom, request.getEnrollment());
+        StudentEnrollment savedEnrollment = saveOrUpdateEnrollment(savedStudent, schoolYear, classroom,
+                request.getEnrollment());
         List<StudentAddress> savedAddresses = replaceAddresses(savedStudent, request.getAddresses());
         List<StudentGuardian> savedGuardians = replaceGuardians(savedStudent, request.getGuardians());
         StudentProfile savedProfile = replaceProfile(savedStudent, request.getProfile());
@@ -148,12 +172,13 @@ public class StudentServiceImpl implements StudentService {
     public StudentItemDto update(Long id, StudentCreateRequest request) {
         Student student = findStudent(id);
         validateStudentScope(ActionType.EDIT, student);
-        String studentCode = normalize(request.getStudentCode());
-        studentRepository.findByStudentCode(studentCode)
-                .filter(item -> !item.getId().equals(id))
-                .ifPresent(item -> {
-                    throw new UserMessageException(CommonErrorCode.STUDENT_CODE_ALREADY_EXISTS);
-                });
+        
+        // Khi update: giữ nguyên mã cũ, không cho phép thay đổi
+        // Kiểm tra nếu request cố gắng thay đổi mã thì báo lỗi
+        String providedCode = normalize(request.getStudentCode());
+        if (providedCode != null && !providedCode.isEmpty() && !providedCode.equals(student.getStudentCode())) {
+            throw new UserMessageException(CommonErrorCode.STUDENT_CODE_ALREADY_EXISTS);
+        }
 
         Unit unit = findUnit(request.getUnitId());
         SchoolYear schoolYear = findSchoolYear(request.getEnrollment().getSchoolYearId());
@@ -165,10 +190,21 @@ public class StudentServiceImpl implements StudentService {
         validateGuardianTypes(request.getGuardians());
 
         applyStudentFields(student, request, unit);
+        
+        // Xử lý avatarUrl nếu có
+        if (request.getAvatarUrl() != null && !request.getAvatarUrl().isBlank()) {
+            String avatarUrl = fileStorageService.storeStudentAvatarFromDataUrl(
+                    request.getAvatarUrl(),
+                    unit.getName(),
+                    schoolYear.getName());
+            student.setAvatarUrl(avatarUrl);
+        }
+        
         student.setUpdatedBy(getCurrentUsername());
         Student savedStudent = studentRepository.save(student);
 
-        StudentEnrollment savedEnrollment = saveOrUpdateEnrollment(savedStudent, schoolYear, classroom, request.getEnrollment());
+        StudentEnrollment savedEnrollment = saveOrUpdateEnrollment(savedStudent, schoolYear, classroom,
+                request.getEnrollment());
         List<StudentAddress> savedAddresses = replaceAddresses(savedStudent, request.getAddresses());
         List<StudentGuardian> savedGuardians = replaceGuardians(savedStudent, request.getGuardians());
         StudentProfile savedProfile = replaceProfile(savedStudent, request.getProfile());
@@ -226,7 +262,8 @@ public class StudentServiceImpl implements StudentService {
                     enrollmentPredicates.add(cb.equal(classroomJoin.get("id"), filter.getClassId()));
                 }
                 if (filter.getGradeLevelId() != null) {
-                    enrollmentPredicates.add(cb.equal(classroomJoin.get("gradeLevel").get("id"), filter.getGradeLevelId()));
+                    enrollmentPredicates
+                            .add(cb.equal(classroomJoin.get("gradeLevel").get("id"), filter.getGradeLevelId()));
                 }
                 enrollmentSubquery.select(enrollmentRoot.get("id"))
                         .where(cb.and(enrollmentPredicates.toArray(new Predicate[0])));
@@ -239,7 +276,8 @@ public class StudentServiceImpl implements StudentService {
                 profileSubquery.select(profileRoot.get("id"))
                         .where(
                                 cb.equal(profileRoot.get("student").get("id"), root.get("id")),
-                                cb.like(cb.lower(profileRoot.get("otherSystemCode")), likeValue(filter.getOtherSystemCode())));
+                                cb.like(cb.lower(profileRoot.get("otherSystemCode")),
+                                        likeValue(filter.getOtherSystemCode())));
                 predicates.add(cb.exists(profileSubquery));
             }
 
@@ -260,13 +298,16 @@ public class StudentServiceImpl implements StudentService {
                 addressPredicates.add(cb.equal(addressRoot.get("addressType"), ADDRESS_TYPE_PERMANENT));
                 if (hasText(filter.getPermanentProvinceName())) {
                     addressPredicates.add(
-                            cb.like(cb.lower(addressRoot.get("provinceName")), likeValue(filter.getPermanentProvinceName())));
+                            cb.like(cb.lower(addressRoot.get("provinceName")),
+                                    likeValue(filter.getPermanentProvinceName())));
                 }
                 if (hasText(filter.getPermanentWardName())) {
                     addressPredicates
-                            .add(cb.like(cb.lower(addressRoot.get("wardName")), likeValue(filter.getPermanentWardName())));
+                            .add(cb.like(cb.lower(addressRoot.get("wardName")),
+                                    likeValue(filter.getPermanentWardName())));
                 }
-                addressSubquery.select(addressRoot.get("id")).where(cb.and(addressPredicates.toArray(new Predicate[0])));
+                addressSubquery.select(addressRoot.get("id"))
+                        .where(cb.and(addressPredicates.toArray(new Predicate[0])));
                 predicates.add(cb.exists(addressSubquery));
             }
 
@@ -275,7 +316,8 @@ public class StudentServiceImpl implements StudentService {
         };
     }
 
-    private Predicate buildGuardianPhonePredicate(Subquery<Long> subquery, jakarta.persistence.criteria.CriteriaBuilder cb,
+    private Predicate buildGuardianPhonePredicate(Subquery<Long> subquery,
+            jakarta.persistence.criteria.CriteriaBuilder cb,
             Root<Student> root, String guardianType, String phone) {
         Root<StudentGuardian> guardianRoot = subquery.from(StudentGuardian.class);
         subquery.select(guardianRoot.get("id"))
@@ -305,7 +347,8 @@ public class StudentServiceImpl implements StudentService {
         }
     }
 
-    private boolean hasStudentScope(List<ResolvedScope> resolvedScopes, Unit unit, Classroom classroom, Long studentId) {
+    private boolean hasStudentScope(List<ResolvedScope> resolvedScopes, Unit unit, Classroom classroom,
+            Long studentId) {
         if (resolvedScopes == null || resolvedScopes.isEmpty()) {
             return false;
         }
@@ -366,8 +409,10 @@ public class StudentServiceImpl implements StudentService {
             }
             switch (scope.getScopeType()) {
                 case UNIT -> scopePredicates.add(unitJoin.get("id").in(scope.getScopeIds()));
-                case CLASS -> scopePredicates.add(buildEnrollmentScopeExistsSubquery(query, cb, root, scope.getScopeIds(), false));
-                case GRADE -> scopePredicates.add(buildEnrollmentScopeExistsSubquery(query, cb, root, scope.getScopeIds(), true));
+                case CLASS -> scopePredicates
+                        .add(buildEnrollmentScopeExistsSubquery(query, cb, root, scope.getScopeIds(), false));
+                case GRADE ->
+                    scopePredicates.add(buildEnrollmentScopeExistsSubquery(query, cb, root, scope.getScopeIds(), true));
                 case USER, SELF -> {
                 }
                 default -> {
@@ -457,7 +502,7 @@ public class StudentServiceImpl implements StudentService {
         student.setNationality(normalizeNullable(request.getNationality()));
         student.setMobilePhone(normalizeNullable(request.getMobilePhone()));
         student.setEmail(normalizeNullable(request.getEmail()));
-        student.setAvatarUrl(normalizeNullable(fileStorageService.storeStudentAvatarFromDataUrl(request.getAvatarUrl())));
+        // Avatar được xử lý riêng trong create() và update()
         student.setIdentityNumber(normalizeNullable(request.getIdentityNumber()));
         student.setIdentityIssueDate(request.getIdentityIssueDate());
         student.setIdentityIssuePlace(normalizeNullable(request.getIdentityIssuePlace()));

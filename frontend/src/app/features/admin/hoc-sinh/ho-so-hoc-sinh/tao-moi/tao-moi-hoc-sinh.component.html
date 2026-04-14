@@ -1,0 +1,445 @@
+<div class="detail-page">
+  <div class="detail-topbar">
+    <div class="fake-tabs">
+      <button type="button" class="fake-tab active">THÊM MỚI HỒ SƠ HỌC SINH</button>
+    </div>
+    <div class="toolbar-actions">
+      <button
+        type="button"
+        color="primary"
+        matButton="outlined"
+        (click)="goBack()">
+        Hủy
+      </button>
+      <button
+        type="button"
+        color="primary"
+        matButton="filled"
+        (click)="submit()">
+        Lưu
+      </button>
+    </div>
+  </div>
+
+  <form class="detail-layout" [formGroup]="form">
+
+    <!-- ══════════════════ THÔNG TIN HỌC SINH (luôn mở) ══════════════════ -->
+    <section class="form-section">
+      <div class="section-bar">Thông tin học sinh</div>
+      <div class="section-body">
+
+        <!-- Avatar + Tất cả 10 field cơ bản -->
+        <input
+          #avatarInput
+          type="file"
+          accept="image/*"
+          hidden
+          (change)="onAvatarSelected($event)" />
+
+        <div class="profile-card">
+          <div class="avatar-wrapper" (click)="avatarInput.click()">
+            @if (avatarPreview) {
+              <img class="avatar-img" [src]="avatarPreview" alt="Ảnh học sinh" />
+            } @else {
+              <div class="avatar-placeholder">
+                <app-icon icon="person" [size]="64"></app-icon>
+                <span class="avatar-hint">Chọn ảnh</span>
+              </div>
+            }
+            <div class="camera-overlay">
+              <app-icon icon="photo_camera" [size]="20"></app-icon>
+            </div>
+          </div>
+
+          <div class="profile-fields">
+            <div class="form-grid two">
+              <div class="field field-text">
+                <app-text-control [item]="items.studentCodeItem" [form]="form"></app-text-control>
+              </div>
+              <div class="field field-text">
+                <app-text-control [item]="items.fullNameItem" [form]="form"></app-text-control>
+              </div>
+              <div class="field field-text">
+                <app-text-control [item]="items.firstNameItem" [form]="form"></app-text-control>
+              </div>
+              <div class="field field-text">
+                <app-text-control [item]="items.moeCodeItem" [form]="form"></app-text-control>
+              </div>
+              <div class="field field-date">
+                <app-date-control [item]="items.dateOfBirthItem" [form]="form"></app-date-control>
+              </div>
+              <div class="field field-select">
+                <app-select-control [item]="items.genderItem" [form]="form"></app-select-control>
+              </div>
+              <div class="field field-date">
+                <app-date-control [item]="items.admissionDateItem" [form]="form"></app-date-control>
+              </div>
+              <div class="field field-select">
+                <app-select-control [item]="items.studentStatusItem" [form]="form"></app-select-control>
+              </div>
+              <div class="field field-select">
+                <app-select-control [item]="items.admissionTypeItem" [form]="form"></app-select-control>
+              </div>
+              <div class="field field-select">
+                <app-select-control [item]="items.unitItem" [form]="form"></app-select-control>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ══════════════════ THÔNG TIN HỌC TẬP ══════════════════ -->
+    <section class="form-section" formGroupName="enrollment">
+      <div class="section-bar collapsible" (click)="toggleSection('enrollment')">
+        <span>Thông tin học tập</span>
+        <app-icon
+          icon="keyboard_arrow_down"
+          [size]="20"
+          [class.arrow-rotated]="!isSectionCollapsed('enrollment')">
+        </app-icon>
+      </div>
+      <div class="section-body" [hidden]="isSectionCollapsed('enrollment')">
+        <div class="form-grid three">
+          <div class="field field-select">
+            <app-select-control [item]="items.schoolYearItem" [form]="enrollmentForm"></app-select-control>
+          </div>
+          <div class="field field-select">
+            <app-select-control [item]="items.classItem" [form]="enrollmentForm"></app-select-control>
+          </div>
+          <div class="field field-date">
+            <app-date-control [item]="items.enrolledAtItem" [form]="enrollmentForm"></app-date-control>
+          </div>
+          <div class="field field-select">
+            <app-select-control [item]="items.enrollmentStatusItem" [form]="enrollmentForm"></app-select-control>
+          </div>
+          <div class="field field-text">
+            <app-text-control [item]="items.sessionsPerWeekItem" [form]="enrollmentForm"></app-text-control>
+          </div>
+          <div class="field field-select">
+            <app-select-control [item]="items.studyModeItem" [form]="enrollmentForm"></app-select-control>
+          </div>
+        </div>
+        <div class="switch-grid mt-8">
+          <div class="switch-row">
+            <span>Lưu ban</span>
+            <mat-slide-toggle formControlName="isRepeater"></mat-slide-toggle>
+          </div>
+          <div class="switch-row">
+            <span>Nội trú</span>
+            <mat-slide-toggle formControlName="isBoarding"></mat-slide-toggle>
+          </div>
+          <div class="switch-row">
+            <span>Học 2 buổi/ngày</span>
+            <mat-slide-toggle formControlName="isTwoSessionsPerDay"></mat-slide-toggle>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══════════════════ THÔNG TIN CHUNG ══════════════════ -->
+    <section class="form-section">
+      <div class="section-bar collapsible" (click)="toggleSection('general')">
+        <span>Thông tin chung</span>
+        <app-icon
+          icon="keyboard_arrow_down"
+          [size]="20"
+          [class.arrow-rotated]="!isSectionCollapsed('general')">
+        </app-icon>
+      </div>
+      <div class="section-body" [hidden]="isSectionCollapsed('general')">
+        <div class="form-grid two">
+          <div class="field field-text">
+            <app-text-control [item]="items.placeOfBirthItem" [form]="form"></app-text-control>
+          </div>
+          <div class="field field-select">
+            <app-select-control [item]="items.ethnicityItem" [form]="form"></app-select-control>
+          </div>
+          <div class="field field-text">
+            <app-text-control [item]="items.religionItem" [form]="form"></app-text-control>
+          </div>
+          <div class="field field-text">
+            <app-text-control [item]="items.nationalityItem" [form]="form"></app-text-control>
+          </div>
+          <div class="field field-text">
+            <app-text-control [item]="items.mobilePhoneItem" [form]="form"></app-text-control>
+          </div>
+          <div class="field field-text">
+            <app-text-control [item]="items.emailItem" [form]="form"></app-text-control>
+          </div>
+          <div class="field field-text">
+            <app-text-control [item]="items.identityNumberItem" [form]="form"></app-text-control>
+          </div>
+          <div class="field field-date">
+            <app-date-control [item]="items.identityIssueDateItem" [form]="form"></app-date-control>
+          </div>
+          <div class="field field-text">
+            <app-text-control [item]="items.identityIssuePlaceItem" [form]="form"></app-text-control>
+          </div>
+          <div class="field field-text">
+            <app-text-control [item]="items.healthInsuranceNumberItem" [form]="form"></app-text-control>
+          </div>
+          <div class="field field-text">
+            <app-text-control [item]="items.bloodGroupItem" [form]="form"></app-text-control>
+          </div>
+          <div class="field field-text">
+            <app-text-control [item]="items.boardingBookItem" [form]="form"></app-text-control>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══════════════════ THÔNG TIN CHA ══════════════════ -->
+    <section class="form-section" formGroupName="guardians">
+      <div class="section-bar collapsible" (click)="toggleSection('father')">
+        <span>Thông tin cha</span>
+        <app-icon
+          icon="keyboard_arrow_down"
+          [size]="20"
+          [class.arrow-rotated]="!isSectionCollapsed('father')">
+        </app-icon>
+      </div>
+      <div class="section-body" [hidden]="isSectionCollapsed('father')" formGroupName="father">
+        <div class="form-grid two">
+          <div class="field field-text">
+            <app-text-control [item]="items.fatherFullNameItem" [form]="fatherForm"></app-text-control>
+          </div>
+          <div class="field field-text">
+            <app-text-control [item]="items.fatherBirthYearItem" [form]="fatherForm"></app-text-control>
+          </div>
+          <div class="field field-text">
+            <app-text-control [item]="items.fatherOccupationItem" [form]="fatherForm"></app-text-control>
+          </div>
+          <div class="field field-text">
+            <app-text-control [item]="items.fatherPhoneItem" [form]="fatherForm"></app-text-control>
+          </div>
+          <div class="field field-text">
+            <app-text-control [item]="items.fatherEmailItem" [form]="fatherForm"></app-text-control>
+          </div>
+          <div class="field field-text">
+            <app-text-control [item]="items.fatherIdentityNumberItem" [form]="fatherForm"></app-text-control>
+          </div>
+        </div>
+        <div class="switch-row mt-8">
+          <span>Là dân tộc</span>
+          <mat-slide-toggle formControlName="isEthnic"></mat-slide-toggle>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══════════════════ THÔNG TIN MẸ ══════════════════ -->
+    <section class="form-section" formGroupName="guardians">
+      <div class="section-bar collapsible" (click)="toggleSection('mother')">
+        <span>Thông tin mẹ</span>
+        <app-icon
+          icon="keyboard_arrow_down"
+          [size]="20"
+          [class.arrow-rotated]="!isSectionCollapsed('mother')">
+        </app-icon>
+      </div>
+      <div class="section-body" [hidden]="isSectionCollapsed('mother')" formGroupName="mother">
+        <div class="form-grid two">
+          <div class="field field-text">
+            <app-text-control [item]="items.motherFullNameItem" [form]="motherForm"></app-text-control>
+          </div>
+          <div class="field field-text">
+            <app-text-control [item]="items.motherBirthYearItem" [form]="motherForm"></app-text-control>
+          </div>
+          <div class="field field-text">
+            <app-text-control [item]="items.motherOccupationItem" [form]="motherForm"></app-text-control>
+          </div>
+          <div class="field field-text">
+            <app-text-control [item]="items.motherPhoneItem" [form]="motherForm"></app-text-control>
+          </div>
+          <div class="field field-text">
+            <app-text-control [item]="items.motherEmailItem" [form]="motherForm"></app-text-control>
+          </div>
+          <div class="field field-text">
+            <app-text-control [item]="items.motherIdentityNumberItem" [form]="motherForm"></app-text-control>
+          </div>
+        </div>
+        <div class="switch-row mt-8">
+          <span>Là dân tộc</span>
+          <mat-slide-toggle formControlName="isEthnic"></mat-slide-toggle>
+        </div>
+      </div>
+    </section>
+
+
+    <!-- ══════════════════ THÔNG TIN ĐỊA CHỈ ══════════════════ -->
+    <section class="form-section" formGroupName="addresses">
+      <div class="section-bar collapsible" (click)="toggleSection('address')">
+        <span>Thông tin địa chỉ</span>
+        <app-icon
+          icon="keyboard_arrow_down"
+          [size]="20"
+          [class.arrow-rotated]="!isSectionCollapsed('address')">
+        </app-icon>
+      </div>
+      <div class="section-body" [hidden]="isSectionCollapsed('address')">
+        <div class="address-grid">
+          <div class="form-grid two" formGroupName="permanent">
+            <div class="address-title">Thường trú</div>
+            <div class="field field-select">
+              <app-select-control [item]="items.permanentProvinceItem" [form]="permanentAddressForm"></app-select-control>
+            </div>
+            <div class="field field-select">
+              <app-select-control [item]="items.permanentWardItem" [form]="permanentAddressForm"></app-select-control>
+            </div>
+            <div class="field field-text">
+              <app-text-control [item]="items.permanentHamletNameItem" [form]="permanentAddressForm"></app-text-control>
+            </div>
+            <div class="field field-text full">
+              <app-text-control [item]="items.permanentDetailAddressItem" [form]="permanentAddressForm"></app-text-control>
+            </div>
+          </div>
+
+          <div class="form-grid two" formGroupName="temporary">
+            <div class="address-title">Tạm trú</div>
+            <div class="field field-select">
+              <app-select-control [item]="items.temporaryProvinceItem" [form]="temporaryAddressForm"></app-select-control>
+            </div>
+            <div class="field field-select">
+              <app-select-control [item]="items.temporaryWardItem" [form]="temporaryAddressForm"></app-select-control>
+            </div>
+            <div class="field field-text">
+              <app-text-control [item]="items.temporaryHamletNameItem" [form]="temporaryAddressForm"></app-text-control>
+            </div>
+            <div class="field field-text full">
+              <app-text-control [item]="items.temporaryDetailAddressItem" [form]="temporaryAddressForm"></app-text-control>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══════════════════ HỒ SƠ HỌC SINH ══════════════════ -->
+    <section class="form-section" formGroupName="profile">
+      <div class="section-bar collapsible" (click)="toggleSection('profile')">
+        <span>Hồ sơ học sinh</span>
+        <app-icon
+          icon="keyboard_arrow_down"
+          [size]="20"
+          [class.arrow-rotated]="!isSectionCollapsed('profile')">
+        </app-icon>
+      </div>
+      <div class="section-body" [hidden]="isSectionCollapsed('profile')">
+        <div class="form-grid three">
+          <div class="field field-text">
+            <app-text-control [item]="items.policyObjectItem" [form]="profileForm"></app-text-control>
+          </div>
+          <div class="field field-text">
+            <app-text-control [item]="items.policyBenefitItem" [form]="profileForm"></app-text-control>
+          </div>
+          <div class="field field-text">
+            <app-text-control [item]="items.priorityCategoryItem" [form]="profileForm"></app-text-control>
+          </div>
+          <div class="field field-text">
+            <app-text-control [item]="items.studentCategoryItem" [form]="profileForm"></app-text-control>
+          </div>
+          <div class="field field-text">
+            <app-text-control [item]="items.regionCategoryItem" [form]="profileForm"></app-text-control>
+          </div>
+          <div class="field field-text">
+            <app-text-control [item]="items.disabilityTypeItem" [form]="profileForm"></app-text-control>
+          </div>
+          <div class="field field-text">
+            <app-text-control [item]="items.foreignLanguageProgramItem" [form]="profileForm"></app-text-control>
+          </div>
+          <div class="field field-text">
+            <app-text-control [item]="items.foreignLanguageCertificateItem" [form]="profileForm"></app-text-control>
+          </div>
+          <div class="field field-text">
+            <app-text-control [item]="items.informaticsCertificateItem" [form]="profileForm"></app-text-control>
+          </div>
+          <div class="field field-text">
+            <app-text-control [item]="items.careerOrientationItem" [form]="profileForm"></app-text-control>
+          </div>
+          <div class="field field-text">
+            <app-text-control [item]="items.vocationalOrientationItem" [form]="profileForm"></app-text-control>
+          </div>
+          <div class="field field-date">
+            <app-date-control [item]="items.joinedTeamDateItem" [form]="profileForm"></app-date-control>
+          </div>
+          <div class="field field-date">
+            <app-date-control [item]="items.joinedUnionDateItem" [form]="profileForm"></app-date-control>
+          </div>
+          <div class="field field-date">
+            <app-date-control [item]="items.joinedPartyDateItem" [form]="profileForm"></app-date-control>
+          </div>
+          <div class="field field-text">
+            <app-text-control [item]="items.otherSystemCodeItem" [form]="profileForm"></app-text-control>
+          </div>
+          <div class="field field-text">
+            <app-text-control [item]="items.ssoCodeItem" [form]="profileForm"></app-text-control>
+          </div>
+        </div>
+
+        <div class="flag-grid mt-8">
+          <div class="switch-row">
+            <span>Khuyết tật miễn đánh giá</span>
+            <mat-slide-toggle formControlName="disabilityExemptEval"></mat-slide-toggle>
+          </div>
+          <div class="switch-row">
+            <span>Hỗ trợ chi phí học tập</span>
+            <mat-slide-toggle formControlName="supportTuitionCost"></mat-slide-toggle>
+          </div>
+          <div class="switch-row">
+            <span>Thuộc diện tái định cư</span>
+            <mat-slide-toggle formControlName="resettlementArea"></mat-slide-toggle>
+          </div>
+          <div class="switch-row">
+            <span>Hỗ trợ nhà ở</span>
+            <mat-slide-toggle formControlName="housingSupport"></mat-slide-toggle>
+          </div>
+          <div class="switch-row">
+            <span>Cấp tiền hàng tháng</span>
+            <mat-slide-toggle formControlName="monthlyAllowance"></mat-slide-toggle>
+          </div>
+          <div class="switch-row">
+            <span>Hỗ trợ gạo</span>
+            <mat-slide-toggle formControlName="riceSupport"></mat-slide-toggle>
+          </div>
+          <div class="switch-row">
+            <span>Học chương trình Bộ</span>
+            <mat-slide-toggle formControlName="followsMoeProgram"></mat-slide-toggle>
+          </div>
+          <div class="switch-row">
+            <span>Biết bơi</span>
+            <mat-slide-toggle formControlName="canSwim"></mat-slide-toggle>
+          </div>
+          <div class="switch-row">
+            <span>Học ngôn ngữ dân tộc</span>
+            <mat-slide-toggle formControlName="learnsEthnicLanguage"></mat-slide-toggle>
+          </div>
+          <div class="switch-row">
+            <span>Đã học lớp Mầm 5 tuổi</span>
+            <mat-slide-toggle formControlName="studiedKindergarten5yo"></mat-slide-toggle>
+          </div>
+          <div class="switch-row">
+            <span>Cần hỗ trợ tiếng Việt</span>
+            <mat-slide-toggle formControlName="needsVietnameseSupport"></mat-slide-toggle>
+          </div>
+          <div class="switch-row">
+            <span>Có tài liệu tăng cường tiếng Việt</span>
+            <mat-slide-toggle formControlName="hasVietnameseReinforcementMaterial"></mat-slide-toggle>
+          </div>
+          <div class="switch-row">
+            <span>Có trợ giảng người dân tộc</span>
+            <mat-slide-toggle formControlName="hasEthnicTeachingAssistant"></mat-slide-toggle>
+          </div>
+          <div class="switch-row">
+            <span>Phụ huynh có Internet</span>
+            <mat-slide-toggle formControlName="hasParentInternet"></mat-slide-toggle>
+          </div>
+          <div class="switch-row">
+            <span>Phụ huynh có smartphone</span>
+            <mat-slide-toggle formControlName="hasParentSmartphone"></mat-slide-toggle>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </form>
+</div>

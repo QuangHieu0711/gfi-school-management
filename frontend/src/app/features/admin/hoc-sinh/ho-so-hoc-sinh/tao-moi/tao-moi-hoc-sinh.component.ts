@@ -1,8 +1,10 @@
 import { CommonModule, Location } from '@angular/common';
 import { Component, Injector } from '@angular/core';
-import { FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
+import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import { forkJoin, takeUntil } from 'rxjs';
+import { forkJoin, takeUntil, merge } from 'rxjs';
+import { cloneDeep } from 'lodash';
+import { HOC_SINH_FORM_ITEM } from '@app/model/admin/hoc-sinh.model';
 
 import { IconComponent } from '@components/app-icon/app-icon.component';
 import { NAVIGATOR_ENDPOINT, PATH } from '@constant/navigator';
@@ -36,6 +38,7 @@ import { DonViService } from '@app/service/admin/don-vi.service';
 import { HocSinhService } from '@app/service/admin/hoc-sinh.service';
 import { LopService } from '@app/service/admin/lop.service';
 import { NamHocService } from '@app/service/admin/nam-hoc.service';
+import { NguoiDungService } from '@app/service/admin/nguoi-dung.service';
 
 interface GuardianFormValue {
   fullName: string;
@@ -139,7 +142,6 @@ interface TaoMoiHocSinhFormValue {
 interface InitialHocSinhFormData {
   units: IResponse<DonViOptionResponse[]>;
   schoolYears: IResponse<NamHocOptionResponse[]>;
-  classes: IResponse<LopResponse[]>;
   provinces: DiaChiTinhThanhResponse;
 }
 
@@ -157,6 +159,22 @@ interface InitialHocSinhFormData {
   ],
 })
 export class TaoMoiHocSinhComponent extends ComponentBaseAbstract {
+  readonly items = cloneDeep(HOC_SINH_FORM_ITEM);
+  // ── Section collapse state ──────────────────────────
+  collapsedSections = new Set<string>();
+
+  toggleSection(key: string): void {
+    if (this.collapsedSections.has(key)) {
+      this.collapsedSections.delete(key);
+    } else {
+      this.collapsedSections.add(key);
+    }
+  }
+
+  isSectionCollapsed(key: string): boolean {
+    return this.collapsedSections.has(key);
+  }
+
   unitOptions: IOptions[] = [];
   schoolYearOptions: IOptions[] = [];
   classOptions: IOptions[] = [];
@@ -166,515 +184,73 @@ export class TaoMoiHocSinhComponent extends ComponentBaseAbstract {
   private permanentWardLookup = new Map<string, DiaChiPhuongXaItem>();
   private temporaryWardLookup = new Map<string, DiaChiPhuongXaItem>();
   selectedAvatarName = '';
-  readonly genderItem: FormType = SELECT_CONTROL({
-    controlName: 'gender',
-    placeholder: 'Giới tính',
-    required: false,
-    clearable: true,
-    listOption: [],
-    showLabel: false,
-  });
-  readonly studentStatusItem: FormType = SELECT_CONTROL({
-    controlName: 'studentStatus',
-    placeholder: 'Trạng thái học sinh',
-    required: false,
-    clearable: true,
-    listOption: [],
-    showLabel: false,
-  });
-  readonly admissionTypeItem: FormType = SELECT_CONTROL({
-    controlName: 'admissionType',
-    placeholder: 'Hình thức tuyển sinh',
-    required: false,
-    clearable: true,
-    listOption: [],
-    showLabel: false,
-  });
-  readonly unitItem: FormType = SELECT_CONTROL({
-    controlName: 'unitId',
-    placeholder: 'Đơn vị',
-    required: false,
-    clearable: true,
-    listOption: [],
-    showLabel: false,
-  });
-  readonly schoolYearItem: FormType = SELECT_CONTROL({
-    controlName: 'schoolYearId',
-    placeholder: 'Năm học',
-    required: false,
-    clearable: true,
-    listOption: [],
-    showLabel: false,
-  });
-  readonly classItem: FormType = SELECT_CONTROL({
-    controlName: 'classId',
-    placeholder: 'Chọn lớp',
-    required: false,
-    clearable: true,
-    listOption: [],
-    showLabel: false,
-  });
-  readonly enrollmentStatusItem: FormType = SELECT_CONTROL({
-    controlName: 'status',
-    placeholder: 'Chọn trạng thái lớp',
-    required: false,
-    clearable: true,
-    listOption: [],
-    showLabel: false,
-  });
-  readonly studyModeItem: FormType = SELECT_CONTROL({
-    controlName: 'studyMode',
-    placeholder: 'Chọn chế độ học',
-    required: false,
-    clearable: true,
-    listOption: [],
-    showLabel: false,
-  });
-  readonly dateOfBirthItem: FormType = DATE_CONTROL({
-    controlName: 'dateOfBirth',
-    placeholder: 'Chọn ngày sinh',
-    required: false,
-    showLabel: false,
-  });
-  readonly admissionDateItem: FormType = DATE_CONTROL({
-    controlName: 'admissionDate',
-    placeholder: 'Chọn ngày vào trường',
-    required: false,
-    showLabel: false,
-  });
-  readonly identityIssueDateItem: FormType = DATE_CONTROL({
-    controlName: 'identityIssueDate',
-    placeholder: 'Chọn ngày cấp',
-    required: false,
-    showLabel: false,
-  });
-  readonly enrolledAtItem: FormType = DATE_CONTROL({
-    controlName: 'enrolledAt',
-    placeholder: 'Chọn ngày nhập học',
-    required: false,
-    showLabel: false,
-  });
-  readonly joinedTeamDateItem: FormType = DATE_CONTROL({
-    controlName: 'joinedTeamDate',
-    placeholder: 'Chọn ngày vào đội',
-    required: false,
-    showLabel: false,
-  });
-  readonly joinedUnionDateItem: FormType = DATE_CONTROL({
-    controlName: 'joinedUnionDate',
-    placeholder: 'Chọn ngày vào đoàn',
-    required: false,
-    showLabel: false,
-  });
-  readonly joinedPartyDateItem: FormType = DATE_CONTROL({
-    controlName: 'joinedPartyDate',
-    placeholder: 'Chọn ngày vào đảng',
-    required: false,
-    showLabel: false,
-  });
-  readonly permanentProvinceItem: FormType = SELECT_CONTROL({
-    controlName: 'provinceName',
-    placeholder: 'Chọn tỉnh/TP',
-    required: false,
-    clearable: true,
-    listOption: [],
-    showLabel: false,
-  });
-  readonly permanentWardItem: FormType = SELECT_CONTROL({
-    controlName: 'wardName',
-    placeholder: 'Chọn xã/phường',
-    required: false,
-    clearable: true,
-    listOption: [],
-    showLabel: false,
-    disabled: true,
-  });
-  readonly temporaryProvinceItem: FormType = SELECT_CONTROL({
-    controlName: 'provinceName',
-    placeholder: 'Chọn tỉnh/TP',
-    required: false,
-    clearable: true,
-    listOption: [],
-    showLabel: false,
-  });
-  readonly temporaryWardItem: FormType = SELECT_CONTROL({
-    controlName: 'wardName',
-    placeholder: 'Chọn xã/phường',
-    required: false,
-    clearable: true,
-    listOption: [],
-    showLabel: false,
-    disabled: true,
-  });
-  readonly ethnicityItem: FormType = SELECT_CONTROL({
-    controlName: 'ethnicity',
-    placeholder: 'Dân tộc',
-    required: false,
-    clearable: true,
-    listOption: [],
-    showLabel: false,
-  });
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
 
-  readonly placeOfBirthItem: FormType = TEXT_CONTROL({
-    controlName: 'placeOfBirth',
-    label: 'Nơi sinh',
-    placeholder: 'Nơi sinh',
-    required: false,
-    maxLength: 255,
-    showLabel: false,
-  });
+  
 
-  readonly religionItem: FormType = TEXT_CONTROL({
-    controlName: 'religion',
-    label: 'Tôn giáo',
-    placeholder: 'Tôn giáo',
-    required: false,
-    maxLength: 255,
-    showLabel: false,
-  });
-  readonly nationalityItem: FormType = TEXT_CONTROL({
-    controlName: 'nationality',
-    label: 'Quốc tịch',
-    placeholder: 'Quốc tịch',
-    required: false,
-    maxLength: 255,
-    showLabel: false,
-  });
-  readonly mobilePhoneItem: FormType = TEXT_CONTROL({
-    controlName: 'mobilePhone',
-    label: 'Điện thoại',
-    placeholder: 'Số điện thoại',
-    required: false,
-    maxLength: 50,
-    showLabel: false,
-  });
-  readonly emailItem: FormType = TEXT_CONTROL({
-    controlName: 'email',
-    label: 'Email',
-    placeholder: 'Email',
-    type: 'email',
-    required: false,
-    maxLength: 255,
-    showLabel: false,
-  });
-  readonly identityNumberItem: FormType = TEXT_CONTROL({
-    controlName: 'identityNumber',
-    label: 'CCCD',
-    placeholder: 'CCCD',
-    required: false,
-    maxLength: 50,
-    showLabel: false,
-  });
-  readonly identityIssuePlaceItem: FormType = TEXT_CONTROL({
-    controlName: 'identityIssuePlace',
-    label: 'Nơi cấp',
-    placeholder: 'Nơi cấp',
-    required: false,
-    maxLength: 255,
-    showLabel: false,
-  });
-  readonly healthInsuranceNumberItem: FormType = TEXT_CONTROL({
-    controlName: 'healthInsuranceNumber',
-    label: 'BHYT',
-    placeholder: 'Số BHYT',
-    required: false,
-    maxLength: 100,
-    showLabel: false,
-  });
-  readonly bloodGroupItem: FormType = TEXT_CONTROL({
-    controlName: 'bloodGroup',
-    label: 'Nhóm máu',
-    placeholder: 'Nhóm máu',
-    required: false,
-    maxLength: 50,
-    showLabel: false,
-  });
-  readonly boardingBookItem: FormType = TEXT_CONTROL({
-    controlName: 'boardingBook',
-    label: 'Số hộ khẩu',
-    placeholder: 'Số hộ khẩu',
-    required: false,
-    maxLength: 100,
-    showLabel: false,
-  });
+  
+  
+  
+  
+  
+  
+  
+  
+  
 
-  readonly studentCodeItem: FormType = TEXT_CONTROL({
-    controlName: 'studentCode',
-    label: 'Mã học sinh',
-    placeholder: 'Mã học sinh',
-    required: false,
-    maxLength: 100,
-    showLabel: false,
-  });
-  readonly fullNameItem: FormType = TEXT_CONTROL({
-    controlName: 'fullName',
-    label: 'Họ và tên',
-    placeholder: 'Họ và tên',
-    required: false,
-    maxLength: 255,
-    showLabel: false,
-  });
-  readonly firstNameItem: FormType = TEXT_CONTROL({
-    controlName: 'firstName',
-    label: 'Tên',
-    placeholder: 'Tên',
-    required: false,
-    maxLength: 255,
-    showLabel: false,
-  });
-  readonly moeCodeItem: FormType = TEXT_CONTROL({
-    controlName: 'moeCode',
-    label: 'Mã MOET',
-    placeholder: 'Mã MOET',
-    required: false,
-    maxLength: 100,
-    showLabel: false,
-  });
-  readonly fatherFullNameItem: FormType = TEXT_CONTROL({
-    controlName: 'fullName',
-    label: 'Họ và tên',
-    placeholder: 'Họ và tên cha',
-    required: false,
-    maxLength: 255,
-    showLabel: false,
-  });
-  readonly fatherBirthYearItem: FormType = TEXT_CONTROL({
-    controlName: 'birthYear',
-    label: 'Năm sinh',
-    placeholder: 'Năm sinh',
-    type: 'number',
-    required: false,
-    maxLength: 4,
-    showLabel: false,
-  });
-  readonly fatherOccupationItem: FormType = TEXT_CONTROL({
-    controlName: 'occupation',
-    label: 'Nghề nghiệp',
-    placeholder: 'Nghề nghiệp',
-    required: false,
-    maxLength: 255,
-    showLabel: false,
-  });
-  readonly fatherPhoneItem: FormType = TEXT_CONTROL({
-    controlName: 'phone',
-    label: 'SDT',
-    placeholder: 'Số điện thoại',
-    required: false,
-    maxLength: 50,
-    showLabel: false,
-  });
-  readonly fatherEmailItem: FormType = TEXT_CONTROL({
-    controlName: 'email',
-    label: 'Email',
-    placeholder: 'Email',
-    type: 'email',
-    required: false,
-    maxLength: 255,
-    showLabel: false,
-  });
-  readonly fatherIdentityNumberItem: FormType = TEXT_CONTROL({
-    controlName: 'identityNumber',
-    label: 'CCCD',
-    placeholder: 'CCCD',
-    required: false,
-    maxLength: 50,
-    showLabel: false,
-  });
-  readonly motherFullNameItem: FormType = TEXT_CONTROL({
-    controlName: 'fullName',
-    label: 'Họ và tên',
-    placeholder: 'Họ và tên mẹ',
-    required: false,
-    maxLength: 255,
-    showLabel: false,
-  });
-  readonly motherBirthYearItem: FormType = TEXT_CONTROL({
-    controlName: 'birthYear',
-    label: 'Năm sinh',
-    placeholder: 'Năm sinh',
-    type: 'number',
-    required: false,
-    maxLength: 4,
-    showLabel: false,
-  });
-  readonly motherOccupationItem: FormType = TEXT_CONTROL({
-    controlName: 'occupation',
-    label: 'Nghề nghiệp',
-    placeholder: 'Nghề nghiệp',
-    required: false,
-    maxLength: 255,
-    showLabel: false,
-  });
-  readonly motherPhoneItem: FormType = TEXT_CONTROL({
-    controlName: 'phone',
-    label: 'SDT',
-    placeholder: 'Số điện thoại',
-    required: false,
-    maxLength: 50,
-    showLabel: false,
-  });
-  readonly motherEmailItem: FormType = TEXT_CONTROL({
-    controlName: 'email',
-    label: 'Email',
-    placeholder: 'Email',
-    type: 'email',
-    required: false,
-    maxLength: 255,
-    showLabel: false,
-  });
-  readonly motherIdentityNumberItem: FormType = TEXT_CONTROL({
-    controlName: 'identityNumber',
-    label: 'CCCD',
-    placeholder: 'CCCD',
-    required: false,
-    maxLength: 50,
-    showLabel: false,
-  });
-  readonly sessionsPerWeekItem: FormType = TEXT_CONTROL({
-    controlName: 'sessionsPerWeek',
-    label: 'Số buổi học/tuần',
-    placeholder: 'Số buổi học/tuần',
-    type: 'number',
-    required: false,
-    maxLength: 3,
-    showLabel: false,
-  });
-  readonly permanentHamletNameItem: FormType = TEXT_CONTROL({
-    controlName: 'hamletName',
-    label: 'Thôn/Xóm',
-    placeholder: 'Thôn/xóm',
-    required: false,
-    maxLength: 255,
-    showLabel: false,
-  });
-  readonly permanentDetailAddressItem: FormType = TEXT_CONTROL({
-    controlName: 'detailAddress',
-    label: 'Địa chỉ chi tiết',
-    placeholder: 'Địa chỉ chi tiết',
-    required: false,
-    maxLength: 255,
-    showLabel: false,
-  });
-  readonly temporaryHamletNameItem: FormType = TEXT_CONTROL({
-    controlName: 'hamletName',
-    label: 'Thôn/Xóm',
-    placeholder: 'Thôn/xóm',
-    required: false,
-    maxLength: 255,
-    showLabel: false,
-  });
-  readonly temporaryDetailAddressItem: FormType = TEXT_CONTROL({
-    controlName: 'detailAddress',
-    label: 'Địa chỉ chi tiết',
-    placeholder: 'Địa chỉ chi tiết',
-    required: false,
-    maxLength: 255,
-    showLabel: false,
-  });
-  readonly policyObjectItem: FormType = TEXT_CONTROL({
-    controlName: 'policyObject',
-    label: 'Đối tượng chính sách',
-    placeholder: 'Đối tượng chính sách',
-    required: false,
-    maxLength: 255,
-    showLabel: false,
-  });
-  readonly policyBenefitItem: FormType = TEXT_CONTROL({
-    controlName: 'policyBenefit',
-    label: 'Chế độ chính sách',
-    placeholder: 'Chế độ chính sách',
-    required: false,
-    maxLength: 255,
-    showLabel: false,
-  });
-  readonly priorityCategoryItem: FormType = TEXT_CONTROL({
-    controlName: 'priorityCategory',
-    label: 'Điểm ưu tiên',
-    placeholder: 'Điểm ưu tiên',
-    required: false,
-    maxLength: 255,
-    showLabel: false,
-  });
-  readonly studentCategoryItem: FormType = TEXT_CONTROL({
-    controlName: 'studentCategory',
-    label: 'Điểm học sinh',
-    placeholder: 'Điểm học sinh',
-    required: false,
-    maxLength: 255,
-    showLabel: false,
-  });
-  readonly regionCategoryItem: FormType = TEXT_CONTROL({
-    controlName: 'regionCategory',
-    label: 'Khu vực',
-    placeholder: 'Khu vực',
-    required: false,
-    maxLength: 255,
-    showLabel: false,
-  });
-  readonly disabilityTypeItem: FormType = TEXT_CONTROL({
-    controlName: 'disabilityType',
-    label: 'Loại khuyết tật',
-    placeholder: 'Loại khuyết tật',
-    required: false,
-    maxLength: 255,
-    showLabel: false,
-  });
-  readonly foreignLanguageProgramItem: FormType = TEXT_CONTROL({
-    controlName: 'foreignLanguageProgram',
-    label: 'Chương trình ngoại ngữ',
-    placeholder: 'Chương trình ngoại ngữ',
-    required: false,
-    maxLength: 255,
-    showLabel: false,
-  });
-  readonly foreignLanguageCertificateItem: FormType = TEXT_CONTROL({
-    controlName: 'foreignLanguageCertificate',
-    label: 'Chứng chỉ ngoại ngữ',
-    placeholder: 'Chứng chỉ ngoại ngữ',
-    required: false,
-    maxLength: 255,
-    showLabel: false,
-  });
-  readonly informaticsCertificateItem: FormType = TEXT_CONTROL({
-    controlName: 'informaticsCertificate',
-    label: 'Chứng chỉ tin học',
-    placeholder: 'Chứng chỉ tin học',
-    required: false,
-    maxLength: 255,
-    showLabel: false,
-  });
-  readonly careerOrientationItem: FormType = TEXT_CONTROL({
-    controlName: 'careerOrientation',
-    label: 'Hướng nghiệp',
-    placeholder: 'Hướng nghiệp',
-    required: false,
-    maxLength: 255,
-    showLabel: false,
-  });
-  readonly vocationalOrientationItem: FormType = TEXT_CONTROL({
-    controlName: 'vocationalOrientation',
-    label: 'Nghề nghiệp',
-    placeholder: 'Nghề nghiệp',
-    required: false,
-    maxLength: 255,
-    showLabel: false,
-  });
-  readonly otherSystemCodeItem: FormType = TEXT_CONTROL({
-    controlName: 'otherSystemCode',
-    label: 'Mã hệ thống khác',
-    placeholder: 'Mã hệ thống khác',
-    required: false,
-    maxLength: 100,
-    showLabel: false,
-  });
-  readonly ssoCodeItem: FormType = TEXT_CONTROL({
-    controlName: 'ssoCode',
-    label: 'SSO',
-    placeholder: 'Mã SSO',
-    required: false,
-    maxLength: 100,
-    showLabel: false,
-  });
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
 
   readonly genderOptions: IOptions[] = [
     { value: 0, label: 'Nam' },
@@ -715,7 +291,8 @@ export class TaoMoiHocSinhComponent extends ComponentBaseAbstract {
     private readonly lopService: LopService,
     private readonly routeService: ActivatedRoute,
     private readonly routerService: Router,
-    private readonly locationService: Location
+    private readonly locationService: Location,
+    private readonly nguoiDungService: NguoiDungService
   ) {
     super(injector);
   }
@@ -725,11 +302,11 @@ export class TaoMoiHocSinhComponent extends ComponentBaseAbstract {
     this.studentId = this.routeService.snapshot.paramMap.get('id') ?? undefined;
 
     this.form = this.formBuilder.group({
-      studentCode: [''],
-      fullName: [''],
+      studentCode: ['', [Validators.required]],
+      fullName: ['', [Validators.required]],
       firstName: [''],
       moeCode: [''],
-      dateOfBirth: [''],
+      dateOfBirth: ['', [Validators.required]],
       gender: [null],
       placeOfBirth: [''],
       ethnicity: [null],
@@ -747,10 +324,10 @@ export class TaoMoiHocSinhComponent extends ComponentBaseAbstract {
       admissionDate: [''],
       studentStatus: [null],
       admissionType: [null],
-      unitId: [null],
+      unitId: [null, [Validators.required]],
       enrollment: this.formBuilder.group({
-        schoolYearId: [null],
-        classId: [null],
+        schoolYearId: [null, [Validators.required]],
+        classId: [null, [Validators.required]],
         enrolledAt: [''],
         status: [null],
         isRepeater: [false],
@@ -829,33 +406,27 @@ export class TaoMoiHocSinhComponent extends ComponentBaseAbstract {
     });
 
     forkJoin({
-      units: this.donViService.getOptions(),
+      units: this.nguoiDungService.getCreateUserUnitOptions(),
       schoolYears: this.namHocService.getOptions(),
-      classes: this.lopService.getOptions(),
       provinces: this.diaChiHanhChinhService.getProvinces(),
     }).subscribe(
-      ({ units, schoolYears, classes, provinces }: InitialHocSinhFormData) => {
+      ({ units, schoolYears, provinces }: InitialHocSinhFormData) => {
         this.unitOptions = (units.data ?? []).map((item) => ({
           value: item.id,
           label: item.name,
         }));
-        this.genderItem.options = this.genderOptions;
-        this.studentStatusItem.options = this.studentStatusOptions;
-        this.admissionTypeItem.options = this.admissionTypeOptions;
-        this.unitItem.options = this.unitOptions;
+        this.items.genderItem.options = this.genderOptions;
+        this.items.studentStatusItem.options = this.studentStatusOptions;
+        this.items.admissionTypeItem.options = this.admissionTypeOptions;
+        this.items.unitItem.options = this.unitOptions;
         this.schoolYearOptions = (schoolYears.data ?? []).map((item) => ({
           value: item.id,
           label: item.name,
         }));
-        this.schoolYearItem.options = this.schoolYearOptions;
-        this.classOptions = (classes.data ?? []).map((item) => ({
-          value: item.id,
-          label: item.name,
-        }));
-        this.classItem.options = this.classOptions;
-        this.enrollmentStatusItem.options = this.enrollmentStatusOptions;
-        this.studyModeItem.options = this.studyModeOptions;
-        this.ethnicityItem.options = DAN_TOC_OPTIONS;
+        this.items.schoolYearItem.options = this.schoolYearOptions;
+        this.items.enrollmentStatusItem.options = this.enrollmentStatusOptions;
+        this.items.studyModeItem.options = this.studyModeOptions;
+        this.items.ethnicityItem.options = DAN_TOC_OPTIONS;
         this.provinceOptions = (provinces.provinces ?? []).map((item) => {
           this.provinceLookup.set(item.code, item);
           return {
@@ -864,8 +435,8 @@ export class TaoMoiHocSinhComponent extends ComponentBaseAbstract {
               `${item.administrativeLevel ?? item.type ?? ''} ${item.name}`.trim(),
           };
         });
-        this.permanentProvinceItem.options = this.provinceOptions;
-        this.temporaryProvinceItem.options = this.provinceOptions;
+        this.items.permanentProvinceItem.options = this.provinceOptions;
+        this.items.temporaryProvinceItem.options = this.provinceOptions;
 
         if (this.pathType === this.TYPE_FORM.UPDATE && this.studentId) {
           this.loadStudentDetail(this.studentId);
@@ -873,7 +444,11 @@ export class TaoMoiHocSinhComponent extends ComponentBaseAbstract {
       }
     );
 
+    this.items.classItem.disabled = true;
+    this.enrollmentForm.get('classId')?.disable({ emitEvent: false });
+
     this.bindAddressSelects();
+    this.bindClassSelect();
   }
 
   goBack(): void {
@@ -881,40 +456,43 @@ export class TaoMoiHocSinhComponent extends ComponentBaseAbstract {
   }
 
   submit(): void {
+    if (this.form.invalid) {
+      this.form.markAllAsTouched();
+      this.toastr.warning('Vui lòng nhập đầy đủ các trường thông tin bắt buộc.', 'Cảnh báo');
+      return;
+    }
+
     const rawValue = this.form.getRawValue();
     const payload = this.buildPayload(rawValue);
 
-    const request$ =
-      this.pathType === this.TYPE_FORM.UPDATE && this.studentId
-        ? this.hocSinhService.update(this.studentId, payload)
-        : this.hocSinhService.create(payload);
+    const isUpdate = this.pathType === this.TYPE_FORM.UPDATE && !!this.studentId;
+    const request$ = isUpdate
+      ? this.hocSinhService.update(this.studentId!, payload)
+      : this.hocSinhService.create(payload);
 
     request$.subscribe({
       next: ({ data }) => {
-        this.toastr.success('Lưu thành công', 'Thành công');
         this.toastr.success(
-          this.pathType === this.TYPE_FORM.UPDATE
-            ? 'Cap nhat thanh cong'
-            : 'Luu thanh cong',
-          'Thanh cong'
+          isUpdate ? 'Cập nhật thành công' : 'Thêm học sinh thành công',
+          'Thành công'
         );
-        const createdId = data?.id ?? this.studentId;
-        if (createdId != null) {
+        if (isUpdate && this.studentId) {
+          // Cập nhật → xem chi tiết
           this.routerService.navigate([
             '/',
             NAVIGATOR_ENDPOINT.ADMIN.BASE_PATH,
             NAVIGATOR_ENDPOINT.ADMIN.HOC_SINH.BASE_PATH,
             PATH.CHI_TIET,
-            createdId,
+            this.studentId,
           ]);
-          return;
+        } else {
+          // Thêm mới → về danh sách
+          this.routerService.navigate([
+            '/',
+            NAVIGATOR_ENDPOINT.ADMIN.BASE_PATH,
+            NAVIGATOR_ENDPOINT.ADMIN.HOC_SINH.BASE_PATH,
+          ]);
         }
-
-        this.routerService.navigate([
-          '/',
-          NAVIGATOR_ENDPOINT.ADMIN.BASE_PATH,
-          NAVIGATOR_ENDPOINT.ADMIN.HOC_SINH.BASE_PATH,
-        ]);
       },
       error: (error) => {
         this.toastr.error(
@@ -1089,7 +667,7 @@ export class TaoMoiHocSinhComponent extends ComponentBaseAbstract {
         otherSystemCode: data.profile?.otherSystemCode ?? '',
         ssoCode: data.profile?.ssoCode ?? '',
       },
-    });
+    }, { emitEvent: false });
 
     this.patchAddressForm(
       this.permanentAddressForm,
@@ -1097,7 +675,7 @@ export class TaoMoiHocSinhComponent extends ComponentBaseAbstract {
       permanentAddress?.wardName,
       permanentAddress?.hamletName,
       permanentAddress?.detailAddress,
-      this.permanentWardItem,
+      this.items.permanentWardItem,
       this.permanentWardLookup
     );
     this.patchAddressForm(
@@ -1106,9 +684,14 @@ export class TaoMoiHocSinhComponent extends ComponentBaseAbstract {
       temporaryAddress?.wardName,
       temporaryAddress?.hamletName,
       temporaryAddress?.detailAddress,
-      this.temporaryWardItem,
+      this.items.temporaryWardItem,
       this.temporaryWardLookup
     );
+
+    const unitId = data['unitId'] ?? null;
+    const schoolYearId = data.enrollment?.schoolYearId ?? null;
+    const selectedClassId = data.enrollment?.classId ?? null;
+    this.loadClassOptions(unitId, schoolYearId, selectedClassId);
   }
 
   private patchAddressForm(
@@ -1246,7 +829,7 @@ export class TaoMoiHocSinhComponent extends ComponentBaseAbstract {
       .subscribe((provinceCode) => {
         this.loadWardOptions(
           `${provinceCode ?? ''}`,
-          this.permanentWardItem,
+          this.items.permanentWardItem,
           this.permanentAddressForm,
           this.permanentWardLookup
         );
@@ -1258,11 +841,55 @@ export class TaoMoiHocSinhComponent extends ComponentBaseAbstract {
       .subscribe((provinceCode) => {
         this.loadWardOptions(
           `${provinceCode ?? ''}`,
-          this.temporaryWardItem,
+          this.items.temporaryWardItem,
           this.temporaryAddressForm,
           this.temporaryWardLookup
         );
       });
+  }
+
+  private bindClassSelect(): void {
+    const unitIdControl = this.form.get('unitId');
+    const schoolYearIdControl = this.enrollmentForm.get('schoolYearId');
+
+    merge(
+      unitIdControl!.valueChanges,
+      schoolYearIdControl!.valueChanges
+    ).pipe(takeUntil(this.ngUnsubscribe)).subscribe(() => {
+      this.loadClassOptions(unitIdControl?.value, schoolYearIdControl?.value);
+    });
+  }
+
+  private loadClassOptions(unitId: string | number | null, schoolYearId: string | number | null, selectedClassId?: string | number | null): void {
+    const classIdControl = this.enrollmentForm.get('classId');
+
+    if (!selectedClassId) {
+      classIdControl?.setValue(null, { emitEvent: false });
+    }
+
+    if (!unitId || !schoolYearId) {
+      this.items.classItem.options = [];
+      this.items.classItem.disabled = true;
+      classIdControl?.disable({ emitEvent: false });
+      return;
+    }
+
+    this.items.classItem.disabled = false;
+    classIdControl?.enable({ emitEvent: false });
+
+    this.lopService.getOptions({ unitId, schoolYearId }).pipe(takeUntil(this.ngUnsubscribe)).subscribe({
+      next: ({ data }) => {
+        this.classOptions = (data ?? []).map((item) => ({
+          value: item.id,
+          label: item.name,
+        }));
+        this.items.classItem.options = this.classOptions;
+        
+        if (selectedClassId) {
+          classIdControl?.setValue(selectedClassId, { emitEvent: false });
+        }
+      }
+    });
   }
 
   private loadWardOptions(
