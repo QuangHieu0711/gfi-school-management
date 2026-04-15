@@ -10,10 +10,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.multipart.MultipartFile;
 
 import com.gfi.backend.controllers.annotations.DataScoped;
-import com.gfi.backend.models.dtos.common.FileUploadDto;
 import com.gfi.backend.models.dtos.common.PageRequestDto;
 import com.gfi.backend.models.dtos.common.PageResponseDto;
 import com.gfi.backend.models.dtos.student.StudentCreateRequest;
@@ -21,7 +19,6 @@ import com.gfi.backend.models.dtos.student.StudentFilterDto;
 import com.gfi.backend.models.dtos.student.StudentItemDto;
 import com.gfi.backend.models.enums.ActionType;
 import com.gfi.backend.models.global.ApiResult;
-import com.gfi.backend.services.FileStorageService;
 import com.gfi.backend.services.interfaces.StudentCodeGeneratorService;
 import com.gfi.backend.services.interfaces.StudentService;
 

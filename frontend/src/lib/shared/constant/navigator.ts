@@ -40,6 +40,9 @@ export const NAVIGATOR_ENDPOINT = {
     HOC_SINH: {
       BASE_PATH: 'hoc-sinh',
     },
+    CAN_BO: {
+      BASE_PATH: 'staff/profile',
+    },
   },
 } as const;
 

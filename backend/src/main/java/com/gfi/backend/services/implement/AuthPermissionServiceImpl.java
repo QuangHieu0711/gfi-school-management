@@ -19,6 +19,7 @@ import com.gfi.backend.models.dtos.auth.PermissionsResponse.ActionDto;
 import com.gfi.backend.models.dtos.auth.PermissionsResponse.DataScopeDto;
 import com.gfi.backend.models.dtos.auth.PermissionsResponse.MenuPermissionDto;
 import com.gfi.backend.models.entities.DataPermission;
+import com.gfi.backend.models.entities.Menu;
 import com.gfi.backend.models.entities.Permission;
 import com.gfi.backend.models.entities.User;
 import com.gfi.backend.models.enums.ActionType;
@@ -285,6 +286,7 @@ public class AuthPermissionServiceImpl implements AuthPermissionService {
 
             menuDtoMap.put(permission.getMenu().getId(), menuDto);
             menuPermissions.add(menuDto);
+            appendParentMenus(menuDtoMap, menuPermissions, permission.getMenu());
         }
 
         // Merge data permissions với resolved scope values
@@ -333,6 +335,7 @@ public class AuthPermissionServiceImpl implements AuthPermissionService {
                         .build();
                 menuDtoMap.put(dataPermission.getMenu().getId(), menuDto);
                 menuPermissions.add(menuDto);
+                appendParentMenus(menuDtoMap, menuPermissions, dataPermission.getMenu());
             }
         }
 
@@ -357,6 +360,41 @@ public class AuthPermissionServiceImpl implements AuthPermissionService {
         return PermissionsResponse.builder()
                 .menus(rootMenus)
                 .build();
+    }
+
+    /**
+     * Ensure all ancestor menus exist in login permissions tree.
+     * Without this, a newly granted child menu is dropped if its parent has no explicit permission row.
+     */
+    private void appendParentMenus(Map<Long, MenuPermissionDto> menuDtoMap,
+            List<MenuPermissionDto> menuPermissions,
+            Menu menu) {
+        Menu currentParent = menu.getParentMenu();
+        while (currentParent != null) {
+            if (!menuDtoMap.containsKey(currentParent.getId())) {
+                MenuPermissionDto parentDto = MenuPermissionDto.builder()
+                        .menuCode(currentParent.getCode())
+                        .menuName(currentParent.getName())
+                        .path(currentParent.getUrl())
+                        .icon(currentParent.getIcon())
+                        .level(currentParent.getOrdinal())
+                        .parentMenuId(currentParent.getParentMenu() != null ? currentParent.getParentMenu().getId() : null)
+                        .actions(ActionDto.builder()
+                                .isView(0)
+                                .isAdd(0)
+                                .isEdit(0)
+                                .isDelete(0)
+                                .isDownload(0)
+                                .isConfig(0)
+                                .build())
+                        .dataScopes(new ArrayList<>())
+                        .children(new ArrayList<>())
+                        .build();
+                menuDtoMap.put(currentParent.getId(), parentDto);
+                menuPermissions.add(parentDto);
+            }
+            currentParent = currentParent.getParentMenu();
+        }
     }
 
     /**

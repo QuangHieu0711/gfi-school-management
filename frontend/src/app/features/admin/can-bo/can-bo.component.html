@@ -1,0 +1,131 @@
+<section class="staff-list-page">
+  <div class="page-toolbar">
+    <div class="page-title">
+      <app-icon
+        icon="svg:clipboard-list-alt"
+        [size]="16"></app-icon>
+      <span>Danh sách cán bộ</span>
+    </div>
+
+    <div class="toolbar-actions">
+      <button
+        type="button"
+        color="primary"
+        matButton="filled"
+        class="btn-tight">
+        <app-icon
+          icon="badge"
+          [size]="18"
+          class="btn-icon" />
+        Hồ sơ cán bộ
+      </button>
+    </div>
+  </div>
+
+  <form
+    class="staff-grid-card"
+    [formGroup]="form"
+    (ngSubmit)="submitInlineFilter()">
+    <div class="table-scroll">
+      <table class="staff-table">
+        <thead>
+          <tr class="heading-row">
+            <th class="stt-col">STT</th>
+            <th>Mã cán bộ</th>
+            <th>Họ và tên</th>
+            <th class="alias-col">Tên gọi khác</th>
+            <th class="unit-col">Đơn vị</th>
+            <th>Giới tính</th>
+            <th>Ngày sinh</th>
+            <th>Số điện thoại</th>
+            <th>Email</th>
+            <th>Trạng thái</th>
+            <th>Số CCCD</th>
+          </tr>
+
+          <tr class="filter-row">
+            <th class="stt-col"></th>
+            <th class="filter-cell">
+              <app-text-control
+                [item]="findFormControl($formItem, key.STAFF_CODE)"
+                [form]="form"></app-text-control>
+            </th>
+            <th class="filter-cell">
+              <app-text-control
+                [item]="findFormControl($formItem, key.FULL_NAME)"
+                [form]="form"></app-text-control>
+            </th>
+            <th class="alias-col"></th>
+            <th class="filter-cell unit-col">
+              <app-select-control
+                [item]="findFormControl($formItem, key.UNIT_ID)"
+                [form]="form"></app-select-control>
+            </th>
+            <th class="filter-cell">
+              <app-select-control
+                [item]="findFormControl($formItem, key.GENDER)"
+                [form]="form"></app-select-control>
+            </th>
+            <th class="filter-cell">
+              <app-date-control
+                [item]="findFormControl($formItem, key.DATE_OF_BIRTH)"
+                [form]="form"></app-date-control>
+            </th>
+            <th class="filter-cell">
+              <app-text-control
+                [item]="findFormControl($formItem, key.PHONE)"
+                [form]="form"></app-text-control>
+            </th>
+            <th class="filter-cell">
+              <app-text-control
+                [item]="findFormControl($formItem, key.EMAIL)"
+                [form]="form"></app-text-control>
+            </th>
+            <th class="filter-cell">
+              <app-select-control
+                [item]="findFormControl($formItem, key.STATUS)"
+                [form]="form"></app-select-control>
+            </th>
+            <th></th>
+          </tr>
+        </thead>
+
+        <tbody>
+          @for (row of dataSource; track row.id; let index = $index) {
+            <tr>
+              <td class="stt-col">{{ pageIndex * pageSize + index + 1 }}</td>
+              <td>{{ row.staffCode || '' }}</td>
+              <td class="name-col">{{ row.fullName || '' }}</td>
+              <td class="alias-col">{{ row.aliasName || '' }}</td>
+              <td class="unit-col">{{ row.unitName || '' }}</td>
+              <td>{{ row.gender || '' }}</td>
+              <td>{{ row.dateOfBirth || '' }}</td>
+              <td>{{ row.phone || '' }}</td>
+              <td>{{ row.email || '' }}</td>
+              <td class="status-col">
+                <span [class]="getStatusClass(row.status)">{{ getStatusLabel(row.status) }}</span>
+              </td>
+              <td>{{ row.cccdNo || '' }}</td>
+            </tr>
+          } @empty {
+            <tr>
+              <td
+                class="empty-row"
+                colspan="11">
+                Không có dữ liệu
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </form>
+
+  <app-paginator
+    [total]="dataSourceTotal"
+    [pageIndex]="pageIndex"
+    [pageSize]="pageSize"
+    [pageSizeOptions]="[10, 20, 50]"
+    (pageChange)="onPageChange($event)">
+  </app-paginator>
+</section>

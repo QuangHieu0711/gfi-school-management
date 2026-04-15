@@ -35,6 +35,9 @@ import com.gfi.backend.utils.SecurityContextUtils;
 import com.gfi.backend.utils.ScopeFilterUtils;
 import com.gfi.backend.models.security.UserScopes;
 import com.gfi.backend.models.security.FeatureKey;
+import com.gfi.backend.models.security.ResolvedScope;
+import com.gfi.backend.models.enums.ActionType;
+import com.gfi.backend.models.enums.ScopeType;
 import com.gfi.backend.repositories.RoleAssignmentPermissionRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -74,15 +77,21 @@ public class UserServiceImpl implements UserService {
         // Check functional access: USER_MANAGEMENT
         ScopeFilterUtils.checkAccess(FEATURE);
 
-        // Get allowed unit scopes for this user
-        List<Long> allowedUnitIds = ScopeFilterUtils.getScopesForQuery(FEATURE);
+        // Get allowed unit scopes for this user - with action-level permission
+        List<ResolvedScope> allowedScopes = ScopeFilterUtils.getScopesForQuery(FEATURE, ActionType.ADD);
+        
+        // Check if user has unrestricted access
+        boolean isUnrestricted = allowedScopes.stream().anyMatch(ResolvedScope::isUnrestricted);
 
         List<Unit> units;
-        if (ScopeFilterUtils.isScopeUnrestricted(allowedUnitIds)) {
+        if (isUnrestricted) {
             // Unrestricted: get all active, non-deleted units
             units = unitRepository.findByStatusAndDeletedFlagOrderByName(1, 0);
         } else {
             // Restricted: get units from allowed IDs (also filter by status and deleted flag)
+            List<Long> allowedUnitIds = allowedScopes.stream()
+                    .flatMap(rs -> rs.getScopeIds().stream())
+                    .toList();
             units = unitRepository.findByIdInAndStatusAndDeletedFlagOrderByName(allowedUnitIds, 1, 0);
         }
 
@@ -124,14 +133,18 @@ public class UserServiceImpl implements UserService {
         Pageable pageable = PageableUtils.newestFirst(pageNow, pageSize);
 
         // Apply scope filtering: auto filter by allowed units
-        List<Long> allowedUnitIds = ScopeFilterUtils.getScopesForQuery(FEATURE);
+        List<ResolvedScope> allowedScopes = ScopeFilterUtils.getScopesForQuery(FEATURE, ActionType.VIEW);
+        boolean isUnrestricted = allowedScopes.stream().anyMatch(ResolvedScope::isUnrestricted);
 
         Page<User> page;
-        if (ScopeFilterUtils.isScopeUnrestricted(allowedUnitIds)) {
+        if (isUnrestricted) {
             // Unrestricted (ALL scope): use specification as is
             page = userRepository.findAll(userSpecification.buildSpecification(filter), pageable);
         } else {
             // Restricted: filter by allowed units + apply specification
+            List<Long> allowedUnitIds = allowedScopes.stream()
+                    .flatMap(rs -> rs.getScopeIds().stream())
+                    .toList();
             page = userRepository.findByUnitIdIn(allowedUnitIds, pageable);
             // Apply filter spec on top of unit filter would require custom specification
             // For now, unit filter is the main restriction
@@ -160,7 +173,7 @@ public class UserServiceImpl implements UserService {
         
         // Enforce scope: validate user's unit is within allowed scopes
         if (user.getUnit() != null) {
-            ScopeFilterUtils.validateAccess(FEATURE, user.getUnit().getId());
+            ScopeFilterUtils.validateAccess(FEATURE, ActionType.VIEW, ScopeType.UNIT, user.getUnit().getId());
         }
         
         return userMapper.toDetailDto(user);
@@ -178,7 +191,8 @@ public class UserServiceImpl implements UserService {
                 .orElseThrow(() -> new UserMessageException(CommonErrorCode.ACCESS_DENIED));
         
         // Step 3: Get allowed unit scopes
-        List<Long> allowedUnitIds = ScopeFilterUtils.getScopesForQuery(FEATURE);
+        List<ResolvedScope> allowedScopes = ScopeFilterUtils.getScopesForQuery(FEATURE, ActionType.ADD);
+        boolean isUnrestricted = allowedScopes.stream().anyMatch(ResolvedScope::isUnrestricted);
 
         // Step 4: Handle unit assignment
         Long unitIdToAssign = request.getUnitId();
@@ -187,22 +201,29 @@ public class UserServiceImpl implements UserService {
         if ("SCHOOL_ADMIN".equals(userScopes.getRoleCode())) {
             if (unitIdToAssign == null) {
                 // No unit specified, use current user's unit from scope
-                unitIdToAssign = ScopeFilterUtils.isScopeUnrestricted(allowedUnitIds) 
-                        ? null 
-                        : (allowedUnitIds.isEmpty() ? null : allowedUnitIds.get(0));
+                if (!isUnrestricted && !allowedScopes.isEmpty()) {
+                    unitIdToAssign = allowedScopes.get(0).getScopeIds().stream().findFirst().orElse(null);
+                }
             } else {
                 // Unit specified, validate it's within SCHOOL_ADMIN's allowed scope
-                if (!allowedUnitIds.contains(unitIdToAssign)) {
+                List<Long> allowedUnitIds = allowedScopes.stream()
+                        .flatMap(rs -> rs.getScopeIds().stream())
+                        .toList();
+                if (!isUnrestricted && !allowedUnitIds.contains(unitIdToAssign)) {
                     throw new UserMessageException(CommonErrorCode.ACCESS_DENIED.getCode(),
                             "SCHOOL_ADMIN chỉ được tạo tài khoản cho đơn vị của mình");
                 }
             }
         } else if (unitIdToAssign != null) {
             // For non-SCHOOL_ADMIN roles, validate unitId is within allowed scopes
-            if (!ScopeFilterUtils.isScopeUnrestricted(allowedUnitIds) && 
-                !allowedUnitIds.contains(unitIdToAssign)) {
-                throw new UserMessageException(CommonErrorCode.ACCESS_DENIED.getCode(),
-                        "Không được tạo tài khoản cho đơn vị này");
+            if (!isUnrestricted) {
+                List<Long> allowedUnitIds = allowedScopes.stream()
+                        .flatMap(rs -> rs.getScopeIds().stream())
+                        .toList();
+                if (!allowedUnitIds.contains(unitIdToAssign)) {
+                    throw new UserMessageException(CommonErrorCode.ACCESS_DENIED.getCode(),
+                            "Không được tạo tài khoản cho đơn vị này");
+                }
             }
         }
 
@@ -255,7 +276,7 @@ public class UserServiceImpl implements UserService {
 
         // Enforce scope: validate user's unit is within allowed scopes before allowing update
         if (user.getUnit() != null) {
-            ScopeFilterUtils.validateAccess(FEATURE, user.getUnit().getId());
+            ScopeFilterUtils.validateAccess(FEATURE, ActionType.EDIT, ScopeType.UNIT, user.getUnit().getId());
         }
 
         String username = normalize(request.getUsername());
@@ -302,7 +323,7 @@ public class UserServiceImpl implements UserService {
 
         // Enforce scope: validate user's unit is within allowed scopes before allowing delete
         if (user.getUnit() != null) {
-            ScopeFilterUtils.validateAccess(FEATURE, user.getUnit().getId());
+            ScopeFilterUtils.validateAccess(FEATURE, ActionType.DELETE, ScopeType.UNIT, user.getUnit().getId());
         }
 
         // Xóa mềm: đánh dấu xóa 

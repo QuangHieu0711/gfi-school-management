@@ -41,16 +41,17 @@ export class AdminComponent extends ComponentBaseAbstract {
   }
 
   private buildMenuFromRules(rules: any[]): MenuItem[] {
-    const menuConfigMap: Record<string, { name: string; ordinal: number }> = {
-      ACCOUNT_MANAGEMENT: { name: 'Quản lý người dùng', ordinal: 1 },
-      UNIT_MANAGEMENT: { name: 'Quản lý đơn vị', ordinal: 2 },
-      ROLE_MANAGEMENT: { name: 'Quản lý vai trò', ordinal: 3 },
-      FUNCTION_MANAGEMENT: { name: 'Quản lý menu', ordinal: 4 },
-      SCHOOL_YEAR_CONFIG: { name: 'Quản lý năm học', ordinal: 5 },
-      GRADE_CONFIG: { name: 'Quản lý khối', ordinal: 6 },
-      CLASS_MANAGEMENT: { name: 'Quản lý lớp', ordinal: 7 },
-      SUBJECT_MANAGEMENT: { name: 'Quản lý môn học', ordinal: 8 },
-      STUDENT_PROFILE: { name: 'Quản lý học sinh', ordinal: 9 },
+    const menuConfigMap: Record<string, { ordinal: number }> = {
+      ACCOUNT_MANAGEMENT: { ordinal: 1 },
+      UNIT_MANAGEMENT: { ordinal: 2 },
+      ROLE_MANAGEMENT: { ordinal: 3 },
+      FUNCTION_MANAGEMENT: { ordinal: 4 },
+      SCHOOL_YEAR_CONFIG: { ordinal: 5 },
+      GRADE_CONFIG: { ordinal: 6 },
+      CLASS_MANAGEMENT: { ordinal: 7 },
+      SUBJECT_MANAGEMENT: { ordinal: 8 },
+      STUDENT_PROFILE: { ordinal: 9 },
+      STAFF_PROFILE: { ordinal: 10 },
     };
 
     return (
@@ -58,13 +59,12 @@ export class AdminComponent extends ComponentBaseAbstract {
         .filter((rule) => rule.isView === 1 && rule.menuCode)
         .map((rule) => {
           const config = menuConfigMap[rule.menuCode] || {
-            name: rule.name || rule.menuCode,
             ordinal: 999,
           };
           return {
             key: rule.menuCode,
             id: rule.pathId,
-            name: config.name,
+            name: rule.menuName || rule.name || rule.menuCode,
             icon: this.getFallbackIcon(rule.menuCode),
             url: this.normalizeMenuUrl(rule.menuCode, rule.url),
             expanded: true,
@@ -92,6 +92,7 @@ export class AdminComponent extends ComponentBaseAbstract {
       CLASS_MANAGEMENT: `${adminBase}/${NAVIGATOR_ENDPOINT.ADMIN.LOP.BASE_PATH}`,
       SUBJECT_MANAGEMENT: `${adminBase}/${NAVIGATOR_ENDPOINT.ADMIN.MON_HOC.BASE_PATH}`,
       STUDENT_PROFILE: `${adminBase}/${NAVIGATOR_ENDPOINT.ADMIN.HOC_SINH.BASE_PATH}`,
+      STAFF_PROFILE: `${adminBase}/${NAVIGATOR_ENDPOINT.ADMIN.CAN_BO.BASE_PATH}`,
     };
 
     if (codeToUrl[code]) {
@@ -123,8 +124,10 @@ export class AdminComponent extends ComponentBaseAbstract {
       SUBJECT_MANAGEMENT: 'menu_book',
       STUDENT: 'groups',
       STUDENT_PROFILE: 'badge',
+      STAFF_PROFILE: 'supervisor_account',
     };
 
     return codeToIcon[code] ?? 'menu';
   }
 }
+

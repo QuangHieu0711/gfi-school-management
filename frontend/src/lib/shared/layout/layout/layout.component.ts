@@ -491,7 +491,7 @@ export class LayoutComponent extends ComponentBaseAbstract {
       return {
         id: menu.menuCode,
         parentId: menu.parentMenuId ?? null,
-        name: this.getMenuLabel(menu.menuCode),
+        name: menu.menuName ?? this.getMenuLabel(menu.menuCode),
         url: parentCanView ? url : null, // Only set URL if has view permission
         icon: menu.icon || 'menu',
         ordinal: Number(menu.level ?? ordinalFallback),

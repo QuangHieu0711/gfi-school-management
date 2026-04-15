@@ -242,4 +242,21 @@ export const AdminRoutes: Routes = [
       },
     ],
   },
+  {
+    path: NAVIGATOR_ENDPOINT.ADMIN.CAN_BO.BASE_PATH,
+    component: AdminComponent,
+    children: [
+      {
+        path: '',
+        canActivate: [PermissionGuard],
+        data: { menuCode: 'STAFF_PROFILE' },
+        providers: [
+          provideState({ name: 'style', reducer: StyleReducer }),
+          provideEffects(StyleEffect),
+        ],
+        loadComponent: () =>
+          import('./can-bo/can-bo.component').then((m) => m.CanBoComponent),
+      },
+    ],
+  },
 ];

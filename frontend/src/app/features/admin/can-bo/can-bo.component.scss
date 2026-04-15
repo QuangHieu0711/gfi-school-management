@@ -1,0 +1,172 @@
+.staff-list-page {
+  padding: 0 0 16px;
+  background: transparent;
+}
+
+.page-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 8px 0 12px;
+}
+
+.page-title {
+  display: inline-flex;
+  align-items: center;
+  color: #0f1720;
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.page-title app-icon {
+  display: none;
+}
+
+.toolbar-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.staff-grid-card {
+  border: 1px solid #d7d7d7;
+  background: #fff;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.table-scroll {
+  overflow: auto;
+  border-radius: 8px;
+}
+
+.staff-table {
+  width: 100%;
+  min-width: 1320px;
+  border-collapse: collapse;
+}
+
+.staff-table th,
+.staff-table td {
+  border-right: 1px solid #d7d7d7;
+  border-bottom: 1px solid #d7d7d7;
+  padding: 0 12px;
+  font-size: 14px;
+  line-height: 1.4;
+  white-space: nowrap;
+  height: 60px;
+  vertical-align: middle;
+}
+
+.staff-table th:last-child,
+.staff-table td:last-child {
+  border-right: 0;
+}
+
+.heading-row th {
+  background: #dcecf1;
+  color: #0f1720;
+  font-weight: 500;
+  text-align: center;
+  font-size: 13px;
+  height: 48px;
+}
+
+.filter-row th {
+  background: #eef5f6;
+  padding: 4px 5px;
+}
+
+.filter-cell {
+  min-width: 120px;
+  vertical-align: top;
+}
+
+.stt-col {
+  width: 48px;
+  min-width: 48px;
+  text-align: center;
+}
+
+.alias-col {
+  min-width: 140px;
+}
+
+.unit-col {
+  min-width: 220px;
+}
+
+.name-col {
+  font-weight: 600;
+  color: #104f5b;
+}
+
+.status-col {
+  text-align: center;
+}
+
+.staff-table tbody tr:nth-child(odd) {
+  background: #fafafa;
+}
+
+.staff-table tbody tr:hover {
+  background: #f2fafb;
+}
+
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 110px;
+  height: 34px;
+  padding: 0 16px;
+  border-radius: 999px;
+  border: 1px solid #d0d5dd;
+  background: #f2f4f7;
+  color: #344054;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.status-pill.active {
+  background: #dff6e8;
+  color: #0c7b4e;
+  border-color: #abefc6;
+}
+
+.status-pill.inactive {
+  background: #fef3f2;
+  color: #b42318;
+  border-color: #fecdca;
+}
+
+.empty-row {
+  text-align: center;
+  color: #7a878c;
+  padding: 24px 12px !important;
+}
+
+::ng-deep .filter-cell .form-group,
+::ng-deep .filter-cell .form-control,
+::ng-deep .filter-cell .mat-mdc-form-field {
+  width: 100%;
+}
+
+::ng-deep .filter-cell .form-group {
+  margin: 0;
+}
+
+::ng-deep .filter-cell .form-control {
+  min-width: unset;
+}
+
+::ng-deep .filter-cell .mat-mdc-form-field-subscript-wrapper {
+  display: none;
+}
+
+::ng-deep .filter-cell .mat-mdc-form-field-infix,
+::ng-deep .filter-cell .select-control .mat-mdc-form-field-infix {
+  min-width: unset;
+}

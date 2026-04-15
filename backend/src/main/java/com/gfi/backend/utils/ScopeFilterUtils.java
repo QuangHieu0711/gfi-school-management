@@ -1,7 +1,6 @@
 package com.gfi.backend.utils;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 import org.slf4j.Logger;
@@ -46,7 +45,6 @@ public class ScopeFilterUtils {
 
     /**
      * Check if user has functional permission to access menu
-     * ⚠️ UPDATED: Dùng API mới hasMenuAccess() thay vì allowedMenuCodes
      * @param menuCode Menu code to check
      * @throws AccessDeniedException if user has no access to this menu
      */
@@ -56,7 +54,6 @@ public class ScopeFilterUtils {
 
         String normalizedMenuCode = normalize(menuCode);
 
-        // ⚠️ UPDATED: Dùng hasMenuAccess() từ UserScopes
         // Nó sẽ check allowedActionsByFeature thay vì allowedMenuCodes
         if (!userScopes.hasMenuAccess(normalizedMenuCode)) {
             throw new AccessDeniedException("User has no access to menu: " + menuCode);
@@ -67,7 +64,6 @@ public class ScopeFilterUtils {
 
     /**
      * Get allowed scopes for a specific menu and action from current user's scopes
-     * ⚠️ UPDATED: Trả ResolvedScope thay vì List<Long>, support action-level
      * @param menuCode Menu code to get scopes for
      * @param action Action type (VIEW, ADD, EDIT, DELETE)
      * @return List of ResolvedScope objects (empty list = deny, not allow all)
@@ -86,27 +82,11 @@ public class ScopeFilterUtils {
         UserScopes userScopes = SecurityContextUtils.getCurrentUserScopes()
                 .orElseThrow(() -> new AccessDeniedException("User scopes not found in context"));
 
-        // ⚠️ UPDATED: Dùng getScopes() API baru, trả ResolvedScope thay vì Long
         List<ResolvedScope> scopes = userScopes.getScopes(normalizedMenuCode, action);
         logger.debug("getRequiredScopes: menuCode={}, action={}, resolvedScopes.size={}",
                 normalizedMenuCode, action, scopes != null ? scopes.size() : 0);
 
         return scopes;
-    }
-    
-    /**
-     * ⚠️ DEPRECATED: Use getRequiredScopes(menuCode, action) instead
-     * This overload kept for backward compatibility only
-     */
-    @Deprecated
-    public static List<Long> getRequiredScopes(String menuCode) {
-        logger.warn("getRequiredScopes(menuCode) is deprecated, use getRequiredScopes(menuCode, action) instead");
-        // Default to VIEW action for backward compat
-        List<ResolvedScope> resolvedScopes = getRequiredScopes(menuCode, ActionType.VIEW);
-        // Flatten to Long list (loses scope type info)
-        return resolvedScopes.stream()
-                .flatMap(rs -> rs.getScopeIds().stream())
-                .toList();
     }
 
     /**
@@ -114,14 +94,6 @@ public class ScopeFilterUtils {
      */
     public static boolean isScopeUnrestricted(ResolvedScope scope) {
         return scope != null && scope.isUnrestricted();
-    }
-    
-    /**
-     * ⚠️ DEPRECATED: Use isScopeUnrestricted(ResolvedScope) instead
-     */
-    @Deprecated
-    public static boolean isScopeUnrestricted(List<Long> scopes) {
-        return scopes == null || scopes.isEmpty();
     }
 
     /**
@@ -145,7 +117,6 @@ public class ScopeFilterUtils {
         UserScopes userScopes = SecurityContextUtils.getCurrentUserScopes()
                 .orElseThrow(() -> new AccessDeniedException("User scopes not found in context"));
 
-        // ⚠️ UPDATED: Dùng hasAccess() method từ UserScopes
         // Nó sẽ check tất cả ResolvedScope rules với OR logic
         if (!userScopes.hasAccess(normalizedMenuCode, action, scopeType, recordScopeId)) {
             throw new AccessDeniedException(
@@ -156,34 +127,15 @@ public class ScopeFilterUtils {
         logger.debug("validateAccess: menuCode={}, action={}, scopeType={}, recordScopeId={}, allowed=true", 
                 menuCode, action, scopeType, recordScopeId);
     }
-    
-    /**
-     * ⚠️ DEPRECATED: Use validateAccess(menuCode, action, scopeType, recordScopeId) instead
-     */
-    @Deprecated
-    public static void validateAccess(String menuCode, Long recordScopeId) {
-        logger.warn("validateAccess(menuCode, recordScopeId) is deprecated, use validateAccess(menuCode, action, scopeType, recordScopeId) instead");
-        // Default to VIEW action and UNIT scope for backward compat
-        validateAccess(menuCode, ActionType.VIEW, ScopeType.UNIT, recordScopeId);
-    }
 
     /**
      * Get scopes for query filtering
-     * ⚠️ UPDATED: Trả ResolvedScope để service layer có thể build proper WHERE clause
      * @param menuCode Menu code
      * @param action Action type (VIEW, ADD, EDIT, DELETE)
      * @return List of ResolvedScope to use for query building
      */
     public static List<ResolvedScope> getScopesForQuery(String menuCode, ActionType action) {
         return getRequiredScopes(menuCode, action);
-    }
-    
-    /**
-     * ⚠️ DEPRECATED: Use getScopesForQuery(menuCode, action) instead
-     */
-    @Deprecated
-    public static List<Long> getScopesForQuery(String menuCode) {
-        return getRequiredScopes(menuCode);
     }
 
     /**

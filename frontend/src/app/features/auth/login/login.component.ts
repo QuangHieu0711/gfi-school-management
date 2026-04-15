@@ -84,6 +84,13 @@ export class LoginComponent {
         NAVIGATOR_ENDPOINT.ADMIN.HOC_SINH.BASE_PATH,
       ],
     },
+    {
+      menuCode: 'STAFF_PROFILE',
+      commands: [
+        NAVIGATOR_ENDPOINT.ADMIN.BASE_PATH,
+        NAVIGATOR_ENDPOINT.ADMIN.CAN_BO.BASE_PATH,
+      ],
+    },
   ] as const;
 
   readonly logoUrl = 'config/Logo_login.png';

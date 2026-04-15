@@ -220,6 +220,7 @@ export class AuthService {
   private mapMenusToRules(
     menus: {
       menuCode?: string;
+      menuName?: string;
       path?: string;
       actions?: {
         isView?: number;
@@ -248,7 +249,7 @@ export class AuthService {
       isDownload: menu.actions?.isDownload ?? 0,
       isConfig: menu.actions?.isConfig ?? 0,
       isApprove: 0,
-      name: this.getMenuDisplayName(menu.menuCode ?? ''),
+      name: menu.menuName ?? this.getMenuDisplayName(menu.menuCode ?? ''),
       url: menu.path ?? '',
       pathId: String(index + 1),
       ordinal: index,
@@ -271,6 +272,7 @@ export class AuthService {
   private normalizeMenus(menus: any[]): IMenuPermission[] {
     return (menus ?? []).map((menu) => ({
       menuCode: String(menu?.menuCode ?? ''),
+      menuName: menu?.menuName ?? this.getMenuDisplayName(menu?.menuCode ?? ''),
       path: menu?.path ?? null,
       icon: menu?.icon ?? this.getMenuIcon(menu?.menuCode ?? ''),
       level: Number(menu?.level ?? 0),

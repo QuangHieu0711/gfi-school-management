@@ -16,7 +16,6 @@ import com.gfi.backend.models.global.CommonErrorCode;
 
 import io.minio.MinioClient;
 import io.minio.PutObjectArgs;
-import io.minio.errors.MinioException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
