@@ -22,6 +22,7 @@ export const NAM_HOC_API_ENDPOINT = {
   BASE_PATH: 'school-years',
   FILTER: 'search',
   OPTIONS: 'options',
+  CURRENT: 'current',
 };
 
 export interface NamHocOptionResponse {

@@ -61,6 +61,17 @@ public class SchoolYearController extends ApiBaseController {
     }
 
     /**
+     * Lấy năm học hiện hành.
+     *
+     * @return thông tin id và name năm học hiện tại
+     */
+    @GetMapping("/current")
+    @Operation(summary = "Năm học hiện hành", description = "Lấy thông tin năm học đang diễn ra.")
+    public ResponseEntity<ApiResult<LookupItemDto>> getCurrentSchoolYear() {
+        return executeApiResult(() -> ApiResult.success(schoolYearService.getCurrentSchoolYear(), "Hiển thị năm học hiện hành thành công"));
+    }
+
+    /**
      * Chi tiết năm học theo ID.
      *
      * @param id ID của năm học

@@ -3,6 +3,7 @@ import { Component, Injector } from '@angular/core';
 import { ReactiveFormsModule } from '@angular/forms';
 import { PageEvent } from '@angular/material/paginator';
 import { Router } from '@angular/router';
+import { debounceTime, takeUntil } from 'rxjs';
 
 import { AppPaginatorComponent } from '@components/app-paginator/app-paginator.component';
 import { IconComponent } from '@components/app-icon/app-icon.component';
@@ -19,6 +20,7 @@ import {
   HocSinhFilterRequest,
   HocSinhResponse,
 } from '@app/model/admin/hoc-sinh.model';
+import { DonViService } from '@app/service/admin/don-vi.service';
 import { KhoiService } from '@app/service/admin/khoi.service';
 import { LopService } from '@app/service/admin/lop.service';
 import { HocSinhService } from '@app/service/admin/hoc-sinh.service';
@@ -58,6 +60,7 @@ export class HocSinhComponent extends ComponentBaseAbstract {
   ];
   classOptions: IOptions[] = [];
   gradeOptions: IOptions[] = [];
+  unitOptions: IOptions[] = [];
 
   get canAdd(): boolean {
     return this.permissionCheckService.canAdd(this.menuCode);
@@ -74,6 +77,7 @@ export class HocSinhComponent extends ComponentBaseAbstract {
   constructor(
     protected override injector: Injector,
     private readonly hocSinhService: HocSinhService,
+    private readonly donViService: DonViService,
     private readonly lopService: LopService,
     private readonly khoiService: KhoiService,
     private readonly routerService: Router,
@@ -88,6 +92,8 @@ export class HocSinhComponent extends ComponentBaseAbstract {
       'Họ và tên';
     this.findFormControl(this.$formItem, this.key.FIRST_NAME).placeholder =
       'Tên';
+    this.findFormControl(this.$formItem, this.key.UNIT_ID).placeholder =
+      'Đơn vị';
     this.findFormControl(this.$formItem, this.key.STUDENT_STATUS).options =
       this.statusOptions;
     this.findFormControl(this.$formItem, this.key.STUDENT_STATUS).placeholder =
@@ -122,6 +128,7 @@ export class HocSinhComponent extends ComponentBaseAbstract {
       this.$formItem,
       this.key.PERMANENT_WARD_NAME
     ).placeholder = 'Xã/phường thường trú';
+    this.bindInlineFilter();
     this.loadOptions();
     this.filterData({
       pageIndex: 0,
@@ -238,7 +245,28 @@ export class HocSinhComponent extends ComponentBaseAbstract {
     );
   }
 
+  private bindInlineFilter(): void {
+    this.form.valueChanges
+      .pipe(debounceTime(300), takeUntil(this.ngUnsubscribe))
+      .subscribe(() => {
+        this.pageIndex = 0;
+        this.filterData({
+          pageIndex: 0,
+          pageSize: this.pageSize,
+        });
+      });
+  }
+
   private loadOptions(): void {
+    this.donViService.getCreateUserUnitOptions().subscribe(({ data }) => {
+      this.unitOptions = (data ?? []).map((item) => ({
+        value: item.id,
+        label: item.name,
+      }));
+      this.findFormControl(this.$formItem, this.key.UNIT_ID).options =
+        this.unitOptions;
+    });
+
     this.lopService.getOptions().subscribe(({ data }) => {
       this.classOptions = (data ?? []).map((item) => ({
         value: item.id,
@@ -269,6 +297,7 @@ export class HocSinhComponent extends ComponentBaseAbstract {
       filter: {
         fullName: value[this.key.FULL_NAME] ?? undefined,
         firstName: value[this.key.FIRST_NAME] ?? undefined,
+        unitId: value[this.key.UNIT_ID] ?? undefined,
         studentStatus: value[this.key.STUDENT_STATUS] ?? undefined,
         classId: value[this.key.CLASS_ID] ?? undefined,
         moeCode: value[this.key.MOE_CODE] ?? undefined,

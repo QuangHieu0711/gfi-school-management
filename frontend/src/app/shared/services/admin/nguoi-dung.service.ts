@@ -44,12 +44,6 @@ export class NguoiDungService {
     );
   }
 
-  getCreateUserUnitOptions() {
-    return this.http.get<IResponse<DonViOptionResponse[]>>(
-      `${this.baseUrl}/${NGUOI_DUNG_API_ENDPOINT.OPTIONS}`
-    );
-  }
-
   getCreateUserRoleOptions() {
     return this.http.get<IResponse<DonViOptionResponse[]>>(
       `${this.baseUrl}/${NGUOI_DUNG_API_ENDPOINT.ROLE}`

@@ -7,10 +7,13 @@ import { IconComponent } from '@components/app-icon/app-icon.component';
 import { ComponentBaseAbstract } from '@layout';
 
 import {
+  ENROLLMENT_STATUS_OPTIONS,
   HOC_SINH_DETAIL_FALLBACK,
   HocSinhDetailResponse,
   HocSinhGuardian,
   HocSinhAddress,
+  STUDENT_STATUS_OPTIONS,
+  STUDY_MODE_OPTIONS,
 } from '@app/model/admin/hoc-sinh.model';
 import { HocSinhService } from '@app/service/admin/hoc-sinh.service';
 
@@ -159,6 +162,27 @@ export class ChiTietHocSinhComponent extends ComponentBaseAbstract {
     );
   }
 
+  formatStudentStatus(): string {
+    return this.getOptionLabel(
+      this.student?.studentStatus,
+      STUDENT_STATUS_OPTIONS
+    );
+  }
+
+  formatEnrollmentStatus(): string {
+    return this.getOptionLabel(
+      this.student?.enrollment?.status,
+      ENROLLMENT_STATUS_OPTIONS
+    );
+  }
+
+  formatStudyMode(): string {
+    return this.getOptionLabel(
+      this.student?.enrollment?.studyMode,
+      STUDY_MODE_OPTIONS
+    );
+  }
+
   private mergeStudent(data: HocSinhDetailResponse): HocSinhDetailResponse {
     return {
       ...HOC_SINH_DETAIL_FALLBACK,
@@ -178,5 +202,15 @@ export class ChiTietHocSinhComponent extends ComponentBaseAbstract {
         ? data.addresses
         : HOC_SINH_DETAIL_FALLBACK.addresses,
     };
+  }
+
+  private getOptionLabel(
+    value: string | number | null | undefined,
+    options: Array<{ value: string | number; label: string }>
+  ): string {
+    if (value === null || value === undefined || value === '') return 'â€”';
+
+    const matched = options.find((item) => String(item.value) === String(value));
+    return matched?.label ?? String(value);
   }
 }

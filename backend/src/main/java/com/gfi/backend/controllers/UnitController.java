@@ -24,6 +24,7 @@ import com.gfi.backend.models.dtos.unit.UnitListItemDto;
 import com.gfi.backend.models.dtos.unit.UnitUpdateRequest;
 import com.gfi.backend.models.global.ApiResult;
 import com.gfi.backend.services.interfaces.UnitService;
+import com.gfi.backend.services.interfaces.UserService;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -37,6 +38,7 @@ import lombok.RequiredArgsConstructor;
 public class UnitController extends ApiBaseController {
 
     private final UnitService unitService;
+    private final UserService userService;
 
     /**
      * Danh sách đơn vị với phân trang và filter.
@@ -63,6 +65,17 @@ public class UnitController extends ApiBaseController {
     @Operation(summary = "Danh sách đơn vị cho combobox", description = "Lấy danh sách id và tên đơn vị.")
     public ResponseEntity<ApiResult<List<LookupItemDto>>> getOptions() {
         return executeApiResult(() -> ApiResult.success(unitService.getOptions(), "Hiển thị danh sách đơn vị thành công"));
+    }
+
+    /**
+     * Lấy danh sách unit options cho form tạo người dùng.
+     * Chỉ trả về unit mà user hiện tại có quyền tạo.
+     */
+    @GetMapping("/user-creation-options")
+    @Operation(summary = "Danh sách đơn vị phân quyền dữ liệu", description = "Lấy danh sách unit user được phép gán khi tạo tài khoản mới.")
+    public ResponseEntity<ApiResult<List<LookupItemDto>>> getUnitOptionsForCreateUser() {
+        return executeApiResult(
+                () -> ApiResult.success(userService.getUnitOptionsForCreateUser(), "Lấy danh sách đơn vị thành công"));
     }
 
     /**

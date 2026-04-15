@@ -67,11 +67,11 @@
               </div>
               <div class="info-item">
                 <span class="info-label">Trạng thái</span>
-                <span class="info-value">{{ getField('studentStatus') }}</span>
+                <span class="info-value">{{ formatStudentStatus() }}</span>
               </div>
               <div class="info-item">
                 <span class="info-label">Đơn vị</span>
-                <span class="info-value">{{ getField('unitId') }}</span>
+                <span class="info-value">{{ getField('unitName') }}</span>
               </div>
             </div>
           </div>
@@ -101,7 +101,7 @@
           </div>
           <div class="info-item">
             <span class="info-label">Trạng thái lớp</span>
-            <span class="info-value">{{ getEnrollment('status') }}</span>
+            <span class="info-value">{{ formatEnrollmentStatus() }}</span>
           </div>
           <div class="info-item">
             <span class="info-label">Số buổi/tuần</span>
@@ -109,7 +109,7 @@
           </div>
           <div class="info-item">
             <span class="info-label">Chế độ học</span>
-            <span class="info-value">{{ getEnrollment('studyMode') }}</span>
+            <span class="info-value">{{ formatStudyMode() }}</span>
           </div>
           <div class="info-item">
             <span class="info-label">Lưu ban</span>

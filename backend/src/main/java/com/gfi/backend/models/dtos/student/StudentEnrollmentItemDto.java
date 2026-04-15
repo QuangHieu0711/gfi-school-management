@@ -13,6 +13,8 @@ public class StudentEnrollmentItemDto {
     private String schoolYearName;
     private Long classId;
     private String className;
+    private Long gradeLevelId;
+    private String gradeLevelName;
     private LocalDate enrolledAt;
     private Integer status;
     private Boolean isRepeater;

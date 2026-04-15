@@ -35,7 +35,7 @@ public abstract class BaseEntity {
 
     // 0 - Hoạt động, 1 - Đã xóa
     @Column(nullable = false)
-    protected Integer deletedFlag;
+    protected Integer deletedFlag = 0;
 
     @Column
     protected LocalDateTime deletedAt;

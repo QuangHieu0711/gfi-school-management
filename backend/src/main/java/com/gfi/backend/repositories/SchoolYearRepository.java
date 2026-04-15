@@ -14,6 +14,7 @@ import com.gfi.backend.models.entities.SchoolYear;
 public interface SchoolYearRepository extends JpaRepository<SchoolYear, Long>, JpaSpecificationExecutor<SchoolYear> {
     Optional<SchoolYear> findByCode(String code);
     Optional<SchoolYear> findByName(String name);
+    Optional<SchoolYear> findByIsCurrentTrueAndDeletedFlagEquals(Integer deletedFlag);
 
     @Modifying
     @Query("update SchoolYear sy set sy.isCurrent = false where sy.isCurrent = true and sy.id <> :id")

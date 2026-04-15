@@ -69,7 +69,8 @@
             <th class="stt-col">STT</th>
             <th class="action-col">Hành động</th>
             <th>Họ và tên</th>
-            <th>Tên</th>
+            <th class="first-name-col">Tên</th>
+            <th class="unit-col">Đơn vị</th>
             <th>Trạng thái</th>
             <th>Tên lớp</th>
             <th>Mã MOET</th>
@@ -92,10 +93,15 @@
                 [item]="findFormControl($formItem, key.FULL_NAME)"
                 [form]="form"></app-text-control>
             </th>
-            <th class="filter-cell">
+            <th class="filter-cell first-name-col">
               <app-text-control
                 [item]="findFormControl($formItem, key.FIRST_NAME)"
                 [form]="form"></app-text-control>
+            </th>
+            <th class="filter-cell unit-col">
+              <app-select-control
+                [item]="findFormControl($formItem, key.UNIT_ID)"
+                [form]="form"></app-select-control>
             </th>
             <th class="filter-cell">
               <app-select-control
@@ -199,7 +205,8 @@
                   {{ row.fullName }}
                 </button>
               </td>
-              <td>{{ row.firstName || '' }}</td>
+              <td class="first-name-col">{{ row.firstName || '' }}</td>
+              <td class="unit-col">{{ row.unitName || '' }}</td>
               <td class="status-col">
                 <span class="status-pill">{{ getStatusLabel(row.studentStatus) }}</span>
               </td>
@@ -219,7 +226,7 @@
             <tr>
               <td
                 class="empty-row"
-                colspan="16">
+                colspan="17">
                 Không có dữ liệu
               </td>
             </tr>
@@ -237,3 +244,5 @@
     (pageChange)="onPageChange($event)">
   </app-paginator>
 </section>
+
+

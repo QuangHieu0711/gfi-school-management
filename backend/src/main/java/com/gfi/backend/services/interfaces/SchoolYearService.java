@@ -14,6 +14,7 @@ public interface SchoolYearService {
     PageResponseDto<SchoolYearItemDto, SchoolYearFilterDto> search(PageRequestDto<SchoolYearFilterDto> request);
     List<LookupItemDto> getOptions();
     SchoolYearItemDto getById(Long id);
+    LookupItemDto getCurrentSchoolYear();
     SchoolYearItemDto create(SchoolYearCreateRequest request);
     SchoolYearItemDto update(Long id, SchoolYearUpdateRequest request);
     void delete(Long id);

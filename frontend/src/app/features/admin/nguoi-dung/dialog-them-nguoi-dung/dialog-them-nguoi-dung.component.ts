@@ -57,7 +57,7 @@ export class DialogThemNguoiDungComponent extends ComponentBaseAbstract {
       this.data.type === this.TYPE_FORM.UPDATE
     ) {
       forkJoin({
-        units: this.nguoiDungService.getCreateUserUnitOptions(),
+        units: this.donViService.getCreateUserUnitOptions(),
         roles: this.nguoiDungService.getCreateUserRoleOptions(),
       }).subscribe(({ units, roles }) => {
         this.findFormControl(this.$formItem, NGUOI_DUNG_KEY.UNIT_ID).options = (

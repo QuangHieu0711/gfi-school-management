@@ -38,17 +38,6 @@ public class UserController extends ApiBaseController {
 
     private final UserService userService;
 
-    /**
-     * Lấy danh sách unit options cho form tạo người dùng.
-     * Chỉ trả về unit mà user hiện tại có quyền tạo.
-     */
-    @GetMapping("/unit-options")
-    @Operation(summary = "Danh sách đơn vị phân quyền dữ liệu", description = "Lấy danh sách unit user được phép gán khi tạo tài khoản mới.")
-    public ResponseEntity<ApiResult<java.util.List<LookupItemDto>>> getUnitOptionsForCreateUser() {
-        return executeApiResult(
-                () -> ApiResult.success(userService.getUnitOptionsForCreateUser(), "Lấy danh sách đơn vị thành công"));
-    }
-
     @GetMapping("/role-options")
     @Operation(summary = "Danh sách vai trò cho thêm mới người dùng")
     public ResponseEntity<ApiResult<java.util.List<LookupItemDto>>> getRoleOptionsForCreateUser() {

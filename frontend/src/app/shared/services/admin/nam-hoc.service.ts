@@ -43,6 +43,12 @@ export class NamHocService {
     );
   }
 
+  getCurrent() {
+    return this.http.get<IResponse<NamHocOptionResponse>>(
+      `${this.baseUrl}/${NAM_HOC_API_ENDPOINT.CURRENT}`
+    );
+  }
+
   create(payload: NamHocFormRequest) {
     return this.http.post<IResponse<NamHocResponse>>(this.baseUrl, payload, {
       context: this.silentContext,

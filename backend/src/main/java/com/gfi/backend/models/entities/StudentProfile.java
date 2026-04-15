@@ -110,12 +110,6 @@ public class StudentProfile extends BaseEntity {
     @Column
     private LocalDate joinedTeamDate;
 
-    @Column
-    private LocalDate joinedUnionDate;
-
-    @Column
-    private LocalDate joinedPartyDate;
-
     @Column(length = 100)
     private String otherSystemCode;
 

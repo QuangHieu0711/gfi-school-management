@@ -36,8 +36,6 @@ public class StudentProfileItemDto {
     private String careerOrientation;
     private String vocationalOrientation;
     private LocalDate joinedTeamDate;
-    private LocalDate joinedUnionDate;
-    private LocalDate joinedPartyDate;
     private String otherSystemCode;
     private String ssoCode;
 }

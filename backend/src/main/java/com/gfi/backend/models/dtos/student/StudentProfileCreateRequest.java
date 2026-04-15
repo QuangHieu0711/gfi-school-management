@@ -45,8 +45,6 @@ public class StudentProfileCreateRequest {
     @Size(max = 255, message = "Dinh huong nghe toi da 255 ky tu")
     private String vocationalOrientation;
     private LocalDate joinedTeamDate;
-    private LocalDate joinedUnionDate;
-    private LocalDate joinedPartyDate;
     @Size(max = 100, message = "Ma he thong khac toi da 100 ky tu")
     private String otherSystemCode;
     @Size(max = 100, message = "Ma SSO toi da 100 ky tu")

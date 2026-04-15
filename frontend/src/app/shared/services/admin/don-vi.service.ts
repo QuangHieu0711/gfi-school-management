@@ -43,6 +43,12 @@ export class DonViService {
     );
   }
 
+  getCreateUserUnitOptions() {
+    return this.http.get<IResponse<DonViOptionResponse[]>>(
+      `${this.baseUrl}/${DON_VI_API_ENDPOINT.OPTIONS}`
+    );
+  }
+
   create(payload: DonViFormRequest) {
     return this.http.post<IResponse<DonViResponse>>(this.baseUrl, payload, {
       context: this.silentContext,

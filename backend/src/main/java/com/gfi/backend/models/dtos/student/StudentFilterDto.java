@@ -20,4 +20,5 @@ public class StudentFilterDto {
     private String motherPhone;
     private String permanentProvinceName;
     private String permanentWardName;
+    private Long unitId;
 }

@@ -55,4 +55,11 @@ export class HocSinhService {
       context: this.silentContext,
     });
   }
+
+  generateCode(unitId: string | number) {
+    return this.http.get<IResponse<string>>(`${this.baseUrl}/generate-code`, {
+      params: { unitId },
+      context: this.silentContext,
+    });
+  }
 }

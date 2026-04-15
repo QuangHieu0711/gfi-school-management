@@ -230,6 +230,9 @@ public class StudentServiceImpl implements StudentService {
             List<Predicate> predicates = new java.util.ArrayList<>();
             Join<Student, Unit> unitJoin = root.join("unit", JoinType.LEFT);
 
+            if (filter.getUnitId() != null) {
+                predicates.add(cb.equal(unitJoin.get("id"), filter.getUnitId()));
+            }
             if (hasText(filter.getFullName())) {
                 predicates.add(cb.like(cb.lower(root.get("fullName")), likeValue(filter.getFullName())));
             }
@@ -607,8 +610,6 @@ public class StudentServiceImpl implements StudentService {
         profile.setCareerOrientation(normalizeNullable(request.getCareerOrientation()));
         profile.setVocationalOrientation(normalizeNullable(request.getVocationalOrientation()));
         profile.setJoinedTeamDate(request.getJoinedTeamDate());
-        profile.setJoinedUnionDate(request.getJoinedUnionDate());
-        profile.setJoinedPartyDate(request.getJoinedPartyDate());
         profile.setOtherSystemCode(normalizeNullable(request.getOtherSystemCode()));
         profile.setSsoCode(normalizeNullable(request.getSsoCode()));
         return studentProfileRepository.save(profile);
@@ -667,6 +668,8 @@ public class StudentServiceImpl implements StudentService {
                 .schoolYearName(enrollment.getSchoolYear() == null ? null : enrollment.getSchoolYear().getName())
                 .classId(enrollment.getClassroom() == null ? null : enrollment.getClassroom().getId())
                 .className(enrollment.getClassroom() == null ? null : enrollment.getClassroom().getName())
+                .gradeLevelId(enrollment.getClassroom() == null || enrollment.getClassroom().getGradeLevel() == null ? null : enrollment.getClassroom().getGradeLevel().getId())
+                .gradeLevelName(enrollment.getClassroom() == null || enrollment.getClassroom().getGradeLevel() == null ? null : enrollment.getClassroom().getGradeLevel().getName())
                 .enrolledAt(enrollment.getEnrolledAt())
                 .status(enrollment.getStatus())
                 .isRepeater(enrollment.getIsRepeater())
@@ -735,8 +738,6 @@ public class StudentServiceImpl implements StudentService {
                 .careerOrientation(profile.getCareerOrientation())
                 .vocationalOrientation(profile.getVocationalOrientation())
                 .joinedTeamDate(profile.getJoinedTeamDate())
-                .joinedUnionDate(profile.getJoinedUnionDate())
-                .joinedPartyDate(profile.getJoinedPartyDate())
                 .otherSystemCode(profile.getOtherSystemCode())
                 .ssoCode(profile.getSsoCode())
                 .build();

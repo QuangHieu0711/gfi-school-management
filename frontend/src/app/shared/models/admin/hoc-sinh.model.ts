@@ -44,6 +44,7 @@ export const HOC_SINH_API_ENDPOINT = {
 export interface HocSinhFilter {
   fullName?: string;
   firstName?: string;
+  unitId?: ID_TYPE;
   studentStatus?: number;
   classId?: ID_TYPE;
   moeCode?: string;
@@ -154,6 +155,7 @@ export interface HocSinhResponse extends TableDataSource {
   healthInsuranceNumber?: string;
   [HOC_SINH_KEY.STUDENT_STATUS]?: number;
   [HOC_SINH_KEY.UNIT_ID]?: ID_TYPE;
+  unitName?: string;
   [HOC_SINH_KEY.CLASS_ID]?: ID_TYPE;
   [HOC_SINH_KEY.CLASS_NAME]?: string;
   [HOC_SINH_KEY.GRADE_LEVEL_ID]?: ID_TYPE;
@@ -290,6 +292,13 @@ export const HOC_SINH_FILTER_FORM = [
     placeholder: 'Tên',
     required: false,
     maxLength: 255,
+  }),
+  SELECT_CONTROL({
+    controlName: HOC_SINH_KEY.UNIT_ID,
+    placeholder: 'ÄÆ¡n vá»‹',
+    required: false,
+    clearable: true,
+    listOption: [],
   }),
   SELECT_CONTROL({
     controlName: HOC_SINH_KEY.STUDENT_STATUS,
@@ -495,32 +504,65 @@ export const HOC_SINH_DETAIL_FALLBACK: HocSinhDetailResponse = {
   },
 };
 
+export const GENDER_OPTIONS = [
+  { value: 0, label: 'Nam' },
+  { value: 1, label: 'Nữ' },
+];
+
+export const STUDENT_STATUS_OPTIONS = [
+  { value: 0, label: 'Đang học' },
+  { value: 1, label: 'Đã chuyển trường' },
+  { value: 2, label: 'Tạm nghỉ' },
+  { value: 3, label: 'Thôi học' },
+];
+
+export const ADMISSION_TYPE_OPTIONS = [
+  { value: 0, label: 'Xét tuyển' },
+  { value: 1, label: 'Thi tuyển' },
+];
+
+export const STUDY_MODE_OPTIONS = [
+  { value: 0, label: 'Học cả ngày' },
+  { value: 1, label: 'Bán trú' },
+  { value: 2, label: 'Nội trú' },
+];
+
+export const ENROLLMENT_STATUS_OPTIONS = [
+  { value: 0, label: 'Đang học' },
+  { value: 1, label: 'Đã chuyển lớp' },
+  { value: 2, label: 'Tạm dừng' },
+];
+
 export const HOC_SINH_FORM_ITEM = {
   genderItem: SELECT_CONTROL({
+    label: 'Giới tính',
     controlName: 'gender',
     placeholder: 'Giới tính',
     required: false,
     clearable: true,
-    listOption: [],
+    listOption: GENDER_OPTIONS,
     showLabel: true,
   }),
   studentStatusItem: SELECT_CONTROL({
+    label: 'Trạng thái học sinh',
     controlName: 'studentStatus',
     placeholder: 'Trạng thái học sinh',
     required: false,
     clearable: true,
-    listOption: [],
+    listOption: STUDENT_STATUS_OPTIONS,
     showLabel: true,
   }),
   admissionTypeItem: SELECT_CONTROL({
+    label: 'Hình thức tuyển sinh',
     controlName: 'admissionType',
     placeholder: 'Hình thức tuyển sinh',
     required: false,
     clearable: true,
-    listOption: [],
+    listOption: ADMISSION_TYPE_OPTIONS,
     showLabel: true,
   }),
   unitItem: SELECT_CONTROL({
+    label: 'Đơn vị',
     controlName: 'unitId',
     placeholder: 'Đơn vị',
     required: true,
@@ -529,6 +571,7 @@ export const HOC_SINH_FORM_ITEM = {
     showLabel: true,
   }),
   schoolYearItem: SELECT_CONTROL({
+    label: 'Năm học',
     controlName: 'schoolYearId',
     placeholder: 'Năm học',
     required: true,
@@ -537,6 +580,7 @@ export const HOC_SINH_FORM_ITEM = {
     showLabel: true,
   }),
   classItem: SELECT_CONTROL({
+    label: 'Lớp',
     controlName: 'classId',
     placeholder: 'Chọn lớp',
     required: true,
@@ -545,64 +589,74 @@ export const HOC_SINH_FORM_ITEM = {
     showLabel: true,
   }),
   enrollmentStatusItem: SELECT_CONTROL({
+    label: 'Trạng thái lớp',
     controlName: 'status',
     placeholder: 'Chọn trạng thái lớp',
     required: false,
     clearable: true,
-    listOption: [],
+    listOption: ENROLLMENT_STATUS_OPTIONS,
     showLabel: true,
   }),
   studyModeItem: SELECT_CONTROL({
+    label: 'Chế độ học',
     controlName: 'studyMode',
     placeholder: 'Chọn chế độ học',
     required: false,
     clearable: true,
-    listOption: [],
+    listOption: STUDY_MODE_OPTIONS,
     showLabel: true,
   }),
   dateOfBirthItem: DATE_CONTROL({
+    label: 'Ngày sinh',
     controlName: 'dateOfBirth',
     placeholder: 'Chọn ngày sinh',
     required: true,
     showLabel: true,
   }),
   admissionDateItem: DATE_CONTROL({
+    label: 'Ngày vào trường',
     controlName: 'admissionDate',
     placeholder: 'Chọn ngày vào trường',
     required: false,
     showLabel: true,
   }),
   identityIssueDateItem: DATE_CONTROL({
+    label: 'Ngày cấp',
     controlName: 'identityIssueDate',
     placeholder: 'Chọn ngày cấp',
     required: false,
     showLabel: true,
   }),
   enrolledAtItem: DATE_CONTROL({
+    label: 'Ngày nhập học',
     controlName: 'enrolledAt',
     placeholder: 'Chọn ngày nhập học',
     required: false,
     showLabel: true,
   }),
   joinedTeamDateItem: DATE_CONTROL({
+    label: 'Ngày vào đội',
     controlName: 'joinedTeamDate',
     placeholder: 'Chọn ngày vào đội',
     required: false,
     showLabel: true,
   }),
   joinedUnionDateItem: DATE_CONTROL({
+    label: 'Ngày vào đoàn',
     controlName: 'joinedUnionDate',
     placeholder: 'Chọn ngày vào đoàn',
     required: false,
     showLabel: true,
   }),
   joinedPartyDateItem: DATE_CONTROL({
+    label: 'Ngày vào đảng',
     controlName: 'joinedPartyDate',
     placeholder: 'Chọn ngày vào đảng',
     required: false,
     showLabel: true,
   }),
   permanentProvinceItem: SELECT_CONTROL({
+    label: 'Tỉnh/TP',
     controlName: 'provinceName',
     placeholder: 'Chọn tỉnh/TP',
     required: false,
@@ -611,6 +665,7 @@ export const HOC_SINH_FORM_ITEM = {
     showLabel: true,
   }),
   permanentWardItem: SELECT_CONTROL({
+    label: 'Xã/phường',
     controlName: 'wardName',
     placeholder: 'Chọn xã/phường',
     required: false,
@@ -620,6 +675,7 @@ export const HOC_SINH_FORM_ITEM = {
     disabled: true,
   }),
   temporaryProvinceItem: SELECT_CONTROL({
+    label: 'Tỉnh/TP',
     controlName: 'provinceName',
     placeholder: 'Chọn tỉnh/TP',
     required: false,
@@ -628,6 +684,7 @@ export const HOC_SINH_FORM_ITEM = {
     showLabel: true,
   }),
   temporaryWardItem: SELECT_CONTROL({
+    label: 'Xã/phường',
     controlName: 'wardName',
     placeholder: 'Chọn xã/phường',
     required: false,
@@ -637,6 +694,7 @@ export const HOC_SINH_FORM_ITEM = {
     disabled: true,
   }),
   ethnicityItem: SELECT_CONTROL({
+    label: 'Dân tộc',
     controlName: 'ethnicity',
     placeholder: 'Dân tộc',
     required: false,
@@ -1002,4 +1060,80 @@ export const HOC_SINH_FORM_ITEM = {
     maxLength: 100,
     showLabel: true,
   }),
+  avatarUrlItem: TEXT_CONTROL({
+    controlName: 'avatarUrl',
+    label: 'Ảnh đại diện',
+    placeholder: 'Ảnh đại diện',
+    required: false,
+    showLabel: false,
+  }),
 };
+
+export const HOC_SINH_BASIC_SUB_FORM = [
+  HOC_SINH_FORM_ITEM.studentCodeItem,
+  HOC_SINH_FORM_ITEM.fullNameItem,
+  HOC_SINH_FORM_ITEM.firstNameItem,
+  HOC_SINH_FORM_ITEM.moeCodeItem,
+  HOC_SINH_FORM_ITEM.dateOfBirthItem,
+  HOC_SINH_FORM_ITEM.genderItem,
+  HOC_SINH_FORM_ITEM.admissionDateItem,
+  HOC_SINH_FORM_ITEM.studentStatusItem,
+  HOC_SINH_FORM_ITEM.admissionTypeItem,
+  HOC_SINH_FORM_ITEM.unitItem,
+  HOC_SINH_FORM_ITEM.ethnicityItem,
+  HOC_SINH_FORM_ITEM.placeOfBirthItem,
+  HOC_SINH_FORM_ITEM.religionItem,
+  HOC_SINH_FORM_ITEM.nationalityItem,
+  HOC_SINH_FORM_ITEM.mobilePhoneItem,
+  HOC_SINH_FORM_ITEM.emailItem,
+  HOC_SINH_FORM_ITEM.identityNumberItem,
+  HOC_SINH_FORM_ITEM.identityIssueDateItem,
+  HOC_SINH_FORM_ITEM.identityIssuePlaceItem,
+  HOC_SINH_FORM_ITEM.healthInsuranceNumberItem,
+  HOC_SINH_FORM_ITEM.bloodGroupItem,
+  HOC_SINH_FORM_ITEM.boardingBookItem,
+];
+
+export const HOC_SINH_ENROLLMENT_SUB_FORM = [
+  HOC_SINH_FORM_ITEM.schoolYearItem,
+  HOC_SINH_FORM_ITEM.classItem,
+  HOC_SINH_FORM_ITEM.enrolledAtItem,
+  HOC_SINH_FORM_ITEM.enrollmentStatusItem,
+  HOC_SINH_FORM_ITEM.studyModeItem,
+  HOC_SINH_FORM_ITEM.sessionsPerWeekItem,
+];
+
+export const HOC_SINH_ADDRESS_SUB_FORM = [
+  HOC_SINH_FORM_ITEM.permanentProvinceItem,
+  HOC_SINH_FORM_ITEM.permanentWardItem,
+  HOC_SINH_FORM_ITEM.permanentHamletNameItem,
+  HOC_SINH_FORM_ITEM.permanentDetailAddressItem,
+];
+
+export const HOC_SINH_GUARDIAN_SUB_FORM = [
+  HOC_SINH_FORM_ITEM.fatherFullNameItem,
+  HOC_SINH_FORM_ITEM.fatherBirthYearItem,
+  HOC_SINH_FORM_ITEM.fatherOccupationItem,
+  HOC_SINH_FORM_ITEM.fatherPhoneItem,
+  HOC_SINH_FORM_ITEM.fatherEmailItem,
+  HOC_SINH_FORM_ITEM.fatherIdentityNumberItem,
+];
+
+export const HOC_SINH_PROFILE_SUB_FORM = [
+  HOC_SINH_FORM_ITEM.policyObjectItem,
+  HOC_SINH_FORM_ITEM.policyBenefitItem,
+  HOC_SINH_FORM_ITEM.priorityCategoryItem,
+  HOC_SINH_FORM_ITEM.studentCategoryItem,
+  HOC_SINH_FORM_ITEM.regionCategoryItem,
+  HOC_SINH_FORM_ITEM.disabilityTypeItem,
+  HOC_SINH_FORM_ITEM.foreignLanguageProgramItem,
+  HOC_SINH_FORM_ITEM.foreignLanguageCertificateItem,
+  HOC_SINH_FORM_ITEM.informaticsCertificateItem,
+  HOC_SINH_FORM_ITEM.careerOrientationItem,
+  HOC_SINH_FORM_ITEM.vocationalOrientationItem,
+  HOC_SINH_FORM_ITEM.joinedTeamDateItem,
+  HOC_SINH_FORM_ITEM.joinedUnionDateItem,
+  HOC_SINH_FORM_ITEM.joinedPartyDateItem,
+  HOC_SINH_FORM_ITEM.otherSystemCodeItem,
+  HOC_SINH_FORM_ITEM.ssoCodeItem,
+];

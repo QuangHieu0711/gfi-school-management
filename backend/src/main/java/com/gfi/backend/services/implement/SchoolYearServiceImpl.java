@@ -86,6 +86,18 @@ public class SchoolYearServiceImpl implements SchoolYearService {
         return toDto(findSchoolYear(id));
     }
 
+    // Lấy năm học hiện tại
+    @Override
+    @Transactional(readOnly = true)
+    public LookupItemDto getCurrentSchoolYear() {
+        return schoolYearRepository.findByIsCurrentTrueAndDeletedFlagEquals(0)
+                .map(sy -> LookupItemDto.builder()
+                        .id(sy.getId())
+                        .name(sy.getName())
+                        .build())
+                .orElseThrow(() -> new UserMessageException(CommonErrorCode.SCHOOL_YEAR_NOT_FOUND));
+    }
+
     // Thêm mới năm học
     @Override
     @Transactional
