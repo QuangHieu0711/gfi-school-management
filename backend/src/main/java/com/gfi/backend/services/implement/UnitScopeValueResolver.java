@@ -27,11 +27,11 @@ public class UnitScopeValueResolver implements ScopeValueResolver {
 
     @Override
     public Set<Long> resolve(User user) {
-        // Giả sử user có getUnitId() hoặc getUnit()
-        // Nếu không, cần adjust theo actual User entity
-        if (user == null || user.getUnit() == null) {
+        // Use convenience getter getUnitId() which delegates to staff.unit.id
+        // Returns null if user has no staff or staff has no unit (system accounts)
+        if (user == null || user.getUnitId() == null) {
             return Set.of();
         }
-        return Set.of(user.getUnit().getId());
+        return Set.of(user.getUnitId());
     }
 }

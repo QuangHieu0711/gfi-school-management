@@ -8,8 +8,7 @@ import java.time.LocalDate;
 @Entity
 @Table(name = "staffs", uniqueConstraints = {
         @UniqueConstraint(name = "uk_staffs_code", columnNames = "staff_code"),
-        @UniqueConstraint(name = "uk_staffs_identity_code", columnNames = "identity_code"),
-        @UniqueConstraint(name = "uk_staffs_user_id", columnNames = "user_id")
+        @UniqueConstraint(name = "uk_staffs_identity_code", columnNames = "identity_code")
 })
 @Getter
 @Setter
@@ -19,8 +18,8 @@ public class Staff extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne
-    @JoinColumn(name = "user_id", nullable = true, foreignKey = @ForeignKey(name = "fk_staffs_user"))
+    // User owns the relationship via staff_id FK
+    @OneToOne(fetch = FetchType.LAZY, mappedBy = "staff")
     private User user;
 
     @ManyToOne

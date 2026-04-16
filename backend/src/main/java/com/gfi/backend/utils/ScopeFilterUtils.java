@@ -98,7 +98,6 @@ public class ScopeFilterUtils {
 
     /**
      * Validate single record access
-     * ⚠️ UPDATED: Work with ResolvedScope and support multiple scope types
      * @param menuCode Menu code to check
      * @param action Action type (VIEW, ADD, EDIT, DELETE)
      * @param scopeType Scope type (UNIT, CLASS, GRADE, etc)

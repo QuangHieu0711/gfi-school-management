@@ -1,4 +1,4 @@
-// /* eslint-disable @typescript-eslint/no-explicit-any */
+﻿// /* eslint-disable @typescript-eslint/no-explicit-any */
 // import { Component, Injector } from '@angular/core';
 // import { RouterModule, RouterOutlet } from '@angular/router';
 // import { ISidebarItem } from '@model/menu.model';
@@ -128,7 +128,7 @@
 //         menuItem.key === 'baoCaoDiaChat' ||
 //         menuItem.key === 'deAnPhuongAn' ||
 //         menuItem.key === 'taiLieuNguyenThuy' ||
-//         menuItem.key === 'quanTriTaiNguyen' || // TODO: xóa
+//         menuItem.key === 'quanTriTaiNguyen' || // TODO: xÃ³a
 //         (menuItem.key === 'admin' && userInfo.role.name === UserRole.ADMIN)
 //     );
 //   }
@@ -212,15 +212,15 @@ export class LayoutComponent extends ComponentBaseAbstract {
     const topPath = '/' + (pathOnly.split('/')[1] || '');
 
     // =========================
-    // DASHBOARD (Trang chủ)
+    // DASHBOARD (Trang chá»§)
     // =========================
     if (pathOnly === '/' || pathOnly === '') {
-      this.isExpanded = false; // thu gọn sidebar
+      this.isExpanded = false; // thu gá»n sidebar
       this.clearSidebar();
       return;
     }
 
-    // các module có tree
+    // cÃ¡c module cÃ³ tree
     const isTreeModule = this.TREE_MODULE_PREFIXES.some((p) =>
       pathOnly.startsWith(p)
     );
@@ -232,7 +232,7 @@ export class LayoutComponent extends ComponentBaseAbstract {
     if (topPath !== this.lastTopPath) {
       this.lastTopPath = topPath;
 
-      // chỉ collapse sidebar
+      // chá»‰ collapse sidebar
       // this.isExpanded = false;
     }
 
@@ -241,7 +241,7 @@ export class LayoutComponent extends ComponentBaseAbstract {
       return;
     }
 
-    // nếu là module khác dashboard thì mở sidebar
+    // náº¿u lÃ  module khÃ¡c dashboard thÃ¬ má»Ÿ sidebar
     this.isExpanded = true;
   }
 
@@ -249,8 +249,8 @@ export class LayoutComponent extends ComponentBaseAbstract {
   //   this.treeDataSource = [];
   // }
   private clearSidebar(): void {
-    // không xóa dữ liệu navigator
-    // chỉ để UI tự xử lý expand/collapse
+    // khÃ´ng xÃ³a dá»¯ liá»‡u navigator
+    // chá»‰ Ä‘á»ƒ UI tá»± xá»­ lÃ½ expand/collapse
   }
 
   toggleSidebarCollapsed(): void {
@@ -535,21 +535,23 @@ export class LayoutComponent extends ComponentBaseAbstract {
 
   private getMenuLabel(menuCode?: string): string {
     const map: Record<string, string> = {
-      USER_ADMIN: 'Quản trị người dùng',
-      ACCOUNT_MANAGEMENT: 'Quản lý tài khoản',
-      UNIT_MANAGEMENT: 'Quản lý đơn vị',
-      SYSTEM_CONFIG: 'Cấu hình hệ thống',
-      ROLE_MANAGEMENT: 'Quản lý vai trò',
-      FUNCTION_MANAGEMENT: 'Quản lý chức năng',
-      SCHOOL_YEAR_CONFIG: 'Cấu hình năm học',
-      GRADE_CONFIG: 'Cấu hình khối',
-      ACADEMIC_MANAGEMENT: 'Quản lý học tập',
-      CLASS_MANAGEMENT: 'Quản lý lớp',
-      SUBJECT_MANAGEMENT: 'Quản lý môn học',
-      STUDENT: 'Học sinh',
-      STUDENT_PROFILE: 'Hồ sơ học sinh',
+      USER_ADMIN: 'Quáº£n trá»‹ ngÆ°á»i dÃ¹ng',
+      ACCOUNT_MANAGEMENT: 'Quáº£n lÃ½ tÃ i khoáº£n',
+      UNIT_MANAGEMENT: 'Quáº£n lÃ½ Ä‘Æ¡n vá»‹',
+      SYSTEM_CONFIG: 'Cáº¥u hÃ¬nh há»‡ thá»‘ng',
+      ROLE_MANAGEMENT: 'Quáº£n lÃ½ vai trÃ²',
+      FUNCTION_MANAGEMENT: 'Quáº£n lÃ½ chá»©c nÄƒng',
+      SCHOOL_YEAR_CONFIG: 'Cáº¥u hÃ¬nh nÄƒm há»c',
+      GRADE_CONFIG: 'Cáº¥u hÃ¬nh khá»‘i',
+      ACADEMIC_MANAGEMENT: 'Quáº£n lÃ½ há»c táº­p',
+      CLASS_MANAGEMENT: 'Quáº£n lÃ½ lá»›p',
+      SUBJECT_MANAGEMENT: 'Quáº£n lÃ½ mÃ´n há»c',
+      STUDENT: 'Há»c sinh',
+      STUDENT_PROFILE: 'Há»“ sÆ¡ há»c sinh',
+      STAFF_PROFILE: 'Ho so can bo',
     };
 
     return map[menuCode ?? ''] ?? menuCode ?? '';
   }
 }
+

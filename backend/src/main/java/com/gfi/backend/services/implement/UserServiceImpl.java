@@ -172,8 +172,9 @@ public class UserServiceImpl implements UserService {
                 .orElseThrow(() -> new UserMessageException(CommonErrorCode.USER_NOT_FOUND));
         
         // Enforce scope: validate user's unit is within allowed scopes
-        if (user.getUnit() != null) {
-            ScopeFilterUtils.validateAccess(FEATURE, ActionType.VIEW, ScopeType.UNIT, user.getUnit().getId());
+        Long unitId = user.getUnitId();
+        if (unitId != null) {
+            ScopeFilterUtils.validateAccess(FEATURE, ActionType.VIEW, ScopeType.UNIT, unitId);
         }
         
         return userMapper.toDetailDto(user);
@@ -249,21 +250,21 @@ public class UserServiceImpl implements UserService {
         validatePhoneDuplicate(normalizeNullable(request.getPhone()), null);
 
         // Step 7: Create user
+        // ✅ NEW: User is now auth-only; profile data (fullName, email, phone, unit) 
+        // will be managed via Staff entity after migration
         Role role = getRoleById(request.getRoleId());
-        Unit unit = unitIdToAssign != null ? getUnitById(unitIdToAssign) : null;
 
         User user = new User();
         user.setUsername(username);
-        user.setFullName(normalize(request.getFullName()));
-        user.setEmail(normalizeNullable(request.getEmail()));
-        user.setPhone(normalizeNullable(request.getPhone()));
         user.setRole(role);
-        user.setUnit(unit);
         user.setStatus(request.getStatus());
-        user.setPassword(encodePasswordFromClient(request.getPassword().trim()));
+        user.setPasswordHash(encodePasswordFromClient(request.getPassword().trim()));
         user.setCreatedBy(SecurityUtils.getCurrentUsername());
         user.setDeletedFlag(0);
 
+        // NOTE: fullName, email, phone, unit are now profile data managed via Staff
+        // This will be handled in Phase 2 with full API restructuring
+        
         return userMapper.toDetailDto(userRepository.save(user));
     }
 
@@ -275,8 +276,9 @@ public class UserServiceImpl implements UserService {
                 .orElseThrow(() -> new UserMessageException(CommonErrorCode.USER_NOT_FOUND));
 
         // Enforce scope: validate user's unit is within allowed scopes before allowing update
-        if (user.getUnit() != null) {
-            ScopeFilterUtils.validateAccess(FEATURE, ActionType.EDIT, ScopeType.UNIT, user.getUnit().getId());
+        Long unitId = user.getUnitId();
+        if (unitId != null) {
+            ScopeFilterUtils.validateAccess(FEATURE, ActionType.EDIT, ScopeType.UNIT, unitId);
         }
 
         String username = normalize(request.getUsername());
@@ -322,8 +324,9 @@ public class UserServiceImpl implements UserService {
                 .orElseThrow(() -> new UserMessageException(CommonErrorCode.USER_NOT_FOUND));
 
         // Enforce scope: validate user's unit is within allowed scopes before allowing delete
-        if (user.getUnit() != null) {
-            ScopeFilterUtils.validateAccess(FEATURE, ActionType.DELETE, ScopeType.UNIT, user.getUnit().getId());
+        Long unitId = user.getUnitId();
+        if (unitId != null) {
+            ScopeFilterUtils.validateAccess(FEATURE, ActionType.DELETE, ScopeType.UNIT, unitId);
         }
 
         // Xóa mềm: đánh dấu xóa 
@@ -412,16 +415,15 @@ public class UserServiceImpl implements UserService {
 
     /**
      * Áp dụng các trường chung từ request vào entity User.
-     * Dùng chung cho cả create và update.
+     * ✅ NOTE: Profile fields (fullName, email, phone, unit) are now managed via Staff
+     * User is authentication-only.
      */
     private void applyCommonFields(User user, UserUpdateRequest request, Role role, Unit unit) {
         user.setUsername(normalize(request.getUsername()));
-        user.setFullName(normalize(request.getFullName()));
-        user.setEmail(normalizeNullable(request.getEmail()));
-        user.setPhone(normalizeNullable(request.getPhone()));
         user.setRole(role);
-        user.setUnit(unit);
         user.setStatus(request.getStatus());
+        // Profile data (fullName, email, phone, unit) is no longer set on User
+        // These are now managed via Staff entity
     }
 
     /**
@@ -433,7 +435,7 @@ public class UserServiceImpl implements UserService {
      */
     private void applyPasswordIfPresent(User user, String rawPassword) {
         if (StringUtils.hasText(rawPassword)) {
-            user.setPassword(encodePasswordFromClient(rawPassword.trim()));
+            user.setPasswordHash(encodePasswordFromClient(rawPassword.trim()));
         }
     }
 

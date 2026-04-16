@@ -36,11 +36,24 @@ public class Role extends BaseEntity {
     @Column(nullable = false)
     private Integer status;
 
+    // Role-based configuration flags (DB-driven, no hard-code)
+    @Column(nullable = false, columnDefinition = "BOOLEAN DEFAULT FALSE")
+    private Boolean requiresStaffProfile = false;
+
+    @Column(nullable = false, columnDefinition = "BOOLEAN DEFAULT FALSE")
+    private Boolean isGlobalScope = false;
+
     @PrePersist
     public void prePersist() {
         super.prePersist();
         if (status == null) {
             status = 1;
+        }
+        if (requiresStaffProfile == null) {
+            requiresStaffProfile = false;
+        }
+        if (isGlobalScope == null) {
+            isGlobalScope = false;
         }
     }
 }

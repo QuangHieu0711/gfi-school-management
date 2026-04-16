@@ -348,11 +348,16 @@ public class AuthPermissionServiceImpl implements AuthPermissionService {
             } else {
                 // Child menu - add to parent's children
                 MenuPermissionDto parentDto = menuDtoMap.get(menuDto.getParentMenuId());
-                if (parentDto != null) {
+                if (parentDto != null && parentDto != menuDto) {
                     if (parentDto.getChildren() == null) {
                         parentDto.setChildren(new ArrayList<>());
                     }
-                    parentDto.getChildren().add(menuDto);
+                    boolean alreadyAdded = parentDto.getChildren().stream()
+                            .anyMatch(child -> child.getMenuCode() != null
+                                    && child.getMenuCode().equals(menuDto.getMenuCode()));
+                    if (!alreadyAdded) {
+                        parentDto.getChildren().add(menuDto);
+                    }
                 }
             }
         }
@@ -370,7 +375,14 @@ public class AuthPermissionServiceImpl implements AuthPermissionService {
             List<MenuPermissionDto> menuPermissions,
             Menu menu) {
         Menu currentParent = menu.getParentMenu();
+        Set<Long> visitedMenuIds = new HashSet<>();
         while (currentParent != null) {
+            Long currentParentId = currentParent.getId();
+            if (currentParentId == null || !visitedMenuIds.add(currentParentId)) {
+                logger.warn("Detected circular parent menu chain while building login permissions for menuId={}",
+                        menu.getId());
+                break;
+            }
             if (!menuDtoMap.containsKey(currentParent.getId())) {
                 MenuPermissionDto parentDto = MenuPermissionDto.builder()
                         .menuCode(currentParent.getCode())

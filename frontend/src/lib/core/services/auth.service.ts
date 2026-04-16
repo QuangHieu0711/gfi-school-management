@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+﻿/* eslint-disable @typescript-eslint/no-explicit-any */
 import { BehaviorSubject, Observable, of, map, catchError } from 'rxjs';
 import { HttpRequest, HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
@@ -37,6 +37,19 @@ interface BackendPermissionItem {
   isConfig?: number;
 }
 
+interface BackendLoginStaff {
+  id?: number | string;
+  staffCode?: string;
+  fullName?: string;
+  email?: string | null;
+  phone?: string;
+  unit?: {
+    id?: number | string;
+    code?: string;
+    name?: string;
+  } | null;
+}
+
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   private readonly currentUserSubject =
@@ -60,7 +73,7 @@ export class AuthService {
       this.permissionCheckService.setPermissions(
         this.mapRulesToPermissions(userInfo.role?.rules ?? [])
       );
-      // Menus đã được lưu trong userInfo.permissions.menus, component sẽ lấy từ store
+      // Menus Ä‘Ã£ Ä‘Æ°á»£c lÆ°u trong userInfo.permissions.menus, component sáº½ láº¥y tá»« store
     }
   }
 
@@ -71,13 +84,14 @@ export class AuthService {
   ): ICurrentUserWithTokens {
     const token = response?.data?.token ?? {};
     const user = response?.data?.user ?? {};
+    const staff = this.normalizeStaff(user.staff);
     const menus = this.normalizeMenus(response?.data?.permissions?.menus ?? []);
     return {
       id: user.id,
       username,
-      fullName: user.fullName,
-      email: user.email,
-      phone: user.phone,
+      fullName: staff?.fullName ?? user.username ?? username,
+      email: staff?.email ?? null,
+      phone: staff?.phone ?? '',
       status: user.status,
       role: {
         id: user.role?.id,
@@ -85,7 +99,9 @@ export class AuthService {
         name: user.role?.name,
         rules,
       },
-      unit: user.unit ?? { id: '', code: '', name: '' },
+      unit: staff?.unit ?? null,
+      staff,
+      lastLoginAt: user.lastLoginAt ?? null,
       permissions: { menus },
       accessToken: String(token.accessToken ?? ''),
       refreshToken: String(token.refreshToken ?? ''),
@@ -293,21 +309,41 @@ export class AuthService {
     }));
   }
 
+  private normalizeStaff(staff: BackendLoginStaff | null | undefined) {
+    if (!staff) return null;
+
+    return {
+      id: staff.id ?? '',
+      staffCode: staff.staffCode ?? '',
+      fullName: staff.fullName ?? '',
+      email: staff.email ?? null,
+      phone: staff.phone ?? '',
+      unit: staff.unit
+        ? {
+            id: staff.unit.id ?? '',
+            code: staff.unit.code ?? '',
+            name: staff.unit.name ?? '',
+          }
+        : null,
+    };
+  }
+
   private getMenuDisplayName(menuCode: string): string {
     const map: Record<string, string> = {
-      USER_ADMIN: 'Quản trị người dùng',
-      ACCOUNT_MANAGEMENT: 'Quản lý tài khoản',
-      UNIT_MANAGEMENT: 'Quản lý đơn vị',
-      SYSTEM_CONFIG: 'Cấu hình hệ thống',
-      ROLE_MANAGEMENT: 'Quản lý vai trò',
-      FUNCTION_MANAGEMENT: 'Quản lý chức năng',
-      SCHOOL_YEAR_CONFIG: 'Cấu hình năm học',
-      GRADE_CONFIG: 'Cấu hình khối',
-      ACADEMIC_MANAGEMENT: 'Quản lý học tập',
-      CLASS_MANAGEMENT: 'Quản lý lớp',
-      SUBJECT_MANAGEMENT: 'Quản lý môn học',
-      STUDENT: 'Học sinh',
-      STUDENT_PROFILE: 'Hồ sơ học sinh',
+      USER_ADMIN: 'Quáº£n trá»‹ ngÆ°á»i dÃ¹ng',
+      ACCOUNT_MANAGEMENT: 'Quáº£n lÃ½ tÃ i khoáº£n',
+      UNIT_MANAGEMENT: 'Quáº£n lÃ½ Ä‘Æ¡n vá»‹',
+      SYSTEM_CONFIG: 'Cáº¥u hÃ¬nh há»‡ thá»‘ng',
+      ROLE_MANAGEMENT: 'Quáº£n lÃ½ vai trÃ²',
+      FUNCTION_MANAGEMENT: 'Quáº£n lÃ½ chá»©c nÄƒng',
+      SCHOOL_YEAR_CONFIG: 'Cáº¥u hÃ¬nh nÄƒm há»c',
+      GRADE_CONFIG: 'Cáº¥u hÃ¬nh khá»‘i',
+      ACADEMIC_MANAGEMENT: 'Quáº£n lÃ½ há»c táº­p',
+      CLASS_MANAGEMENT: 'Quáº£n lÃ½ lá»›p',
+      SUBJECT_MANAGEMENT: 'Quáº£n lÃ½ mÃ´n há»c',
+      STUDENT: 'Há»c sinh',
+      STUDENT_PROFILE: 'Há»“ sÆ¡ há»c sinh',
+      STAFF_PROFILE: 'Ho so can bo',
     };
 
     return map[menuCode] ?? menuCode;
@@ -328,6 +364,7 @@ export class AuthService {
       SUBJECT_MANAGEMENT: 'book',
       STUDENT: 'school',
       STUDENT_PROFILE: 'badge',
+      STAFF_PROFILE: 'supervisor_account',
     };
 
     return map[menuCode] ?? 'menu';
@@ -383,3 +420,4 @@ export class AuthService {
     }));
   }
 }
+

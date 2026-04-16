@@ -1,4 +1,3 @@
-import { REGEX } from '@constant/constant';
 import { SELECT_CONTROL, TEXT_CONTROL } from '@model/form-control.model';
 import { ID_TYPE } from '@model/response.model';
 import { TableDataSource, TableRequest } from '@model/table.model';
@@ -52,26 +51,14 @@ export interface NguoiDungResponse extends TableDataSource {
 
 export interface NguoiDungFormRequest {
   [NGUOI_DUNG_KEY.ID]?: ID_TYPE;
-  [NGUOI_DUNG_KEY.FULL_NAME]?: string;
   [NGUOI_DUNG_KEY.USERNAME]?: string;
-  [NGUOI_DUNG_KEY.EMAIL]?: string;
-  [NGUOI_DUNG_KEY.PHONE]?: string;
   [NGUOI_DUNG_KEY.PASSWORD]?: string;
   [NGUOI_DUNG_KEY.ROLE_ID]?: string;
   [NGUOI_DUNG_KEY.AVATAR]?: string;
-  [NGUOI_DUNG_KEY.UNIT_ID]?: ID_TYPE;
   [NGUOI_DUNG_KEY.STATUS]?: number;
 }
 
 export const NGUOI_DUNG_FORM = (requiredPassword = false) => [
-  TEXT_CONTROL({
-    controlName: NGUOI_DUNG_KEY.FULL_NAME,
-    label: 'Họ tên',
-    placeholder: 'Họ tên',
-    required: true,
-    regex: /^[\p{L}\s]+$/u,
-    maxLength: 255,
-  }),
   TEXT_CONTROL({
     controlName: NGUOI_DUNG_KEY.USERNAME,
     label: 'Tên tài khoản',
@@ -87,31 +74,6 @@ export const NGUOI_DUNG_FORM = (requiredPassword = false) => [
     required: requiredPassword,
     type: 'password',
     regex: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_])[A-Za-z\d\W_]{8,}$/,
-  }),
-  TEXT_CONTROL({
-    controlName: NGUOI_DUNG_KEY.PHONE,
-    label: 'Số điện thoại',
-    placeholder: 'Số điện thoại',
-    type: 'tel',
-    required: true,
-    regex: /^[0-9]+$/g,
-    maxLength: 12,
-  }),
-  TEXT_CONTROL({
-    controlName: NGUOI_DUNG_KEY.EMAIL,
-    label: 'Email',
-    placeholder: 'Email',
-    required: true,
-    type: 'text',
-    regex: REGEX.EMAIL,
-    maxLength: 255,
-  }),
-  SELECT_CONTROL({
-    controlName: NGUOI_DUNG_KEY.UNIT_ID,
-    label: 'Đơn vị',
-    placeholder: 'Đơn vị',
-    required: true,
-    clearable: true,
   }),
   SELECT_CONTROL({
     controlName: NGUOI_DUNG_KEY.STATUS,

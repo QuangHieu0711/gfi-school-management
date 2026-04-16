@@ -23,7 +23,7 @@ public class UserMapper {
                 .fullName(user.getFullName())
                 .status(user.getStatus())
                 .roleName(user.getRole() == null ? null : user.getRole().getRoleName())
-                .unitName(user.getUnit() == null ? null : user.getUnit().getName())
+                .unitName(user.getStaff() == null || user.getStaff().getUnit() == null ? null : user.getStaff().getUnit().getName())
                 .email(user.getEmail() == null ? null : user.getEmail())
                 .build();
     }
@@ -41,7 +41,7 @@ public class UserMapper {
                 .phone(user.getPhone())
                 .status(user.getStatus())
                 .roleId(user.getRole() == null ? null : user.getRole().getId())
-                .unitId(user.getUnit() == null ? null : user.getUnit().getId())
+                .unitId(user.getUnitId())
                 .build();
     }
 }

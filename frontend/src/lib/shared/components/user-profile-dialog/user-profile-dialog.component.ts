@@ -88,12 +88,15 @@ export class UserProfileDialogComponent {
       return;
     }
 
+    const profile = user.staff ?? null;
+    const unit = profile?.unit ?? user.unit ?? null;
+
     this.userDisplayInfo = {
       username: user.username || 'N/A',
-      email: user.email || 'N/A',
-      name: user.fullName || 'N/A',
-      maDonVi: user.unit?.code || 'N/A',
-      tenDonVi: user.unit?.name || 'N/A',
+      email: profile?.email || user.email || 'N/A',
+      name: profile?.fullName || user.fullName || user.username || 'N/A',
+      maDonVi: unit?.code || 'N/A',
+      tenDonVi: unit?.name || 'N/A',
       role: user.role?.name || 'N/A',
     };
   }

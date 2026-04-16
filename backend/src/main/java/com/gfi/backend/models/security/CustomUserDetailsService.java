@@ -28,7 +28,7 @@ public class CustomUserDetailsService implements UserDetailsService {
         return new UserPrincipal(
                 user.getId(),
                 user.getUsername(),
-                user.getPassword(),
+                user.getPasswordHash(),
                 user.getFullName(),
                 user.getRole() == null ? null : user.getRole().getId(),
                 roleName,

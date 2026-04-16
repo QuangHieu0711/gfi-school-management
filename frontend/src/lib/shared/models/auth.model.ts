@@ -195,6 +195,15 @@ export interface IUnit {
   name: string;
 }
 
+export interface IStaffProfile {
+  id?: ID_TYPE;
+  staffCode?: string;
+  fullName?: string;
+  email?: string | null;
+  phone?: string;
+  unit?: IUnit | null;
+}
+
 /**
  * Interface User đầy đủ map với API mới
  */
@@ -202,11 +211,13 @@ export interface ICurrentUser {
   id: ID_TYPE;
   username: string;
   fullName: string;
-  email: string;
+  email: string | null;
   phone?: string;
   status: number;
   role: IRole;
-  unit: IUnit;
+  unit: IUnit | null;
+  staff?: IStaffProfile | null;
+  lastLoginAt?: string | null;
   permissions?: IPermissionsResponse;
   rememberMe?: boolean;
 }

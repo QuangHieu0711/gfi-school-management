@@ -7,7 +7,6 @@ import { FormType } from '@model/form-control.model';
 import { ID_TYPE } from '@model/response.model';
 import { ComponentBaseAbstract } from '@layout';
 import { FORM_CONTROL_MODULE, MATERIAL_MODULE } from '@modules';
-import { forkJoin } from 'rxjs';
 import { sha256 } from '@utils/utils';
 
 import {
@@ -16,9 +15,7 @@ import {
   NguoiDungFormRequest,
   NguoiDungResponse,
 } from '@app/model/admin/nguoi-dung.model';
-import { DonViService } from '@app/service/admin/don-vi.service';
 import { NguoiDungService } from '@app/service/admin/nguoi-dung.service';
-import { VaiTroService } from '@app/service/admin/vai-tro.service';
 import { PermissionService } from '../../../../../lib/core/services/permission.service';
 
 @Component({
@@ -37,8 +34,6 @@ export class DialogThemNguoiDungComponent extends ComponentBaseAbstract {
     protected override injector: Injector,
     private readonly dialogRef: MatDialogRef<DialogThemNguoiDungComponent>,
     private readonly nguoiDungService: NguoiDungService,
-    private readonly donViService: DonViService,
-    private readonly vaiTroService: VaiTroService,
     public permission: PermissionService,
     @Inject(MAT_DIALOG_DATA)
     public data: { type: TYPE_FORM_KEY; id?: ID_TYPE } = {
@@ -56,19 +51,9 @@ export class DialogThemNguoiDungComponent extends ComponentBaseAbstract {
       this.data.type === this.TYPE_FORM.CREATE ||
       this.data.type === this.TYPE_FORM.UPDATE
     ) {
-      forkJoin({
-        units: this.donViService.getCreateUserUnitOptions(),
-        roles: this.nguoiDungService.getCreateUserRoleOptions(),
-      }).subscribe(({ units, roles }) => {
-        this.findFormControl(this.$formItem, NGUOI_DUNG_KEY.UNIT_ID).options = (
-          units.data ?? []
-        ).map((item) => ({
-          value: item.id,
-          label: item.name,
-        }));
-
+      this.nguoiDungService.getCreateUserRoleOptions().subscribe(({ data }) => {
         this.findFormControl(this.$formItem, NGUOI_DUNG_KEY.ROLE_ID).options = (
-          roles.data ?? []
+          data ?? []
         ).map((item) => ({
           value: item.id,
           label: item.name,
@@ -111,11 +96,7 @@ export class DialogThemNguoiDungComponent extends ComponentBaseAbstract {
     const formValue = this.form.getRawValue();
     const payload: NguoiDungFormRequest = {
       [NGUOI_DUNG_KEY.USERNAME]: formValue[NGUOI_DUNG_KEY.USERNAME],
-      [NGUOI_DUNG_KEY.FULL_NAME]: formValue[NGUOI_DUNG_KEY.FULL_NAME],
-      [NGUOI_DUNG_KEY.EMAIL]: formValue[NGUOI_DUNG_KEY.EMAIL],
-      [NGUOI_DUNG_KEY.PHONE]: formValue[NGUOI_DUNG_KEY.PHONE],
       [NGUOI_DUNG_KEY.ROLE_ID]: formValue[NGUOI_DUNG_KEY.ROLE_ID],
-      [NGUOI_DUNG_KEY.UNIT_ID]: formValue[NGUOI_DUNG_KEY.UNIT_ID],
       [NGUOI_DUNG_KEY.STATUS]: formValue[NGUOI_DUNG_KEY.STATUS],
     };
 
