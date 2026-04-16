@@ -20,9 +20,9 @@ public class StaffCreateRequest {
     private String identityCode;
     private String gender;
     private LocalDate dateOfBirth;
-    private Long ethnicityId;
-    private Long religionId;
-    private Long nationalityId;
+    private String ethnicityId;
+    private String religionId;
+    private String nationalityId;
     private String cccdNo;
     private LocalDate cccdIssueDate;
     private String cccdIssuePlace;

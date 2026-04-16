@@ -1,12 +1,27 @@
 package com.gfi.backend.controllers;
 
+import java.time.LocalDate;
+
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 import com.gfi.backend.models.dtos.common.PageRequestDto;
 import com.gfi.backend.models.dtos.common.PageResponseDto;
-import com.gfi.backend.models.dtos.staff.*;
+import com.gfi.backend.models.dtos.staff.StaffCreateRequest;
+import com.gfi.backend.models.dtos.staff.StaffDetailDto;
+import com.gfi.backend.models.dtos.staff.StaffFilterDto;
+import com.gfi.backend.models.dtos.staff.StaffItemDto;
+import com.gfi.backend.models.dtos.staff.StaffUpdateRequest;
 import com.gfi.backend.models.global.ApiResult;
+import com.gfi.backend.services.interfaces.StaffCodeGeneratorService;
 import com.gfi.backend.services.interfaces.StaffService;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -17,10 +32,11 @@ import lombok.RequiredArgsConstructor;
 @RestController
 @RequestMapping("/api/staffs")
 @RequiredArgsConstructor
-@Tag(name = "Quản lý cán bộ/giáo viên - Staff")
+@Tag(name = "Quản lý cán bộ/giảng viên- Staff")
 public class StaffController extends ApiBaseController {
 
     private final StaffService staffService;
+    private final StaffCodeGeneratorService staffCodeGeneratorService;
 
     @PostMapping("/search")
     @Operation(summary = "Danh sách cán bộ", description = "Lấy danh sách cán bộ có phân trang và filter.")
@@ -29,6 +45,16 @@ public class StaffController extends ApiBaseController {
         PageRequestDto<StaffFilterDto> safeRequest = request == null ? new PageRequestDto<>() : request;
         return executeApiResult(
                 () -> ApiResult.success(staffService.search(safeRequest), "Hiển thị danh sách cán bộ thành công"));
+    }
+
+    @GetMapping("/generate-code")
+    @Operation(summary = "Sinh mã cán bộ", description = "Sinh mã cán bộ tự động theo format: CB-{UNIT_CODE}-{YEAR}-{STT}.")
+    public ResponseEntity<ApiResult<String>> generateStaffCode(@RequestParam Long unitId) {
+        return executeApiResult(() -> {
+            Integer year = LocalDate.now().getYear();
+            String staffCode = staffCodeGeneratorService.generateStaffCode(unitId, year);
+            return ApiResult.success(staffCode, "Sinh mã cán bộ thành công");
+        });
     }
 
     @GetMapping("/{id}")

@@ -44,7 +44,7 @@
 
 .staff-table {
   width: 100%;
-  min-width: 1320px;
+  min-width: 1460px;
   border-collapse: collapse;
 }
 
@@ -90,6 +90,13 @@
   text-align: center;
 }
 
+.action-col {
+  width: 88px;
+  min-width: 88px;
+  text-align: center;
+  padding: 0 !important;
+}
+
 .alias-col {
   min-width: 140px;
 }
@@ -101,6 +108,33 @@
 .name-col {
   font-weight: 600;
   color: #104f5b;
+}
+
+.name-link {
+  border: 0;
+  background: transparent;
+  color: #104f5b;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 0;
+  font-size: 14px;
+}
+
+.action-trigger {
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: 8px;
+  background: #6aa6af;
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.action-trigger:hover {
+  background: #4f848c;
 }
 
 .status-col {

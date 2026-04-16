@@ -1,0 +1,472 @@
+<div class="staff-profile-page">
+  <div class="profile-topbar">
+    <div class="fake-tabs">
+      @for (tab of visibleTabs; track tab.key) {
+        <button
+          type="button"
+          class="fake-tab"
+          [class.active]="activeTab === tab.key"
+          (click)="selectTab(tab.key)">
+          {{ tab.label }}
+        </button>
+      }
+    </div>
+
+    <div class="topbar-actions">
+      @if (isDetailMode && activeTab === 'thong-tin-can-bo') {
+        <button
+          type="button"
+          color="primary"
+          matButton="outlined"
+          (click)="openEdit()">
+          Cập nhật hồ sơ
+        </button>
+      }
+      <button
+        type="button"
+        matButton="outlined"
+        (click)="goBack()">
+        Quay lại
+      </button>
+    </div>
+  </div>
+
+  <div class="profile-layout">
+    @if (activeTab === 'thong-tin-can-bo') {
+      <section class="view-section main-section">
+        <div class="section-bar">Thông tin cán bộ</div>
+
+        @if (isDetailMode) {
+          <div class="section-body">
+            <div class="staff-sections">
+              <section class="sub-section">
+                <div class="sub-section-bar">
+                  <span class="sub-section-title">Thông tin cơ bản</span>
+                </div>
+                <div class="sub-section-content">
+                  <div class="profile-grid">
+                  <div class="info-item">
+                    <span class="info-label">Mã cán bộ</span>
+                    <span class="info-value">{{ getValue(staff.staffCode) }}</span>
+                  </div>
+                  <div class="info-item">
+                    <span class="info-label">Họ và tên</span>
+                    <span class="info-value">{{ getValue(staff.fullName) }}</span>
+                  </div>
+                  <div class="info-item">
+                    <span class="info-label">Tên gọi khác</span>
+                    <span class="info-value">{{ getValue(staff.aliasName) }}</span>
+                  </div>
+                  <div class="info-item">
+                    <span class="info-label">Mã định danh</span>
+                    <span class="info-value">{{ getValue(staff.identityCode) }}</span>
+                  </div>
+                  <div class="info-item">
+                    <span class="info-label">Đơn vị</span>
+                    <span class="info-value">{{ getValue(staff.unitName) }}</span>
+                  </div>
+                  <div class="info-item">
+                    <span class="info-label">Giới tính</span>
+                    <span class="info-value">{{ getGenderLabel(staff.gender) }}</span>
+                  </div>
+                  <div class="info-item">
+                    <span class="info-label">Ngày sinh</span>
+                    <span class="info-value">{{ getValue(staff.dateOfBirth) }}</span>
+                  </div>
+                  <div class="info-item">
+                    <span class="info-label">Nơi sinh</span>
+                    <span class="info-value">{{ getValue(staff.birthPlace) }}</span>
+                  </div>
+                  <div class="info-item">
+                    <span class="info-label">Quê quán</span>
+                    <span class="info-value">{{ getValue(staff.hometown) }}</span>
+                  </div>
+                  <div class="info-item">
+                    <span class="info-label">Dân tộc</span>
+                    <span class="info-value">{{ getValue(staff.ethnicityId) }}</span>
+                  </div>
+                  <div class="info-item">
+                    <span class="info-label">Tôn giáo</span>
+                    <span class="info-value">{{ getValue(staff.religionId) }}</span>
+                  </div>
+                  <div class="info-item">
+                    <span class="info-label">Quốc tịch</span>
+                    <span class="info-value">{{ getValue(staff.nationalityId) }}</span>
+                  </div>
+                </div>
+                </div>
+              </section>
+
+              <section class="sub-section">
+                <div class="sub-section-bar">
+                  <span class="sub-section-title">Liên hệ và cư trú</span>
+                </div>
+                <div class="sub-section-content">
+                  <div class="profile-grid">
+                  <div class="info-item">
+                    <span class="info-label">Điện thoại</span>
+                    <span class="info-value">{{ getValue(staff.phone) }}</span>
+                  </div>
+                  <div class="info-item">
+                    <span class="info-label">Email</span>
+                    <span class="info-value">{{ getValue(staff.email) }}</span>
+                  </div>
+                  <div class="info-item full">
+                    <span class="info-label">Thường trú</span>
+                    <span class="info-value">{{ getValue(staff.permanentAddress) }}</span>
+                  </div>
+                  <div class="info-item full">
+                    <span class="info-label">Tạm trú</span>
+                    <span class="info-value">{{ getValue(staff.temporaryAddress) }}</span>
+                  </div>
+                </div>
+                </div>
+              </section>
+
+              <section class="sub-section">
+                <div class="sub-section-bar">
+                  <span class="sub-section-title">Giấy tờ và bảo hiểm</span>
+                </div>
+                <div class="sub-section-content">
+                  <div class="profile-grid">
+                  <div class="info-item">
+                    <span class="info-label">CCCD</span>
+                    <span class="info-value">{{ getValue(staff.cccdNo) }}</span>
+                  </div>
+                  <div class="info-item">
+                    <span class="info-label">Ngày cấp CCCD</span>
+                    <span class="info-value">{{ getValue(staff.cccdIssueDate) }}</span>
+                  </div>
+                  <div class="info-item">
+                    <span class="info-label">Nơi cấp CCCD</span>
+                    <span class="info-value">{{ getValue(staff.cccdIssuePlace) }}</span>
+                  </div>
+                  <div class="info-item">
+                    <span class="info-label">Bảo hiểm xã hội</span>
+                    <span class="info-value">{{ getValue(staff.socialInsuranceNo) }}</span>
+                  </div>
+                </div>
+                </div>
+              </section>
+
+              <section class="sub-section">
+                <div class="sub-section-bar">
+                  <span class="sub-section-title">Sức khỏe và trạng thái</span>
+                </div>
+                <div class="sub-section-content">
+                  <div class="profile-grid">
+                  <div class="info-item">
+                    <span class="info-label">Tình trạng sức khỏe</span>
+                    <span class="info-value">{{ getValue(staff.healthStatus) }}</span>
+                  </div>
+                  <div class="info-item">
+                    <span class="info-label">Trạng thái</span>
+                    <span class="info-value">{{ getStatusLabel(staff.status) }}</span>
+                  </div>
+                  <div class="info-item full">
+                    <span class="info-label">Ghi chú</span>
+                    <span class="info-value">{{ getValue(staff.note) }}</span>
+                  </div>
+                </div>
+                </div>
+              </section>
+
+              <section class="sub-section">
+                <div class="sub-section-bar">
+                  <span class="sub-section-title">Thông tin gia đình</span>
+                </div>
+                <div class="sub-section-content">
+                  <div class="profile-grid">
+                  <div class="info-item">
+                    <span class="info-label">Cha</span>
+                    <span class="info-value">{{ getValue(staff.fatherName) }}</span>
+                  </div>
+                  <div class="info-item">
+                    <span class="info-label">Mẹ</span>
+                    <span class="info-value">{{ getValue(staff.motherName) }}</span>
+                  </div>
+                  <div class="info-item">
+                    <span class="info-label">Vợ/Chồng</span>
+                    <span class="info-value">{{ getValue(staff.spouseName) }}</span>
+                  </div>
+                  <div class="info-item">
+                    <span class="info-label">Bố chồng/vợ</span>
+                    <span class="info-value">{{ getValue(staff.spouseFatherName) }}</span>
+                  </div>
+                  <div class="info-item">
+                    <span class="info-label">Mẹ chồng/vợ</span>
+                    <span class="info-value">{{ getValue(staff.motherInLawName) }}</span>
+                  </div>
+                  <div class="info-item full">
+                    <span class="info-label">Thông tin con</span>
+                    <span class="info-value">{{ getValue(staff.childrenInfo) }}</span>
+                  </div>
+                </div>
+                </div>
+              </section>
+            </div>
+          </div>
+        } @else {
+          <app-form-control
+            class="section-body"
+            [form]="form"
+            (submitEvent)="submit()">
+            <div class="staff-sections">
+              <section class="sub-section">
+                <div class="sub-section-bar">
+                  <span class="sub-section-title">Thông tin cơ bản</span>
+                </div>
+                <div class="sub-section-content">
+                  <div class="form-grid">
+                  <app-text-control
+                    [item]="findFormControl(profileItems, 'staffCode')"
+                    [form]="form"></app-text-control>
+                  <app-text-control
+                    [item]="findFormControl(profileItems, 'fullName')"
+                    [form]="form"></app-text-control>
+                  <app-text-control
+                    [item]="findFormControl(profileItems, 'aliasName')"
+                    [form]="form"></app-text-control>
+                  <app-text-control
+                    [item]="findFormControl(profileItems, 'identityCode')"
+                    [form]="form"></app-text-control>
+                  <app-select-control
+                    [item]="findFormControl(profileItems, 'gender')"
+                    [form]="form"></app-select-control>
+                  <app-date-control
+                    [item]="findFormControl(profileItems, 'dateOfBirth')"
+                    [form]="form"></app-date-control>
+                  <app-text-control
+                    [item]="findFormControl(profileItems, 'birthPlace')"
+                    [form]="form"></app-text-control>
+                  <app-text-control
+                    [item]="findFormControl(profileItems, 'hometown')"
+                    [form]="form"></app-text-control>
+                  <app-select-control
+                    [item]="findFormControl(profileItems, 'ethnicityId')"
+                    [form]="form"></app-select-control>
+                  <app-text-control
+                    [item]="findFormControl(profileItems, 'religionId')"
+                    [form]="form"></app-text-control>
+                  <app-text-control
+                    [item]="findFormControl(profileItems, 'nationalityId')"
+                    [form]="form"></app-text-control>
+                </div>
+                </div>
+              </section>
+
+              <section class="sub-section">
+                <div class="sub-section-bar">
+                  <span class="sub-section-title">Liên hệ và cư trú</span>
+                </div>
+                <div class="sub-section-content">
+                  <div class="form-grid">
+                  <app-text-control
+                    [item]="findFormControl(profileItems, 'phone')"
+                    [form]="form"></app-text-control>
+                  <app-text-control
+                    [item]="findFormControl(profileItems, 'email')"
+                    [form]="form"></app-text-control>
+                  <app-text-control
+                    class="full-row"
+                    [item]="findFormControl(profileItems, 'permanentAddress')"
+                    [form]="form"></app-text-control>
+                  <app-text-control
+                    class="full-row"
+                    [item]="findFormControl(profileItems, 'temporaryAddress')"
+                    [form]="form"></app-text-control>
+                </div>
+                </div>
+              </section>
+
+              <section class="sub-section">
+                <div class="sub-section-bar">
+                  <span class="sub-section-title">Giấy tờ và bảo hiểm</span>
+                </div>
+                <div class="sub-section-content">
+                  <div class="form-grid">
+                  <app-text-control
+                    [item]="findFormControl(profileItems, 'cccdNo')"
+                    [form]="form"></app-text-control>
+                  <app-date-control
+                    [item]="findFormControl(profileItems, 'cccdIssueDate')"
+                    [form]="form"></app-date-control>
+                  <app-text-control
+                    [item]="findFormControl(profileItems, 'cccdIssuePlace')"
+                    [form]="form"></app-text-control>
+                  <app-text-control
+                    [item]="findFormControl(profileItems, 'socialInsuranceNo')"
+                    [form]="form"></app-text-control>
+                </div>
+                </div>
+              </section>
+
+              <section class="sub-section">
+                <div class="sub-section-bar">
+                  <span class="sub-section-title">Sức khỏe và trạng thái</span>
+                </div>
+                <div class="sub-section-content">
+                  <div class="form-grid">
+                  <app-text-control
+                    [item]="findFormControl(profileItems, 'healthStatus')"
+                    [form]="form"></app-text-control>
+                  <app-select-control
+                    [item]="findFormControl(profileItems, 'status')"
+                    [form]="form"></app-select-control>
+                  <app-textarea-control
+                    class="full-row"
+                    [item]="findFormControl(profileItems, 'note')"
+                    [form]="form"></app-textarea-control>
+                </div>
+                </div>
+              </section>
+
+              <section class="sub-section">
+                <div class="sub-section-bar">
+                  <span class="sub-section-title">Thông tin gia đình</span>
+                </div>
+                <div class="sub-section-content">
+                  <div class="form-grid">
+                  <app-text-control
+                    [item]="findFormControl(profileItems, 'fatherName')"
+                    [form]="form"></app-text-control>
+                  <app-text-control
+                    [item]="findFormControl(profileItems, 'motherName')"
+                    [form]="form"></app-text-control>
+                  <app-text-control
+                    [item]="findFormControl(profileItems, 'spouseName')"
+                    [form]="form"></app-text-control>
+                  <app-text-control
+                    [item]="findFormControl(profileItems, 'spouseFatherName')"
+                    [form]="form"></app-text-control>
+                  <app-text-control
+                    [item]="findFormControl(profileItems, 'motherInLawName')"
+                    [form]="form"></app-text-control>
+                  <app-textarea-control
+                    class="full-row"
+                    [item]="findFormControl(profileItems, 'childrenInfo')"
+                    [form]="form"></app-textarea-control>
+                </div>
+                </div>
+              </section>
+            </div>
+
+            <div class="form-actions">
+              <button
+                type="button"
+                matButton="outlined"
+                (click)="goBack()">
+                Hủy
+              </button>
+              <button
+                type="submit"
+                color="primary"
+                matButton="filled">
+                Lưu
+              </button>
+            </div>
+          </app-form-control>
+        }
+      </section>
+    }
+
+    @if (activeTab === 'qua-trinh-cong-tac') {
+      <section class="view-section main-section">
+        <div class="section-bar">Quản lý quá trình công tác của cán bộ</div>
+        <div class="section-body job-history-section">
+          <app-table
+            tableTitle="Quá trình công tác"
+            [pageIndex]="jobHistoryPageIndex"
+            [pageSize]="jobHistoryPageSize"
+            [total]="jobHistoryTotal"
+            [tableConfig]="jobHistoryTableConfig"
+            [dataSource]="jobHistoryDataSource"
+            [tableColumns]="jobHistoryColumns"
+            (queryChange)="loadJobHistories($event)">
+            <ng-container custom-buttons>
+              @if (staffId) {
+                <button
+                  color="primary"
+                  matButton="filled"
+                  class="btn-tight"
+                  (click)="openJobHistoryDialog(TYPE_FORM.CREATE)">
+                  <app-icon
+                    icon="add_box"
+                    [size]="18"
+                    class="btn-icon" />
+                  Thêm mới
+                </button>
+              }
+            </ng-container>
+          </app-table>
+        </div>
+      </section>
+    }
+
+    @if (activeTab === 'thong-tin-dao-tao') {
+      <section class="view-section main-section">
+        <div class="section-bar">Thông tin đào tạo</div>
+        <div class="section-body job-history-section">
+          <app-table
+            tableTitle="Thông tin đào tạo"
+            [pageIndex]="trainingPageIndex"
+            [pageSize]="trainingPageSize"
+            [total]="trainingTotal"
+            [tableConfig]="trainingTableConfig"
+            [dataSource]="trainingDataSource"
+            [tableColumns]="trainingColumns"
+            (queryChange)="loadTrainingInfos($event)">
+            <ng-container custom-buttons>
+              @if (staffId) {
+                <button
+                  color="primary"
+                  matButton="filled"
+                  class="btn-tight"
+                  (click)="openTrainingDialog(TYPE_FORM.CREATE)">
+                  <app-icon
+                    icon="add_box"
+                    [size]="18"
+                    class="btn-icon" />
+                  Thêm mới
+                </button>
+              }
+            </ng-container>
+          </app-table>
+        </div>
+      </section>
+    }
+
+    @if (activeTab === 'thong-tin-ngoai-ngu') {
+      <section class="view-section main-section">
+        <div class="section-bar">Thông tin ngoại ngữ</div>
+        <div class="section-body job-history-section">
+          <app-table
+            tableTitle="Thông tin ngoại ngữ"
+            [pageIndex]="foreignLanguagePageIndex"
+            [pageSize]="foreignLanguagePageSize"
+            [total]="foreignLanguageTotal"
+            [tableConfig]="foreignLanguageTableConfig"
+            [dataSource]="foreignLanguageDataSource"
+            [tableColumns]="foreignLanguageColumns"
+            (queryChange)="loadForeignLanguages($event)">
+            <ng-container custom-buttons>
+              @if (staffId) {
+                <button
+                  color="primary"
+                  matButton="filled"
+                  class="btn-tight"
+                  (click)="openForeignLanguageDialog(TYPE_FORM.CREATE)">
+                  <app-icon
+                    icon="add_box"
+                    [size]="18"
+                    class="btn-icon" />
+                  Thêm mới
+                </button>
+              }
+            </ng-container>
+          </app-table>
+        </div>
+      </section>
+    }
+  </div>
+</div>

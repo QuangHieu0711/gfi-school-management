@@ -163,7 +163,6 @@ public class UnitServiceImpl implements UnitService {
         validateUnitScope(ActionType.DELETE, unit.getId());
 
         // Kiểm tra unit có được sử dụng không
-        // ✅ UPDATED: Check users via Staff relationship instead of direct unit FK
         if (userRepository.findByUnitIdIn(List.of(id)).size() > 0) {
             throw new UserMessageException(CommonErrorCode.UNIT_IN_USE);
         }

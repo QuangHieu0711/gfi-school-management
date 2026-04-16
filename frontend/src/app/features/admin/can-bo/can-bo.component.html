@@ -31,6 +31,7 @@
         <thead>
           <tr class="heading-row">
             <th class="stt-col">STT</th>
+            <th class="action-col">Thao tác</th>
             <th>Mã cán bộ</th>
             <th>Họ và tên</th>
             <th class="alias-col">Tên gọi khác</th>
@@ -45,6 +46,7 @@
 
           <tr class="filter-row">
             <th class="stt-col"></th>
+            <th class="action-col"></th>
             <th class="filter-cell">
               <app-text-control
                 [item]="findFormControl($formItem, key.STAFF_CODE)"
@@ -94,8 +96,25 @@
           @for (row of dataSource; track row.id; let index = $index) {
             <tr>
               <td class="stt-col">{{ pageIndex * pageSize + index + 1 }}</td>
+              <td class="action-col">
+                <button
+                  type="button"
+                  class="action-trigger"
+                  [matMenuTriggerFor]="actionMenu"
+                  [matMenuTriggerData]="{ staff: row }"
+                  aria-label="Thao tác cán bộ">
+                  <mat-icon>settings</mat-icon>
+                </button>
+              </td>
               <td>{{ row.staffCode || '' }}</td>
-              <td class="name-col">{{ row.fullName || '' }}</td>
+              <td class="name-col">
+                <button
+                  type="button"
+                  class="name-link"
+                  (click)="openDetail(row)">
+                  {{ row.fullName || '' }}
+                </button>
+              </td>
               <td class="alias-col">{{ row.aliasName || '' }}</td>
               <td class="unit-col">{{ row.unitName || '' }}</td>
               <td>{{ row.gender || '' }}</td>
@@ -103,7 +122,9 @@
               <td>{{ row.phone || '' }}</td>
               <td>{{ row.email || '' }}</td>
               <td class="status-col">
-                <span [class]="getStatusClass(row.status)">{{ getStatusLabel(row.status) }}</span>
+                <span [class]="getStatusClass(row.status)">{{
+                  getStatusLabel(row.status)
+                }}</span>
               </td>
               <td>{{ row.cccdNo || '' }}</td>
             </tr>
@@ -111,7 +132,7 @@
             <tr>
               <td
                 class="empty-row"
-                colspan="11">
+                colspan="12">
                 Không có dữ liệu
               </td>
             </tr>
@@ -120,6 +141,41 @@
       </table>
     </div>
   </form>
+
+  <mat-menu #actionMenu="matMenu">
+    <ng-template
+      matMenuContent
+      let-staff="staff">
+      @if (canEdit) {
+        <button
+          type="button"
+          mat-menu-item
+          (click)="openEdit(staff)">
+          Cập nhật hồ sơ
+        </button>
+        <button
+          type="button"
+          mat-menu-item
+          (click)="updateStatus(staff)">
+          Cập nhật trạng thái
+        </button>
+        <button
+          type="button"
+          mat-menu-item
+          (click)="assignTeaching(staff)">
+          Phân công giảng dạy
+        </button>
+      }
+      @if (canDelete) {
+        <button
+          type="button"
+          mat-menu-item
+          (click)="deleteStaff(staff)">
+          Xóa cán bộ
+        </button>
+      }
+    </ng-template>
+  </mat-menu>
 
   <app-paginator
     [total]="dataSourceTotal"

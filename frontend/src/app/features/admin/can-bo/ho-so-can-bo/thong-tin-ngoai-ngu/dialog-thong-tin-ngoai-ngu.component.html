@@ -7,21 +7,20 @@
     (submitEvent)="onSubmit()">
     <div class="flex flex-col gap-2">
       <app-text-control
-        [item]="findFormControl($formItem, key.USERNAME)"
+        [item]="findFormControl($formItem, key.LANGUAGE_NAME)"
         [form]="form"></app-text-control>
-      @if (data.type === TYPE_FORM.CREATE) {
-        <app-text-control
-          (mouseenter)="onPasswordMouseEnter()"
-          (mouseleave)="onPasswordMouseLeave()"
-          [item]="findFormControl($formItem, key.PASSWORD)"
-          [form]="form"></app-text-control>
-      }
-      <app-select-control
-        [item]="findFormControl($formItem, key.ROLE_ID)"
-        [form]="form"></app-select-control>
-      <app-select-control
-        [item]="findFormControl($formItem, key.STATUS)"
-        [form]="form"></app-select-control>
+      <app-text-control
+        [item]="findFormControl($formItem, key.LANGUAGE_LEVEL)"
+        [form]="form"></app-text-control>
+      <app-date-control
+        [item]="findFormControl($formItem, key.ISSUE_DATE)"
+        [form]="form"></app-date-control>
+      <app-text-control
+        [item]="findFormControl($formItem, key.SCORE)"
+        [form]="form"></app-text-control>
+      <app-textarea-control
+        [item]="findFormControl($formItem, key.NOTE)"
+        [form]="form"></app-textarea-control>
     </div>
   </app-form-control>
 
@@ -40,7 +39,7 @@
         Lưu
       </button>
     }
-    @if (data.type === TYPE_FORM.DETAIL && permission.canEdit(permissionUrl)) {
+    @if (data.type === TYPE_FORM.DETAIL) {
       <button
         color="primary"
         matButton="filled"

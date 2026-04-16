@@ -2,14 +2,17 @@ import { CommonModule } from '@angular/common';
 import { Component, Injector } from '@angular/core';
 import { ReactiveFormsModule } from '@angular/forms';
 import { PageEvent } from '@angular/material/paginator';
+import { Router } from '@angular/router';
 import { debounceTime, takeUntil } from 'rxjs';
 
 import { AppPaginatorComponent } from '@components/app-paginator/app-paginator.component';
 import { IconComponent } from '@components/app-icon/app-icon.component';
+import { NAVIGATOR_ENDPOINT, PATH } from '@constant/navigator';
 import { ComponentBaseAbstract } from '@layout';
 import { FormType, IOptions } from '@model/form-control.model';
 import { TableQueryEvent } from '@model/table.model';
 import { FORM_CONTROL_MODULE, MATERIAL_MODULE } from '@modules';
+import { PermissionCheckService } from '@service';
 
 import {
   CAN_BO_DETAIL_FALLBACK,
@@ -38,6 +41,7 @@ import { CanBoService } from '@app/service/admin/can-bo.service';
   ],
 })
 export class CanBoComponent extends ComponentBaseAbstract {
+  readonly menuCode = 'STAFF_PROFILE';
   dataSource: CanBoResponse[] = [];
   key = CAN_BO_KEY;
   $formItem: FormType[] = CAN_BO_FILTER_FORM.map((item) => ({
@@ -48,10 +52,20 @@ export class CanBoComponent extends ComponentBaseAbstract {
   readonly genderOptions: IOptions[] = CAN_BO_GENDER_OPTIONS;
   unitOptions: IOptions[] = [];
 
+  get canEdit(): boolean {
+    return this.permissionCheckService.canEdit(this.menuCode);
+  }
+
+  get canDelete(): boolean {
+    return this.permissionCheckService.canDelete(this.menuCode);
+  }
+
   constructor(
     protected override injector: Injector,
     private readonly canBoService: CanBoService,
-    private readonly donViService: DonViService
+    private readonly donViService: DonViService,
+    private readonly routerService: Router,
+    private readonly permissionCheckService: PermissionCheckService
   ) {
     super(injector);
   }
@@ -104,6 +118,76 @@ export class CanBoComponent extends ComponentBaseAbstract {
       pageIndex: event.pageIndex,
       pageSize: event.pageSize,
     });
+  }
+
+  openDetail(staff: CanBoResponse): void {
+    this.routerService.navigate(
+      [
+        '/',
+        NAVIGATOR_ENDPOINT.ADMIN.BASE_PATH,
+        ...NAVIGATOR_ENDPOINT.ADMIN.CAN_BO.BASE_PATH.split('/'),
+        PATH.CHI_TIET,
+        staff[this.key.ID],
+      ],
+      { state: { staff } }
+    );
+  }
+
+  openEdit(staff: CanBoResponse): void {
+    this.routerService.navigate(
+      [
+        '/',
+        NAVIGATOR_ENDPOINT.ADMIN.BASE_PATH,
+        ...NAVIGATOR_ENDPOINT.ADMIN.CAN_BO.BASE_PATH.split('/'),
+        PATH.CAP_NHAT,
+        staff[this.key.ID],
+      ],
+      { state: { staff } }
+    );
+  }
+
+  updateStatus(_staff: CanBoResponse): void {
+    this.toastr.info(
+      'Chức năng cập nhật trạng thái đang được hoàn thiện',
+      'Thông báo'
+    );
+  }
+
+  assignTeaching(_staff: CanBoResponse): void {
+    this.toastr.info(
+      'Chức năng phân công giảng dạy đang được hoàn thiện',
+      'Thông báo'
+    );
+  }
+
+  deleteStaff(staff: CanBoResponse): void {
+    this.dialog.confirm(
+      {
+        title: 'Xác nhận',
+        message: `Bạn có chắc chắn muốn xóa cán bộ ${staff.fullName ?? ''} không?`,
+      },
+      (confirmed?: boolean) => {
+        if (!confirmed) return;
+
+        this.canBoService.delete(staff[this.key.ID]).subscribe({
+          next: () => {
+            this.toastr.success('Xóa thành công', 'Thành công');
+            this.filterData({
+              pageIndex: this.pageIndex,
+              pageSize: this.pageSize,
+            });
+          },
+          error: (error) => {
+            this.toastr.error(
+              error?.error?.userMessage ??
+                error?.error?.message ??
+                'Xóa thất bại',
+              'Thất bại'
+            );
+          },
+        });
+      }
+    );
   }
 
   getStatusLabel(status?: string): string {
@@ -214,8 +298,19 @@ export class CanBoComponent extends ComponentBaseAbstract {
   }
 
   private formatGender(value?: string): string {
-    if (!value) return '';
-    if (`${value}`.toUpperCase() === 'NU') return 'Nữ';
-    return value;
+    const normalized = `${value ?? ''}`.trim().toUpperCase();
+    if (!normalized) return '';
+    if (normalized === 'MALE' || normalized === 'NAM' || normalized === '0') {
+      return 'Nam';
+    }
+    if (
+      normalized === 'FEMALE' ||
+      normalized === 'NU' ||
+      normalized === 'NỮ' ||
+      normalized === '1'
+    ) {
+      return 'Nữ';
+    }
+    return `${value ?? ''}`;
   }
 }

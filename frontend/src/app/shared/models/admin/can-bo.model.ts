@@ -57,14 +57,70 @@ export interface CanBoResponse extends TableDataSource {
   [CAN_BO_KEY.CCCD_NO]?: string;
 }
 
+export interface CanBoDetailResponse extends CanBoResponse {
+  aliasName?: string;
+  avatarFileId?: ID_TYPE | null;
+  birthPlace?: string;
+  cccdIssueDate?: string;
+  cccdIssuePlace?: string;
+  childrenInfo?: string;
+  ethnicityId?: ID_TYPE | null;
+  fatherName?: string;
+  healthStatus?: string;
+  hometown?: string;
+  identityCode?: string;
+  motherInLawName?: string;
+  motherName?: string;
+  nationalityId?: ID_TYPE | null;
+  note?: string;
+  permanentAddress?: string;
+  religionId?: ID_TYPE | null;
+  signatureFileId?: ID_TYPE | null;
+  socialInsuranceNo?: string;
+  spouseName?: string;
+  temporaryAddress?: string;
+  userId?: ID_TYPE | null;
+  spouseFatherName?: string;
+}
+
+export interface CanBoFormRequest {
+  fullName?: string;
+  aliasName?: string;
+  identityCode?: string;
+  gender?: string;
+  dateOfBirth?: string;
+  birthPlace?: string;
+  hometown?: string;
+  permanentAddress?: string;
+  temporaryAddress?: string;
+  fatherName?: string;
+  motherName?: string;
+  spouseName?: string;
+  childrenInfo?: string;
+  spouseFatherName?: string;
+  motherInLawName?: string;
+  ethnicityId?: string | number;
+  religionId?: string | number;
+  nationalityId?: string | number;
+  cccdNo?: string;
+  cccdIssueDate?: string;
+  cccdIssuePlace?: string;
+  phone?: string;
+  email?: string;
+  healthStatus?: string;
+  socialInsuranceNo?: string;
+  status?: string;
+  note?: string;
+}
+
 export const CAN_BO_STATUS_OPTIONS = [
   { value: 'ACTIVE', label: 'Đang làm việc' },
   { value: 'INACTIVE', label: 'Ngừng hoạt động' },
 ];
 
 export const CAN_BO_GENDER_OPTIONS = [
-  { value: 'Nam', label: 'Nam' },
-  { value: 'Nu', label: 'Nữ' },
+  { value: 'MALE', label: 'Nam' },
+  { value: 'FEMALE', label: 'Nữ' },
 ];
 
 export const CAN_BO_FILTER_FORM = [
@@ -133,4 +189,30 @@ export const CAN_BO_DETAIL_FALLBACK: CanBoResponse = {
   email: '',
   status: '',
   cccdNo: '',
+};
+
+export const CAN_BO_PROFILE_FALLBACK: CanBoDetailResponse = {
+  ...CAN_BO_DETAIL_FALLBACK,
+  avatarFileId: null,
+  birthPlace: '',
+  cccdIssueDate: '',
+  cccdIssuePlace: '',
+  childrenInfo: '',
+  ethnicityId: null,
+  fatherName: '',
+  healthStatus: '',
+  hometown: '',
+  identityCode: '',
+  motherInLawName: '',
+  motherName: '',
+  nationalityId: null,
+  note: '',
+  permanentAddress: '',
+  religionId: null,
+  signatureFileId: null,
+  socialInsuranceNo: '',
+  spouseName: '',
+  temporaryAddress: '',
+  userId: null,
+  spouseFatherName: '',
 };

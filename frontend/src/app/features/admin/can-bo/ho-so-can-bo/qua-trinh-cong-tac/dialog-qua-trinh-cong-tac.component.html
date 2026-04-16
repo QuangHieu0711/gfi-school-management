@@ -1,0 +1,63 @@
+<app-dialog-container
+  [dialogTitle]="title"
+  [dialogActionTemplate]="actionTemplate">
+  <app-form-control
+    #formTpl
+    [form]="form"
+    (submitEvent)="onSubmit()">
+    <div class="flex flex-col gap-2">
+      <app-date-control
+        [item]="findFormControl($formItem, key.FROM_DATE)"
+        [form]="form"></app-date-control>
+      <app-date-control
+        [item]="findFormControl($formItem, key.TO_DATE)"
+        [form]="form"></app-date-control>
+      <app-select-control
+        [item]="findFormControl($formItem, key.UNIT_ID)"
+        [form]="form"></app-select-control>
+      <app-text-control
+        [item]="findFormControl($formItem, key.DEPARTMENT_ID)"
+        [form]="form"></app-text-control>
+      <app-text-control
+        [item]="findFormControl($formItem, key.WORKING_POSITION_ID)"
+        [form]="form"></app-text-control>
+      <app-text-control
+        [item]="findFormControl($formItem, key.TITLE_ID)"
+        [form]="form"></app-text-control>
+      <app-text-control
+        [item]="findFormControl($formItem, key.EMPLOYMENT_TYPE_ID)"
+        [form]="form"></app-text-control>
+      <app-text-control
+        [item]="findFormControl($formItem, key.DECISION_NO)"
+        [form]="form"></app-text-control>
+      <app-textarea-control
+        [item]="findFormControl($formItem, key.NOTE)"
+        [form]="form"></app-textarea-control>
+    </div>
+  </app-form-control>
+
+  <ng-template #actionTemplate>
+    <button
+      color="primary"
+      matButton="outlined"
+      mat-dialog-close>
+      Hủy
+    </button>
+    @if (data.type !== TYPE_FORM.DETAIL) {
+      <button
+        color="primary"
+        matButton="filled"
+        (click)="formTpl.submit()">
+        Lưu
+      </button>
+    }
+    @if (data.type === TYPE_FORM.DETAIL) {
+      <button
+        color="primary"
+        matButton="filled"
+        (click)="switchUpdate()">
+        Chỉnh sửa
+      </button>
+    }
+  </ng-template>
+</app-dialog-container>

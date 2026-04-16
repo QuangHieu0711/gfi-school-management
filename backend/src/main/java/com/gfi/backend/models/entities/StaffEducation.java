@@ -3,6 +3,7 @@ package com.gfi.backend.models.entities;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+import java.time.LocalDate;
 
 @Entity
 @Table(name = "staff_educations")
@@ -30,8 +31,14 @@ public class StaffEducation {
     @Column(length = 255)
     private String schoolName;
 
+    @Column(length = 255)
+    private String major;
+
     @Column
     private Long trainingFormId;
+
+    @Column(length = 255)
+    private String trainingForm;
 
     @Column
     private Integer graduationYear;
@@ -44,6 +51,15 @@ public class StaffEducation {
 
     @Column
     private Boolean isHighest;
+
+    @Column(length = 255)
+    private String certificate;
+
+    @Column
+    private LocalDate fromDate;
+
+    @Column
+    private LocalDate toDate;
 
     @Column(columnDefinition = "TEXT")
     private String note;

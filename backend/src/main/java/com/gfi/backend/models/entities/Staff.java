@@ -44,14 +44,14 @@ public class Staff extends BaseEntity {
     @Column
     private LocalDate dateOfBirth;
 
-    @Column
-    private Long ethnicityId;
+    @Column(length = 255)
+    private String ethnicityId;
 
-    @Column
-    private Long religionId;
+    @Column(length = 255)
+    private String religionId;
 
-    @Column
-    private Long nationalityId;
+    @Column(length = 255)
+    private String nationalityId;
 
     @Column(length = 50)
     private String cccdNo;

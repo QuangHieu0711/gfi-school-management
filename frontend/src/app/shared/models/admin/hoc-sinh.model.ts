@@ -295,7 +295,7 @@ export const HOC_SINH_FILTER_FORM = [
   }),
   SELECT_CONTROL({
     controlName: HOC_SINH_KEY.UNIT_ID,
-    placeholder: 'ÄÆ¡n vá»‹',
+    placeholder: 'Đơn vị',
     required: false,
     clearable: true,
     listOption: [],
@@ -344,6 +344,7 @@ export const HOC_SINH_FILTER_FORM = [
     placeholder: 'Mã học sinh',
     required: false,
     maxLength: 100,
+    hint: 'Mã học sinh hệ thống tự sinh theo quy tắc: HS_[Năm học]_[Số thứ tự]',
   }),
   TEXT_CONTROL({
     controlName: HOC_SINH_KEY.OTHER_SYSTEM_CODE,

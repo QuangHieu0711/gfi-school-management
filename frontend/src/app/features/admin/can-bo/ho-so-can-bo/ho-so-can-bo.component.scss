@@ -1,0 +1,216 @@
+.staff-profile-page {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  background: #f4f7f8;
+  min-height: 100%;
+}
+
+.profile-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  background: #fff;
+  padding: 12px 16px 0;
+  border-bottom: 1px solid #e1e7e9;
+}
+
+.fake-tabs {
+  display: flex;
+  gap: 8px;
+  overflow: auto;
+  padding-bottom: 12px;
+}
+
+.fake-tab {
+  border: 1px solid #d4dde1;
+  background: #fcfefe;
+  color: #61758a;
+  padding: 11px 16px;
+  border-radius: 0;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    color 0.2s ease,
+    border-color 0.2s ease,
+    background-color 0.2s ease;
+
+  &.active {
+    background: #fff;
+    color: #2a8f9d;
+    border-color: #cddce0;
+    border-bottom: 3px solid #2a8f9d;
+  }
+}
+
+.topbar-actions {
+  display: flex;
+  gap: 8px;
+  padding-bottom: 12px;
+}
+
+.profile-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 0 16px 16px;
+}
+
+.view-section {
+  border: 1px solid #dcdcdc;
+  background: #fff;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.main-section {
+  box-shadow: 0 4px 12px rgba(15, 23, 32, 0.05);
+}
+
+.section-bar {
+  padding: 12px 18px;
+  background: #4f848c;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.section-body {
+  padding: 18px;
+}
+
+.staff-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.sub-section {
+  border: 1px solid #dcdcdc;
+  border-radius: 8px;
+  background: #fff;
+  overflow: hidden;
+}
+
+.sub-section-bar {
+  padding: 10px 16px;
+  background: #5a8f97;
+  color: #fff;
+}
+
+.sub-section-title {
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.2px;
+}
+
+.sub-section-content {
+  padding: 16px;
+  background: #fff;
+}
+
+.profile-grid,
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px 16px;
+}
+
+.form-grid .full-row,
+.form-grid .full {
+  grid-column: 1 / -1;
+}
+
+.info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  padding: 10px 12px;
+  border: 1px solid #e3eaed;
+  background: #fbfcfd;
+  border-radius: 6px;
+}
+
+.info-item.full {
+  grid-column: 1 / -1;
+}
+
+.info-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #64808a;
+}
+
+.info-value {
+  font-size: 14px;
+  font-weight: 500;
+  color: #1e2c33;
+  word-break: break-word;
+}
+
+.sub-section-content ::ng-deep {
+  label {
+    margin-bottom: 4px !important;
+    color: #123746;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: none;
+    letter-spacing: normal;
+  }
+
+  .mat-mdc-form-field,
+  .mtx-select,
+  .form-group {
+    width: 100%;
+  }
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.job-history-section {
+  padding: 18px;
+}
+
+.job-history-section ::ng-deep .table-wrapper {
+  gap: 12px;
+}
+
+.section-placeholder {
+  color: #61758a;
+  font-size: 14px;
+  min-height: 160px;
+  display: flex;
+  align-items: center;
+}
+
+@media (max-width: 960px) {
+  .profile-grid,
+  .form-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .profile-topbar,
+  .topbar-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .profile-grid,
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+}

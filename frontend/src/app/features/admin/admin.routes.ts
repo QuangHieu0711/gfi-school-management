@@ -257,6 +257,32 @@ export const AdminRoutes: Routes = [
         loadComponent: () =>
           import('./can-bo/can-bo.component').then((m) => m.CanBoComponent),
       },
+      {
+        path: `${PATH.CHI_TIET}/:id`,
+        canActivate: [PermissionGuard],
+        data: { menuCode: 'STAFF_PROFILE' },
+        providers: [
+          provideState({ name: 'style', reducer: StyleReducer }),
+          provideEffects(StyleEffect),
+        ],
+        loadComponent: () =>
+          import('./can-bo/ho-so-can-bo/ho-so-can-bo.component').then(
+            (m) => m.HoSoCanBoComponent
+          ),
+      },
+      {
+        path: `${PATH.CAP_NHAT}/:id`,
+        canActivate: [PermissionGuard],
+        data: { menuCode: 'STAFF_PROFILE' },
+        providers: [
+          provideState({ name: 'style', reducer: StyleReducer }),
+          provideEffects(StyleEffect),
+        ],
+        loadComponent: () =>
+          import('./can-bo/ho-so-can-bo/ho-so-can-bo.component').then(
+            (m) => m.HoSoCanBoComponent
+          ),
+      },
     ],
   },
 ];
