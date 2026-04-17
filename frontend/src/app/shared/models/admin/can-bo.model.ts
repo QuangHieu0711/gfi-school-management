@@ -57,48 +57,92 @@ export interface CanBoResponse extends TableDataSource {
   [CAN_BO_KEY.CCCD_NO]?: string;
 }
 
+export interface CanBoAddressResponse {
+  provinceId?: number | string;
+  provinceName?: string;
+  districtId?: number | string;
+  districtName?: string;
+  wardId?: number | string;
+  wardName?: string;
+  hamletName?: string;
+  detailAddress?: string;
+  fullAddress?: string;
+}
+
+export interface CanBoFamilyInfoResponse {
+  fullName?: string;
+  birthYear?: number | string;
+  placeOfBirth?: string;
+  hometown?: string;
+  occupation?: string;
+  phone?: string;
+  workplace?: string;
+  address?: string;
+  note?: string;
+}
+
 export interface CanBoDetailResponse extends CanBoResponse {
   aliasName?: string;
   avatarFileId?: ID_TYPE | null;
-  birthPlace?: string;
+  avatarUrl?: string;
+  identityCode?: string;
+  hometown?: string;
+  ethnicityId?: ID_TYPE | null;
+  ethnicityName?: string;
+  nationalityId?: ID_TYPE | null;
+  nationalityName?: string;
+  religionId?: ID_TYPE | null;
+  religionName?: string;
+  cccdNo?: string;
   cccdIssueDate?: string;
   cccdIssuePlace?: string;
-  childrenInfo?: string;
-  ethnicityId?: ID_TYPE | null;
-  fatherName?: string;
-  healthStatus?: string;
-  hometown?: string;
-  identityCode?: string;
-  motherInLawName?: string;
-  motherName?: string;
-  nationalityId?: ID_TYPE | null;
-  note?: string;
-  permanentAddress?: string;
-  religionId?: ID_TYPE | null;
-  signatureFileId?: ID_TYPE | null;
   socialInsuranceNo?: string;
-  spouseName?: string;
-  temporaryAddress?: string;
+  healthStatus?: string;
+  note?: string;
+  status?: string;
+  signatureFileId?: ID_TYPE | null;
+  signatureUrl?: string;
   userId?: ID_TYPE | null;
-  spouseFatherName?: string;
+  permanentAddress?: CanBoAddressResponse;
+  temporaryAddress?: CanBoAddressResponse;
+  birthPlaceAddress?: CanBoAddressResponse;
+  fatherInfo?: CanBoFamilyInfoResponse;
+  motherInfo?: CanBoFamilyInfoResponse;
+  spouseInfo?: CanBoFamilyInfoResponse;
+  spouseFatherInfo?: CanBoFamilyInfoResponse;
+  spouseMotherInfo?: CanBoFamilyInfoResponse;
+  childrenDetail?: string;
+}
+
+export interface CanBoAddressRequest {
+  provinceId?: number | string;
+  districtId?: number | string;
+  wardId?: number | string;
+  hamletName?: string;
+  detailAddress?: string;
+  fullAddress?: string;
+}
+
+export interface CanBoFamilyInfoRequest {
+  fullName?: string;
+  birthYear?: number | string;
+  placeOfBirth?: string;
+  hometown?: string;
+  occupation?: string;
+  phone?: string;
+  workplace?: string;
+  address?: string;
+  note?: string;
 }
 
 export interface CanBoFormRequest {
+  staffCode?: string;
   fullName?: string;
+  unitId?: number | string;
   aliasName?: string;
   identityCode?: string;
   gender?: string;
   dateOfBirth?: string;
-  birthPlace?: string;
-  hometown?: string;
-  permanentAddress?: string;
-  temporaryAddress?: string;
-  fatherName?: string;
-  motherName?: string;
-  spouseName?: string;
-  childrenInfo?: string;
-  spouseFatherName?: string;
-  motherInLawName?: string;
   ethnicityId?: string | number;
   religionId?: string | number;
   nationalityId?: string | number;
@@ -109,8 +153,21 @@ export interface CanBoFormRequest {
   email?: string;
   healthStatus?: string;
   socialInsuranceNo?: string;
+  avatarFileId?: number | string;
+  avatarUrl?: string;
+  signatureFileId?: number | string;
+  signatureUrl?: string;
   status?: string;
   note?: string;
+  permanentAddress?: CanBoAddressRequest;
+  temporaryAddress?: CanBoAddressRequest;
+  birthPlaceAddress?: CanBoAddressRequest;
+  fatherInfo?: CanBoFamilyInfoRequest;
+  motherInfo?: CanBoFamilyInfoRequest;
+  spouseInfo?: CanBoFamilyInfoRequest;
+  spouseFatherInfo?: CanBoFamilyInfoRequest;
+  spouseMotherInfo?: CanBoFamilyInfoRequest;
+  childrenDetail?: string;
 }
 
 export const CAN_BO_STATUS_OPTIONS = [
@@ -194,25 +251,30 @@ export const CAN_BO_DETAIL_FALLBACK: CanBoResponse = {
 export const CAN_BO_PROFILE_FALLBACK: CanBoDetailResponse = {
   ...CAN_BO_DETAIL_FALLBACK,
   avatarFileId: null,
-  birthPlace: '',
+  avatarUrl: '',
+  identityCode: '',
+  ethnicityId: null,
+  ethnicityName: '',
+  nationalityId: null,
+  nationalityName: '',
+  religionId: null,
+  religionName: '',
   cccdIssueDate: '',
   cccdIssuePlace: '',
-  childrenInfo: '',
-  ethnicityId: null,
-  fatherName: '',
-  healthStatus: '',
-  hometown: '',
-  identityCode: '',
-  motherInLawName: '',
-  motherName: '',
-  nationalityId: null,
-  note: '',
-  permanentAddress: '',
-  religionId: null,
-  signatureFileId: null,
   socialInsuranceNo: '',
-  spouseName: '',
-  temporaryAddress: '',
+  healthStatus: '',
+  note: '',
+  status: 'ACTIVE',
+  signatureFileId: null,
+  signatureUrl: '',
   userId: null,
-  spouseFatherName: '',
+  permanentAddress: {},
+  temporaryAddress: {},
+  birthPlaceAddress: {},
+  fatherInfo: {},
+  motherInfo: {},
+  spouseInfo: {},
+  spouseFatherInfo: {},
+  spouseMotherInfo: {},
+  childrenDetail: '',
 };

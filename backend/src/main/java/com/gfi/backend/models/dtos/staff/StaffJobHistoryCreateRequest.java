@@ -7,18 +7,18 @@ import lombok.Data;
 
 @Data
 public class StaffJobHistoryCreateRequest {
-    @NotNull(message = "Can bo khong duoc de trong")
+    @NotNull(message = "Cán bộ không được để trống")
     private Long staffId;
 
-    @NotNull(message = "Ngay bat dau khong duoc de trong")
+    @NotNull(message = "Ngày bắt đầu không được để trống")
     private LocalDate fromDate;
 
     private LocalDate toDate;
     private Long unitId;
-    private Long departmentId;
-    private Long workingPositionId;
-    private Long titleId;
-    private Long employmentTypeId;
+    private String departmentId;
+    private String workingPositionId;
+    private String titleId;
+    private String employmentTypeId;
     private String decisionNo;
     private String note;
 }

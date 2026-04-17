@@ -34,7 +34,7 @@ spring:
 # ===============================
 # FILE UPLOAD (MinIO)
 # ===============================
-# MinIO cấu hình để upload student avatar
+# MinIO cấu hình để upload file (student avatar, staff avatar, signature)
 # Phải match với docker-compose.yml MINIO_ROOT_USER và MINIO_ROOT_PASSWORD
 minio:
   # URL của MinIO server
@@ -44,7 +44,7 @@ minio:
   # Secret key (password) - PHẢI match docker-compose MINIO_ROOT_PASSWORD
   secretKey: admin12345
   # Tên bucket để lưu file
-  bucketName: student-avatar
+  bucketName: GIF
   # Folder trong bucket
   folderName: students
 

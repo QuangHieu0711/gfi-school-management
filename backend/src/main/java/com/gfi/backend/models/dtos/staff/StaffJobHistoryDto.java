@@ -13,10 +13,10 @@ public class StaffJobHistoryDto {
     private LocalDate fromDate;
     private LocalDate toDate;
     private Long unitId;
-    private Long departmentId;
-    private Long workingPositionId;
-    private Long titleId;
-    private Long employmentTypeId;
+    private String departmentId;
+    private String workingPositionId;
+    private String titleId;
+    private String employmentTypeId;
     private String decisionNo;
     private String note;
 }

@@ -30,6 +30,19 @@ public class StaffCreateRequest {
     private String email;
     private String healthStatus;
     private String socialInsuranceNo;
+    private Long avatarFileId;
+    private String avatarUrl;
+    private Long signatureFileId;
+    private String signatureUrl;
     private String status;
     private String note;
+    private StaffAddressRequest permanentAddress;
+    private StaffAddressRequest temporaryAddress;
+    private StaffAddressRequest birthPlaceAddress;
+    private StaffFamilyMemberRequest fatherInfo;
+    private StaffFamilyMemberRequest motherInfo;
+    private StaffFamilyMemberRequest spouseInfo;
+    private StaffFamilyMemberRequest spouseFatherInfo;
+    private StaffFamilyMemberRequest spouseMotherInfo;
+    private String childrenDetail;
 }

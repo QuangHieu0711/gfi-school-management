@@ -27,7 +27,18 @@ public class StaffDetailDto {
     private String healthStatus;
     private String socialInsuranceNo;
     private Long avatarFileId;
+    private String avatarUrl;
     private Long signatureFileId;
+    private String signatureUrl;
     private String status;
     private String note;
+    private StaffAddressDto permanentAddress;
+    private StaffAddressDto temporaryAddress;
+    private StaffAddressDto birthPlaceAddress;
+    private StaffFamilyMemberDto fatherInfo;
+    private StaffFamilyMemberDto motherInfo;
+    private StaffFamilyMemberDto spouseInfo;
+    private StaffFamilyMemberDto spouseFatherInfo;
+    private StaffFamilyMemberDto spouseMotherInfo;
+    private String childrenDetail;
 }

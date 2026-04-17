@@ -39,9 +39,9 @@ public class MinioProperties {
     private String secretKey;
     
     /**
-     * Tên bucket dùng để lưu student avatar
+     * Tên bucket dùng để lưu file (student avatar, staff avatar, signature)
      */
-    private String bucketName = "student-avatars";
+    private String bucketName = "GIF";
     
     /**
      * Tên folder trong bucket để lưu file

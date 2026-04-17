@@ -1,8 +1,17 @@
+$primary-color: #4f848c;
+$primary-dark: #3e6d75;
+$border-color: #d9e3e7;
+$panel-border: #dcdcdc;
+$bg-page: #f4f7f8;
+$bg-muted: #f8fafb;
+$text-primary: #123746;
+$text-secondary: #5f7680;
+
 .staff-profile-page {
   display: flex;
   flex-direction: column;
   gap: 16px;
-  background: #f4f7f8;
+  background: $bg-page;
   min-height: 100%;
 }
 
@@ -61,46 +70,70 @@
 }
 
 .view-section {
-  border: 1px solid #dcdcdc;
-  background: #fff;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
   border-radius: 8px;
-  overflow: hidden;
+  overflow: visible !important; /* Allow clusters to stand out */
 }
 
 .main-section {
-  box-shadow: 0 4px 12px rgba(15, 23, 32, 0.05);
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
 }
 
 .section-bar {
   padding: 12px 18px;
-  background: #4f848c;
+  background: $primary-color;
   color: #fff;
   font-size: 14px;
   font-weight: 700;
+  border-radius: 8px 8px 0 0;
+  margin-bottom: 24px; /* Space after the title bar */
 }
 
 .section-body {
-  padding: 18px;
+  padding: 0;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
 }
 
 .staff-sections {
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 24px;
 }
 
+/* ── Sub-sections with clear visual separation ── */
 .sub-section {
-  border: 1px solid #dcdcdc;
+  border: 1px solid $panel-border;
   border-radius: 8px;
   background: #fff;
   overflow: hidden;
+  box-shadow: 0 4px 12px rgba(15, 23, 32, 0.05); /* Matching student profile shadow */
 }
 
 .sub-section-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   padding: 10px 16px;
   background: #5a8f97;
   color: #fff;
 }
+
+.table-cluster {
+  padding: 0;
+  background: #fff;
+}
+
+.table-cluster ::ng-deep .table-wrapper {
+  border-radius: 0 0 8px 8px;
+  border: none;
+}
+
 
 .sub-section-title {
   font-size: 13px;
@@ -110,19 +143,83 @@
 }
 
 .sub-section-content {
-  padding: 16px;
+  padding: 20px;
   background: #fff;
 }
 
+/* ── Avatar Card ── */
+.profile-card {
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+}
+
+.avatar-card {
+  flex: 0 0 220px;
+  width: 220px;
+  height: 280px;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid $border-color;
+  background: linear-gradient(135deg, #eef5f7 0%, #d9eaee 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+
+  &.clickable {
+    cursor: pointer;
+  }
+
+  .avatar-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .avatar-placeholder {
+    color: #7a9ea6;
+  }
+
+  .camera-icon {
+    position: absolute;
+    inset-inline: 0;
+    bottom: 0;
+    height: 42px;
+    background: rgba(79, 132, 140, 0.92);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+  }
+
+  &:hover .camera-icon {
+    opacity: 1;
+  }
+}
+
+.profile-info {
+  flex: 1;
+  min-width: 0;
+}
+
+/* ── Grids ── */
 .profile-grid,
 .form-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 12px 16px;
+
+  &.two {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 .form-grid .full-row,
-.form-grid .full {
+.form-grid .full,
+.profile-grid .full-row {
   grid-column: 1 / -1;
 }
 
@@ -135,10 +232,10 @@
   border: 1px solid #e3eaed;
   background: #fbfcfd;
   border-radius: 6px;
-}
 
-.info-item.full {
-  grid-column: 1 / -1;
+  &.full {
+    grid-column: 1 / -1;
+  }
 }
 
 .info-label {
@@ -155,10 +252,75 @@
   word-break: break-word;
 }
 
+/* ── Address blocks (view + edit) ── */
+.address-view-grid,
+.address-edit-grid {
+  display: grid;
+  gap: 20px;
+  align-items: stretch;
+  grid-template-columns: 1fr; /* Stacking vertically to avoid misalignment */
+}
+
+.address-view-block,
+.address-edit-block {
+  min-width: 0;
+  width: 100%;
+  padding: 20px;
+  border: 1px solid $border-color;
+  border-radius: 8px;
+  background: $bg-muted;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+
+  > .form-grid,
+  > .profile-grid {
+    flex: 1;
+    align-content: start;
+    grid-template-columns: repeat(2, 1fr); /* 2 columns for address components */
+  }
+}
+
+.address-view-title,
+.address-edit-title {
+  margin-bottom: 14px;
+  padding-left: 10px;
+  border-left: 3px solid $primary-color;
+  color: $primary-color;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.2px;
+}
+
+/* ── Family blocks with visual separation ── */
+.family-block {
+  padding: 18px;
+  border: 1px solid #e0eaed;
+  border-radius: 8px;
+  background: $bg-muted;
+
+  & + .family-block {
+    margin-top: 18px;
+  }
+}
+
+.family-block-title {
+  margin-bottom: 14px;
+  padding-left: 10px;
+  border-left: 3px solid $primary-color;
+  color: $primary-color;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.2px;
+}
+
+/* ── Form field styles ── */
 .sub-section-content ::ng-deep {
   label {
     margin-bottom: 4px !important;
-    color: #123746;
+    color: $text-primary;
     font-size: 12px;
     font-weight: 600;
     text-transform: none;
@@ -180,25 +342,39 @@
 }
 
 .job-history-section {
-  padding: 18px;
+  padding: 0;
 }
 
 .job-history-section ::ng-deep .table-wrapper {
   gap: 12px;
 }
 
-.section-placeholder {
-  color: #61758a;
-  font-size: 14px;
-  min-height: 160px;
-  display: flex;
-  align-items: center;
+/* ── Responsive ── */
+@media (max-width: 1400px) {
+  .address-view-grid.three,
+  .address-edit-grid.three {
+    grid-template-columns: 1fr;
+  }
 }
 
-@media (max-width: 960px) {
+@media (max-width: 1200px) {
   .profile-grid,
   .form-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+
+    &.two {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+}
+
+@media (max-width: 960px) {
+  .profile-card {
+    flex-direction: column;
+  }
+
+  .avatar-card {
+    width: 220px;
   }
 }
 
@@ -211,6 +387,15 @@
 
   .profile-grid,
   .form-grid {
+    grid-template-columns: 1fr;
+
+    &.two {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .address-view-grid.three,
+  .address-edit-grid.three {
     grid-template-columns: 1fr;
   }
 }

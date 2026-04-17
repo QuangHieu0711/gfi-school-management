@@ -29,16 +29,16 @@ public class StaffJobHistory {
     private Long unitId;
 
     @Column
-    private Long departmentId;
+    private String departmentId;
 
     @Column
-    private Long workingPositionId;
+    private String workingPositionId;
 
     @Column
-    private Long titleId;
+    private String titleId;
 
     @Column
-    private Long employmentTypeId;
+    private String employmentTypeId;
 
     @Column(length = 100)
     private String decisionNo;

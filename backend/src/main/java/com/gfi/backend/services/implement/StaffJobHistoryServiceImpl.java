@@ -154,7 +154,7 @@ public class StaffJobHistoryServiceImpl implements StaffJobHistoryService {
     }
 
     private void applyFields(StaffJobHistory jobHistory, java.time.LocalDate fromDate, java.time.LocalDate toDate,
-            Long unitId, Long departmentId, Long workingPositionId, Long titleId, Long employmentTypeId,
+            Long unitId, String departmentId, String workingPositionId, String titleId, String employmentTypeId,
             String decisionNo, String note) {
         jobHistory.setFromDate(fromDate);
         jobHistory.setToDate(toDate);

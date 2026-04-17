@@ -8,10 +8,10 @@ import lombok.Data;
 
 @Data
 public class StaffEducationCreateRequest {
-    @NotNull(message = "Can bo khong duoc de trong")
+    @NotNull(message = "Cán bộ không được để trống")
     private Long staffId;
 
-    @NotBlank(message = "Ten co so khong duoc de trong")
+    @NotBlank(message = "Tên cơ sở không được để trống")
     private String schoolName;
 
     private String major;

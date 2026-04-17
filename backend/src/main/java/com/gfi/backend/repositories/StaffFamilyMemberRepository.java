@@ -9,4 +9,5 @@ import java.util.List;
 @Repository
 public interface StaffFamilyMemberRepository extends JpaRepository<StaffFamilyMember, Long> {
     List<StaffFamilyMember> findByStaffId(Long staffId);
+    void deleteByStaffId(Long staffId);
 }

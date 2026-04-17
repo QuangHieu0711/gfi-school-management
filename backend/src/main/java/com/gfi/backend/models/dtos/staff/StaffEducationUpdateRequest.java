@@ -7,7 +7,7 @@ import lombok.Data;
 
 @Data
 public class StaffEducationUpdateRequest {
-    @NotBlank(message = "Ten co so khong duoc de trong")
+    @NotBlank(message = "Tên cơ sở không được để trống")
     private String schoolName;
 
     private String major;

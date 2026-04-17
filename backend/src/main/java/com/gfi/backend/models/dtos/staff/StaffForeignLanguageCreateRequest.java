@@ -8,10 +8,10 @@ import lombok.Data;
 
 @Data
 public class StaffForeignLanguageCreateRequest {
-    @NotNull(message = "Can bo khong duoc de trong")
+    @NotNull(message = "Cán bộ không được để trống")
     private Long staffId;
 
-    @NotBlank(message = "Ngoai ngu khong duoc de trong")
+    @NotBlank(message = "Ngoại ngữ không được để trống")
     private String languageName;
 
     private String languageLevel;

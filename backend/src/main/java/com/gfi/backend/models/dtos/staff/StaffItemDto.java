@@ -18,4 +18,5 @@ public class StaffItemDto {
     private String email;
     private String status;
     private String cccdNo;
+    private String avatarUrl;
 }

@@ -11,4 +11,5 @@ import java.util.Optional;
 public interface StaffAddressRepository extends JpaRepository<StaffAddress, Long> {
     List<StaffAddress> findByStaffId(Long staffId);
     Optional<StaffAddress> findByStaffIdAndAddressType(Long staffId, String addressType);
+    void deleteByStaffId(Long staffId);
 }

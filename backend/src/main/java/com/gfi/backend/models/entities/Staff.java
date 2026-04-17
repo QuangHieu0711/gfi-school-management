@@ -77,8 +77,14 @@ public class Staff extends BaseEntity {
     @Column
     private Long avatarFileId;
 
+    @Column(length = 1000)
+    private String avatarUrl;
+
     @Column
     private Long signatureFileId;
+
+    @Column(length = 1000)
+    private String signatureUrl;
 
     @Column(nullable = false, length = 30)
     private String status;

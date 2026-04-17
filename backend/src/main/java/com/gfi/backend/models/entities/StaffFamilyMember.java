@@ -28,7 +28,16 @@ public class StaffFamilyMember {
     private Integer birthYear;
 
     @Column(length = 255)
+    private String placeOfBirth;
+
+    @Column(length = 255)
+    private String hometown;
+
+    @Column(length = 255)
     private String occupation;
+
+    @Column(length = 50)
+    private String phone;
 
     @Column(length = 255)
     private String workplace;

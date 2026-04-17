@@ -7,15 +7,15 @@ import lombok.Data;
 
 @Data
 public class StaffJobHistoryUpdateRequest {
-    @NotNull(message = "Ngay bat dau khong duoc de trong")
+    @NotNull(message = "Ngày bắt đầu không được để trống")
     private LocalDate fromDate;
 
     private LocalDate toDate;
     private Long unitId;
-    private Long departmentId;
-    private Long workingPositionId;
-    private Long titleId;
-    private Long employmentTypeId;
+    private String departmentId;
+    private String workingPositionId;
+    private String titleId;
+    private String employmentTypeId;
     private String decisionNo;
     private String note;
 }
