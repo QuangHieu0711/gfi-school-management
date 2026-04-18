@@ -530,7 +530,14 @@ export class LayoutComponent extends ComponentBaseAbstract {
   }
 
   private ensureLeadingSlash(url: string): string {
-    return url.startsWith('/') ? url : `/${url}`;
+    const normalized = url.startsWith('/') ? url : `/${url}`;
+    const adminPrefix = `/${this.navigatorEndpoint.ADMIN.BASE_PATH}/`;
+
+    if (normalized.startsWith(adminPrefix)) {
+      return normalized;
+    }
+
+    return `${adminPrefix}${normalized.replace(/^\/+/, '')}`;
   }
 
   private getMenuLabel(menuCode?: string): string {
@@ -549,6 +556,8 @@ export class LayoutComponent extends ComponentBaseAbstract {
       STUDENT: 'Há»c sinh',
       STUDENT_PROFILE: 'Há»“ sÆ¡ há»c sinh',
       STAFF_PROFILE: 'Ho so can bo',
+      ASSIGNMENT_LIST: 'Phan cong giang day',
+      CURRICULUM_DISTRIBUTION: 'Phan phoi chuong trinh',
     };
 
     return map[menuCode ?? ''] ?? menuCode ?? '';

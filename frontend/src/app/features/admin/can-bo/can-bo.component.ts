@@ -120,6 +120,15 @@ export class CanBoComponent extends ComponentBaseAbstract {
     });
   }
 
+  addNewStaff(): void {
+    this.routerService.navigate([
+      '/',
+      NAVIGATOR_ENDPOINT.ADMIN.BASE_PATH,
+      ...NAVIGATOR_ENDPOINT.ADMIN.CAN_BO.BASE_PATH.split('/'),
+      PATH.TAO_MOI,
+    ]);
+  }
+
   openDetail(staff: CanBoResponse): void {
     this.routerService.navigate(
       [
@@ -154,9 +163,19 @@ export class CanBoComponent extends ComponentBaseAbstract {
   }
 
   assignTeaching(_staff: CanBoResponse): void {
-    this.toastr.info(
-      'Chức năng phân công giảng dạy đang được hoàn thiện',
-      'Thông báo'
+    this.routerService.navigate(
+      [
+        '/',
+        NAVIGATOR_ENDPOINT.ADMIN.BASE_PATH,
+        ...NAVIGATOR_ENDPOINT.ADMIN.CAN_BO.ASSIGNMENT_LIST.split('/'),
+      ],
+      {
+        state: { staff: _staff },
+        queryParams: {
+          staffId: _staff[this.key.ID],
+          staffName: _staff[this.key.FULL_NAME] ?? '',
+        },
+      }
     );
   }
 

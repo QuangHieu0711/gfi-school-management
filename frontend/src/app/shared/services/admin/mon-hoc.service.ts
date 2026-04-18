@@ -8,6 +8,7 @@ import {
   MON_HOC_API_ENDPOINT,
   MonHocFilterRequest,
   MonHocFormRequest,
+  MonHocOptionResponse,
   MonHocResponse,
 } from '@app/model/admin/mon-hoc.model';
 
@@ -27,6 +28,12 @@ export class MonHocService {
     );
   }
 
+  getOptions() {
+    return this.http.get<IResponse<MonHocOptionResponse[]>>(
+      `${this.baseUrl}/${MON_HOC_API_ENDPOINT.OPTIONS}`
+    );
+  }
+
   getById(id: string | number) {
     return this.http.get<IResponse<MonHocResponse>>(`${this.baseUrl}/${id}`, {
       context: this.silentContext,
@@ -40,9 +47,13 @@ export class MonHocService {
   }
 
   update(id: string | number, payload: MonHocFormRequest) {
-    return this.http.put<IResponse<MonHocResponse>>(`${this.baseUrl}/${id}`, payload, {
-      context: this.silentContext,
-    });
+    return this.http.put<IResponse<MonHocResponse>>(
+      `${this.baseUrl}/${id}`,
+      payload,
+      {
+        context: this.silentContext,
+      }
+    );
   }
 
   delete(id: string | number) {

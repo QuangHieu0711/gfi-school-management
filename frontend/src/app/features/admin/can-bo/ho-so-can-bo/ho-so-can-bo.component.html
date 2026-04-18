@@ -414,5 +414,21 @@
         </div>
       </section>
     }
+
+    @if (activeTab === 'phan-cong-giang-day') {
+      <section class="view-section main-section">
+        <div class="section-body">
+          <app-table tableTitle="Phân công giảng dạy" [pageIndex]="teachingAssignmentPageIndex" [pageSize]="teachingAssignmentPageSize" [total]="teachingAssignmentTotal" [tableConfig]="teachingAssignmentTableConfig" [dataSource]="teachingAssignmentDataSource" [tableColumns]="teachingAssignmentColumns" (queryChange)="loadTeachingAssignments($event)">
+            <ng-container custom-buttons>
+              @if (staffId) {
+                <button color="primary" matButton="filled" class="btn-tight" (click)="openTeachingAssignmentDialog(TYPE_FORM.CREATE)">
+                  <app-icon icon="add_box" [size]="18" class="btn-icon" />Thêm mới
+                </button>
+              }
+            </ng-container>
+          </app-table>
+        </div>
+      </section>
+    }
   </div>
 </div>

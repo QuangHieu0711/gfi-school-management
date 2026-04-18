@@ -18,7 +18,13 @@ export enum MON_HOC_KEY {
 export const MON_HOC_API_ENDPOINT = {
   BASE_PATH: 'subjects',
   FILTER: 'search',
+  OPTIONS: 'options',
 };
+
+export interface MonHocOptionResponse {
+  id: ID_TYPE;
+  name: string;
+}
 
 export const MON_HOC_TYPE_OPTIONS = [
   { value: 0, label: 'Bắt buộc' },

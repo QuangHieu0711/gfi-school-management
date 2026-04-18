@@ -1,0 +1,88 @@
+<app-table
+  tableTitle="Phân phối chương trình"
+  [pageIndex]="pageIndex"
+  [pageSize]="pageSize"
+  [total]="dataSourceTotal"
+  [tableConfig]="tableConfig"
+  [dataSource]="dataSource"
+  [tableColumns]="columns"
+  (queryChange)="filterData($event)">
+  <ng-container custom-buttons>
+    <div class="flex gap-2 items-center">
+      @if (canAdd) {
+        <button
+          color="primary"
+          matButton="filled"
+          class="btn-tight"
+          (click)="openDialog(TYPE_FORM.CREATE)">
+          <app-icon
+            icon="add_box"
+            [size]="18"
+            class="btn-icon" />
+          Thêm mới
+        </button>
+      }
+      @if (canConfigWeek) {
+        <button
+          color="primary"
+          matButton="outlined"
+          class="btn-tight"
+          (click)="openWeekConfig()">
+          <app-icon
+            icon="settings"
+            [size]="18"
+            class="btn-icon" />
+          Cấu hình tuần
+        </button>
+      }
+    </div>
+  </ng-container>
+
+  <ng-container filter-panel>
+    <app-form-control
+      [form]="form"
+      (submitEvent)="filterData()"
+      (resetEvent)="resetFilter()">
+      <div class="flex gap-2 items-center flex-wrap">
+        <app-text-control
+          [item]="findFormControl($formItem, key.WEEK)"
+          [form]="form"></app-text-control>
+        <app-select-control
+          [item]="findFormControl($formItem, key.CLASS_ID)"
+          [form]="form"></app-select-control>
+        <app-select-control
+          [item]="findFormControl($formItem, key.SUBJECT_ID)"
+          [form]="form"></app-select-control>
+        <app-text-control
+          [item]="findFormControl($formItem, key.LESSON_NAME)"
+          [form]="form"></app-text-control>
+        <div class="flex gap-1 items-center">
+          <button
+            color="dark"
+            matIconButton="text"
+            matTooltip="Tim kiem"
+            type="submit">
+            <app-icon
+              icon="svg:search"
+              color="#858585" />
+          </button>
+          <button
+            color="dark"
+            matIconButton="text"
+            matTooltip="Lam moi"
+            type="reset">
+            <app-icon
+              icon="svg:cached"
+              color="#858585" />
+          </button>
+        </div>
+      </div>
+    </app-form-control>
+  </ng-container>
+</app-table>
+
+<ng-template
+  #lessonTpl
+  let-row>
+  <span class="lesson-name">{{ row?.[key.LESSON_NAME] }}</span>
+</ng-template>

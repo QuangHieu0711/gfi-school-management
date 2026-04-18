@@ -50,6 +50,16 @@ export class CanBoService {
     });
   }
 
+  create(payload: CanBoFormRequest) {
+    return this.http.post<IResponse<CanBoDetailResponse>>(
+      `${this.baseUrl}`,
+      payload,
+      {
+        context: this.silentContext,
+      }
+    );
+  }
+
   generateCode(unitId: string | number) {
     return this.http.get<IResponse<string>>(`${this.baseUrl}/generate-code`, {
       params: { unitId },

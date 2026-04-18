@@ -344,6 +344,8 @@ export class AuthService {
       STUDENT: 'Há»c sinh',
       STUDENT_PROFILE: 'Há»“ sÆ¡ há»c sinh',
       STAFF_PROFILE: 'Ho so can bo',
+      ASSIGNMENT_LIST: 'Phan cong giang day',
+      CURRICULUM_DISTRIBUTION: 'Phan phoi chuong trinh',
     };
 
     return map[menuCode] ?? menuCode;
@@ -365,6 +367,8 @@ export class AuthService {
       STUDENT: 'school',
       STUDENT_PROFILE: 'badge',
       STAFF_PROFILE: 'supervisor_account',
+      ASSIGNMENT_LIST: 'assignment_ind',
+      CURRICULUM_DISTRIBUTION: 'table_chart',
     };
 
     return map[menuCode] ?? 'menu';

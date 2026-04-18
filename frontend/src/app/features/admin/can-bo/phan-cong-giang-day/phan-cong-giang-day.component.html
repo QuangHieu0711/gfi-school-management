@@ -1,0 +1,93 @@
+<app-table
+  tableTitle="Phan cong giang day"
+  [pageIndex]="pageIndex"
+  [pageSize]="pageSize"
+  [total]="dataSourceTotal"
+  [tableConfig]="tableConfig"
+  [dataSource]="dataSource"
+  [tableColumns]="columns"
+  (queryChange)="filterData($event)">
+  <ng-container custom-buttons>
+    <div class="flex gap-2 items-center">
+      @if (selectedStaffId) {
+        <button
+          color="primary"
+          matButton="outlined"
+          class="btn-tight"
+          (click)="goToStaffProfile()">
+          <app-icon
+            icon="arrow_back"
+            [size]="18"
+            class="btn-icon" />
+          Ho so can bo
+        </button>
+      }
+      @if (canAdd) {
+        <button
+          color="primary"
+          matButton="filled"
+          class="btn-tight"
+          (click)="openDialog(TYPE_FORM.CREATE)">
+          <app-icon
+            icon="add_box"
+            [size]="18"
+            class="btn-icon" />
+          Them moi
+        </button>
+      }
+    </div>
+    @if (staffDisplayName) {
+      <div class="assignment-staff-caption">Can bo: {{ staffDisplayName }}</div>
+    }
+  </ng-container>
+
+  <ng-container filter-panel>
+    <app-form-control
+      [form]="form"
+      (submitEvent)="filterData()"
+      (resetEvent)="resetFilter()">
+      <div class="flex gap-2 items-center flex-wrap">
+        <app-select-control
+          [item]="findFormControl($formItem, key.SCHOOL_YEAR_ID)"
+          [form]="form"></app-select-control>
+        <app-select-control
+          [item]="findFormControl($formItem, key.CLASS_ID)"
+          [form]="form"></app-select-control>
+        <app-select-control
+          [item]="findFormControl($formItem, key.SUBJECT_ID)"
+          [form]="form"></app-select-control>
+        <app-select-control
+          [item]="findFormControl($formItem, key.DEPARTMENT_ID)"
+          [form]="form"></app-select-control>
+        <div class="flex gap-1 items-center">
+          <button
+            color="dark"
+            matIconButton="text"
+            matTooltip="Tim kiem"
+            type="submit">
+            <app-icon
+              icon="svg:search"
+              color="#858585" />
+          </button>
+          <button
+            color="dark"
+            matIconButton="text"
+            matTooltip="Lam moi"
+            type="reset">
+            <app-icon
+              icon="svg:cached"
+              color="#858585" />
+          </button>
+        </div>
+      </div>
+    </app-form-control>
+  </ng-container>
+</app-table>
+
+<ng-template
+  #homeroomTpl
+  let-row>
+  <span class="homeroom-pill" [class.is-yes]="row?.[key.IS_HOMEROOM]">
+    {{ row?.[key.IS_HOMEROOM] ? 'Co' : 'Khong' }}
+  </span>
+</ng-template>

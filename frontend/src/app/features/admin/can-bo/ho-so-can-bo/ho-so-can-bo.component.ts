@@ -55,13 +55,17 @@ import {
 import { DialogThongTinDaoTaoComponent } from './thong-tin-dao-tao/dialog-thong-tin-dao-tao.component';
 import { DialogThongTinNgoaiNguComponent } from './thong-tin-ngoai-ngu/dialog-thong-tin-ngoai-ngu.component';
 import { DialogQuaTrinhCongTacComponent } from './qua-trinh-cong-tac/dialog-qua-trinh-cong-tac.component';
+import { DialogPhanCongGiangDayComponent } from '../phan-cong-giang-day/dialog-phan-cong-giang-day.component';
+import { PhanCongGiangDayService } from '@app/service/admin/phan-cong-giang-day.service';
+import { PhanCongGiangDayResponse } from '@app/model/admin/phan-cong-giang-day.model';
 
 type TabKey =
   | 'thong-tin-can-bo'
   | 'qua-trinh-cong-tac'
   | 'thong-tin-dao-tao'
   | 'thong-tin-luong'
-  | 'thong-tin-ngoai-ngu';
+  | 'thong-tin-ngoai-ngu'
+  | 'phan-cong-giang-day';
 
 @Component({
   selector: 'ho-so-can-bo',
@@ -82,16 +86,21 @@ export class HoSoCanBoComponent extends ComponentBaseAbstract {
 
   readonly tabs: Array<{ key: TabKey; label: string }> = [
     { key: 'thong-tin-can-bo', label: 'THÔNG TIN CÁN BỘ' },
-    { key: 'qua-trinh-cong-tac', label: 'QUẢN LÝ QUÁ TRÌNH CÔNG TÁC CỦA CÁN BỘ' },
+    {
+      key: 'qua-trinh-cong-tac',
+      label: 'QUẢN LÝ QUÁ TRÌNH CÔNG TÁC CỦA CÁN BỘ',
+    },
     { key: 'thong-tin-dao-tao', label: 'THÔNG TIN ĐÀO TẠO' },
     { key: 'thong-tin-luong', label: 'THÔNG TIN LƯƠNG' },
     { key: 'thong-tin-ngoai-ngu', label: 'THÔNG TIN NGOẠI NGỮ' },
+    { key: 'phan-cong-giang-day', label: 'PHÂN CÔNG GIẢNG DẠY' },
   ];
   readonly genderOptions = CAN_BO_GENDER_OPTIONS;
   readonly statusOptions = CAN_BO_STATUS_OPTIONS;
   readonly jobHistoryTableConfig = { hasFilterPanel: false };
   readonly trainingTableConfig = { hasFilterPanel: false };
   readonly foreignLanguageTableConfig = { hasFilterPanel: false };
+  readonly teachingAssignmentTableConfig = { hasFilterPanel: false };
 
   activeTab: TabKey = 'thong-tin-can-bo';
   staffId?: string;
@@ -115,6 +124,11 @@ export class HoSoCanBoComponent extends ComponentBaseAbstract {
   foreignLanguageTotal = 0;
   foreignLanguagePageIndex = 0;
   foreignLanguagePageSize = 10;
+  teachingAssignmentColumns: MtxGridColumn[] = [];
+  teachingAssignmentDataSource: PhanCongGiangDayResponse[] = [];
+  teachingAssignmentTotal = 0;
+  teachingAssignmentPageIndex = 0;
+  teachingAssignmentPageSize = 10;
 
   // Avatar
   selectedAvatarName = '';
@@ -143,7 +157,8 @@ export class HoSoCanBoComponent extends ComponentBaseAbstract {
     private readonly staffJobHistoryService: StaffJobHistoryService,
     private readonly staffTrainingService: StaffTrainingService,
     private readonly staffForeignLanguageService: StaffForeignLanguageService,
-    private readonly diaChiHanhChinhService: DiaChiHanhChinhService
+    private readonly diaChiHanhChinhService: DiaChiHanhChinhService,
+    private readonly phanCongGiangDayService: PhanCongGiangDayService
   ) {
     super(injector);
   }
@@ -172,12 +187,15 @@ export class HoSoCanBoComponent extends ComponentBaseAbstract {
   protected override componentInit(): void {
     this.syncPathType();
     this.staffId = this.routeService.snapshot.paramMap.get('id') ?? undefined;
+    const tabParam = this.routeService.snapshot.queryParamMap.get('tab');
+    if (this.isValidTab(tabParam)) this.activeTab = tabParam;
     this.initItems();
     this.initAddressItems();
     this.initForm();
     this.initJobHistoryColumns();
     this.initTrainingColumns();
     this.initForeignLanguageColumns();
+    this.initTeachingAssignmentColumns();
     this.loadUnitOptions();
     this.loadProvinces();
     this.bindGenerateCode();
@@ -196,14 +214,29 @@ export class HoSoCanBoComponent extends ComponentBaseAbstract {
       next: ({ data }) => {
         this.staff = this.normalizeDetail(data);
         this.patchForm(this.staff);
-        this.loadJobHistories({ pageIndex: 0, pageSize: this.jobHistoryPageSize });
-        this.loadTrainingInfos({ pageIndex: 0, pageSize: this.trainingPageSize });
-        this.loadForeignLanguages({ pageIndex: 0, pageSize: this.foreignLanguagePageSize });
+        this.loadJobHistories({
+          pageIndex: 0,
+          pageSize: this.jobHistoryPageSize,
+        });
+        this.loadTrainingInfos({
+          pageIndex: 0,
+          pageSize: this.trainingPageSize,
+        });
+        this.loadForeignLanguages({
+          pageIndex: 0,
+          pageSize: this.foreignLanguagePageSize,
+        });
+        this.loadTeachingAssignments({
+          pageIndex: 0,
+          pageSize: this.teachingAssignmentPageSize,
+        });
       },
       error: (error) => {
         if (!routeState) {
           this.toastr.error(
-            error?.error?.userMessage ?? error?.error?.message ?? 'Tải dữ liệu thất bại',
+            error?.error?.userMessage ??
+              error?.error?.message ??
+              'Tải dữ liệu thất bại',
             'Thất bại'
           );
         }
@@ -214,34 +247,77 @@ export class HoSoCanBoComponent extends ComponentBaseAbstract {
   // ════════════════════════════════════════
   //  Tab / Navigation
   // ════════════════════════════════════════
-  selectTab(tabKey: TabKey): void { this.activeTab = tabKey; }
+  selectTab(tabKey: TabKey): void {
+    this.activeTab = tabKey;
+    this.routerService.navigate([], {
+      relativeTo: this.routeService,
+      queryParams: { tab: tabKey },
+      queryParamsHandling: 'merge',
+      replaceUrl: true,
+    });
+  }
 
-  goBack(): void { this.locationService.back(); }
+  goBack(): void {
+    this.locationService.back();
+  }
 
   openEdit(): void {
     if (!this.staffId) return;
     this.pathType = this.TYPE_FORM.UPDATE;
     this.routerService.navigate(
-      ['/', NAVIGATOR_ENDPOINT.ADMIN.BASE_PATH, ...NAVIGATOR_ENDPOINT.ADMIN.CAN_BO.BASE_PATH.split('/'), PATH.CAP_NHAT, this.staffId],
+      [
+        '/',
+        NAVIGATOR_ENDPOINT.ADMIN.BASE_PATH,
+        ...NAVIGATOR_ENDPOINT.ADMIN.CAN_BO.BASE_PATH.split('/'),
+        PATH.CAP_NHAT,
+        this.staffId,
+      ],
       { state: { staff: this.staff } }
     );
   }
 
   submit(): void {
-    if (!this.staffId || !this.isUpdateMode) return;
     const payload = this.buildPayload();
+
+    if (this.pathType === this.TYPE_FORM.CREATE) {
+      console.log('Payload create staff:', payload);
+      this.canBoService.create(payload).subscribe({
+        next: () => {
+          this.toastr.success('Thêm cán bộ thành công', 'Thành công');
+          this.routerService.navigate([
+            '/',
+            NAVIGATOR_ENDPOINT.ADMIN.BASE_PATH,
+            ...NAVIGATOR_ENDPOINT.ADMIN.CAN_BO.BASE_PATH.split('/'),
+          ]);
+        },
+        error: (error) => {
+          this.toastr.error(
+            error?.error?.userMessage ??
+              error?.error?.message ??
+              'Lưu thất bại',
+            'Thất bại'
+          );
+        },
+      });
+      return;
+    }
+
+    if (!this.staffId || !this.isUpdateMode) return;
     console.log('Payload update staff:', payload);
     this.canBoService.update(this.staffId, payload).subscribe({
       next: () => {
         this.toastr.success('Cập nhật thành công', 'Thành công');
-        this.pathType = this.TYPE_FORM.DETAIL;
-        this.routerService.navigate(
-          ['/', NAVIGATOR_ENDPOINT.ADMIN.BASE_PATH, ...NAVIGATOR_ENDPOINT.ADMIN.CAN_BO.BASE_PATH.split('/'), PATH.CHI_TIET, this.staffId],
-          { state: { staff: { ...this.staff, ...payload, staffCode: this.form.get('staffCode')?.value } } }
-        );
+        this.routerService.navigate([
+          '/',
+          NAVIGATOR_ENDPOINT.ADMIN.BASE_PATH,
+          ...NAVIGATOR_ENDPOINT.ADMIN.CAN_BO.BASE_PATH.split('/'),
+        ]);
       },
       error: (error) => {
-        this.toastr.error(error?.error?.userMessage ?? error?.error?.message ?? 'Lưu thất bại', 'Thất bại');
+        this.toastr.error(
+          error?.error?.userMessage ?? error?.error?.message ?? 'Lưu thất bại',
+          'Thất bại'
+        );
       },
     });
   }
@@ -265,7 +341,10 @@ export class HoSoCanBoComponent extends ComponentBaseAbstract {
   getStatusLabel(value?: string | null): string {
     const n = `${value ?? ''}`.trim().toUpperCase();
     if (!n) return '—';
-    return this.statusOptions.find((o) => `${o.value}`.toUpperCase() === n)?.label ?? `${value ?? ''}`;
+    return (
+      this.statusOptions.find((o) => `${o.value}`.toUpperCase() === n)?.label ??
+      `${value ?? ''}`
+    );
   }
 
   // ════════════════════════════════════════
@@ -277,13 +356,18 @@ export class HoSoCanBoComponent extends ComponentBaseAbstract {
     if (!file) return;
     this.selectedAvatarName = file.name;
     const reader = new FileReader();
-    reader.onload = () => { this.form.get('avatarUrl')?.setValue(`${reader.result ?? ''}`); };
+    reader.onload = () => {
+      this.form.get('avatarUrl')?.setValue(`${reader.result ?? ''}`);
+    };
     reader.readAsDataURL(file);
     input.value = '';
   }
 
   onAvatarCardKeydown(event: KeyboardEvent, input: HTMLInputElement): void {
-    if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); input.click(); }
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      input.click();
+    }
   }
 
   // ════════════════════════════════════════
@@ -293,106 +377,337 @@ export class HoSoCanBoComponent extends ComponentBaseAbstract {
     if (!this.staffId) return;
     this.jobHistoryPageIndex = query?.pageIndex ?? this.jobHistoryPageIndex;
     this.jobHistoryPageSize = query?.pageSize ?? this.jobHistoryPageSize;
-    this.staffJobHistoryService.filter({
-      pageNow: this.jobHistoryPageIndex + 1, pageSize: this.jobHistoryPageSize,
-      filter: { staffId: Number(this.staffId) },
-    }).subscribe({
-      next: ({ data }) => {
-        const items = Array.isArray(data) ? data : Array.isArray(data?.items) ? data.items : [];
-        this.jobHistoryDataSource = items.map((i) => ({ ...i, unitName: this.getUnitLabel(i.unitId) }));
-        this.jobHistoryTotal = Array.isArray(data) ? items.length : (data?.recordTotal ?? items.length);
-      },
-      error: () => { this.jobHistoryDataSource = []; this.jobHistoryTotal = 0; },
-    });
+    this.staffJobHistoryService
+      .filter({
+        pageNow: this.jobHistoryPageIndex + 1,
+        pageSize: this.jobHistoryPageSize,
+        filter: { staffId: Number(this.staffId) },
+      })
+      .subscribe({
+        next: ({ data }) => {
+          const items = Array.isArray(data)
+            ? data
+            : Array.isArray(data?.items)
+              ? data.items
+              : [];
+          this.jobHistoryDataSource = items.map((i) => ({
+            ...i,
+            unitName: this.getUnitLabel(i.unitId),
+          }));
+          this.jobHistoryTotal = Array.isArray(data)
+            ? items.length
+            : (data?.recordTotal ?? items.length);
+        },
+        error: () => {
+          this.jobHistoryDataSource = [];
+          this.jobHistoryTotal = 0;
+        },
+      });
   }
 
   loadTrainingInfos(query?: TableQueryEvent): void {
     if (!this.staffId) return;
     this.trainingPageIndex = query?.pageIndex ?? this.trainingPageIndex;
     this.trainingPageSize = query?.pageSize ?? this.trainingPageSize;
-    this.staffTrainingService.filter({
-      pageNow: this.trainingPageIndex + 1, pageSize: this.trainingPageSize,
-      filter: { staffId: Number(this.staffId) },
-    }).subscribe({
-      next: ({ data }) => {
-        const items = Array.isArray(data) ? data : Array.isArray(data?.items) ? data.items : [];
-        this.trainingDataSource = items;
-        this.trainingTotal = Array.isArray(data) ? items.length : (data?.recordTotal ?? items.length);
-      },
-      error: () => { this.trainingDataSource = []; this.trainingTotal = 0; },
-    });
+    this.staffTrainingService
+      .filter({
+        pageNow: this.trainingPageIndex + 1,
+        pageSize: this.trainingPageSize,
+        filter: { staffId: Number(this.staffId) },
+      })
+      .subscribe({
+        next: ({ data }) => {
+          const items = Array.isArray(data)
+            ? data
+            : Array.isArray(data?.items)
+              ? data.items
+              : [];
+          this.trainingDataSource = items;
+          this.trainingTotal = Array.isArray(data)
+            ? items.length
+            : (data?.recordTotal ?? items.length);
+        },
+        error: () => {
+          this.trainingDataSource = [];
+          this.trainingTotal = 0;
+        },
+      });
   }
 
   loadForeignLanguages(query?: TableQueryEvent): void {
     if (!this.staffId) return;
-    this.foreignLanguagePageIndex = query?.pageIndex ?? this.foreignLanguagePageIndex;
-    this.foreignLanguagePageSize = query?.pageSize ?? this.foreignLanguagePageSize;
-    this.staffForeignLanguageService.filter({
-      pageNow: this.foreignLanguagePageIndex + 1, pageSize: this.foreignLanguagePageSize,
-      filter: { staffId: Number(this.staffId) },
-    }).subscribe({
-      next: ({ data }) => {
-        const items = Array.isArray(data) ? data : Array.isArray(data?.items) ? data.items : [];
-        this.foreignLanguageDataSource = items;
-        this.foreignLanguageTotal = Array.isArray(data) ? items.length : (data?.recordTotal ?? items.length);
-      },
-      error: () => { this.foreignLanguageDataSource = []; this.foreignLanguageTotal = 0; },
-    });
+    this.foreignLanguagePageIndex =
+      query?.pageIndex ?? this.foreignLanguagePageIndex;
+    this.foreignLanguagePageSize =
+      query?.pageSize ?? this.foreignLanguagePageSize;
+    this.staffForeignLanguageService
+      .filter({
+        pageNow: this.foreignLanguagePageIndex + 1,
+        pageSize: this.foreignLanguagePageSize,
+        filter: { staffId: Number(this.staffId) },
+      })
+      .subscribe({
+        next: ({ data }) => {
+          const items = Array.isArray(data)
+            ? data
+            : Array.isArray(data?.items)
+              ? data.items
+              : [];
+          this.foreignLanguageDataSource = items;
+          this.foreignLanguageTotal = Array.isArray(data)
+            ? items.length
+            : (data?.recordTotal ?? items.length);
+        },
+        error: () => {
+          this.foreignLanguageDataSource = [];
+          this.foreignLanguageTotal = 0;
+        },
+      });
+  }
+
+  loadTeachingAssignments(query?: TableQueryEvent): void {
+    if (!this.staffId) return;
+    this.teachingAssignmentPageIndex =
+      query?.pageIndex ?? this.teachingAssignmentPageIndex;
+    this.teachingAssignmentPageSize =
+      query?.pageSize ?? this.teachingAssignmentPageSize;
+    this.phanCongGiangDayService
+      .filter({
+        pageNow: this.teachingAssignmentPageIndex + 1,
+        pageSize: this.teachingAssignmentPageSize,
+        filter: { staffId: Number(this.staffId) },
+      })
+      .subscribe({
+        next: ({ data }) => {
+          const items = Array.isArray(data)
+            ? data
+            : Array.isArray(data?.items)
+              ? data.items
+              : [];
+          this.teachingAssignmentDataSource = items;
+          this.teachingAssignmentTotal = Array.isArray(data)
+            ? items.length
+            : (data?.recordTotal ?? items.length);
+        },
+        error: () => {
+          this.teachingAssignmentDataSource = [];
+          this.teachingAssignmentTotal = 0;
+        },
+      });
   }
 
   // ════════════════════════════════════════
   //  Dialog openers
   // ════════════════════════════════════════
-  openJobHistoryDialog(type: TYPE_FORM_KEY, rowData?: StaffJobHistoryResponse): void {
+  openJobHistoryDialog(
+    type: TYPE_FORM_KEY,
+    rowData?: StaffJobHistoryResponse
+  ): void {
     if (!this.staffId) return;
-    this.dialog.componentDialog(DialogQuaTrinhCongTacComponent, {
-      width: '720px',
-      data: { type, staffId: Number(this.staffId), id: rowData?.id, data: rowData, unitOptions: this.unitOptions },
-    }, (result?: boolean) => { if (result) this.loadJobHistories({ pageIndex: this.jobHistoryPageIndex, pageSize: this.jobHistoryPageSize }); });
+    this.dialog.componentDialog(
+      DialogQuaTrinhCongTacComponent,
+      {
+        width: '720px',
+        data: {
+          type,
+          staffId: Number(this.staffId),
+          id: rowData?.id,
+          data: rowData,
+          unitOptions: this.unitOptions,
+        },
+      },
+      (result?: boolean) => {
+        if (result)
+          this.loadJobHistories({
+            pageIndex: this.jobHistoryPageIndex,
+            pageSize: this.jobHistoryPageSize,
+          });
+      }
+    );
   }
 
   deleteJobHistory(rowData: StaffJobHistoryResponse): void {
-    this.dialog.confirm({ title: 'Xác nhận', message: `Bạn có chắc chắn muốn xóa quá trình công tác ${rowData.decisionNo ?? ''} không?` }, (ok?: boolean) => {
-      if (!ok) return;
-      this.staffJobHistoryService.delete(rowData.id).subscribe({
-        next: () => { this.toastr.success('Xóa thành công', 'Thành công'); this.loadJobHistories({ pageIndex: this.jobHistoryPageIndex, pageSize: this.jobHistoryPageSize }); },
-        error: (e) => { this.toastr.error(e?.error?.userMessage ?? e?.error?.message ?? 'Xóa thất bại', 'Thất bại'); },
-      });
-    });
+    this.dialog.confirm(
+      {
+        title: 'Xác nhận',
+        message: `Bạn có chắc chắn muốn xóa quá trình công tác ${rowData.decisionNo ?? ''} không?`,
+      },
+      (ok?: boolean) => {
+        if (!ok) return;
+        this.staffJobHistoryService.delete(rowData.id).subscribe({
+          next: () => {
+            this.toastr.success('Xóa thành công', 'Thành công');
+            this.loadJobHistories({
+              pageIndex: this.jobHistoryPageIndex,
+              pageSize: this.jobHistoryPageSize,
+            });
+          },
+          error: (e) => {
+            this.toastr.error(
+              e?.error?.userMessage ?? e?.error?.message ?? 'Xóa thất bại',
+              'Thất bại'
+            );
+          },
+        });
+      }
+    );
   }
 
-  openTrainingDialog(type: TYPE_FORM_KEY, rowData?: StaffTrainingResponse): void {
+  openTrainingDialog(
+    type: TYPE_FORM_KEY,
+    rowData?: StaffTrainingResponse
+  ): void {
     if (!this.staffId) return;
-    this.dialog.componentDialog(DialogThongTinDaoTaoComponent, {
-      width: '720px', data: { type, staffId: Number(this.staffId), id: rowData?.id, data: rowData },
-    }, (result?: boolean) => { if (result) this.loadTrainingInfos({ pageIndex: this.trainingPageIndex, pageSize: this.trainingPageSize }); });
+    this.dialog.componentDialog(
+      DialogThongTinDaoTaoComponent,
+      {
+        width: '720px',
+        data: {
+          type,
+          staffId: Number(this.staffId),
+          id: rowData?.id,
+          data: rowData,
+        },
+      },
+      (result?: boolean) => {
+        if (result)
+          this.loadTrainingInfos({
+            pageIndex: this.trainingPageIndex,
+            pageSize: this.trainingPageSize,
+          });
+      }
+    );
   }
 
   deleteTraining(rowData: StaffTrainingResponse): void {
-    this.dialog.confirm({ title: 'Xác nhận', message: `Bạn có chắc chắn muốn xóa thông tin đào tạo ${rowData.schoolName ?? ''} không?` }, (ok?: boolean) => {
-      if (!ok) return;
-      this.staffTrainingService.delete(rowData.id).subscribe({
-        next: () => { this.toastr.success('Xóa thành công', 'Thành công'); this.loadTrainingInfos({ pageIndex: this.trainingPageIndex, pageSize: this.trainingPageSize }); },
-        error: (e) => { this.toastr.error(e?.error?.userMessage ?? e?.error?.message ?? 'Xóa thất bại', 'Thất bại'); },
-      });
-    });
+    this.dialog.confirm(
+      {
+        title: 'Xác nhận',
+        message: `Bạn có chắc chắn muốn xóa thông tin đào tạo ${rowData.schoolName ?? ''} không?`,
+      },
+      (ok?: boolean) => {
+        if (!ok) return;
+        this.staffTrainingService.delete(rowData.id).subscribe({
+          next: () => {
+            this.toastr.success('Xóa thành công', 'Thành công');
+            this.loadTrainingInfos({
+              pageIndex: this.trainingPageIndex,
+              pageSize: this.trainingPageSize,
+            });
+          },
+          error: (e) => {
+            this.toastr.error(
+              e?.error?.userMessage ?? e?.error?.message ?? 'Xóa thất bại',
+              'Thất bại'
+            );
+          },
+        });
+      }
+    );
   }
 
-  openForeignLanguageDialog(type: TYPE_FORM_KEY, rowData?: StaffForeignLanguageResponse): void {
+  openForeignLanguageDialog(
+    type: TYPE_FORM_KEY,
+    rowData?: StaffForeignLanguageResponse
+  ): void {
     if (!this.staffId) return;
-    this.dialog.componentDialog(DialogThongTinNgoaiNguComponent, {
-      width: '720px', data: { type, staffId: Number(this.staffId), id: rowData?.id, data: rowData },
-    }, (result?: boolean) => { if (result) this.loadForeignLanguages({ pageIndex: this.foreignLanguagePageIndex, pageSize: this.foreignLanguagePageSize }); });
+    this.dialog.componentDialog(
+      DialogThongTinNgoaiNguComponent,
+      {
+        width: '720px',
+        data: {
+          type,
+          staffId: Number(this.staffId),
+          id: rowData?.id,
+          data: rowData,
+        },
+      },
+      (result?: boolean) => {
+        if (result)
+          this.loadForeignLanguages({
+            pageIndex: this.foreignLanguagePageIndex,
+            pageSize: this.foreignLanguagePageSize,
+          });
+      }
+    );
   }
 
   deleteForeignLanguage(rowData: StaffForeignLanguageResponse): void {
-    this.dialog.confirm({ title: 'Xác nhận', message: `Bạn có chắc chắn muốn xóa thông tin ngoại ngữ ${rowData.languageName ?? ''} không?` }, (ok?: boolean) => {
-      if (!ok) return;
-      this.staffForeignLanguageService.delete(rowData.id).subscribe({
-        next: () => { this.toastr.success('Xóa thành công', 'Thành công'); this.loadForeignLanguages({ pageIndex: this.foreignLanguagePageIndex, pageSize: this.foreignLanguagePageSize }); },
-        error: (e) => { this.toastr.error(e?.error?.userMessage ?? e?.error?.message ?? 'Xóa thất bại', 'Thất bại'); },
-      });
-    });
+    this.dialog.confirm(
+      {
+        title: 'Xác nhận',
+        message: `Bạn có chắc chắn muốn xóa thông tin ngoại ngữ ${rowData.languageName ?? ''} không?`,
+      },
+      (ok?: boolean) => {
+        if (!ok) return;
+        this.staffForeignLanguageService.delete(rowData.id).subscribe({
+          next: () => {
+            this.toastr.success('Xóa thành công', 'Thành công');
+            this.loadForeignLanguages({
+              pageIndex: this.foreignLanguagePageIndex,
+              pageSize: this.foreignLanguagePageSize,
+            });
+          },
+          error: (e) => {
+            this.toastr.error(
+              e?.error?.userMessage ?? e?.error?.message ?? 'Xóa thất bại',
+              'Thất bại'
+            );
+          },
+        });
+      }
+    );
+  }
+
+  openTeachingAssignmentDialog(
+    type: TYPE_FORM_KEY,
+    rowData?: PhanCongGiangDayResponse
+  ): void {
+    if (!this.staffId) return;
+    this.dialog.componentDialog(
+      DialogPhanCongGiangDayComponent,
+      {
+        width: '720px',
+        data: {
+          type,
+          staffId: Number(this.staffId),
+          id: rowData?.id,
+          data: rowData,
+        },
+      },
+      (result?: boolean) => {
+        if (result) {
+          this.goBack();
+        }
+      }
+    );
+  }
+
+  deleteTeachingAssignment(rowData: PhanCongGiangDayResponse): void {
+    this.dialog.confirm(
+      {
+        title: 'Xác nhận',
+        message: `Bạn có chắc chắn muốn xóa phân công giảng dạy này không?`,
+      },
+      (ok?: boolean) => {
+        if (!ok) return;
+        this.phanCongGiangDayService.delete(rowData.id).subscribe({
+          next: () => {
+            this.toastr.success('Xóa thành công', 'Thành công');
+            this.loadTeachingAssignments({
+              pageIndex: this.teachingAssignmentPageIndex,
+              pageSize: this.teachingAssignmentPageSize,
+            });
+          },
+          error: (e) => {
+            this.toastr.error(
+              e?.error?.userMessage ?? e?.error?.message ?? 'Xóa thất bại',
+              'Thất bại'
+            );
+          },
+        });
+      }
+    );
   }
 
   // ════════════════════════════════════════
@@ -401,105 +716,422 @@ export class HoSoCanBoComponent extends ComponentBaseAbstract {
   private initItems(): void {
     this.profileItems = [
       // Hidden
-      TEXT_CONTROL({ controlName: 'unitId', label: 'Đơn vị', placeholder: 'Đơn vị', required: false, disabled: true, hidden: true }),
-      TEXT_CONTROL({ controlName: 'avatarUrl', label: '', placeholder: '', required: false, hidden: true }),
+      TEXT_CONTROL({
+        controlName: 'unitId',
+        label: 'Đơn vị',
+        placeholder: 'Đơn vị',
+        required: false,
+        disabled: true,
+        hidden: true,
+      }),
+      TEXT_CONTROL({
+        controlName: 'avatarUrl',
+        label: '',
+        placeholder: '',
+        required: false,
+        hidden: true,
+      }),
       // Basic info
-      TEXT_CONTROL({ controlName: 'staffCode', label: 'Mã cán bộ', placeholder: 'Mã cán bộ', required: false, disabled: true }),
-      TEXT_CONTROL({ controlName: 'fullName', label: 'Họ và tên', placeholder: 'Họ và tên', required: false }),
-      TEXT_CONTROL({ controlName: 'aliasName', label: 'Tên gọi khác', placeholder: 'Tên gọi khác', required: false }),
-      TEXT_CONTROL({ controlName: 'identityCode', label: 'Mã định danh', placeholder: 'Mã định danh', required: false }),
-      SELECT_CONTROL({ controlName: 'gender', label: 'Giới tính', placeholder: 'Giới tính', required: false, clearable: true, listOption: this.genderOptions }),
-      DATE_CONTROL({ controlName: 'dateOfBirth', label: 'Ngày sinh', placeholder: 'Ngày sinh', required: false }),
-      TEXT_CONTROL({ controlName: 'hometown', label: 'Quê quán', placeholder: 'Quê quán', required: false }),
-      SELECT_CONTROL({ controlName: 'ethnicityId', label: 'Dân tộc', placeholder: 'Dân tộc', required: false, clearable: true, listOption: DAN_TOC_OPTIONS }),
-      TEXT_CONTROL({ controlName: 'religionId', label: 'Tôn giáo', placeholder: 'Tôn giáo', required: false }),
-      TEXT_CONTROL({ controlName: 'nationalityId', label: 'Quốc tịch', placeholder: 'Quốc tịch', required: false }),
-      TEXT_CONTROL({ controlName: 'phone', label: 'Điện thoại', placeholder: 'Điện thoại', required: false }),
-      TEXT_CONTROL({ controlName: 'email', label: 'Email', placeholder: 'Email', required: false }),
-      TEXT_CONTROL({ controlName: 'cccdNo', label: 'CCCD', placeholder: 'CCCD', required: false }),
-      DATE_CONTROL({ controlName: 'cccdIssueDate', label: 'Ngày cấp CCCD', placeholder: 'Ngày cấp CCCD', required: false }),
-      TEXT_CONTROL({ controlName: 'cccdIssuePlace', label: 'Nơi cấp CCCD', placeholder: 'Nơi cấp CCCD', required: false }),
-      TEXT_CONTROL({ controlName: 'socialInsuranceNo', label: 'Số BHXH', placeholder: 'Số BHXH', required: false }),
-      TEXT_CONTROL({ controlName: 'healthStatus', label: 'Tình trạng sức khỏe', placeholder: 'Tình trạng sức khỏe', required: false }),
-      SELECT_CONTROL({ controlName: 'status', label: 'Trạng thái', placeholder: 'Trạng thái', required: false, clearable: true, listOption: this.statusOptions }),
-      TEXTAREA_CONTROL({ controlName: 'note', label: 'Ghi chú', placeholder: 'Ghi chú', required: false, rows: 4 }),
+      TEXT_CONTROL({
+        controlName: 'staffCode',
+        label: 'Mã cán bộ',
+        placeholder: 'Mã cán bộ',
+        required: false,
+        disabled: true,
+      }),
+      TEXT_CONTROL({
+        controlName: 'fullName',
+        label: 'Họ và tên',
+        placeholder: 'Họ và tên',
+        required: false,
+      }),
+      TEXT_CONTROL({
+        controlName: 'aliasName',
+        label: 'Tên gọi khác',
+        placeholder: 'Tên gọi khác',
+        required: false,
+      }),
+      TEXT_CONTROL({
+        controlName: 'identityCode',
+        label: 'Mã định danh',
+        placeholder: 'Mã định danh',
+        required: false,
+      }),
+      SELECT_CONTROL({
+        controlName: 'gender',
+        label: 'Giới tính',
+        placeholder: 'Giới tính',
+        required: false,
+        clearable: true,
+        listOption: this.genderOptions,
+      }),
+      DATE_CONTROL({
+        controlName: 'dateOfBirth',
+        label: 'Ngày sinh',
+        placeholder: 'Ngày sinh',
+        required: false,
+      }),
+      TEXT_CONTROL({
+        controlName: 'hometown',
+        label: 'Quê quán',
+        placeholder: 'Quê quán',
+        required: false,
+      }),
+      SELECT_CONTROL({
+        controlName: 'ethnicityId',
+        label: 'Dân tộc',
+        placeholder: 'Dân tộc',
+        required: false,
+        clearable: true,
+        listOption: DAN_TOC_OPTIONS,
+      }),
+      TEXT_CONTROL({
+        controlName: 'religionId',
+        label: 'Tôn giáo',
+        placeholder: 'Tôn giáo',
+        required: false,
+      }),
+      TEXT_CONTROL({
+        controlName: 'nationalityId',
+        label: 'Quốc tịch',
+        placeholder: 'Quốc tịch',
+        required: false,
+      }),
+      TEXT_CONTROL({
+        controlName: 'phone',
+        label: 'Điện thoại',
+        placeholder: 'Điện thoại',
+        required: false,
+      }),
+      TEXT_CONTROL({
+        controlName: 'email',
+        label: 'Email',
+        placeholder: 'Email',
+        required: false,
+      }),
+      TEXT_CONTROL({
+        controlName: 'cccdNo',
+        label: 'CCCD',
+        placeholder: 'CCCD',
+        required: false,
+      }),
+      DATE_CONTROL({
+        controlName: 'cccdIssueDate',
+        label: 'Ngày cấp CCCD',
+        placeholder: 'Ngày cấp CCCD',
+        required: false,
+      }),
+      TEXT_CONTROL({
+        controlName: 'cccdIssuePlace',
+        label: 'Nơi cấp CCCD',
+        placeholder: 'Nơi cấp CCCD',
+        required: false,
+      }),
+      TEXT_CONTROL({
+        controlName: 'socialInsuranceNo',
+        label: 'Số BHXH',
+        placeholder: 'Số BHXH',
+        required: false,
+      }),
+      TEXT_CONTROL({
+        controlName: 'healthStatus',
+        label: 'Tình trạng sức khỏe',
+        placeholder: 'Tình trạng sức khỏe',
+        required: false,
+      }),
+      SELECT_CONTROL({
+        controlName: 'status',
+        label: 'Trạng thái',
+        placeholder: 'Trạng thái',
+        required: false,
+        clearable: true,
+        listOption: this.statusOptions,
+      }),
+      TEXTAREA_CONTROL({
+        controlName: 'note',
+        label: 'Ghi chú',
+        placeholder: 'Ghi chú',
+        required: false,
+        rows: 4,
+      }),
       // Addresses (detail text)
-      TEXT_CONTROL({ controlName: 'permanentAddress', label: 'Địa chỉ chi tiết', placeholder: 'Địa chỉ chi tiết', required: false }),
-      TEXT_CONTROL({ controlName: 'temporaryAddress', label: 'Địa chỉ chi tiết', placeholder: 'Địa chỉ chi tiết', required: false }),
-      TEXT_CONTROL({ controlName: 'birthPlace', label: 'Địa chỉ chi tiết', placeholder: 'Địa chỉ chi tiết', required: false }),
+      TEXT_CONTROL({
+        controlName: 'permanentAddress',
+        label: 'Địa chỉ chi tiết',
+        placeholder: 'Địa chỉ chi tiết',
+        required: false,
+      }),
+      TEXT_CONTROL({
+        controlName: 'temporaryAddress',
+        label: 'Địa chỉ chi tiết',
+        placeholder: 'Địa chỉ chi tiết',
+        required: false,
+      }),
+      TEXT_CONTROL({
+        controlName: 'birthPlace',
+        label: 'Địa chỉ chi tiết',
+        placeholder: 'Địa chỉ chi tiết',
+        required: false,
+      }),
       // ── Family: Father ──
-      TEXT_CONTROL({ controlName: 'fatherName', label: 'Họ và tên', placeholder: 'Họ và tên cha', required: false }),
-      TEXT_CONTROL({ controlName: 'fatherBirthYear', label: 'Năm sinh', placeholder: 'Năm sinh', required: false }),
-      TEXT_CONTROL({ controlName: 'fatherBirthPlace', label: 'Nơi sinh', placeholder: 'Nơi sinh', required: false }),
-      TEXT_CONTROL({ controlName: 'fatherHometown', label: 'Quê quán', placeholder: 'Quê quán', required: false }),
-      TEXT_CONTROL({ controlName: 'fatherOccupation', label: 'Nghề nghiệp', placeholder: 'Nghề nghiệp', required: false }),
-      TEXT_CONTROL({ controlName: 'fatherPhone', label: 'Điện thoại', placeholder: 'Điện thoại', required: false }),
+      TEXT_CONTROL({
+        controlName: 'fatherName',
+        label: 'Họ và tên',
+        placeholder: 'Họ và tên cha',
+        required: false,
+      }),
+      TEXT_CONTROL({
+        controlName: 'fatherBirthYear',
+        label: 'Năm sinh',
+        placeholder: 'Năm sinh',
+        required: false,
+      }),
+      TEXT_CONTROL({
+        controlName: 'fatherBirthPlace',
+        label: 'Nơi sinh',
+        placeholder: 'Nơi sinh',
+        required: false,
+      }),
+      TEXT_CONTROL({
+        controlName: 'fatherHometown',
+        label: 'Quê quán',
+        placeholder: 'Quê quán',
+        required: false,
+      }),
+      TEXT_CONTROL({
+        controlName: 'fatherOccupation',
+        label: 'Nghề nghiệp',
+        placeholder: 'Nghề nghiệp',
+        required: false,
+      }),
+      TEXT_CONTROL({
+        controlName: 'fatherPhone',
+        label: 'Điện thoại',
+        placeholder: 'Điện thoại',
+        required: false,
+      }),
       // ── Family: Mother ──
-      TEXT_CONTROL({ controlName: 'motherName', label: 'Họ và tên', placeholder: 'Họ và tên mẹ', required: false }),
-      TEXT_CONTROL({ controlName: 'motherBirthYear', label: 'Năm sinh', placeholder: 'Năm sinh', required: false }),
-      TEXT_CONTROL({ controlName: 'motherBirthPlace', label: 'Nơi sinh', placeholder: 'Nơi sinh', required: false }),
-      TEXT_CONTROL({ controlName: 'motherHometown', label: 'Quê quán', placeholder: 'Quê quán', required: false }),
-      TEXT_CONTROL({ controlName: 'motherOccupation', label: 'Nghề nghiệp', placeholder: 'Nghề nghiệp', required: false }),
-      TEXT_CONTROL({ controlName: 'motherPhone', label: 'Điện thoại', placeholder: 'Điện thoại', required: false }),
+      TEXT_CONTROL({
+        controlName: 'motherName',
+        label: 'Họ và tên',
+        placeholder: 'Họ và tên mẹ',
+        required: false,
+      }),
+      TEXT_CONTROL({
+        controlName: 'motherBirthYear',
+        label: 'Năm sinh',
+        placeholder: 'Năm sinh',
+        required: false,
+      }),
+      TEXT_CONTROL({
+        controlName: 'motherBirthPlace',
+        label: 'Nơi sinh',
+        placeholder: 'Nơi sinh',
+        required: false,
+      }),
+      TEXT_CONTROL({
+        controlName: 'motherHometown',
+        label: 'Quê quán',
+        placeholder: 'Quê quán',
+        required: false,
+      }),
+      TEXT_CONTROL({
+        controlName: 'motherOccupation',
+        label: 'Nghề nghiệp',
+        placeholder: 'Nghề nghiệp',
+        required: false,
+      }),
+      TEXT_CONTROL({
+        controlName: 'motherPhone',
+        label: 'Điện thoại',
+        placeholder: 'Điện thoại',
+        required: false,
+      }),
       // ── Family: Spouse ──
-      TEXT_CONTROL({ controlName: 'spouseName', label: 'Họ và tên', placeholder: 'Họ và tên vợ/chồng', required: false }),
-      TEXT_CONTROL({ controlName: 'spouseBirthYear', label: 'Năm sinh', placeholder: 'Năm sinh', required: false }),
-      TEXT_CONTROL({ controlName: 'spouseBirthPlace', label: 'Nơi sinh', placeholder: 'Nơi sinh', required: false }),
-      TEXT_CONTROL({ controlName: 'spouseHometown', label: 'Quê quán', placeholder: 'Quê quán', required: false }),
-      TEXT_CONTROL({ controlName: 'spouseOccupation', label: 'Nghề nghiệp', placeholder: 'Nghề nghiệp', required: false }),
-      TEXT_CONTROL({ controlName: 'spousePhone', label: 'Điện thoại', placeholder: 'Điện thoại', required: false }),
+      TEXT_CONTROL({
+        controlName: 'spouseName',
+        label: 'Họ và tên',
+        placeholder: 'Họ và tên vợ/chồng',
+        required: false,
+      }),
+      TEXT_CONTROL({
+        controlName: 'spouseBirthYear',
+        label: 'Năm sinh',
+        placeholder: 'Năm sinh',
+        required: false,
+      }),
+      TEXT_CONTROL({
+        controlName: 'spouseBirthPlace',
+        label: 'Nơi sinh',
+        placeholder: 'Nơi sinh',
+        required: false,
+      }),
+      TEXT_CONTROL({
+        controlName: 'spouseHometown',
+        label: 'Quê quán',
+        placeholder: 'Quê quán',
+        required: false,
+      }),
+      TEXT_CONTROL({
+        controlName: 'spouseOccupation',
+        label: 'Nghề nghiệp',
+        placeholder: 'Nghề nghiệp',
+        required: false,
+      }),
+      TEXT_CONTROL({
+        controlName: 'spousePhone',
+        label: 'Điện thoại',
+        placeholder: 'Điện thoại',
+        required: false,
+      }),
       // ── Family: Spouse's father ──
-      TEXT_CONTROL({ controlName: 'spouseFatherName', label: 'Họ và tên', placeholder: 'Họ và tên bố chồng/vợ', required: false }),
-      TEXT_CONTROL({ controlName: 'spouseFatherBirthYear', label: 'Năm sinh', placeholder: 'Năm sinh', required: false }),
-      TEXT_CONTROL({ controlName: 'spouseFatherBirthPlace', label: 'Nơi sinh', placeholder: 'Nơi sinh', required: false }),
-      TEXT_CONTROL({ controlName: 'spouseFatherHometown', label: 'Quê quán', placeholder: 'Quê quán', required: false }),
-      TEXT_CONTROL({ controlName: 'spouseFatherOccupation', label: 'Nghề nghiệp', placeholder: 'Nghề nghiệp', required: false }),
-      TEXT_CONTROL({ controlName: 'spouseFatherPhone', label: 'Điện thoại', placeholder: 'Điện thoại', required: false }),
+      TEXT_CONTROL({
+        controlName: 'spouseFatherName',
+        label: 'Họ và tên',
+        placeholder: 'Họ và tên bố chồng/vợ',
+        required: false,
+      }),
+      TEXT_CONTROL({
+        controlName: 'spouseFatherBirthYear',
+        label: 'Năm sinh',
+        placeholder: 'Năm sinh',
+        required: false,
+      }),
+      TEXT_CONTROL({
+        controlName: 'spouseFatherBirthPlace',
+        label: 'Nơi sinh',
+        placeholder: 'Nơi sinh',
+        required: false,
+      }),
+      TEXT_CONTROL({
+        controlName: 'spouseFatherHometown',
+        label: 'Quê quán',
+        placeholder: 'Quê quán',
+        required: false,
+      }),
+      TEXT_CONTROL({
+        controlName: 'spouseFatherOccupation',
+        label: 'Nghề nghiệp',
+        placeholder: 'Nghề nghiệp',
+        required: false,
+      }),
+      TEXT_CONTROL({
+        controlName: 'spouseFatherPhone',
+        label: 'Điện thoại',
+        placeholder: 'Điện thoại',
+        required: false,
+      }),
       // ── Family: Mother-in-law ──
-      TEXT_CONTROL({ controlName: 'motherInLawName', label: 'Họ và tên', placeholder: 'Họ và tên mẹ chồng/vợ', required: false }),
-      TEXT_CONTROL({ controlName: 'motherInLawBirthYear', label: 'Năm sinh', placeholder: 'Năm sinh', required: false }),
-      TEXT_CONTROL({ controlName: 'motherInLawBirthPlace', label: 'Nơi sinh', placeholder: 'Nơi sinh', required: false }),
-      TEXT_CONTROL({ controlName: 'motherInLawHometown', label: 'Quê quán', placeholder: 'Quê quán', required: false }),
-      TEXT_CONTROL({ controlName: 'motherInLawOccupation', label: 'Nghề nghiệp', placeholder: 'Nghề nghiệp', required: false }),
-      TEXT_CONTROL({ controlName: 'motherInLawPhone', label: 'Điện thoại', placeholder: 'Điện thoại', required: false }),
+      TEXT_CONTROL({
+        controlName: 'motherInLawName',
+        label: 'Họ và tên',
+        placeholder: 'Họ và tên mẹ chồng/vợ',
+        required: false,
+      }),
+      TEXT_CONTROL({
+        controlName: 'motherInLawBirthYear',
+        label: 'Năm sinh',
+        placeholder: 'Năm sinh',
+        required: false,
+      }),
+      TEXT_CONTROL({
+        controlName: 'motherInLawBirthPlace',
+        label: 'Nơi sinh',
+        placeholder: 'Nơi sinh',
+        required: false,
+      }),
+      TEXT_CONTROL({
+        controlName: 'motherInLawHometown',
+        label: 'Quê quán',
+        placeholder: 'Quê quán',
+        required: false,
+      }),
+      TEXT_CONTROL({
+        controlName: 'motherInLawOccupation',
+        label: 'Nghề nghiệp',
+        placeholder: 'Nghề nghiệp',
+        required: false,
+      }),
+      TEXT_CONTROL({
+        controlName: 'motherInLawPhone',
+        label: 'Điện thoại',
+        placeholder: 'Điện thoại',
+        required: false,
+      }),
       // ── Children ──
-      TEXTAREA_CONTROL({ controlName: 'childrenInfo', label: 'Thông tin con', placeholder: 'Thông tin con', required: false, rows: 4 }),
+      TEXTAREA_CONTROL({
+        controlName: 'childrenInfo',
+        label: 'Thông tin con',
+        placeholder: 'Thông tin con',
+        required: false,
+        rows: 4,
+      }),
     ];
   }
 
   private initAddressItems(): void {
     this.permanentProvinceItem = SELECT_CONTROL({
-      controlName: 'permanentProvinceName', label: 'Tỉnh/Thành phố', placeholder: 'Chọn tỉnh/thành phố',
-      required: false, clearable: true, listOption: [],
+      controlName: 'permanentProvinceName',
+      label: 'Tỉnh/Thành phố',
+      placeholder: 'Chọn tỉnh/thành phố',
+      required: false,
+      clearable: true,
+      listOption: [],
     });
     this.permanentWardItem = SELECT_CONTROL({
-      controlName: 'permanentWardName', label: 'Quận/Huyện/Xã', placeholder: 'Chọn quận/huyện/xã',
-      required: false, clearable: true, listOption: [], disabled: true,
+      controlName: 'permanentWardName',
+      label: 'Quận/Huyện/Xã',
+      placeholder: 'Chọn quận/huyện/xã',
+      required: false,
+      clearable: true,
+      listOption: [],
+      disabled: true,
     });
     this.temporaryProvinceItem = SELECT_CONTROL({
-      controlName: 'temporaryProvinceName', label: 'Tỉnh/Thành phố', placeholder: 'Chọn tỉnh/thành phố',
-      required: false, clearable: true, listOption: [],
+      controlName: 'temporaryProvinceName',
+      label: 'Tỉnh/Thành phố',
+      placeholder: 'Chọn tỉnh/thành phố',
+      required: false,
+      clearable: true,
+      listOption: [],
     });
     this.temporaryWardItem = SELECT_CONTROL({
-      controlName: 'temporaryWardName', label: 'Quận/Huyện/Xã', placeholder: 'Chọn quận/huyện/xã',
-      required: false, clearable: true, listOption: [], disabled: true,
+      controlName: 'temporaryWardName',
+      label: 'Quận/Huyện/Xã',
+      placeholder: 'Chọn quận/huyện/xã',
+      required: false,
+      clearable: true,
+      listOption: [],
+      disabled: true,
     });
     this.birthPlaceProvinceItem = SELECT_CONTROL({
-      controlName: 'birthPlaceProvinceName', label: 'Tỉnh/Thành phố', placeholder: 'Chọn tỉnh/thành phố',
-      required: false, clearable: true, listOption: [],
+      controlName: 'birthPlaceProvinceName',
+      label: 'Tỉnh/Thành phố',
+      placeholder: 'Chọn tỉnh/thành phố',
+      required: false,
+      clearable: true,
+      listOption: [],
     });
     this.birthPlaceWardItem = SELECT_CONTROL({
-      controlName: 'birthPlaceWardName', label: 'Quận/Huyện/Xã', placeholder: 'Chọn quận/huyện/xã',
-      required: false, clearable: true, listOption: [], disabled: true,
+      controlName: 'birthPlaceWardName',
+      label: 'Quận/Huyện/Xã',
+      placeholder: 'Chọn quận/huyện/xã',
+      required: false,
+      clearable: true,
+      listOption: [],
+      disabled: true,
     });
   }
 
   private initForm(): void {
     const allItems = [
       ...this.profileItems,
-      this.permanentProvinceItem, this.permanentWardItem,
-      this.temporaryProvinceItem, this.temporaryWardItem,
-      this.birthPlaceProvinceItem, this.birthPlaceWardItem,
+      this.permanentProvinceItem,
+      this.permanentWardItem,
+      this.temporaryProvinceItem,
+      this.temporaryWardItem,
+      this.birthPlaceProvinceItem,
+      this.birthPlaceWardItem,
     ];
     this.form = this.itemControl.toFormGroup(allItems);
   }
@@ -513,17 +1145,39 @@ export class HoSoCanBoComponent extends ComponentBaseAbstract {
       { header: 'Từ ngày', field: STAFF_JOB_HISTORY_KEY.FROM_DATE },
       { header: 'Đến ngày', field: STAFF_JOB_HISTORY_KEY.TO_DATE },
       { header: 'Đơn vị', field: 'unitName' },
-      { header: 'Phòng ban / Tổ / Bộ phận', field: STAFF_JOB_HISTORY_KEY.DEPARTMENT_ID },
+      {
+        header: 'Phòng ban / Tổ / Bộ phận',
+        field: STAFF_JOB_HISTORY_KEY.DEPARTMENT_ID,
+      },
       { header: 'Chức danh', field: STAFF_JOB_HISTORY_KEY.WORKING_POSITION_ID },
       { header: 'Chức vụ', field: STAFF_JOB_HISTORY_KEY.TITLE_ID },
-      { header: 'Loại tuyển dụng', field: STAFF_JOB_HISTORY_KEY.EMPLOYMENT_TYPE_ID },
+      {
+        header: 'Loại tuyển dụng',
+        field: STAFF_JOB_HISTORY_KEY.EMPLOYMENT_TYPE_ID,
+      },
       { header: 'Số quyết định', field: STAFF_JOB_HISTORY_KEY.DECISION_NO },
       { header: 'Ghi chú', field: STAFF_JOB_HISTORY_KEY.NOTE },
       {
-        header: 'Hành động', field: COMMON_TABLE_KEY.ACTION, type: 'button', class: 'text-center',
+        header: 'Hành động',
+        field: COMMON_TABLE_KEY.ACTION,
+        type: 'button',
+        class: 'text-center',
         buttons: [
-          { type: 'icon', icon: 'edit', class: 'action-edit', tooltip: 'Chỉnh sửa', click: (r: StaffJobHistoryResponse) => this.openJobHistoryDialog(this.TYPE_FORM.UPDATE, r) },
-          { type: 'icon', icon: 'delete', class: 'action-delete', tooltip: 'Xóa', click: (r: StaffJobHistoryResponse) => this.deleteJobHistory(r) },
+          {
+            type: 'icon',
+            icon: 'edit',
+            class: 'action-edit',
+            tooltip: 'Chỉnh sửa',
+            click: (r: StaffJobHistoryResponse) =>
+              this.openJobHistoryDialog(this.TYPE_FORM.UPDATE, r),
+          },
+          {
+            type: 'icon',
+            icon: 'delete',
+            class: 'action-delete',
+            tooltip: 'Xóa',
+            click: (r: StaffJobHistoryResponse) => this.deleteJobHistory(r),
+          },
         ],
       },
     ];
@@ -540,10 +1194,26 @@ export class HoSoCanBoComponent extends ComponentBaseAbstract {
       { header: 'Đến ngày', field: STAFF_TRAINING_KEY.TO_DATE },
       { header: 'Ghi chú', field: STAFF_TRAINING_KEY.NOTE },
       {
-        header: 'Hành động', field: COMMON_TABLE_KEY.ACTION, type: 'button', class: 'text-center',
+        header: 'Hành động',
+        field: COMMON_TABLE_KEY.ACTION,
+        type: 'button',
+        class: 'text-center',
         buttons: [
-          { type: 'icon', icon: 'edit', class: 'action-edit', tooltip: 'Chỉnh sửa', click: (r: StaffTrainingResponse) => this.openTrainingDialog(this.TYPE_FORM.UPDATE, r) },
-          { type: 'icon', icon: 'delete', class: 'action-delete', tooltip: 'Xóa', click: (r: StaffTrainingResponse) => this.deleteTraining(r) },
+          {
+            type: 'icon',
+            icon: 'edit',
+            class: 'action-edit',
+            tooltip: 'Chỉnh sửa',
+            click: (r: StaffTrainingResponse) =>
+              this.openTrainingDialog(this.TYPE_FORM.UPDATE, r),
+          },
+          {
+            type: 'icon',
+            icon: 'delete',
+            class: 'action-delete',
+            tooltip: 'Xóa',
+            click: (r: StaffTrainingResponse) => this.deleteTraining(r),
+          },
         ],
       },
     ];
@@ -558,10 +1228,63 @@ export class HoSoCanBoComponent extends ComponentBaseAbstract {
       { header: 'Điểm số', field: STAFF_FOREIGN_LANGUAGE_KEY.SCORE },
       { header: 'Ghi chú', field: STAFF_FOREIGN_LANGUAGE_KEY.NOTE },
       {
-        header: 'Hành động', field: COMMON_TABLE_KEY.ACTION, type: 'button', class: 'text-center',
+        header: 'Hành động',
+        field: COMMON_TABLE_KEY.ACTION,
+        type: 'button',
+        class: 'text-center',
         buttons: [
-          { type: 'icon', icon: 'edit', class: 'action-edit', tooltip: 'Chỉnh sửa', click: (r: StaffForeignLanguageResponse) => this.openForeignLanguageDialog(this.TYPE_FORM.UPDATE, r) },
-          { type: 'icon', icon: 'delete', class: 'action-delete', tooltip: 'Xóa', click: (r: StaffForeignLanguageResponse) => this.deleteForeignLanguage(r) },
+          {
+            type: 'icon',
+            icon: 'edit',
+            class: 'action-edit',
+            tooltip: 'Chỉnh sửa',
+            click: (r: StaffForeignLanguageResponse) =>
+              this.openForeignLanguageDialog(this.TYPE_FORM.UPDATE, r),
+          },
+          {
+            type: 'icon',
+            icon: 'delete',
+            class: 'action-delete',
+            tooltip: 'Xóa',
+            click: (r: StaffForeignLanguageResponse) =>
+              this.deleteForeignLanguage(r),
+          },
+        ],
+      },
+    ];
+  }
+
+  private initTeachingAssignmentColumns(): void {
+    this.teachingAssignmentColumns = [
+      { header: 'STT', field: COMMON_TABLE_KEY.STT, class: 'text-center' },
+      { header: 'Năm học', field: 'schoolYearName' },
+      { header: 'Lớp', field: 'className' },
+      { header: 'Môn học', field: 'subjectName' },
+      { header: 'Tổ/Phòng ban', field: 'departmentName' },
+      { header: 'Số tiết', field: 'teachingLoad' },
+      { header: 'Chủ nhiệm', field: 'isHomeroom' },
+      {
+        header: 'Hành động',
+        field: COMMON_TABLE_KEY.ACTION,
+        type: 'button',
+        class: 'text-center',
+        buttons: [
+          {
+            type: 'icon',
+            icon: 'edit',
+            class: 'action-edit',
+            tooltip: 'Chỉnh sửa',
+            click: (r: PhanCongGiangDayResponse) =>
+              this.openTeachingAssignmentDialog(this.TYPE_FORM.UPDATE, r),
+          },
+          {
+            type: 'icon',
+            icon: 'delete',
+            class: 'action-delete',
+            tooltip: 'Xóa',
+            click: (r: PhanCongGiangDayResponse) =>
+              this.deleteTeachingAssignment(r),
+          },
         ],
       },
     ];
@@ -575,43 +1298,87 @@ export class HoSoCanBoComponent extends ComponentBaseAbstract {
     const unitIdControl = this.form.get('unitId');
     staffCodeControl?.disable({ emitEvent: false });
     if (this.pathType === this.TYPE_FORM.CREATE) {
-      unitIdControl?.valueChanges.pipe(takeUntil(this.ngUnsubscribe)).subscribe((unitId) => {
-        if (!unitId) { staffCodeControl?.setValue('', { emitEvent: false }); return; }
-        this.canBoService.generateCode(unitId).subscribe(({ data }) => { staffCodeControl?.setValue(data, { emitEvent: false }); });
-      });
+      unitIdControl?.valueChanges
+        .pipe(takeUntil(this.ngUnsubscribe))
+        .subscribe((unitId) => {
+          if (!unitId) {
+            staffCodeControl?.setValue('', { emitEvent: false });
+            return;
+          }
+          this.canBoService.generateCode(unitId).subscribe(({ data }) => {
+            staffCodeControl?.setValue(data, { emitEvent: false });
+          });
+        });
     }
   }
 
   private bindRouteMode(): void {
-    this.routerService.events.pipe(
-      filter((e): e is NavigationEnd => e instanceof NavigationEnd),
-      takeUntil(this.ngUnsubscribe),
-    ).subscribe(() => this.syncPathType());
+    this.routerService.events
+      .pipe(
+        filter((e): e is NavigationEnd => e instanceof NavigationEnd),
+        takeUntil(this.ngUnsubscribe)
+      )
+      .subscribe(() => this.syncPathType());
   }
 
   private bindAddressSelects(): void {
     // Permanent province → wards
-    this.form.get('permanentProvinceName')?.valueChanges.pipe(takeUntil(this.ngUnsubscribe)).subscribe((code) => {
-      this.loadWardOptions(`${code ?? ''}`, this.permanentWardItem, 'permanentWardName', this.permanentWardLookup);
-    });
+    this.form
+      .get('permanentProvinceName')
+      ?.valueChanges.pipe(takeUntil(this.ngUnsubscribe))
+      .subscribe((code) => {
+        this.loadWardOptions(
+          `${code ?? ''}`,
+          this.permanentWardItem,
+          'permanentWardName',
+          this.permanentWardLookup
+        );
+      });
     // Temporary province → wards
-    this.form.get('temporaryProvinceName')?.valueChanges.pipe(takeUntil(this.ngUnsubscribe)).subscribe((code) => {
-      this.loadWardOptions(`${code ?? ''}`, this.temporaryWardItem, 'temporaryWardName', this.temporaryWardLookup);
-    });
+    this.form
+      .get('temporaryProvinceName')
+      ?.valueChanges.pipe(takeUntil(this.ngUnsubscribe))
+      .subscribe((code) => {
+        this.loadWardOptions(
+          `${code ?? ''}`,
+          this.temporaryWardItem,
+          'temporaryWardName',
+          this.temporaryWardLookup
+        );
+      });
     // BirthPlace province → wards
-    this.form.get('birthPlaceProvinceName')?.valueChanges.pipe(takeUntil(this.ngUnsubscribe)).subscribe((code) => {
-      this.loadWardOptions(`${code ?? ''}`, this.birthPlaceWardItem, 'birthPlaceWardName', this.birthPlaceWardLookup);
-    });
+    this.form
+      .get('birthPlaceProvinceName')
+      ?.valueChanges.pipe(takeUntil(this.ngUnsubscribe))
+      .subscribe((code) => {
+        this.loadWardOptions(
+          `${code ?? ''}`,
+          this.birthPlaceWardItem,
+          'birthPlaceWardName',
+          this.birthPlaceWardLookup
+        );
+      });
   }
 
-  private syncPathType(): void { this.getTypeByPath(); }
+  private syncPathType(): void {
+    this.getTypeByPath();
+  }
+
+  private isValidTab(value: string | null): value is TabKey {
+    return this.tabs.some((tab) => tab.key === value);
+  }
 
   // ════════════════════════════════════════
   //  Data loaders
   // ════════════════════════════════════════
   private loadUnitOptions(): void {
     this.donViService.getOptions().subscribe({
-      next: ({ data }) => { this.unitOptions = (data ?? []).map((i) => ({ value: i.id, label: i.name })); },
+      next: ({ data }) => {
+        this.unitOptions = (data ?? []).map((i) => ({
+          value: i.id,
+          label: i.name,
+        }));
+      },
     });
   }
 
@@ -619,7 +1386,11 @@ export class HoSoCanBoComponent extends ComponentBaseAbstract {
     this.diaChiHanhChinhService.getProvinces().subscribe((result) => {
       this.provinceOptions = (result.provinces ?? []).map((item) => {
         this.provinceLookup.set(item.code, item);
-        return { value: item.code, label: `${item.administrativeLevel ?? item.type ?? ''} ${item.name}`.trim() };
+        return {
+          value: item.code,
+          label:
+            `${item.administrativeLevel ?? item.type ?? ''} ${item.name}`.trim(),
+        };
       });
       this.permanentProvinceItem.options = this.provinceOptions;
       this.temporaryProvinceItem.options = this.provinceOptions;
@@ -628,102 +1399,170 @@ export class HoSoCanBoComponent extends ComponentBaseAbstract {
   }
 
   private loadWardOptions(
-    provinceCode: string, item: FormType, wardControlName: string,
-    lookup: Map<string, DiaChiPhuongXaItem>, selectedWardName?: string,
+    provinceCode: string,
+    item: FormType,
+    wardControlName: string,
+    lookup: Map<string, DiaChiPhuongXaItem>,
+    selectedWardName?: string
   ): void {
     const wardControl = this.form.get(wardControlName);
     wardControl?.setValue(null, { emitEvent: false });
     if (!provinceCode) {
-      item.options = []; item.disabled = true; lookup.clear();
-      wardControl?.disable({ emitEvent: false }); return;
+      item.options = [];
+      item.disabled = true;
+      lookup.clear();
+      wardControl?.disable({ emitEvent: false });
+      return;
     }
     item.disabled = false;
     wardControl?.enable({ emitEvent: false });
-    this.diaChiHanhChinhService.getCommunesByProvince(provinceCode).pipe(takeUntil(this.ngUnsubscribe)).subscribe(({ communes }) => {
-      lookup.clear();
-      item.options = (communes ?? []).map((w) => {
-        lookup.set(w.code, w);
-        return { value: w.code, label: `${w.administrativeLevel ?? w.type ?? ''} ${w.name}`.trim() };
+    this.diaChiHanhChinhService
+      .getCommunesByProvince(provinceCode)
+      .pipe(takeUntil(this.ngUnsubscribe))
+      .subscribe(({ communes }) => {
+        lookup.clear();
+        item.options = (communes ?? []).map((w) => {
+          lookup.set(w.code, w);
+          return {
+            value: w.code,
+            label: `${w.administrativeLevel ?? w.type ?? ''} ${w.name}`.trim(),
+          };
+        });
+        if (selectedWardName) {
+          wardControl?.setValue(
+            this.getWardCode(selectedWardName, communes ?? []),
+            { emitEvent: false }
+          );
+        }
       });
-      if (selectedWardName) {
-        wardControl?.setValue(this.getWardCode(selectedWardName, communes ?? []), { emitEvent: false });
-      }
-    });
   }
 
   private getUnitLabel(unitId?: string | number | null): string {
     if (unitId === null || unitId === undefined || unitId === '') return '';
-    return this.unitOptions.find((o) => `${o.value}` === `${unitId}`)?.label ?? `${unitId}`;
+    return (
+      this.unitOptions.find((o) => `${o.value}` === `${unitId}`)?.label ??
+      `${unitId}`
+    );
   }
 
   // ════════════════════════════════════════
   //  Form patching / payload
   // ════════════════════════════════════════
   private patchForm(d: CanBoDetailResponse): void {
-    this.form.patchValue({
-      unitId: d.unitId ?? '',
-      staffCode: d.staffCode ?? '',
-      fullName: d.fullName ?? '',
-      aliasName: d.aliasName ?? '',
-      identityCode: d.identityCode ?? '',
-      gender: this.normalizeGenderValue(d.gender),
-      dateOfBirth: this.toInputDate(d.dateOfBirth),
-      hometown: d.hometown ?? '',
-      permanentAddress: d.permanentAddress?.detailAddress ?? '',
-      temporaryAddress: d.temporaryAddress?.detailAddress ?? '',
-      birthPlace: d.birthPlaceAddress?.detailAddress ?? '',
-      ethnicityId: d.ethnicityId ?? '',
-      religionId: d.religionId ?? '',
-      nationalityId: d.nationalityId ?? '',
-      cccdNo: d.cccdNo ?? '',
-      cccdIssueDate: this.toInputDate(d.cccdIssueDate),
-      cccdIssuePlace: d.cccdIssuePlace ?? '',
-      phone: d.phone ?? '',
-      email: d.email ?? '',
-      healthStatus: d.healthStatus ?? '',
-      socialInsuranceNo: d.socialInsuranceNo ?? '',
-      status: d.status ?? 'ACTIVE',
-      note: d.note ?? '',
-      avatarUrl: d.avatarUrl ?? '',
-      // Father
-      fatherName: d.fatherInfo?.fullName ?? '', fatherBirthYear: d.fatherInfo?.birthYear ?? '',
-      fatherBirthPlace: d.fatherInfo?.placeOfBirth ?? '', fatherHometown: d.fatherInfo?.hometown ?? '',
-      fatherOccupation: d.fatherInfo?.occupation ?? '', fatherPhone: d.fatherInfo?.phone ?? '',
-      // Mother
-      motherName: d.motherInfo?.fullName ?? '', motherBirthYear: d.motherInfo?.birthYear ?? '',
-      motherBirthPlace: d.motherInfo?.placeOfBirth ?? '', motherHometown: d.motherInfo?.hometown ?? '',
-      motherOccupation: d.motherInfo?.occupation ?? '', motherPhone: d.motherInfo?.phone ?? '',
-      // Spouse
-      spouseName: d.spouseInfo?.fullName ?? '', spouseBirthYear: d.spouseInfo?.birthYear ?? '',
-      spouseBirthPlace: d.spouseInfo?.placeOfBirth ?? '', spouseHometown: d.spouseInfo?.hometown ?? '',
-      spouseOccupation: d.spouseInfo?.occupation ?? '', spousePhone: d.spouseInfo?.phone ?? '',
-      // Spouse's father
-      spouseFatherName: d.spouseFatherInfo?.fullName ?? '', spouseFatherBirthYear: d.spouseFatherInfo?.birthYear ?? '',
-      spouseFatherBirthPlace: d.spouseFatherInfo?.placeOfBirth ?? '', spouseFatherHometown: d.spouseFatherInfo?.hometown ?? '',
-      spouseFatherOccupation: d.spouseFatherInfo?.occupation ?? '', spouseFatherPhone: d.spouseFatherInfo?.phone ?? '',
-      // Mother-in-law
-      motherInLawName: d.spouseMotherInfo?.fullName ?? '', motherInLawBirthYear: d.spouseMotherInfo?.birthYear ?? '',
-      motherInLawBirthPlace: d.spouseMotherInfo?.placeOfBirth ?? '', motherInLawHometown: d.spouseMotherInfo?.hometown ?? '',
-      motherInLawOccupation: d.spouseMotherInfo?.occupation ?? '', motherInLawPhone: d.spouseMotherInfo?.phone ?? '',
-      // Children
-      childrenInfo: d.childrenDetail ?? '',
-    }, { emitEvent: false });
+    this.form.patchValue(
+      {
+        unitId: d.unitId ?? '',
+        staffCode: d.staffCode ?? '',
+        fullName: d.fullName ?? '',
+        aliasName: d.aliasName ?? '',
+        identityCode: d.identityCode ?? '',
+        gender: this.normalizeGenderValue(d.gender),
+        dateOfBirth: this.toInputDate(d.dateOfBirth),
+        hometown: d.hometown ?? '',
+        permanentAddress: d.permanentAddress?.detailAddress ?? '',
+        temporaryAddress: d.temporaryAddress?.detailAddress ?? '',
+        birthPlace: d.birthPlaceAddress?.detailAddress ?? '',
+        ethnicityId: d.ethnicityId ?? '',
+        religionId: d.religionId ?? '',
+        nationalityId: d.nationalityId ?? '',
+        cccdNo: d.cccdNo ?? '',
+        cccdIssueDate: this.toInputDate(d.cccdIssueDate),
+        cccdIssuePlace: d.cccdIssuePlace ?? '',
+        phone: d.phone ?? '',
+        email: d.email ?? '',
+        healthStatus: d.healthStatus ?? '',
+        socialInsuranceNo: d.socialInsuranceNo ?? '',
+        status: d.status ?? 'ACTIVE',
+        note: d.note ?? '',
+        avatarUrl: d.avatarUrl ?? '',
+        // Father
+        fatherName: d.fatherInfo?.fullName ?? '',
+        fatherBirthYear: d.fatherInfo?.birthYear ?? '',
+        fatherBirthPlace: d.fatherInfo?.placeOfBirth ?? '',
+        fatherHometown: d.fatherInfo?.hometown ?? '',
+        fatherOccupation: d.fatherInfo?.occupation ?? '',
+        fatherPhone: d.fatherInfo?.phone ?? '',
+        // Mother
+        motherName: d.motherInfo?.fullName ?? '',
+        motherBirthYear: d.motherInfo?.birthYear ?? '',
+        motherBirthPlace: d.motherInfo?.placeOfBirth ?? '',
+        motherHometown: d.motherInfo?.hometown ?? '',
+        motherOccupation: d.motherInfo?.occupation ?? '',
+        motherPhone: d.motherInfo?.phone ?? '',
+        // Spouse
+        spouseName: d.spouseInfo?.fullName ?? '',
+        spouseBirthYear: d.spouseInfo?.birthYear ?? '',
+        spouseBirthPlace: d.spouseInfo?.placeOfBirth ?? '',
+        spouseHometown: d.spouseInfo?.hometown ?? '',
+        spouseOccupation: d.spouseInfo?.occupation ?? '',
+        spousePhone: d.spouseInfo?.phone ?? '',
+        // Spouse's father
+        spouseFatherName: d.spouseFatherInfo?.fullName ?? '',
+        spouseFatherBirthYear: d.spouseFatherInfo?.birthYear ?? '',
+        spouseFatherBirthPlace: d.spouseFatherInfo?.placeOfBirth ?? '',
+        spouseFatherHometown: d.spouseFatherInfo?.hometown ?? '',
+        spouseFatherOccupation: d.spouseFatherInfo?.occupation ?? '',
+        spouseFatherPhone: d.spouseFatherInfo?.phone ?? '',
+        // Mother-in-law
+        motherInLawName: d.spouseMotherInfo?.fullName ?? '',
+        motherInLawBirthYear: d.spouseMotherInfo?.birthYear ?? '',
+        motherInLawBirthPlace: d.spouseMotherInfo?.placeOfBirth ?? '',
+        motherInLawHometown: d.spouseMotherInfo?.hometown ?? '',
+        motherInLawOccupation: d.spouseMotherInfo?.occupation ?? '',
+        motherInLawPhone: d.spouseMotherInfo?.phone ?? '',
+        // Children
+        childrenInfo: d.childrenDetail ?? '',
+      },
+      { emitEvent: false }
+    );
 
     // Address province/ward selects - extracting IDs from objects
-    this.patchAddressBlock(d.permanentAddress?.provinceName, 'permanentProvinceName', this.permanentWardItem, 'permanentWardName', this.permanentWardLookup, d.permanentAddress?.wardName);
-    this.patchAddressBlock(d.temporaryAddress?.provinceName, 'temporaryProvinceName', this.temporaryWardItem, 'temporaryWardName', this.temporaryWardLookup, d.temporaryAddress?.wardName);
-    this.patchAddressBlock(d.birthPlaceAddress?.provinceName, 'birthPlaceProvinceName', this.birthPlaceWardItem, 'birthPlaceWardName', this.birthPlaceWardLookup, d.birthPlaceAddress?.wardName);
+    this.patchAddressBlock(
+      d.permanentAddress?.provinceName,
+      'permanentProvinceName',
+      this.permanentWardItem,
+      'permanentWardName',
+      this.permanentWardLookup,
+      d.permanentAddress?.wardName
+    );
+    this.patchAddressBlock(
+      d.temporaryAddress?.provinceName,
+      'temporaryProvinceName',
+      this.temporaryWardItem,
+      'temporaryWardName',
+      this.temporaryWardLookup,
+      d.temporaryAddress?.wardName
+    );
+    this.patchAddressBlock(
+      d.birthPlaceAddress?.provinceName,
+      'birthPlaceProvinceName',
+      this.birthPlaceWardItem,
+      'birthPlaceWardName',
+      this.birthPlaceWardLookup,
+      d.birthPlaceAddress?.wardName
+    );
   }
 
   private patchAddressBlock(
-    provinceName: string | undefined, provinceControlName: string,
-    wardItem: FormType, wardControlName: string,
-    wardLookup: Map<string, DiaChiPhuongXaItem>, wardName: string | undefined,
+    provinceName: string | undefined,
+    provinceControlName: string,
+    wardItem: FormType,
+    wardControlName: string,
+    wardLookup: Map<string, DiaChiPhuongXaItem>,
+    wardName: string | undefined
   ): void {
     const provinceCode = this.getProvinceCode(provinceName);
     if (provinceCode) {
-      this.form.get(provinceControlName)?.setValue(provinceCode, { emitEvent: false });
-      this.loadWardOptions(provinceCode, wardItem, wardControlName, wardLookup, wardName);
+      this.form
+        .get(provinceControlName)
+        ?.setValue(provinceCode, { emitEvent: false });
+      this.loadWardOptions(
+        provinceCode,
+        wardItem,
+        wardControlName,
+        wardLookup,
+        wardName
+      );
     }
   }
 
@@ -747,7 +1586,7 @@ export class HoSoCanBoComponent extends ComponentBaseAbstract {
       email: v.email ?? '',
       healthStatus: v.healthStatus ?? '',
       socialInsuranceNo: v.socialInsuranceNo ?? '',
-      // Note: form doesn't have avatarFileId yet, maybe sending avatarUrl is acceptable or 
+      // Note: form doesn't have avatarFileId yet, maybe sending avatarUrl is acceptable or
       // the backend handles both. I'll include avatarFileId if it exists in data.
       avatarFileId: this.staff.avatarFileId ?? 0,
       avatarUrl: v.avatarUrl ?? this.staff.avatarUrl ?? '',
@@ -822,7 +1661,8 @@ export class HoSoCanBoComponent extends ComponentBaseAbstract {
   // ════════════════════════════════════════
   private normalizeDetail(data: CanBoDetailResponse): CanBoDetailResponse {
     return {
-      ...CAN_BO_PROFILE_FALLBACK, ...data,
+      ...CAN_BO_PROFILE_FALLBACK,
+      ...data,
       gender: this.normalizeGenderValue(data.gender),
       dateOfBirth: this.formatDate(data.dateOfBirth),
       cccdIssueDate: this.formatDate(data.cccdIssueDate),
@@ -850,7 +1690,8 @@ export class HoSoCanBoComponent extends ComponentBaseAbstract {
     if (!raw) return '';
     if (raw.includes('/')) {
       const [d, m, y] = raw.split('/');
-      if (d && m && y) return `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
+      if (d && m && y)
+        return `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
     }
     return raw.slice(0, 10);
   }
@@ -867,7 +1708,9 @@ export class HoSoCanBoComponent extends ComponentBaseAbstract {
     }
     const absoluteApiBase = apiHost.replace(/\/$/, '');
     const origin = absoluteApiBase.replace(/\/api$/i, '');
-    return raw.startsWith('/uploads/') ? `${absoluteApiBase}${raw}` : `${origin}${raw}`;
+    return raw.startsWith('/uploads/')
+      ? `${absoluteApiBase}${raw}`
+      : `${origin}${raw}`;
   }
 
   private resolveProvinceName(value: unknown): string {
@@ -876,7 +1719,10 @@ export class HoSoCanBoComponent extends ComponentBaseAbstract {
     return this.provinceLookup.get(code)?.name ?? code;
   }
 
-  private resolveWardName(value: unknown, lookup: Map<string, DiaChiPhuongXaItem>): string {
+  private resolveWardName(
+    value: unknown,
+    lookup: Map<string, DiaChiPhuongXaItem>
+  ): string {
     const code = `${value ?? ''}`.trim();
     if (!code) return '';
     return lookup.get(code)?.name ?? code;
@@ -892,10 +1738,15 @@ export class HoSoCanBoComponent extends ComponentBaseAbstract {
     return null;
   }
 
-  private getWardCode(name: string, wards: DiaChiPhuongXaItem[]): string | null {
+  private getWardCode(
+    name: string,
+    wards: DiaChiPhuongXaItem[]
+  ): string | null {
     const n = `${name ?? ''}`.trim();
     if (!n) return null;
-    const matched = wards.find((w) => w.code === n || `${w.name ?? ''}`.trim() === n);
+    const matched = wards.find(
+      (w) => w.code === n || `${w.name ?? ''}`.trim() === n
+    );
     return matched?.code ?? null;
   }
 }

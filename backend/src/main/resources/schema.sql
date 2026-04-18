@@ -37,3 +37,22 @@ CREATE TABLE IF NOT EXISTS student_code_counters (
     CONSTRAINT uk_student_code_counters_unit_year UNIQUE (unit_id, year),
     CONSTRAINT fk_student_code_counters_units FOREIGN KEY (unit_id) REFERENCES units(id)
 );
+
+CREATE TABLE IF NOT EXISTS week_configs (
+    id BIGSERIAL PRIMARY KEY,
+    school_year_id BIGINT NOT NULL,
+    semester_id BIGINT NOT NULL,
+    week_number INTEGER NOT NULL,
+    start_date DATE NOT NULL,
+    end_date DATE NOT NULL,
+    created_at TIMESTAMP,
+    created_by VARCHAR(255),
+    updated_at TIMESTAMP NULL,
+    updated_by VARCHAR(255),
+    deleted_flag INTEGER NOT NULL DEFAULT 0,
+    deleted_at TIMESTAMP NULL,
+    deleted_by VARCHAR(255),
+    CONSTRAINT uk_week_configs_year_semester_week UNIQUE (school_year_id, semester_id, week_number),
+    CONSTRAINT fk_week_configs_school_years FOREIGN KEY (school_year_id) REFERENCES school_years(id),
+    CONSTRAINT fk_week_configs_semesters FOREIGN KEY (semester_id) REFERENCES semesters(id)
+);

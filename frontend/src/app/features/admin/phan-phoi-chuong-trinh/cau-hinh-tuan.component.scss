@@ -1,0 +1,35 @@
+:host ::ng-deep .week-date-cell {
+  min-width: 170px;
+}
+
+:host ::ng-deep .week-date-cell .form-group {
+  margin-bottom: 0;
+}
+
+:host ::ng-deep .week-date-cell .mat-mdc-form-field {
+  width: 100%;
+}
+
+:host ::ng-deep .week-date-cell .mat-mdc-form-field-subscript-wrapper {
+  display: none;
+}
+
+.week-config-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: inherit;
+  font-size: 1.125rem;
+  font-weight: 600;
+  letter-spacing: 0.025em;
+  cursor: pointer;
+}
+
+.week-config-title__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}

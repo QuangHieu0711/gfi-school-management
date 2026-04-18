@@ -1,0 +1,37 @@
+<app-dialog-container
+  [dialogTitle]="title"
+  [dialogActionTemplate]="actionTemplate">
+  <app-form-control
+    #formTpl
+    [form]="form"
+    (submitEvent)="onSubmit()">
+    <div class="flex flex-col gap-2">
+      <app-text-control
+        [item]="findFormControl($formItem, key.WEEK_NUMBER)"
+        [form]="form"></app-text-control>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+        <app-date-control
+          [item]="findFormControl($formItem, key.START_DATE)"
+          [form]="form"></app-date-control>
+        <app-date-control
+          [item]="findFormControl($formItem, key.END_DATE)"
+          [form]="form"></app-date-control>
+      </div>
+    </div>
+  </app-form-control>
+
+  <ng-template #actionTemplate>
+    <button
+      color="primary"
+      matButton="outlined"
+      mat-dialog-close>
+      Hủy
+    </button>
+    <button
+      color="primary"
+      matButton="filled"
+      (click)="formTpl.submit()">
+      Lưu
+    </button>
+  </ng-template>
+</app-dialog-container>

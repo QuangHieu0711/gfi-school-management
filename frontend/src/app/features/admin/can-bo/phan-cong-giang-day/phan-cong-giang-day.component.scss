@@ -1,0 +1,23 @@
+.assignment-staff-caption {
+  margin-left: 8px;
+  color: #2f6672;
+  font-weight: 600;
+}
+
+.homeroom-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 64px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: #f3f5f7;
+  color: #58636f;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.homeroom-pill.is-yes {
+  background: #e8fff3;
+  color: #198754;
+}

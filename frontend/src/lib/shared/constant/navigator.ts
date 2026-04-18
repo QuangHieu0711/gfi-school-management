@@ -42,6 +42,10 @@ export const NAVIGATOR_ENDPOINT = {
     },
     CAN_BO: {
       BASE_PATH: 'staff/profile',
+      ASSIGNMENT_LIST: 'staff/assignment-list',
+    },
+    CURRICULUM_DISTRIBUTION: {
+      BASE_PATH: 'curriculum-distribution',
     },
   },
 } as const;

@@ -243,6 +243,57 @@ export const AdminRoutes: Routes = [
     ],
   },
   {
+    path: NAVIGATOR_ENDPOINT.ADMIN.CURRICULUM_DISTRIBUTION.BASE_PATH,
+    component: AdminComponent,
+    children: [
+      {
+        path: '',
+        canActivate: [PermissionGuard],
+        data: { menuCode: 'CURRICULUM_DISTRIBUTION' },
+        providers: [
+          provideState({ name: 'style', reducer: StyleReducer }),
+          provideEffects(StyleEffect),
+        ],
+        loadComponent: () =>
+          import('./phan-phoi-chuong-trinh/phan-phoi-chuong-trinh.component').then(
+            (m) => m.PhanPhoiChuongTrinhComponent
+          ),
+      },
+      {
+        path: 'cau-hinh-tuan',
+        canActivate: [PermissionGuard],
+        data: { menuCode: 'CURRICULUM_DISTRIBUTION' },
+        providers: [
+          provideState({ name: 'style', reducer: StyleReducer }),
+          provideEffects(StyleEffect),
+        ],
+        loadComponent: () =>
+          import('./phan-phoi-chuong-trinh/cau-hinh-tuan.component').then(
+            (m) => m.CauHinhTuanComponent
+          ),
+      },
+    ],
+  },
+  {
+    path: NAVIGATOR_ENDPOINT.ADMIN.CAN_BO.ASSIGNMENT_LIST,
+    component: AdminComponent,
+    children: [
+      {
+        path: '',
+        canActivate: [PermissionGuard],
+        data: { menuCode: 'ASSIGNMENT_LIST' },
+        providers: [
+          provideState({ name: 'style', reducer: StyleReducer }),
+          provideEffects(StyleEffect),
+        ],
+        loadComponent: () =>
+          import('./can-bo/phan-cong-giang-day/phan-cong-giang-day.component').then(
+            (m) => m.PhanCongGiangDayComponent
+          ),
+      },
+    ],
+  },
+  {
     path: NAVIGATOR_ENDPOINT.ADMIN.CAN_BO.BASE_PATH,
     component: AdminComponent,
     children: [
@@ -272,6 +323,19 @@ export const AdminRoutes: Routes = [
       },
       {
         path: `${PATH.CAP_NHAT}/:id`,
+        canActivate: [PermissionGuard],
+        data: { menuCode: 'STAFF_PROFILE' },
+        providers: [
+          provideState({ name: 'style', reducer: StyleReducer }),
+          provideEffects(StyleEffect),
+        ],
+        loadComponent: () =>
+          import('./can-bo/ho-so-can-bo/ho-so-can-bo.component').then(
+            (m) => m.HoSoCanBoComponent
+          ),
+      },
+      {
+        path: PATH.TAO_MOI,
         canActivate: [PermissionGuard],
         data: { menuCode: 'STAFF_PROFILE' },
         providers: [

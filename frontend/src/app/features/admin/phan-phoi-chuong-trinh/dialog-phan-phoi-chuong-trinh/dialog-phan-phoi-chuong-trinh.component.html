@@ -1,0 +1,57 @@
+<app-dialog-container
+  [dialogTitle]="title"
+  [dialogActionTemplate]="actionTemplate">
+  <app-form-control
+    #formTpl
+    [form]="form"
+    (submitEvent)="onSubmit()">
+    <div class="flex flex-col gap-2">
+      <app-text-control
+        [item]="findFormControl($formItem, key.WEEK)"
+        [form]="form"></app-text-control>
+      <app-select-control
+        [item]="findFormControl($formItem, key.CLASS_ID)"
+        [form]="form"></app-select-control>
+      <app-select-control
+        [item]="findFormControl($formItem, key.SUBJECT_ID)"
+        [form]="form"></app-select-control>
+      <app-text-control
+        [item]="findFormControl($formItem, key.SUB_SUBJECT)"
+        [form]="form"></app-text-control>
+      <app-text-control
+        [item]="findFormControl($formItem, key.PERIOD)"
+        [form]="form"></app-text-control>
+      <app-text-control
+        [item]="findFormControl($formItem, key.LESSON_NAME)"
+        [form]="form"></app-text-control>
+      <app-textarea-control
+        [item]="findFormControl($formItem, key.NOTE)"
+        [form]="form"></app-textarea-control>
+    </div>
+  </app-form-control>
+
+  <ng-template #actionTemplate>
+    <button
+      color="primary"
+      matButton="outlined"
+      mat-dialog-close>
+      Huy
+    </button>
+    @if (data.type !== TYPE_FORM.DETAIL) {
+      <button
+        color="primary"
+        matButton="filled"
+        (click)="formTpl.submit()">
+        Luu
+      </button>
+    }
+    @if (data.type === TYPE_FORM.DETAIL) {
+      <button
+        color="primary"
+        matButton="filled"
+        (click)="switchUpdate()">
+        Chinh sua
+      </button>
+    }
+  </ng-template>
+</app-dialog-container>

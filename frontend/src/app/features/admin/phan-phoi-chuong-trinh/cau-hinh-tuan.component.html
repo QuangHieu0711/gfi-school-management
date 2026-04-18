@@ -1,0 +1,124 @@
+<app-table
+  tableTitle=""
+  [pageIndex]="pageIndex"
+  [pageSize]="pageSize"
+  [total]="dataSourceTotal"
+  [tableConfig]="tableConfig"
+  [dataSource]="dataSource"
+  [tableColumns]="columns"
+  (queryChange)="filterData($event)">
+  <ng-container table-header>
+    <button
+      type="button"
+      class="week-config-title"
+      (click)="goBack()"
+      aria-label="Quay lại">
+      <app-icon
+        icon="arrow_back_ios"
+        [size]="16"
+        class="week-config-title__icon" />
+      <span>Cấu hình tuần học</span>
+    </button>
+  </ng-container>
+
+  <ng-container custom-buttons>
+    <div class="flex gap-2 items-center flex-wrap">
+      @if (canConfig) {
+        <button
+          color="primary"
+          matButton="outlined"
+          class="btn-tight"
+          (click)="generateWeekConfig()">
+          <app-icon
+            icon="auto_fix_high"
+            [size]="18"
+            class="btn-icon" />
+          Sinh tự động
+        </button>
+        <button
+          color="warn"
+          matButton="outlined"
+          class="btn-tight"
+          (click)="deleteBySemester()">
+          <app-icon
+            icon="delete"
+            [size]="18"
+            class="btn-icon" />
+          Xóa theo học kỳ
+        </button>
+      }
+    </div>
+  </ng-container>
+
+  <ng-container filter-panel>
+    <app-form-control
+      [form]="form"
+      (submitEvent)="filterData()"
+      (resetEvent)="resetFilter()">
+      <div class="flex gap-2 items-center flex-wrap">
+        <app-select-control
+          [item]="findFormControl($formItem, key.SCHOOL_YEAR_ID)"
+          [form]="form"></app-select-control>
+        <app-select-control
+          [item]="findFormControl($formItem, key.SEMESTER_ID)"
+          [form]="form"></app-select-control>
+        <div class="flex gap-1 items-center">
+          <button
+            color="dark"
+            matIconButton="text"
+            matTooltip="Tìm kiếm"
+            type="submit">
+            <app-icon
+              icon="svg:search"
+              color="#858585" />
+          </button>
+          <button
+            color="dark"
+            matIconButton="text"
+            matTooltip="Làm mới"
+            type="reset">
+            <app-icon
+              icon="svg:cached"
+              color="#858585" />
+          </button>
+        </div>
+      </div>
+    </app-form-control>
+    <div class="mt-3 text-red-600 text-sm font-medium">
+      <p>Lưu ý: Thầy cô có thể thay đổi bằng cách sửa lại ngày bắt đầu của 1 tuần bất kỳ, nhấn Lưu hệ thống sẽ tự động tính lại thời gian của các tuần tiếp theo.</p>
+    </div>
+  </ng-container>
+</app-table>
+
+@if (canConfig) {
+  <div class="flex justify-end gap-2 mt-3 flex-wrap">
+    <button
+      color="primary"
+      matButton="outlined"
+      (click)="cancelBulkUpdate()">
+      Hủy
+    </button>
+    <button
+      color="primary"
+      matButton="filled"
+      (click)="saveBulkUpdate()">
+      Lưu
+    </button>
+  </div>
+}
+
+<ng-template #fromDateTpl let-row>
+  <div class="week-date-cell">
+    <app-date-control
+      [item]="fromDateControlItem"
+      [form]="getRowForm(row)"></app-date-control>
+  </div>
+</ng-template>
+
+<ng-template #toDateTpl let-row>
+  <div class="week-date-cell">
+    <app-date-control
+      [item]="toDateControlItem"
+      [form]="getRowForm(row)"></app-date-control>
+  </div>
+</ng-template>
