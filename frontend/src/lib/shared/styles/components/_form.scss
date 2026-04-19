@@ -53,6 +53,17 @@
     font-size: 14px !important;
   }
 
+  .form-control input[type='number'] {
+    appearance: textfield;
+    -moz-appearance: textfield;
+  }
+
+  .form-control input[type='number']::-webkit-outer-spin-button,
+  .form-control input[type='number']::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+
   .form-control .mat-date-range-input-separator {
     color: var(--color-neutral-450) !important;
     padding: 0 6px;

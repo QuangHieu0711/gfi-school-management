@@ -59,18 +59,41 @@ public class WeekConfigServiceImpl implements WeekConfigService {
         Semester semester = findSemester(request.getSemesterId());
         validateSemesterBelongsToSchoolYear(semester, schoolYear.getId());
 
-        // Delete existing weeks if forceRegenerate is true
+        // Validation: nếu không phải sinh lại, phải kiểm tra điều kiện
+        if (!Boolean.TRUE.equals(request.getForceRegenerate())) {
+            if (weekConfigRepository.existsBySemesterIdAndDeletedFlag(semester.getId(), 0)) {
+                throw new UserMessageException(CommonErrorCode.WEEK_CONFIG_ALREADY_EXISTS_FOR_SEMESTER);
+            }
+            
+            // Kiểm tra: nếu không phải HK1, phải có HK trước đã được sinh
+            List<Semester> semesters = semesterRepository.findBySchoolYearId(schoolYear.getId()).stream()
+                    .filter(s -> s.getDeletedFlag() == 0)
+                    .sorted(Comparator.comparing(Semester::getSemesterOrder))
+                    .toList();
+            
+            int currentIndex = semesters.indexOf(semester);
+            if (currentIndex > 0) {
+                // Có HK trước, phải kiểm tra HK trước đã sinh tuần chưa
+                Semester previousSemester = semesters.get(currentIndex - 1);
+                boolean previousHasWeeks = weekConfigRepository.existsBySemesterIdAndDeletedFlag(previousSemester.getId(), 0);
+                if (!previousHasWeeks) {
+                    throw new UserMessageException(CommonErrorCode.WEEK_CONFIG_PREVIOUS_SEMESTER_NOT_GENERATED);
+                }
+            }
+        }
+
+        // Nếu forceRegenerate = true, soft delete các tuần cũ
         if (Boolean.TRUE.equals(request.getForceRegenerate())) {
             deleteBySemester(semester.getId());
-        } else if (weekConfigRepository.existsBySemesterIdAndDeletedFlag(semester.getId(), 0)) {
-            throw new UserMessageException(CommonErrorCode.WEEK_CONFIG_ALREADY_EXISTS_FOR_SEMESTER);
         }
 
         List<WeekConfig> generated = new ArrayList<>();
         List<WeekConfig> reusableDeletedWeeks = new ArrayList<>(
                 weekConfigRepository.findBySemesterIdAndDeletedFlagOrderByIdAsc(semester.getId(), 1));
         LocalDate cursor = semester.getStartDate();
-        int weekNumber = 1;
+        
+        // Tính toán số tuần bắt đầu: lấy tuần cuối cùng từ các học kỳ trước + 1
+        int weekNumber = calculateStartWeekNumber(schoolYear, semester);
 
         while (!cursor.isAfter(semester.getEndDate())) {
             LocalDate endDate = cursor.plusDays(6);
@@ -98,6 +121,40 @@ public class WeekConfigServiceImpl implements WeekConfigService {
         }
 
         return weekConfigRepository.saveAll(generated).stream().map(this::toDto).toList();
+    }
+
+    private int calculateStartWeekNumber(SchoolYear schoolYear, Semester currentSemester) {
+        // Lấy tất cả học kỳ trong năm học (theo thứ tự), chỉ lấy những cái chưa bị xóa
+        List<Semester> semesters = semesterRepository.findBySchoolYearId(schoolYear.getId()).stream()
+                .filter(s -> s.getDeletedFlag() == 0)
+                .sorted(Comparator.comparing(Semester::getSemesterOrder))
+                .toList();
+        
+        int currentSemesterIndex = -1;
+        for (int i = 0; i < semesters.size(); i++) {
+            if (semesters.get(i).getId().equals(currentSemester.getId())) {
+                currentSemesterIndex = i;
+                break;
+            }
+        }
+
+        // Nếu là học kỳ đầu tiên, bắt đầu từ tuần 1
+        if (currentSemesterIndex <= 0) {
+            return 1;
+        }
+
+        // Nếu không, tìm tuần cuối cùng của học kỳ trước (chỉ lấy những tuần chưa bị xóa)
+        Semester previousSemester = semesters.get(currentSemesterIndex - 1);
+        List<WeekConfig> previousWeeks = weekConfigRepository
+                .findBySemesterIdAndDeletedFlagOrderByWeekNumberDescIdAsc(previousSemester.getId(), 0);
+        
+        if (previousWeeks.isEmpty()) {
+            return 1;
+        }
+
+        // Lấy số tuần lớn nhất từ học kỳ trước + 1
+        int maxWeekNumber = previousWeeks.get(0).getWeekNumber();
+        return maxWeekNumber + 1;
     }
 
     @Override

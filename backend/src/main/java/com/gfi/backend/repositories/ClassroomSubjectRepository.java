@@ -11,5 +11,6 @@ import com.gfi.backend.models.entities.ClassroomSubject;
 public interface ClassroomSubjectRepository extends JpaRepository<ClassroomSubject, Long> {
     List<ClassroomSubject> findByClassroomId(Long classroomId);
     long countBySubjectId(Long subjectId);
+    boolean existsByClassroomIdAndSubjectId(Long classroomId, Long subjectId);
     void deleteByClassroomId(Long classroomId);
 }

@@ -24,6 +24,8 @@ public interface WeekConfigRepository extends JpaRepository<WeekConfig, Long> {
 
     List<WeekConfig> findBySemesterIdAndDeletedFlagOrderByWeekNumberAscIdAsc(Long semesterId, Integer deletedFlag);
 
+    List<WeekConfig> findBySemesterIdAndDeletedFlagOrderByWeekNumberDescIdAsc(Long semesterId, Integer deletedFlag);
+
     List<WeekConfig> findBySemesterIdAndDeletedFlagOrderByIdAsc(Long semesterId, Integer deletedFlag);
 
     boolean existsBySemesterIdAndDeletedFlag(Long semesterId, Integer deletedFlag);
