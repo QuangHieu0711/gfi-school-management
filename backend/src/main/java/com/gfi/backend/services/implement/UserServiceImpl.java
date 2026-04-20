@@ -24,10 +24,12 @@ import com.gfi.backend.models.entities.User;
 import com.gfi.backend.models.global.CommonErrorCode;
 import com.gfi.backend.models.mappers.UserMapper;
 import com.gfi.backend.repositories.RoleRepository;
+import com.gfi.backend.repositories.StaffRepository;
 import com.gfi.backend.repositories.UnitRepository;
 import com.gfi.backend.repositories.UserRepository;
 import com.gfi.backend.repositories.specifications.UserSpecification;
 import com.gfi.backend.services.interfaces.UserService;
+import com.gfi.backend.models.entities.Staff;
 import com.gfi.backend.utils.PageableUtils;
 import com.gfi.backend.utils.PasswordUtils;
 import com.gfi.backend.utils.SecurityUtils;
@@ -58,6 +60,7 @@ public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final UnitRepository unitRepository;
+    private final StaffRepository staffRepository;
     private final RoleAssignmentPermissionRepository roleAssignmentPermissionRepository;
     private final UserSpecification userSpecification;
     private final UserMapper userMapper;
@@ -259,6 +262,13 @@ public class UserServiceImpl implements UserService {
         user.setPasswordHash(encodePasswordFromClient(request.getPassword().trim()));
         user.setCreatedBy(SecurityUtils.getCurrentUsername());
         user.setDeletedFlag(0);
+
+        // Step 8: Link Staff if provided
+        if (request.getStaffId() != null) {
+            Staff staff = staffRepository.findById(request.getStaffId())
+                    .orElseThrow(() -> new UserMessageException(CommonErrorCode.STAFF_NOT_FOUND));
+            user.setStaff(staff);
+        }
 
         // NOTE: fullName, email, phone, unit are now profile data managed via Staff
         // This will be handled in Phase 2 with full API restructuring

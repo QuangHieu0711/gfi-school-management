@@ -34,7 +34,26 @@
   <div class="profile-layout">
     @if (activeTab === 'thong-tin-can-bo') {
       <section class="view-section main-section">
-        <div class="section-bar">Thông tin cán bộ</div>
+        <div class="section-bar">
+          <span class="section-bar-title">Thông tin cán bộ</span>
+          @if (!isDetailMode) {
+            <div class="section-bar-actions">
+              <button
+                type="button"
+                matButton="outlined"
+                (click)="goBack()">
+                Hủy
+              </button>
+              <button
+                type="button"
+                color="primary"
+                matButton="filled"
+                (click)="submit()">
+                Lưu
+              </button>
+            </div>
+          }
+        </div>
 
         @if (isDetailMode) {
           <div class="section-body">
@@ -227,6 +246,7 @@
                     </div>
                     <div class="profile-info">
                       <div class="form-grid">
+                        <app-select-control [item]="findFormControl(profileItems, 'unitId')" [form]="form"></app-select-control>
                         <app-text-control [item]="findFormControl(profileItems, 'staffCode')" [form]="form"></app-text-control>
                         <app-text-control [item]="findFormControl(profileItems, 'fullName')" [form]="form"></app-text-control>
                         <app-text-control [item]="findFormControl(profileItems, 'aliasName')" [form]="form"></app-text-control>
@@ -245,6 +265,21 @@
                         <app-text-control [item]="findFormControl(profileItems, 'socialInsuranceNo')" [form]="form"></app-text-control>
                         <app-text-control [item]="findFormControl(profileItems, 'healthStatus')" [form]="form"></app-text-control>
                         <app-select-control [item]="findFormControl(profileItems, 'status')" [form]="form"></app-select-control>
+
+                        <!-- Account Checkbox -->
+                        <app-checkbox-control class="full-row account-checkbox" [item]="findFormControl(profileItems, 'createAccount')" [form]="form"></app-checkbox-control>
+
+                        <!-- Account Fields (conditional) -->
+                        @if (form.get('createAccount')?.value) {
+                          <app-text-control [item]="findFormControl(profileItems, 'username')" [form]="form"></app-text-control>
+                          @if (!(isUpdateMode && hasExistingUserAccount)) {
+                            <app-text-control [item]="findFormControl(profileItems, 'password')" [form]="form"></app-text-control>
+                          }
+                          <app-select-control [item]="findFormControl(profileItems, 'roleId')" [form]="form"></app-select-control>
+                          <app-select-control [item]="findFormControl(profileItems, 'accountStatus')" [form]="form"></app-select-control>
+                          <app-checkbox-control class="full-row" [item]="findFormControl(profileItems, 'sendActivationEmail')" [form]="form"></app-checkbox-control>
+                        }
+
                         <app-textarea-control class="full-row" [item]="findFormControl(profileItems, 'note')" [form]="form"></app-textarea-control>
                       </div>
                     </div>
@@ -358,10 +393,6 @@
               </section>
             </div>
 
-            <div class="form-actions">
-              <button type="button" matButton="outlined" (click)="goBack()">Hủy</button>
-              <button type="submit" color="primary" matButton="filled">Lưu</button>
-            </div>
           </app-form-control>
         }
       </section>

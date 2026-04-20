@@ -1,9 +1,9 @@
 import { CommonModule, Location } from '@angular/common';
 import { Component, Injector } from '@angular/core';
-import { ReactiveFormsModule } from '@angular/forms';
+import { ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, NavigationEnd, Router } from '@angular/router';
 import { MtxGridColumn } from '@ng-matero/extensions/grid';
-import { filter, takeUntil } from 'rxjs';
+import { filter, firstValueFrom, takeUntil } from 'rxjs';
 
 import { IconComponent } from '@components/app-icon/app-icon.component';
 import { AppTableComponent } from '@components/app-table/app-table.component';
@@ -18,6 +18,7 @@ import {
   SELECT_CONTROL,
   TEXT_CONTROL,
   TEXTAREA_CONTROL,
+  CHECKBOX_CONTROL,
 } from '@model/form-control.model';
 import { COMMON_TABLE_KEY, TableQueryEvent } from '@model/table.model';
 import { FORM_CONTROL_MODULE, MATERIAL_MODULE } from '@modules';
@@ -58,6 +59,13 @@ import { DialogQuaTrinhCongTacComponent } from './qua-trinh-cong-tac/dialog-qua-
 import { DialogPhanCongGiangDayComponent } from '../phan-cong-giang-day/dialog-phan-cong-giang-day.component';
 import { PhanCongGiangDayService } from '@app/service/admin/phan-cong-giang-day.service';
 import { PhanCongGiangDayResponse } from '@app/model/admin/phan-cong-giang-day.model';
+import {
+  NguoiDungFilterRequest,
+  NguoiDungFormRequest,
+  NguoiDungResponse,
+} from '@app/model/admin/nguoi-dung.model';
+import { NguoiDungService } from '@app/service/admin/nguoi-dung.service';
+import { sha256 } from '@utils/utils';
 
 type TabKey =
   | 'thong-tin-can-bo'
@@ -66,6 +74,11 @@ type TabKey =
   | 'thong-tin-luong'
   | 'thong-tin-ngoai-ngu'
   | 'phan-cong-giang-day';
+
+const USER_ACCOUNT_STATUS_OPTIONS: IOptions[] = [
+  { value: 1, label: 'Hoạt động' },
+  { value: 0, label: 'Không hoạt động' },
+];
 
 @Component({
   selector: 'ho-so-can-bo',
@@ -83,8 +96,10 @@ type TabKey =
 })
 export class HoSoCanBoComponent extends ComponentBaseAbstract {
   override readonly TYPE_FORM = TYPE_FORM;
+  private readonly passwordRegex =
+    /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_])[A-Za-z\d\W_]{8,}$/;
 
-  readonly tabs: Array<{ key: TabKey; label: string }> = [
+  readonly tabs: { key: TabKey; label: string }[] = [
     { key: 'thong-tin-can-bo', label: 'THÔNG TIN CÁN BỘ' },
     {
       key: 'qua-trinh-cong-tac',
@@ -105,6 +120,7 @@ export class HoSoCanBoComponent extends ComponentBaseAbstract {
   activeTab: TabKey = 'thong-tin-can-bo';
   staffId?: string;
   staff: CanBoDetailResponse = { ...CAN_BO_PROFILE_FALLBACK };
+  hasExistingUserAccount = false;
   unitOptions: IOptions[] = [];
   profileItems: FormType[] = [];
 
@@ -158,7 +174,8 @@ export class HoSoCanBoComponent extends ComponentBaseAbstract {
     private readonly staffTrainingService: StaffTrainingService,
     private readonly staffForeignLanguageService: StaffForeignLanguageService,
     private readonly diaChiHanhChinhService: DiaChiHanhChinhService,
-    private readonly phanCongGiangDayService: PhanCongGiangDayService
+    private readonly phanCongGiangDayService: PhanCongGiangDayService,
+    private readonly nguoiDungService: NguoiDungService
   ) {
     super(injector);
   }
@@ -171,7 +188,7 @@ export class HoSoCanBoComponent extends ComponentBaseAbstract {
     return this.pathType === this.TYPE_FORM.UPDATE;
   }
 
-  get visibleTabs(): Array<{ key: TabKey; label: string }> {
+  get visibleTabs(): { key: TabKey; label: string }[] {
     return this.tabs.filter((t) => t.key !== ('thong-tin-luong' as TabKey));
   }
 
@@ -197,8 +214,10 @@ export class HoSoCanBoComponent extends ComponentBaseAbstract {
     this.initForeignLanguageColumns();
     this.initTeachingAssignmentColumns();
     this.loadUnitOptions();
+    this.loadCreateUserRoleOptions();
     this.loadProvinces();
     this.bindGenerateCode();
+    this.bindCreateAccount();
     this.bindRouteMode();
     this.bindAddressSelects();
 
@@ -206,6 +225,7 @@ export class HoSoCanBoComponent extends ComponentBaseAbstract {
     if (routeState) {
       this.staff = this.normalizeDetail(routeState);
       this.patchForm(this.staff);
+      this.loadUserAccountInfo(this.staff.userId ?? undefined);
     }
 
     if (!this.staffId) return;
@@ -214,6 +234,9 @@ export class HoSoCanBoComponent extends ComponentBaseAbstract {
       next: ({ data }) => {
         this.staff = this.normalizeDetail(data);
         this.patchForm(this.staff);
+        this.loadUserAccountInfo(
+          this.staff.userId ?? data?.userId ?? undefined
+        );
         this.loadJobHistories({
           pageIndex: 0,
           pageSize: this.jobHistoryPageSize,
@@ -242,6 +265,82 @@ export class HoSoCanBoComponent extends ComponentBaseAbstract {
         }
       },
     });
+  }
+
+  private loadUserAccountInfo(userId?: string | number): void {
+    if (!userId) {
+      this.loadUserAccountInfoByStaffId();
+      return;
+    }
+
+    this.nguoiDungService.getById(userId).subscribe({
+      next: ({ data }) => {
+        this.patchAccountFormFromUser(data);
+      },
+      error: () => {
+        this.loadUserAccountInfoByStaffId();
+      },
+    });
+  }
+
+  private loadUserAccountInfoByStaffId(): void {
+    const normalizedStaffId = Number(this.staffId ?? 0);
+    if (!normalizedStaffId) {
+      this.patchAccountFormFromUser();
+      return;
+    }
+
+    const payload = {
+      pageNow: 1,
+      pageSize: 1,
+      filter: {
+        staffId: normalizedStaffId,
+      },
+    } as unknown as NguoiDungFilterRequest;
+
+    this.nguoiDungService.filter(payload).subscribe({
+      next: ({ data }) => {
+        const users = Array.isArray(data)
+          ? data
+          : Array.isArray(data?.items)
+            ? data.items
+            : [];
+        this.patchAccountFormFromUser(users[0]);
+      },
+      error: () => {
+        this.patchAccountFormFromUser();
+      },
+    });
+  }
+
+  private patchAccountFormFromUser(user?: NguoiDungResponse): void {
+    const createAccountControl = this.form.get('createAccount');
+    const usernameControl = this.form.get('username');
+    const passwordControl = this.form.get('password');
+    const roleIdControl = this.form.get('roleId');
+    const accountStatusControl = this.form.get('accountStatus');
+    const sendActivationEmailControl = this.form.get('sendActivationEmail');
+
+    if (!user) {
+      this.hasExistingUserAccount = false;
+      this.staff.userId = null;
+      createAccountControl?.setValue(false, { emitEvent: true });
+      usernameControl?.setValue('', { emitEvent: false });
+      passwordControl?.setValue('', { emitEvent: false });
+      roleIdControl?.setValue(null, { emitEvent: false });
+      accountStatusControl?.setValue(null, { emitEvent: false });
+      sendActivationEmailControl?.setValue(false, { emitEvent: false });
+      return;
+    }
+
+    this.hasExistingUserAccount = true;
+    this.staff.userId = user.id ?? this.staff.userId ?? null;
+    createAccountControl?.setValue(true, { emitEvent: true });
+    usernameControl?.setValue(user.username ?? '', { emitEvent: false });
+    passwordControl?.setValue('', { emitEvent: false });
+    roleIdControl?.setValue(user.roleId ?? null, { emitEvent: false });
+    accountStatusControl?.setValue(user.status ?? 1, { emitEvent: false });
+    sendActivationEmailControl?.setValue(false, { emitEvent: false });
   }
 
   // ════════════════════════════════════════
@@ -277,12 +376,29 @@ export class HoSoCanBoComponent extends ComponentBaseAbstract {
   }
 
   submit(): void {
+    if (this.form.invalid) {
+      this.form.markAllAsTouched();
+      return;
+    }
+
     const payload = this.buildPayload();
 
     if (this.pathType === this.TYPE_FORM.CREATE) {
       console.log('Payload create staff:', payload);
       this.canBoService.create(payload).subscribe({
-        next: () => {
+        next: async ({ data }) => {
+          const createdUser = await this.syncUserAccountForStaff(
+            data?.id,
+            data?.userId
+          );
+          if (!createdUser) {
+            this.toastr.warning(
+              'Đã tạo cán bộ nhưng tạo tài khoản đăng nhập thất bại',
+              'Cảnh báo'
+            );
+            return;
+          }
+
           this.toastr.success('Thêm cán bộ thành công', 'Thành công');
           this.routerService.navigate([
             '/',
@@ -305,7 +421,19 @@ export class HoSoCanBoComponent extends ComponentBaseAbstract {
     if (!this.staffId || !this.isUpdateMode) return;
     console.log('Payload update staff:', payload);
     this.canBoService.update(this.staffId, payload).subscribe({
-      next: () => {
+      next: async ({ data }) => {
+        const syncedUser = await this.syncUserAccountForStaff(
+          data?.id ?? this.staffId,
+          data?.userId ?? this.staff.userId
+        );
+        if (!syncedUser) {
+          this.toastr.warning(
+            'Đã cập nhật cán bộ nhưng đồng bộ tài khoản đăng nhập thất bại',
+            'Cảnh báo'
+          );
+          return;
+        }
+
         this.toastr.success('Cập nhật thành công', 'Thành công');
         this.routerService.navigate([
           '/',
@@ -320,6 +448,107 @@ export class HoSoCanBoComponent extends ComponentBaseAbstract {
         );
       },
     });
+  }
+
+  private async syncUserAccountForStaff(
+    staffId?: string | number | null,
+    existingUserId?: string | number | null
+  ): Promise<boolean> {
+    const v = this.form.getRawValue();
+    if (!v.createAccount) {
+      return true;
+    }
+
+    const normalizedStaffId = Number(staffId ?? 0);
+    if (!normalizedStaffId) {
+      this.toastr.error(
+        'Không lấy được staffId để liên kết tài khoản người dùng',
+        'Thất bại'
+      );
+      return false;
+    }
+
+    try {
+      const userPayload: NguoiDungFormRequest & {
+        email?: string;
+        unitId?: number;
+        fullName?: string;
+      } = {
+        username: v.username ?? '',
+        roleId: `${v.roleId ?? ''}`,
+        status: this.mapUserStatus(v.accountStatus),
+        staffId: normalizedStaffId,
+        email: v.email ?? '',
+        unitId: Number(v.unitId ?? 0),
+        fullName: v.fullName ?? '',
+      };
+
+      if (existingUserId) {
+        const passwordValue = `${v.password ?? ''}`.trim();
+        const updatePayload: NguoiDungFormRequest & {
+          email?: string;
+          unitId?: number;
+          fullName?: string;
+        } = {
+          id: existingUserId,
+          ...userPayload,
+        };
+
+        if (passwordValue) {
+          updatePayload.password = await sha256(passwordValue);
+        }
+
+        await firstValueFrom(this.nguoiDungService.update(updatePayload));
+      } else {
+        const createPayload: NguoiDungFormRequest & {
+          email?: string;
+          unitId?: number;
+          fullName?: string;
+        } = {
+          ...userPayload,
+        };
+
+        const passwordValue = `${v.password ?? ''}`.trim();
+        if (passwordValue) {
+          createPayload.password = await sha256(passwordValue);
+        }
+
+        await firstValueFrom(this.nguoiDungService.create(createPayload));
+      }
+
+      return true;
+    } catch (error: unknown) {
+      const e = error as {
+        error?: {
+          userMessage?: string;
+          message?: string;
+        };
+      };
+      this.toastr.error(
+        e?.error?.userMessage ??
+          e?.error?.message ??
+          'Không tạo được tài khoản đăng nhập',
+        'Thất bại'
+      );
+      return false;
+    }
+  }
+
+  private mapUserStatus(value: unknown): number {
+    if (typeof value === 'number') {
+      return value;
+    }
+
+    const normalized = `${value ?? ''}`.trim().toUpperCase();
+    if (
+      normalized === 'ACTIVE' ||
+      normalized === '1' ||
+      normalized === 'TRUE'
+    ) {
+      return 1;
+    }
+
+    return 0;
   }
 
   // ════════════════════════════════════════
@@ -715,15 +944,15 @@ export class HoSoCanBoComponent extends ComponentBaseAbstract {
   // ════════════════════════════════════════
   private initItems(): void {
     this.profileItems = [
-      // Hidden
-      TEXT_CONTROL({
+      SELECT_CONTROL({
         controlName: 'unitId',
         label: 'Đơn vị',
-        placeholder: 'Đơn vị',
-        required: false,
-        disabled: true,
-        hidden: true,
+        placeholder: 'Chọn đơn vị',
+        required: true,
+        clearable: true,
+        listOption: [],
       }),
+      // Hidden
       TEXT_CONTROL({
         controlName: 'avatarUrl',
         label: '',
@@ -1066,7 +1295,64 @@ export class HoSoCanBoComponent extends ComponentBaseAbstract {
         required: false,
         rows: 4,
       }),
+      // Account info
+      CHECKBOX_CONTROL({
+        controlName: 'createAccount',
+        label: 'Tạo tài khoản đăng nhập',
+        required: false,
+      }),
+      TEXT_CONTROL({
+        controlName: 'username',
+        label: 'Tên đăng nhập',
+        placeholder: 'Tên đăng nhập',
+        required: true,
+        disabled: false,
+      }),
+      TEXT_CONTROL({
+        controlName: 'password',
+        label: 'Mật khẩu',
+        placeholder: 'Mật khẩu',
+        required: false,
+        hidden: true,
+        type: 'password',
+        regex: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_])[A-Za-z\d\W_]{8,}$/,
+        hint: 'Tối thiểu 8 ký tự, bao gồm chữ hoa, chữ thường, ký tự số và ký tự đặc biệt',
+      }),
+      SELECT_CONTROL({
+        controlName: 'roleId',
+        label: 'Vai trò',
+        placeholder: 'Chọn vai trò',
+        required: true,
+        clearable: true,
+        listOption: [],
+      }),
+      SELECT_CONTROL({
+        controlName: 'accountStatus',
+        label: 'Trạng thái',
+        placeholder: 'Chọn trạng thái',
+        required: true,
+        clearable: true,
+        listOption: [],
+      }),
+      CHECKBOX_CONTROL({
+        controlName: 'sendActivationEmail',
+        label: 'Gửi email kích hoạt',
+        required: false,
+      }),
     ];
+
+    // Set account options
+    const roleIdItem = this.findFormControl(this.profileItems, 'roleId');
+    const accountStatusItem = this.findFormControl(
+      this.profileItems,
+      'accountStatus'
+    );
+    if (roleIdItem) {
+      roleIdItem.options = [];
+    }
+    if (accountStatusItem) {
+      accountStatusItem.options = USER_ACCOUNT_STATUS_OPTIONS;
+    }
   }
 
   private initAddressItems(): void {
@@ -1293,6 +1579,131 @@ export class HoSoCanBoComponent extends ComponentBaseAbstract {
   // ════════════════════════════════════════
   //  Bindings
   // ════════════════════════════════════════
+  private bindCreateAccount(): void {
+    const createAccountControl = this.form.get('createAccount');
+    const usernameItem = this.findFormControl(this.profileItems, 'username');
+    const passwordItem = this.findFormControl(this.profileItems, 'password');
+    const roleIdItem = this.findFormControl(this.profileItems, 'roleId');
+    const accountStatusItem = this.findFormControl(
+      this.profileItems,
+      'accountStatus'
+    );
+    const sendActivationEmailItem = this.findFormControl(
+      this.profileItems,
+      'sendActivationEmail'
+    );
+    const usernameControl = this.form.get('username');
+    const passwordControl = this.form.get('password');
+    const roleIdControl = this.form.get('roleId');
+    const accountStatusControl = this.form.get('accountStatus');
+
+    const applyCreateAccountState = (isChecked: boolean): void => {
+      if (isChecked) {
+        const hidePasswordInUpdate =
+          this.isUpdateMode && this.hasExistingUserAccount;
+
+        // Show all fields and make them required
+        usernameItem.hidden = false;
+        passwordItem.hidden = hidePasswordInUpdate;
+        roleIdItem.hidden = false;
+        accountStatusItem.hidden = false;
+        sendActivationEmailItem.hidden = false;
+
+        // Set required: true
+        usernameItem.required = true;
+        passwordItem.required = !hidePasswordInUpdate;
+        roleIdItem.required = true;
+        accountStatusItem.required = true;
+
+        // Enable controls and add validators
+        usernameControl?.setValidators([Validators.required]);
+        usernameControl?.updateValueAndValidity({ emitEvent: false });
+        usernameControl?.enable({ emitEvent: false });
+
+        if (hidePasswordInUpdate) {
+          passwordControl?.setValue('', { emitEvent: false });
+          passwordControl?.clearValidators();
+          passwordControl?.updateValueAndValidity({ emitEvent: false });
+          passwordControl?.disable({ emitEvent: false });
+        } else {
+          passwordControl?.setValidators([
+            Validators.required,
+            Validators.pattern(this.passwordRegex),
+          ]);
+          passwordControl?.updateValueAndValidity({ emitEvent: false });
+          passwordControl?.enable({ emitEvent: false });
+        }
+
+        roleIdControl?.setValidators([Validators.required]);
+        roleIdControl?.updateValueAndValidity({ emitEvent: false });
+        roleIdControl?.enable({ emitEvent: false });
+
+        accountStatusControl?.setValidators([Validators.required]);
+        accountStatusControl?.updateValueAndValidity({ emitEvent: false });
+        accountStatusControl?.enable({ emitEvent: false });
+        if (
+          accountStatusControl?.value === null ||
+          accountStatusControl?.value === undefined ||
+          accountStatusControl?.value === ''
+        ) {
+          accountStatusControl?.setValue(1, { emitEvent: false });
+        }
+        return;
+      }
+
+      // Hide all fields and make them optional
+      usernameItem.hidden = true;
+      passwordItem.hidden = true;
+      roleIdItem.hidden = true;
+      accountStatusItem.hidden = true;
+      sendActivationEmailItem.hidden = true;
+
+      // Set required: false
+      usernameItem.required = false;
+      passwordItem.required = false;
+      roleIdItem.required = false;
+      accountStatusItem.required = false;
+
+      // Clear values and remove validators
+      usernameControl?.setValue('', { emitEvent: false });
+      usernameControl?.clearValidators();
+      usernameControl?.updateValueAndValidity({ emitEvent: false });
+
+      passwordControl?.setValue('', { emitEvent: false });
+      passwordControl?.clearValidators();
+      passwordControl?.updateValueAndValidity({ emitEvent: false });
+
+      roleIdControl?.setValue(null, { emitEvent: false });
+      roleIdControl?.clearValidators();
+      roleIdControl?.updateValueAndValidity({ emitEvent: false });
+
+      accountStatusControl?.setValue(null, { emitEvent: false });
+      accountStatusControl?.clearValidators();
+      accountStatusControl?.updateValueAndValidity({ emitEvent: false });
+
+      const sendActivationEmailControl = this.form.get('sendActivationEmail');
+      sendActivationEmailControl?.setValue(false, { emitEvent: false });
+
+      usernameControl?.disable({ emitEvent: false });
+      passwordControl?.disable({ emitEvent: false });
+      roleIdControl?.disable({ emitEvent: false });
+      accountStatusControl?.disable({ emitEvent: false });
+    };
+
+    if (createAccountControl) {
+      createAccountControl.setValue(!!createAccountControl.value, {
+        emitEvent: false,
+      });
+      applyCreateAccountState(!!createAccountControl.value);
+
+      createAccountControl.valueChanges
+        .pipe(takeUntil(this.ngUnsubscribe))
+        .subscribe((isChecked) => {
+          applyCreateAccountState(!!isChecked);
+        });
+    }
+  }
+
   private bindGenerateCode(): void {
     const staffCodeControl = this.form.get('staffCode');
     const unitIdControl = this.form.get('unitId');
@@ -1378,6 +1789,25 @@ export class HoSoCanBoComponent extends ComponentBaseAbstract {
           value: i.id,
           label: i.name,
         }));
+
+        this.findFormControl(this.profileItems, 'unitId').options =
+          this.unitOptions;
+      },
+    });
+  }
+
+  private loadCreateUserRoleOptions(): void {
+    this.nguoiDungService.getCreateUserRoleOptions().subscribe({
+      next: ({ data }) => {
+        this.findFormControl(this.profileItems, 'roleId').options = (
+          data ?? []
+        ).map((item) => ({
+          value: item.id,
+          label: item.name,
+        }));
+      },
+      error: () => {
+        this.findFormControl(this.profileItems, 'roleId').options = [];
       },
     });
   }
@@ -1574,11 +2004,11 @@ export class HoSoCanBoComponent extends ComponentBaseAbstract {
       unitId: v.unitId ?? 0,
       aliasName: v.aliasName ?? '',
       identityCode: v.identityCode ?? '',
-      gender: this.normalizeGenderValue(v.gender),
+      gender: v.gender || null,
       dateOfBirth: this.toInputDate(v.dateOfBirth),
-      ethnicityId: v.ethnicityId ?? '',
-      religionId: v.religionId ?? '',
-      nationalityId: v.nationalityId ?? '',
+      ethnicityId: v.ethnicityId || null,
+      religionId: v.religionId || null,
+      nationalityId: v.nationalityId || null,
       cccdNo: v.cccdNo ?? '',
       cccdIssueDate: this.toInputDate(v.cccdIssueDate),
       cccdIssuePlace: v.cccdIssuePlace ?? '',
@@ -1592,7 +2022,7 @@ export class HoSoCanBoComponent extends ComponentBaseAbstract {
       avatarUrl: v.avatarUrl ?? this.staff.avatarUrl ?? '',
       signatureFileId: this.staff.signatureFileId ?? 0,
       signatureUrl: this.staff.signatureUrl ?? '',
-      status: v.status ?? '',
+      status: v.status || null,
       note: v.note ?? '',
       permanentAddress: {
         provinceId: v.permanentProvinceName ?? 0,
@@ -1612,47 +2042,59 @@ export class HoSoCanBoComponent extends ComponentBaseAbstract {
         wardId: v.birthPlaceWardName ?? 0,
         detailAddress: v.birthPlace ?? '',
       },
-      fatherInfo: {
-        fullName: v.fatherName ?? '',
-        birthYear: v.fatherBirthYear ?? 0,
-        placeOfBirth: v.fatherBirthPlace ?? '',
-        hometown: v.fatherHometown ?? '',
-        occupation: v.fatherOccupation ?? '',
-        phone: v.fatherPhone ?? '',
-      },
-      motherInfo: {
-        fullName: v.motherName ?? '',
-        birthYear: v.motherBirthYear ?? 0,
-        placeOfBirth: v.motherBirthPlace ?? '',
-        hometown: v.motherHometown ?? '',
-        occupation: v.motherOccupation ?? '',
-        phone: v.motherPhone ?? '',
-      },
-      spouseInfo: {
-        fullName: v.spouseName ?? '',
-        birthYear: v.spouseBirthYear ?? 0,
-        placeOfBirth: v.spouseBirthPlace ?? '',
-        hometown: v.spouseHometown ?? '',
-        occupation: v.spouseOccupation ?? '',
-        phone: v.spousePhone ?? '',
-      },
-      spouseFatherInfo: {
-        fullName: v.spouseFatherName ?? '',
-        birthYear: v.spouseFatherBirthYear ?? 0,
-        placeOfBirth: v.spouseFatherBirthPlace ?? '',
-        hometown: v.spouseFatherHometown ?? '',
-        occupation: v.spouseFatherOccupation ?? '',
-        phone: v.spouseFatherPhone ?? '',
-      },
-      spouseMotherInfo: {
-        fullName: v.motherInLawName ?? '',
-        birthYear: v.motherInLawBirthYear ?? 0,
-        placeOfBirth: v.motherInLawBirthPlace ?? '',
-        hometown: v.motherInLawHometown ?? '',
-        occupation: v.motherInLawOccupation ?? '',
-        phone: v.motherInLawPhone ?? '',
-      },
+      fatherInfo: this.buildFamilyInfo(
+        v.fatherName,
+        v.fatherBirthYear,
+        v.fatherBirthPlace,
+        v.fatherHometown,
+        v.fatherOccupation,
+        v.fatherPhone
+      ),
+      motherInfo: this.buildFamilyInfo(
+        v.motherName,
+        v.motherBirthYear,
+        v.motherBirthPlace,
+        v.motherHometown,
+        v.motherOccupation,
+        v.motherPhone
+      ),
+      spouseInfo: this.buildFamilyInfo(
+        v.spouseName,
+        v.spouseBirthYear,
+        v.spouseBirthPlace,
+        v.spouseHometown,
+        v.spouseOccupation,
+        v.spousePhone
+      ),
+      spouseFatherInfo: this.buildFamilyInfo(
+        v.spouseFatherName,
+        v.spouseFatherBirthYear,
+        v.spouseFatherBirthPlace,
+        v.spouseFatherHometown,
+        v.spouseFatherOccupation,
+        v.spouseFatherPhone
+      ),
+      spouseMotherInfo: this.buildFamilyInfo(
+        v.spouseMotherName,
+        v.spouseMotherBirthYear,
+        v.spouseMotherBirthPlace,
+        v.spouseMotherHometown,
+        v.spouseMotherOccupation,
+        v.spouseMotherPhone
+      ),
       childrenDetail: v.childrenInfo ?? '',
+      // Account info
+      ...(v.createAccount
+        ? {
+            accountInfo: {
+              username: v.username || null,
+              password: v.password || null,
+              roleId: v.roleId || null,
+              status: v.accountStatus || null,
+              sendActivationEmail: v.sendActivationEmail || false,
+            },
+          }
+        : {}),
     };
   }
 
@@ -1674,6 +2116,55 @@ export class HoSoCanBoComponent extends ComponentBaseAbstract {
     if (n === 'MALE' || n === 'NAM' || n === '0') return 'MALE';
     if (n === 'FEMALE' || n === 'NU' || n === '1') return 'FEMALE';
     return n;
+  }
+
+  private buildFamilyInfo(
+    fullName?: string,
+    birthYear?: number,
+    placeOfBirth?: string,
+    hometown?: string,
+    occupation?: string,
+    phone?: string
+  ):
+    | {
+        fullName: string;
+        birthYear: number;
+        placeOfBirth: string;
+        hometown: string;
+        occupation: string;
+        phone: string;
+      }
+    | undefined {
+    // Check if any meaningful data exists (not mock data)
+    const hasData =
+      (fullName && fullName.trim() && !this.isMockData(fullName)) ||
+      (birthYear && birthYear > 0) ||
+      (placeOfBirth && placeOfBirth.trim()) ||
+      (hometown && hometown.trim()) ||
+      (occupation && occupation.trim()) ||
+      (phone && phone.trim());
+
+    if (!hasData) return undefined;
+
+    return {
+      fullName: fullName ?? '',
+      birthYear: birthYear ?? 0,
+      placeOfBirth: placeOfBirth ?? '',
+      hometown: hometown ?? '',
+      occupation: occupation ?? '',
+      phone: phone ?? '',
+    };
+  }
+
+  private isMockData(name?: string): boolean {
+    const mockNames = [
+      'FATHER',
+      'MOTHER',
+      'SPOUSE',
+      'SPOUSE_FATHER',
+      'SPOUSE_MOTHER',
+    ];
+    return mockNames.includes(name?.trim() ?? '');
   }
 
   private formatDate(value?: string | null): string {

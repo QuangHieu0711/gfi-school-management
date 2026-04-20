@@ -19,6 +19,8 @@ public class UserCreateRequest {
     private Long roleId;
 
     private Long unitId;
+    
+    private Long staffId;  // Optional: link User to Staff
 
     private Integer status;
 }

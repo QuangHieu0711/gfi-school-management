@@ -3,6 +3,7 @@ package com.gfi.backend.services;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.Base64;
+import java.util.Locale;
 import java.util.Set;
 import java.util.UUID;
 
@@ -115,16 +116,17 @@ public class FileStorageService {
     }
 
     private void ensureBucketExists() {
+        String bucket = getSanitizedBucketName(minioProperties.getBucketName());
         try {
             boolean exists = minioClient.bucketExists(io.minio.BucketExistsArgs.builder()
-                    .bucket(minioProperties.getBucketName())
+                    .bucket(bucket)
                     .build());
 
             if (!exists) {
                 minioClient.makeBucket(io.minio.MakeBucketArgs.builder()
-                        .bucket(minioProperties.getBucketName())
+                        .bucket(bucket)
                         .build());
-                log.info("Bucket created: {}", minioProperties.getBucketName());
+                log.info("Bucket created: {}", bucket);
             }
         } catch (Exception ex) {
             log.error("Loi khi kiem tra/tao bucket", ex);
@@ -134,19 +136,20 @@ public class FileStorageService {
 
     private FileUploadDto storeImage(java.io.InputStream inputStream, long size, String contentType, String extension,
             String folderPath) throws IOException {
+        String bucket = getSanitizedBucketName(minioProperties.getBucketName());
         ensureBucketExists();
         String storedFileName = UUID.randomUUID() + extension;
         String objectName = String.format("%s/%s", folderPath, storedFileName);
         try {
             minioClient.putObject(
                     PutObjectArgs.builder()
-                            .bucket(minioProperties.getBucketName())
+                    .bucket(bucket)
                             .object(objectName)
                             .stream(inputStream, size, -1)
                             .contentType(contentType)
                             .build());
-            log.info("File uploaded to MinIO: {}/{}", minioProperties.getBucketName(), objectName);
-            String fileUrl = minioProperties.getUrl() + "/" + minioProperties.getBucketName() + "/" + objectName;
+            log.info("File uploaded to MinIO: {}/{}", bucket, objectName);
+            String fileUrl = minioProperties.getUrl() + "/" + bucket + "/" + objectName;
             return FileUploadDto.builder()
                     .fileName(storedFileName)
                     .url(fileUrl)
@@ -173,6 +176,23 @@ public class FileStorageService {
             return "image/gif";
         }
         return "image/jpeg";
+    }
+
+    private String getSanitizedBucketName(String raw) {
+        if (raw == null || raw.isBlank()) {
+            return "gif";
+        }
+        String s = raw.toLowerCase(Locale.ROOT);
+        s = s.replaceAll("[^a-z0-9.-]", "-");
+        s = s.replaceAll("-+", "-");
+        s = s.replaceAll("^[.-]+", "").replaceAll("[.-]+$", "");
+        if (s.length() < 3) {
+            return "gif";
+        }
+        if (s.length() > 63) {
+            s = s.substring(0, 63);
+        }
+        return s;
     }
 
     private String resolveExtension(String originalFileName, String contentType) {

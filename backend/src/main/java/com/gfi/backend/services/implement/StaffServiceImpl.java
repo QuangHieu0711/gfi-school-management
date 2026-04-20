@@ -18,6 +18,7 @@ import com.gfi.backend.services.interfaces.StaffService;
 import com.gfi.backend.utils.PageableUtils;
 import com.gfi.backend.utils.SecurityUtils;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import jakarta.persistence.criteria.Predicate;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -34,6 +35,7 @@ import java.util.stream.Stream;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class StaffServiceImpl implements StaffService {
     private static final String ADDRESS_TYPE_PERMANENT = "PERMANENT";
     private static final String ADDRESS_TYPE_TEMPORARY = "TEMPORARY";
@@ -299,13 +301,20 @@ public class StaffServiceImpl implements StaffService {
     private List<StaffAddress> replaceAddresses(Staff staff, StaffAddressRequest permanentAddress,
             StaffAddressRequest temporaryAddress, StaffAddressRequest birthPlaceAddress) {
         staffAddressRepository.deleteByStaffId(staff.getId());
+        // Ensure delete is flushed to DB before inserting new addresses to avoid unique constraint errors
+        staffAddressRepository.flush();
         List<StaffAddress> addresses = Stream.of(
                 buildAddress(staff, ADDRESS_TYPE_PERMANENT, permanentAddress),
                 buildAddress(staff, ADDRESS_TYPE_TEMPORARY, temporaryAddress),
                 buildAddress(staff, ADDRESS_TYPE_BIRTH_PLACE, birthPlaceAddress))
                 .filter(item -> item != null)
                 .toList();
-        return addresses.isEmpty() ? List.of() : staffAddressRepository.saveAll(addresses);
+        if (addresses.isEmpty()) {
+            return List.of();
+        }
+        // debug log to help diagnose duplicates
+        log.debug("Saving staff addresses for staffId={} count={}", staff.getId(), addresses.size());
+        return staffAddressRepository.saveAll(addresses);
     }
 
     private StaffAddress buildAddress(Staff staff, String addressType, StaffAddressRequest request) {

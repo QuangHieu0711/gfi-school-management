@@ -99,6 +99,7 @@ export class TaoMoiHocSinhComponent extends ComponentBaseAbstract {
   schoolYearOptions: IOptions[] = [];
   classOptions: IOptions[] = [];
   provinceOptions: IOptions[] = [];
+  private classOptionsRequestId = 0;
 
   private studentId?: string;
   private provinceLookup = new Map<string, DiaChiTinhThanhItem>();
@@ -283,9 +284,10 @@ export class TaoMoiHocSinhComponent extends ComponentBaseAbstract {
         this.items.schoolYearItem.options = this.schoolYearOptions;
 
         if (!isUpdate && this.schoolYearOptions.length > 0) {
+          const selectedSchoolYearId = this.schoolYearOptions[0].value;
           this.enrollmentForm
             .get('schoolYearId')
-            ?.setValue(this.schoolYearOptions[0].value, { emitEvent: false });
+            ?.setValue(selectedSchoolYearId, { emitEvent: true });
         }
 
         this.items.ethnicityItem.options = DAN_TOC_OPTIONS;
@@ -739,11 +741,21 @@ export class TaoMoiHocSinhComponent extends ComponentBaseAbstract {
   private bindClassSelect(): void {
     const unitIdControl = this.form.get('unitId');
     const schoolYearIdControl = this.enrollmentForm.get('schoolYearId');
+    const classIdControl = this.enrollmentForm.get('classId');
 
     merge(unitIdControl!.valueChanges, schoolYearIdControl!.valueChanges)
       .pipe(takeUntil(this.ngUnsubscribe))
       .subscribe(() => {
-        this.loadClassOptions(unitIdControl?.value, schoolYearIdControl?.value);
+        const unitId = unitIdControl?.value;
+        const schoolYearId = schoolYearIdControl?.value;
+
+        if (unitId && schoolYearId) {
+          this.loadClassOptions(unitId, schoolYearId);
+        } else {
+          this.items.classItem.options = [];
+          this.items.classItem.disabled = true;
+          classIdControl?.disable({ emitEvent: false });
+        }
       });
   }
 
@@ -775,6 +787,7 @@ export class TaoMoiHocSinhComponent extends ComponentBaseAbstract {
     selectedClassId?: any
   ): void {
     const classIdControl = this.enrollmentForm.get('classId');
+    const requestId = ++this.classOptionsRequestId;
 
     if (!selectedClassId) {
       classIdControl?.setValue(null, { emitEvent: false });
@@ -787,23 +800,36 @@ export class TaoMoiHocSinhComponent extends ComponentBaseAbstract {
       return;
     }
 
-    this.items.classItem.disabled = false;
-    classIdControl?.enable({ emitEvent: false });
-
     this.lopService
       .getOptions({ unitId, schoolYearId })
       .pipe(takeUntil(this.ngUnsubscribe))
       .subscribe({
         next: ({ data }) => {
+          if (requestId !== this.classOptionsRequestId) {
+            return;
+          }
+
           this.classOptions = (data ?? []).map((item) => ({
             value: item.id,
             label: item.name,
           }));
           this.items.classItem.options = this.classOptions;
+          this.items.classItem.disabled = false;
+          classIdControl?.enable({ emitEvent: false });
 
           if (selectedClassId) {
             classIdControl?.setValue(selectedClassId, { emitEvent: false });
           }
+        },
+        error: () => {
+          if (requestId !== this.classOptionsRequestId) {
+            return;
+          }
+
+          this.classOptions = [];
+          this.items.classItem.options = [];
+          this.items.classItem.disabled = true;
+          classIdControl?.disable({ emitEvent: false });
         },
       });
   }

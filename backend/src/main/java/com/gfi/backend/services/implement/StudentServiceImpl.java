@@ -70,7 +70,7 @@ public class StudentServiceImpl implements StudentService {
     private static final String ADDRESS_TYPE_PERMANENT = "PERMANENT";
     private static final String GUARDIAN_TYPE_FATHER = "FATHER";
     private static final String GUARDIAN_TYPE_MOTHER = "MOTHER";
-    private static final String FEATURE = FeatureKey.STUDENT.getCode();
+    private static final String FEATURE = FeatureKey.STUDENT_PROFILE.getCode();
 
     private final StudentRepository studentRepository;
     private final StudentEnrollmentRepository studentEnrollmentRepository;

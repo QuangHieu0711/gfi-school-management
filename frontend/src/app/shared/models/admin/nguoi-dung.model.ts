@@ -56,6 +56,7 @@ export interface NguoiDungFormRequest {
   [NGUOI_DUNG_KEY.ROLE_ID]?: string;
   [NGUOI_DUNG_KEY.AVATAR]?: string;
   [NGUOI_DUNG_KEY.STATUS]?: number;
+  staffId?: ID_TYPE;
 }
 
 export const NGUOI_DUNG_FORM = (requiredPassword = false) => [

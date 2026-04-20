@@ -71,3 +71,18 @@ export const DEFAULT_TABLE_CONFIG: Required<TableConfig> = {
   columnPinnable: false,
   showPaginator: true,
 };
+
+// Account options
+export const ACCOUNT_STATUS_OPTIONS = [
+  { value: 'ACTIVE', label: 'Kích hoạt' },
+  { value: 'INACTIVE', label: 'Chưa kích hoạt' },
+  { value: 'LOCKED', label: 'Khóa' },
+  { value: 'DISABLED', label: 'Vô hiệu hóa' },
+];
+
+export const ROLE_OPTIONS = [
+  { value: 1, label: 'Quản trị viên' },
+  { value: 2, label: 'Trưởng phòng' },
+  { value: 3, label: 'Giáo viên' },
+  { value: 4, label: 'Nhân viên' },
+];

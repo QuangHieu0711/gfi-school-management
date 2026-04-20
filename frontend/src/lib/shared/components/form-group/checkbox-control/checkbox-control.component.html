@@ -1,5 +1,5 @@
 <div class="form-group">
-  @if (item.showLabel) {
+  @if (item.showLabel && hasOptions) {
     <label
       class="block mb-0.5"
       [class.error]="isInvalidControl()"
@@ -15,19 +15,33 @@
     [class.vertical]="item.direction === 'vertical'"
     [class.horizontal]="item.direction === 'horizontal'"
     [formGroup]="form">
-    <mtx-checkbox-group
-      color="primary"
-      [formControlName]="item.key"
-      [id]="item.key"
-      [tabIndex]="item.tabIndex ?? 0"
-      (input)="onChange($event)"
-      (focus)="onFocus($event)"
-      (blur)="onBlur($event)"
-      (focusout)="onFocusOut($event)"
-      [items]="item.options"
-      bindLabel="label"
-      bindValue="value">
-    </mtx-checkbox-group>
+    @if (hasOptions) {
+      <mtx-checkbox-group
+        color="primary"
+        [formControlName]="item.key"
+        [id]="item.key"
+        [tabIndex]="item.tabIndex ?? 0"
+        (input)="onChange($event)"
+        (focus)="onFocus($event)"
+        (blur)="onBlur($event)"
+        (focusout)="onFocusOut($event)"
+        [items]="item.options"
+        bindLabel="label"
+        bindValue="value">
+      </mtx-checkbox-group>
+    } @else {
+      <mat-checkbox
+        color="primary"
+        [formControlName]="item.key"
+        [id]="item.key"
+        [tabIndex]="item.tabIndex ?? 0"
+        (change)="onCheckboxChange($event)"
+        (focus)="onFocus($event)"
+        (blur)="onBlur($event)"
+        (focusout)="onFocusOut($event)">
+        {{ item.label }}
+      </mat-checkbox>
+    }
 
     <!-- Hint -->
     @if (item.hint && !isInvalidControl()) {

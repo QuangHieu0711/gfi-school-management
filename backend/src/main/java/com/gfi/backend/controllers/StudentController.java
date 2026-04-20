@@ -39,7 +39,7 @@ public class StudentController extends ApiBaseController {
     private final StudentCodeGeneratorService studentCodeGeneratorService;
 
     @PostMapping("/search")
-    @DataScoped(feature = "STUDENT", action = ActionType.VIEW)
+    @DataScoped(feature = "STUDENT_PROFILE", action = ActionType.VIEW)
     @Operation(summary = "Danh sách học sinh", description = "Lấy danh sách học sinh có phân trang và filter cho màn hình lưới.")
     public ResponseEntity<ApiResult<PageResponseDto<StudentItemDto, StudentFilterDto>>> search(
             @RequestBody(required = false) PageRequestDto<StudentFilterDto> request) {
@@ -49,7 +49,7 @@ public class StudentController extends ApiBaseController {
     }
 
     @GetMapping("/generate-code")
-    @DataScoped(feature = "STUDENT", action = ActionType.ADD)
+    @DataScoped(feature = "STUDENT_PROFILE", action = ActionType.ADD)
     @Operation(summary = "Sinh mã học sinh", description = "Sinh mã học sinh tự động theo format: HS-{UNIT_CODE}-{YEAR}-{STT}. Backend tự lấy year từ ngày hiện tại.")
     public ResponseEntity<ApiResult<String>> generateStudentCode(@RequestParam Long unitId) {
         return executeApiResult(() -> {
@@ -60,14 +60,14 @@ public class StudentController extends ApiBaseController {
     }
 
     @PostMapping
-    @DataScoped(feature = "STUDENT", action = ActionType.ADD)
+    @DataScoped(feature = "STUDENT_PROFILE", action = ActionType.ADD)
     @Operation(summary = "Thêm học sinh", description = "Tạo mới học sinh kèm thông tin nhập học, địa chỉ, người giám hộ và hồ sơ mở rộng.")
     public ResponseEntity<ApiResult<StudentItemDto>> create(@Valid @RequestBody StudentCreateRequest request) {
         return executeApiResult(() -> ApiResult.success(studentService.create(request), "Thêm học sinh thành công"));
     }
 
     @GetMapping("/{id}")
-    @DataScoped(feature = "STUDENT", action = ActionType.VIEW)
+    @DataScoped(feature = "STUDENT_PROFILE", action = ActionType.VIEW)
     @Operation(summary = "Chi tiết học sinh", description = "Lấy thông tin học sinh theo id.")
     public ResponseEntity<ApiResult<StudentItemDto>> getById(@PathVariable Long id) {
         return executeApiResult(
@@ -75,7 +75,7 @@ public class StudentController extends ApiBaseController {
     }
 
     @PutMapping("/{id}")
-    @DataScoped(feature = "STUDENT", action = ActionType.EDIT)
+    @DataScoped(feature = "STUDENT_PROFILE", action = ActionType.EDIT)
     @Operation(summary = "Cập nhật học sinh", description = "Cập nhật học sinh theo id.")
     public ResponseEntity<ApiResult<StudentItemDto>> update(@PathVariable Long id,
             @Valid @RequestBody StudentCreateRequest request) {
@@ -84,7 +84,7 @@ public class StudentController extends ApiBaseController {
     }
 
     @DeleteMapping("/{id}")
-    @DataScoped(feature = "STUDENT", action = ActionType.DELETE)
+    @DataScoped(feature = "STUDENT_PROFILE", action = ActionType.DELETE)
     @Operation(summary = "Xóa học sinh", description = "Xóa học sinh theo id.")
     public ResponseEntity<ApiResult<String>> delete(@PathVariable Long id) {
         return executeApiResult(() -> {
