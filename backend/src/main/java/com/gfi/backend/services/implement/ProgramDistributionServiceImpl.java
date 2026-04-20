@@ -95,19 +95,43 @@ public class ProgramDistributionServiceImpl implements ProgramDistributionServic
 
     @Override
     @Transactional
-    public ProgramDistributionImportResultDto importExcel(Long schoolYearId, Long semesterId, Long classroomId,
+    public ProgramDistributionImportResultDto importExcel(Long schoolYearId, Long classroomId,
             Long subjectId,
             MultipartFile file) {
-        ExportContext context = buildContext(schoolYearId, semesterId, classroomId, subjectId);
         validateExcelFile(file);
-
-        List<ImportRowData> importedRows = readImportRows(file, context.weekConfigs());
+        
+        // Extract semesterId from file metadata
+        Long semesterId = extractSemesterIdFromFile(file);
+        
+        ExportContext context = buildContext(schoolYearId, semesterId, classroomId, subjectId);
+        List<ImportRowData> importedRows = readImportRows(file, context.weekConfigs(), schoolYearId, semesterId, classroomId, subjectId);
         replaceProgramDistributions(context, importedRows);
 
         return ProgramDistributionImportResultDto.builder()
                 .successCount(importedRows.size())
                 .failedCount(0)
                 .build();
+    }
+
+    private Long extractSemesterIdFromFile(MultipartFile file) {
+        DataFormatter formatter = new DataFormatter();
+        try (Workbook workbook = new XSSFWorkbook(file.getInputStream())) {
+            Sheet sheet = workbook.getSheetAt(0);
+            Row row1 = sheet.getRow(1);
+            
+            if (row1 == null) {
+                throw new UserMessageException(CommonErrorCode.PROGRAM_DISTRIBUTION_INVALID_FILE);
+            }
+            
+            Long semesterId = readLongCell(row1.getCell(7), formatter);
+            if (semesterId == null) {
+                throw new UserMessageException(CommonErrorCode.PROGRAM_DISTRIBUTION_INVALID_FILE);
+            }
+            
+            return semesterId;
+        } catch (IOException ex) {
+            throw new UserMessageException(CommonErrorCode.PROGRAM_DISTRIBUTION_INVALID_FILE);
+        }
     }
 
     private ExportContext buildContext(Long schoolYearId, Long semesterId, Long classroomId, Long subjectId) {
@@ -168,22 +192,41 @@ public class ProgramDistributionServiceImpl implements ProgramDistributionServic
         CellStyle bodyStyle = createBodyStyle(workbook);
         CellStyle guideStyle = createGuideStyle(workbook);
 
+        // Lưu metadata: SchoolYearId, SemesterId, ClassroomId, SubjectId vào các cell ẩn (column G)
+        createCell(sheet.createRow(0), 6, "SchoolYearId", null);
+        createCell(sheet.getRow(0), 7, context.schoolYear().getId(), bodyStyle);
+        
+        createCell(sheet.createRow(1), 6, "SemesterId", null);
+        createCell(sheet.getRow(1), 7, context.semester().getId(), bodyStyle);
+        
+        createCell(sheet.createRow(2), 6, "ClassroomId", null);
+        createCell(sheet.getRow(2), 7, context.classroom().getId(), bodyStyle);
+        
+        createCell(sheet.createRow(3), 6, "SubjectId", null);
+        createCell(sheet.getRow(3), 7, context.subject().getId(), bodyStyle);
+        
+        // Ẩn column G và H (metadata)
+        sheet.setColumnWidth(6, 0);
+        sheet.setColumnWidth(7, 0);
+
         // Dòng 1: Đơn vị
         sheet.addMergedRegion(new CellRangeAddress(0, 0, 0, 4));
-        Row unitRow = sheet.createRow(0);
+        Row unitRow = sheet.getRow(0) != null ? sheet.getRow(0) : sheet.createRow(0);
         createCell(unitRow, 0, context.classroom().getUnit().getName(), topStyle);
 
         // Dòng 2: Trống
-        sheet.createRow(1);
+        if (sheet.getRow(1) == null) {
+            sheet.createRow(1);
+        }
 
         // Dòng 3: Tiêu đề
         sheet.addMergedRegion(new CellRangeAddress(2, 2, 0, 4));
-        Row titleRow = sheet.createRow(2);
+        Row titleRow = sheet.getRow(2) != null ? sheet.getRow(2) : sheet.createRow(2);
         createCell(titleRow, 0, "BẢNG PHÂN PHỐI CHƯƠNG TRÌNH", titleStyle);
 
         // Dòng 4: Thông tin chi tiết
         sheet.addMergedRegion(new CellRangeAddress(3, 3, 0, 4));
-        Row subtitleRow = sheet.createRow(3);
+        Row subtitleRow = sheet.getRow(3) != null ? sheet.getRow(3) : sheet.createRow(3);
         String subtitle = context.subject().getName() + " • " + context.classroom().getName() + " • "
                 + context.semester().getName() + " • " + context.schoolYear().getName();
         createCell(subtitleRow, 0, subtitle, subtitleStyle);
@@ -362,7 +405,8 @@ public class ProgramDistributionServiceImpl implements ProgramDistributionServic
         }
     }
 
-    private List<ImportRowData> readImportRows(MultipartFile file, List<WeekConfig> weekConfigs) {
+    private List<ImportRowData> readImportRows(MultipartFile file, List<WeekConfig> weekConfigs,
+            Long schoolYearId, Long semesterId, Long classroomId, Long subjectId) {
         Set<Integer> validWeekNumbers = weekConfigs.stream().map(WeekConfig::getWeekNumber).collect(HashSet::new,
                 Set::add, Set::addAll);
         Set<Integer> uniqueOrderNumbers = new HashSet<>();
@@ -371,6 +415,10 @@ public class ProgramDistributionServiceImpl implements ProgramDistributionServic
 
         try (Workbook workbook = new XSSFWorkbook(file.getInputStream())) {
             Sheet sheet = workbook.getSheetAt(0);
+            
+            // Validate metadata from file
+            validateFileMetadata(sheet, formatter, schoolYearId, semesterId, classroomId, subjectId);
+            
             for (int i = DATA_START_ROW_INDEX; i <= sheet.getLastRowNum(); i++) {
                 Row row = sheet.getRow(i);
                 if (row == null || isBlankRow(row, formatter)) {
@@ -410,6 +458,40 @@ public class ProgramDistributionServiceImpl implements ProgramDistributionServic
         return rows;
     }
 
+    private void validateFileMetadata(Sheet sheet, DataFormatter formatter, Long schoolYearId, Long semesterId,
+            Long classroomId, Long subjectId) {
+        // Đọc metadata từ các cell ẩn (column G, H)
+        Row row0 = sheet.getRow(0);
+        Row row1 = sheet.getRow(1);
+        Row row2 = sheet.getRow(2);
+        Row row3 = sheet.getRow(3);
+
+        if (row0 == null || row1 == null || row2 == null || row3 == null) {
+            throw new UserMessageException(CommonErrorCode.PROGRAM_DISTRIBUTION_INVALID_FILE);
+        }
+
+        try {
+            Long fileSchoolYearId = readLongCell(row0.getCell(7), formatter);
+            Long fileSemesterId = readLongCell(row1.getCell(7), formatter);
+            Long fileClassroomId = readLongCell(row2.getCell(7), formatter);
+            Long fileSubjectId = readLongCell(row3.getCell(7), formatter);
+
+            if (fileSchoolYearId == null || fileSemesterId == null || fileClassroomId == null || fileSubjectId == null) {
+                throw new UserMessageException(CommonErrorCode.PROGRAM_DISTRIBUTION_INVALID_FILE);
+            }
+
+            // So sánh với parameters
+            if (!fileSchoolYearId.equals(schoolYearId) || !fileSemesterId.equals(semesterId)
+                    || !fileClassroomId.equals(classroomId) || !fileSubjectId.equals(subjectId)) {
+                throw new UserMessageException(CommonErrorCode.PROGRAM_DISTRIBUTION_INVALID_FILE);
+            }
+        } catch (UserMessageException ex) {
+            throw ex;
+        } catch (Exception ex) {
+            throw new UserMessageException(CommonErrorCode.PROGRAM_DISTRIBUTION_INVALID_FILE);
+        }
+    }
+
     private void addComment(Sheet sheet, Cell cell, String commentText) {
         CreationHelper factory = sheet.getWorkbook().getCreationHelper();
         Drawing<?> drawing = sheet.createDrawingPatriarch();
@@ -444,6 +526,18 @@ public class ProgramDistributionServiceImpl implements ProgramDistributionServic
         }
         try {
             return Integer.valueOf(value.trim());
+        } catch (NumberFormatException ex) {
+            throw new UserMessageException(CommonErrorCode.PROGRAM_DISTRIBUTION_INVALID_FILE);
+        }
+    }
+
+    private Long readLongCell(Cell cell, DataFormatter formatter) {
+        String value = readStringCell(cell, formatter);
+        if (value.isBlank()) {
+            return null;
+        }
+        try {
+            return Long.valueOf(value.trim());
         } catch (NumberFormatException ex) {
             throw new UserMessageException(CommonErrorCode.PROGRAM_DISTRIBUTION_INVALID_FILE);
         }
@@ -516,6 +610,19 @@ public class ProgramDistributionServiceImpl implements ProgramDistributionServic
 
     private String getCurrentUsername() {
         return SecurityUtils.getCurrentUsername();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<ProgramDistributionItemDto> findList(Long schoolYearId, Long semesterId, Long classroomId,
+            Long subjectId) {
+        buildContext(schoolYearId, semesterId, classroomId, subjectId);
+        
+        List<ProgramDistribution> items = programDistributionRepository
+                .findBySchoolYearIdAndSemesterIdAndClassroomIdAndSubjectIdAndDeletedFlagOrderByOrderNumberAscIdAsc(
+                        schoolYearId, semesterId, classroomId, subjectId, 0);
+        
+        return items.stream().map(this::toDto).toList();
     }
 
     private record ExportContext(SchoolYear schoolYear, Semester semester, Classroom classroom, Subject subject,

@@ -7,6 +7,7 @@ import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -14,6 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.gfi.backend.models.dtos.programdistribution.ProgramDistributionImportResultDto;
+import com.gfi.backend.models.dtos.programdistribution.ProgramDistributionItemDto;
 import com.gfi.backend.models.global.ApiResult;
 import com.gfi.backend.services.interfaces.ProgramDistributionService;
 
@@ -28,6 +30,18 @@ import lombok.RequiredArgsConstructor;
 public class ProgramDistributionController extends ApiBaseController {
 
         private final ProgramDistributionService programDistributionService;
+
+        @GetMapping("/list")
+        @Operation(summary = "Danh sách phân phối chương trình", description = "Lấy danh sách phân phối chương trình theo năm học, học kỳ, lớp và môn học")
+        public ResponseEntity<ApiResult<List<ProgramDistributionItemDto>>> getList(
+                        @RequestParam Long schoolYearId,
+                        @RequestParam Long semesterId,
+                        @RequestParam Long classroomId,
+                        @RequestParam Long subjectId) {
+                return executeApiResult(() -> ApiResult.success(
+                                programDistributionService.findList(schoolYearId, semesterId, classroomId, subjectId),
+                                "Lấy danh sách phân phối chương trình thành công"));
+        }
 
         @PostMapping(value = "/excel-template", produces = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
         @Operation(summary = "Tạo mẫu Excel phân phối chương trình", description = "Tạo file Excel mẫu theo năm học, học kỳ, lớp và môn học")
@@ -54,12 +68,11 @@ public class ProgramDistributionController extends ApiBaseController {
         @Operation(summary = "Import Excel phân phối chương trình", description = "Đọc file Excel và lưu danh sách phân phối chương trình")
         public ResponseEntity<ApiResult<ProgramDistributionImportResultDto>> importExcel(
                         @RequestParam Long schoolYearId,
-                        @RequestParam Long semesterId,
                         @RequestParam Long classroomId,
                         @RequestParam Long subjectId,
                         @RequestParam MultipartFile file) {
                 return executeApiResult(() -> ApiResult.success(
-                                programDistributionService.importExcel(schoolYearId, semesterId, classroomId, subjectId,
+                                programDistributionService.importExcel(schoolYearId, classroomId, subjectId,
                                                 file),
                                 "Import phân phối chương trình thành công"));
         }

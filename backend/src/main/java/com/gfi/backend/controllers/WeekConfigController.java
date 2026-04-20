@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.gfi.backend.models.dtos.weekconfig.WeekConfigBulkUpdateRequest;
+import com.gfi.backend.models.dtos.weekconfig.WeekConfigCbbDto;
 import com.gfi.backend.models.dtos.weekconfig.WeekConfigGenerateRequest;
 import com.gfi.backend.models.dtos.weekconfig.WeekConfigItemDto;
 import com.gfi.backend.models.dtos.weekconfig.WeekConfigUpdateRequest;
@@ -41,6 +42,14 @@ public class WeekConfigController extends ApiBaseController {
         return executeApiResult(() -> ApiResult.success(
                 weekConfigService.getWeekConfigs(schoolYearId, semesterId),
                 "Hiển thị danh sách cấu hình tuần thành công"));
+    }
+
+    @GetMapping("/cbb")
+    @Operation(summary = "Combobox cấu hình tuần", description = "Lấy danh sách tất cả cấu hình tuần cho combobox (id, name)")
+    public ResponseEntity<ApiResult<List<WeekConfigCbbDto>>> getWeekConfigsCbb() {
+        return executeApiResult(() -> ApiResult.success(
+                weekConfigService.getWeekConfigsCbb(),
+                "Lấy danh sách combobox cấu hình tuần thành công"));
     }
 
     @PostMapping("/generate")

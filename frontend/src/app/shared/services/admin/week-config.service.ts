@@ -8,6 +8,7 @@ import {
   WEEK_CONFIG_API_ENDPOINT,
   WeekConfigBulkUpdateRequest,
   WeekConfigGenerateRequest,
+  WeekConfigOptionResponse,
   WeekConfigQueryRequest,
   WeekConfigResponse,
   WeekConfigUpdateRequest,
@@ -73,6 +74,12 @@ export class WeekConfigService {
       {
         context: this.silentContext,
       }
+    );
+  }
+
+  getComboboxOptions() {
+    return this.http.get<IResponse<WeekConfigOptionResponse[]>>(
+      `${this.baseUrl}/${WEEK_CONFIG_API_ENDPOINT.CBB}`
     );
   }
 }

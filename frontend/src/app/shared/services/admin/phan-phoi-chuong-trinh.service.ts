@@ -8,6 +8,7 @@ import {
   PHAN_PHOI_CHUONG_TRINH_API_ENDPOINT,
   PhanPhoiChuongTrinhFilterRequest,
   PhanPhoiChuongTrinhFormRequest,
+  PhanPhoiChuongTrinhImportRequest,
   PhanPhoiChuongTrinhResponse,
 } from '@app/model/admin/phan-phoi-chuong-trinh.model';
 
@@ -60,5 +61,36 @@ export class PhanPhoiChuongTrinhService {
     return this.http.delete<IResponse<null>>(`${this.baseUrl}/${id}`, {
       context: this.silentContext,
     });
+  }
+
+  downloadTemplate(params: PhanPhoiChuongTrinhImportRequest) {
+    return this.http.post(`${this.baseUrl}/${PHAN_PHOI_CHUONG_TRINH_API_ENDPOINT.EXCEL_TEMPLATE}`, null, {
+      params: this.buildImportQueryParams(params),
+      observe: 'response',
+      responseType: 'blob',
+    });
+  }
+
+  importExcel(params: PhanPhoiChuongTrinhImportRequest, file: File) {
+    const formData = new FormData();
+    formData.append('file', file, file.name);
+
+    return this.http.post<IResponse<null>>(
+      `${this.baseUrl}/${PHAN_PHOI_CHUONG_TRINH_API_ENDPOINT.IMPORT_EXCEL}`,
+      formData,
+      {
+        params: this.buildImportQueryParams(params),
+        context: this.silentContext,
+      }
+    );
+  }
+
+  private buildImportQueryParams(params: PhanPhoiChuongTrinhImportRequest) {
+    return {
+      schoolYearId: String(params.schoolYearId),
+      semesterId: String(params.semesterId),
+      classroomId: String(params.classroomId),
+      subjectId: String(params.subjectId),
+    };
   }
 }

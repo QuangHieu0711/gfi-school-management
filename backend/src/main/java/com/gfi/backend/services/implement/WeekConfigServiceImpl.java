@@ -17,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.gfi.backend.controllers.exceptions.UserMessageException;
 import com.gfi.backend.models.dtos.weekconfig.WeekConfigBulkUpdateItemRequest;
 import com.gfi.backend.models.dtos.weekconfig.WeekConfigBulkUpdateRequest;
+import com.gfi.backend.models.dtos.weekconfig.WeekConfigCbbDto;
 import com.gfi.backend.models.dtos.weekconfig.WeekConfigGenerateRequest;
 import com.gfi.backend.models.dtos.weekconfig.WeekConfigItemDto;
 import com.gfi.backend.models.dtos.weekconfig.WeekConfigUpdateRequest;
@@ -267,6 +268,20 @@ public class WeekConfigServiceImpl implements WeekConfigService {
         }
 
         weekConfigRepository.saveAll(weekConfigs);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<WeekConfigCbbDto> getWeekConfigsCbb() {
+        List<WeekConfig> weekConfigs = weekConfigRepository
+                .findByDeletedFlagOrderBySemesterSemesterOrderAscWeekNumberAscIdAsc(0);
+        
+        return weekConfigs.stream()
+                .map(w -> WeekConfigCbbDto.builder()
+                        .id(w.getId())
+                        .name("Tuần " + w.getWeekNumber())
+                        .build())
+                .toList();
     }
 
     private void validateBulkData(List<WeekConfig> updatingTargets,

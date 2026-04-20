@@ -18,9 +18,13 @@ import {
 import { LopResponse } from '@app/model/admin/lop.model';
 import { MonHocOptionResponse } from '@app/model/admin/mon-hoc.model';
 import { DialogPhanPhoiChuongTrinhComponent } from './dialog-phan-phoi-chuong-trinh/dialog-phan-phoi-chuong-trinh.component';
+import { DialogImportComponent } from './dialog-import/dialog-import.component';
+import { DonViService } from '@app/service/admin/don-vi.service';
+import { KhoiService } from '@app/service/admin/khoi.service';
 import { LopService } from '@app/service/admin/lop.service';
 import { MonHocService } from '@app/service/admin/mon-hoc.service';
 import { PhanPhoiChuongTrinhService } from '@app/service/admin/phan-phoi-chuong-trinh.service';
+import { WeekConfigService } from '@app/service/admin/week-config.service';
 
 @Component({
   selector: 'phan-phoi-chuong-trinh',
@@ -56,11 +60,18 @@ export class PhanPhoiChuongTrinhComponent extends ComponentBaseAbstract {
     return this.permissionCheckService.canConfig(this.menuCode);
   }
 
+  get canImport(): boolean {
+    return this.permissionCheckService.canAdd(this.menuCode);
+  }
+
   constructor(
     protected override injector: Injector,
     private readonly phanPhoiChuongTrinhService: PhanPhoiChuongTrinhService,
+    private readonly donViService: DonViService,
+    private readonly khoiService: KhoiService,
     private readonly lopService: LopService,
     private readonly monHocService: MonHocService,
+    private readonly weekConfigService: WeekConfigService,
     private readonly permissionCheckService: PermissionCheckService
   ) {
     super(injector);
@@ -183,6 +194,23 @@ export class PhanPhoiChuongTrinhComponent extends ComponentBaseAbstract {
     ]);
   }
 
+  openImportDialog(): void {
+    this.dialog.componentDialog(
+      DialogImportComponent,
+      {
+        width: '720px',
+      },
+      (result?: boolean) => {
+        if (result) {
+          this.filterData({
+            pageIndex: this.pageIndex,
+            pageSize: this.pageSize,
+          });
+        }
+      }
+    );
+  }
+
   deleteItem(rowData: PhanPhoiChuongTrinhResponse): void {
     this.dialog.confirm(
       {
@@ -226,14 +254,42 @@ export class PhanPhoiChuongTrinhComponent extends ComponentBaseAbstract {
       pageNow: (pageChangeEvent?.pageIndex ?? this.pageIndex) + 1,
       filter: {
         week: formValues[this.key.WEEK] ?? undefined,
+        unitId: formValues[this.key.UNIT_ID] ?? undefined,
+        khoi: formValues[this.key.KHOI] ?? undefined,
         classId: formValues[this.key.CLASS_ID] ?? undefined,
         subjectId: formValues[this.key.SUBJECT_ID] ?? undefined,
-        lessonName: formValues[this.key.LESSON_NAME] ?? undefined,
       },
     };
   }
 
   private loadOptions(): void {
+    this.weekConfigService.getComboboxOptions().subscribe(({ data }) => {
+      this.findFormControl(this.$formItem, this.key.WEEK).options = (
+        data ?? []
+      ).map((item) => ({
+        value: item.id,
+        label: item.name,
+      }));
+    });
+
+    this.donViService.getOptions().subscribe(({ data }) => {
+      this.findFormControl(this.$formItem, this.key.UNIT_ID).options = (
+        data ?? []
+      ).map((item) => ({
+        value: item.id,
+        label: item.name,
+      }));
+    });
+
+    this.khoiService.getOptions().subscribe(({ data }) => {
+      this.findFormControl(this.$formItem, this.key.KHOI).options = (
+        data ?? []
+      ).map((item) => ({
+        value: item.id,
+        label: item.name,
+      }));
+    });
+
     this.lopService.getOptions().subscribe(({ data }) => {
       this.findFormControl(this.$formItem, this.key.CLASS_ID).options = (
         data ?? []

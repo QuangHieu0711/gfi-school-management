@@ -22,7 +22,13 @@ export const WEEK_CONFIG_API_ENDPOINT = {
   GENERATE: 'generate',
   BULK_UPDATE: 'bulk-update',
   BY_SEMESTER: 'by-semester',
+  CBB: 'cbb',
 };
+
+export interface WeekConfigOptionResponse {
+  id: ID_TYPE;
+  name: string;
+}
 
 export interface WeekConfigResponse extends TableDataSource {
   [WEEK_CONFIG_KEY.ID]: ID_TYPE;

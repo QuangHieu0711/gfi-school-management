@@ -246,8 +246,6 @@ public class UserServiceImpl implements UserService {
         // Step 6: Validate other duplicates
         String username = normalize(request.getUsername());
         validateUsernameDuplicate(username, null);
-        validateEmailDuplicate(normalizeNullable(request.getEmail()), null);
-        validatePhoneDuplicate(normalizeNullable(request.getPhone()), null);
 
         // Step 7: Create user
         // ✅ NEW: User is now auth-only; profile data (fullName, email, phone, unit) 
@@ -283,8 +281,6 @@ public class UserServiceImpl implements UserService {
 
         String username = normalize(request.getUsername());
         validateUsernameDuplicate(username, id);
-        validateEmailDuplicate(normalizeNullable(request.getEmail()), id);
-        validatePhoneDuplicate(normalizeNullable(request.getPhone()), id);
 
         Role role = getRoleById(request.getRoleId());
         Unit unit = getUnitById(request.getUnitId());
@@ -370,52 +366,8 @@ public class UserServiceImpl implements UserService {
     }
 
     /**
-     * Validate email không trùng.
-     * Khi update: excludeId cho phép user giữ nguyên email của chính nó.
-     * 
-     * @param email     email cần check
-     * @param excludeId ID user loại trừ (null khi create)
-     */
-    private void validateEmailDuplicate(String email, Long excludeId) {
-        // Bỏ qua nếu email rỗng hoặc null
-        if (!StringUtils.hasText(email)) {
-            return;
-        }
-
-        boolean isDuplicate = excludeId == null
-                ? userRepository.existsByEmailAndDeletedFlagEquals(email, 0)
-                : userRepository.existsByEmailAndIdNot(email, excludeId);
-
-        if (isDuplicate) {
-            throw new UserMessageException(CommonErrorCode.EMAIL_ALREADY_EXISTS);
-        }
-    }
-
-    /**
-     * Validate số điện thoại không trùng.
-     * Khi update: excludeId cho phép user giữ nguyên số điện thoại của chính nó.
-     * 
-     * @param phone     số điện thoại cần check
-     * @param excludeId ID user loại trừ (null khi create)
-     */
-    private void validatePhoneDuplicate(String phone, Long excludeId) {
-        // Bỏ qua nếu số điện thoại rỗng hoặc null
-        if (!StringUtils.hasText(phone)) {
-            return;
-        }
-
-        boolean isDuplicate = excludeId == null
-                ? userRepository.existsByPhoneAndDeletedFlagEquals(phone, 0)
-                : userRepository.existsByPhoneAndIdNot(phone, excludeId);
-
-        if (isDuplicate) {
-            throw new UserMessageException(CommonErrorCode.PHONE_ALREADY_EXISTS);
-        }
-    }
-
-    /**
      * Áp dụng các trường chung từ request vào entity User.
-     * ✅ NOTE: Profile fields (fullName, email, phone, unit) are now managed via Staff
+     *  Profile fields (fullName, email, phone, unit) are now managed via Staff
      * User is authentication-only.
      */
     private void applyCommonFields(User user, UserUpdateRequest request, Role role, Unit unit) {
@@ -471,12 +423,5 @@ public class UserServiceImpl implements UserService {
      */
     private String normalize(String value) {
         return value == null ? null : value.trim();
-    }
-
-    /**
-     * Chuẩn hóa string nullable: return null nếu rỗng hoặc whitespace.
-     */
-    private String normalizeNullable(String value) {
-        return StringUtils.hasText(value) ? value.trim() : null;
     }
 }

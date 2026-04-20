@@ -33,4 +33,6 @@ public interface WeekConfigRepository extends JpaRepository<WeekConfig, Long> {
     Optional<WeekConfig> findBySemesterIdAndWeekNumberAndDeletedFlag(Long semesterId, Integer weekNumber, Integer deletedFlag);
 
     Optional<WeekConfig> findByIdAndDeletedFlag(Long id, Integer deletedFlag);
+
+    List<WeekConfig> findByDeletedFlagOrderBySemesterSemesterOrderAscWeekNumberAscIdAsc(Integer deletedFlag);
 }

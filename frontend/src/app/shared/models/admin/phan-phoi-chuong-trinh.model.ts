@@ -8,7 +8,12 @@ import { TableDataSource, TableRequest } from '@model/table.model';
 
 export enum PHAN_PHOI_CHUONG_TRINH_KEY {
   ID = 'id',
+  SCHOOL_YEAR_ID = 'schoolYearId',
+  SEMESTER_ID = 'semesterId',
+  CLASSROOM_ID = 'classroomId',
   WEEK = 'week',
+  UNIT_ID = 'unitId',
+  KHOI = 'khoi',
   CLASS_ID = 'classId',
   CLASS_NAME = 'className',
   SUBJECT_ID = 'subjectId',
@@ -20,15 +25,18 @@ export enum PHAN_PHOI_CHUONG_TRINH_KEY {
 }
 
 export const PHAN_PHOI_CHUONG_TRINH_API_ENDPOINT = {
-  BASE_PATH: 'curriculum-distributions',
+  BASE_PATH: 'program-distributions',
   FILTER: 'search',
+  IMPORT_EXCEL: 'import-excel',
+  EXCEL_TEMPLATE: 'excel-template',
 };
 
 export interface PhanPhoiChuongTrinhFilter {
   week?: number | string;
+  unitId?: ID_TYPE;
+  khoi?: ID_TYPE;
   classId?: ID_TYPE;
   subjectId?: ID_TYPE;
-  lessonName?: string;
 }
 
 export interface PhanPhoiChuongTrinhFilterRequest extends TableRequest {
@@ -46,6 +54,13 @@ export interface PhanPhoiChuongTrinhFormRequest {
   note?: string;
 }
 
+export interface PhanPhoiChuongTrinhImportRequest {
+  schoolYearId: ID_TYPE;
+  semesterId: ID_TYPE;
+  classroomId: ID_TYPE;
+  subjectId: ID_TYPE;
+}
+
 export interface PhanPhoiChuongTrinhResponse extends TableDataSource {
   [PHAN_PHOI_CHUONG_TRINH_KEY.ID]: ID_TYPE;
   [PHAN_PHOI_CHUONG_TRINH_KEY.WEEK]?: number | string;
@@ -60,11 +75,26 @@ export interface PhanPhoiChuongTrinhResponse extends TableDataSource {
 }
 
 export const PHAN_PHOI_CHUONG_TRINH_FILTER_FORM = [
-  TEXT_CONTROL({
+  SELECT_CONTROL({
     controlName: PHAN_PHOI_CHUONG_TRINH_KEY.WEEK,
     placeholder: 'Tuần',
     required: false,
-    type: 'number',
+    clearable: true,
+    listOption: [],
+  }),
+  SELECT_CONTROL({
+    controlName: PHAN_PHOI_CHUONG_TRINH_KEY.UNIT_ID,
+    placeholder: 'Đơn vị',
+    required: false,
+    clearable: true,
+    listOption: [],
+  }),
+  SELECT_CONTROL({
+    controlName: PHAN_PHOI_CHUONG_TRINH_KEY.KHOI,
+    placeholder: 'Khối',
+    required: false,
+    clearable: true,
+    listOption: [],
   }),
   SELECT_CONTROL({
     controlName: PHAN_PHOI_CHUONG_TRINH_KEY.CLASS_ID,
@@ -79,12 +109,6 @@ export const PHAN_PHOI_CHUONG_TRINH_FILTER_FORM = [
     required: false,
     clearable: true,
     listOption: [],
-  }),
-  TEXT_CONTROL({
-    controlName: PHAN_PHOI_CHUONG_TRINH_KEY.LESSON_NAME,
-    placeholder: 'Tên bài học',
-    required: false,
-    maxLength: 255,
   }),
 ];
 
