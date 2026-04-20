@@ -6,18 +6,15 @@
     [form]="form"
     (submitEvent)="onSubmit()">
     <div class="flex flex-col gap-2">
-      <app-text-control
+      <app-select-control
         [item]="findFormControl($formItem, key.WEEK)"
-        [form]="form"></app-text-control>
+        [form]="form"></app-select-control>
       <app-select-control
         [item]="findFormControl($formItem, key.CLASS_ID)"
         [form]="form"></app-select-control>
       <app-select-control
         [item]="findFormControl($formItem, key.SUBJECT_ID)"
         [form]="form"></app-select-control>
-      <app-text-control
-        [item]="findFormControl($formItem, key.SUB_SUBJECT)"
-        [form]="form"></app-text-control>
       <app-text-control
         [item]="findFormControl($formItem, key.PERIOD)"
         [form]="form"></app-text-control>
@@ -35,14 +32,14 @@
       color="primary"
       matButton="outlined"
       mat-dialog-close>
-      Huy
+      Hủy
     </button>
     @if (data.type !== TYPE_FORM.DETAIL) {
       <button
         color="primary"
         matButton="filled"
         (click)="formTpl.submit()">
-        Luu
+        Lưu
       </button>
     }
     @if (data.type === TYPE_FORM.DETAIL) {
@@ -50,7 +47,7 @@
         color="primary"
         matButton="filled"
         (click)="switchUpdate()">
-        Chinh sua
+        Chỉnh sửa
       </button>
     }
   </ng-template>

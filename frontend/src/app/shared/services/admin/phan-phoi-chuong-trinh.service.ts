@@ -10,6 +10,7 @@ import {
   PhanPhoiChuongTrinhFormRequest,
   PhanPhoiChuongTrinhImportRequest,
   PhanPhoiChuongTrinhResponse,
+  PhanPhoiChuongTrinhUpdateRequest,
 } from '@app/model/admin/phan-phoi-chuong-trinh.model';
 
 @Injectable({ providedIn: 'root' })
@@ -47,7 +48,7 @@ export class PhanPhoiChuongTrinhService {
     );
   }
 
-  update(id: string | number, payload: PhanPhoiChuongTrinhFormRequest) {
+  update(id: string | number, payload: PhanPhoiChuongTrinhUpdateRequest) {
     return this.http.put<IResponse<PhanPhoiChuongTrinhResponse>>(
       `${this.baseUrl}/${id}`,
       payload,
@@ -88,7 +89,7 @@ export class PhanPhoiChuongTrinhService {
   private buildImportQueryParams(params: PhanPhoiChuongTrinhImportRequest) {
     return {
       schoolYearId: String(params.schoolYearId),
-      semesterId: String(params.semesterId),
+      unitId: String(params.unitId),
       classroomId: String(params.classroomId),
       subjectId: String(params.subjectId),
     };

@@ -1,5 +1,6 @@
 import { Component, Inject, Injector } from '@angular/core';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
+import { filter, take } from 'rxjs';
 
 import { AppDialogComponent } from '@components/app-dialog/app-dialog.component';
 import { TYPE_FORM, TYPE_FORM_KEY } from '@constant/constant';
@@ -7,6 +8,7 @@ import { ComponentBaseAbstract } from '@layout';
 import { FormType } from '@model/form-control.model';
 import { ID_TYPE } from '@model/response.model';
 import { FORM_CONTROL_MODULE, MATERIAL_MODULE } from '@modules';
+import { AuthService } from '@service';
 
 import {
   PHAN_PHOI_CHUONG_TRINH_FORM,
@@ -19,6 +21,7 @@ import { MonHocOptionResponse } from '@app/model/admin/mon-hoc.model';
 import { LopService } from '@app/service/admin/lop.service';
 import { MonHocService } from '@app/service/admin/mon-hoc.service';
 import { PhanPhoiChuongTrinhService } from '@app/service/admin/phan-phoi-chuong-trinh.service';
+import { WeekConfigService } from '@app/service/admin/week-config.service';
 
 @Component({
   selector: 'dialog-phan-phoi-chuong-trinh',
@@ -32,6 +35,7 @@ export class DialogPhanPhoiChuongTrinhComponent extends ComponentBaseAbstract {
   ) as FormType[];
   key = PHAN_PHOI_CHUONG_TRINH_KEY;
   title = '';
+  private orderNumber = 0;
 
   constructor(
     protected override injector: Injector,
@@ -39,6 +43,8 @@ export class DialogPhanPhoiChuongTrinhComponent extends ComponentBaseAbstract {
     private readonly phanPhoiChuongTrinhService: PhanPhoiChuongTrinhService,
     private readonly lopService: LopService,
     private readonly monHocService: MonHocService,
+    private readonly weekConfigService: WeekConfigService,
+    private readonly authService: AuthService,
     @Inject(MAT_DIALOG_DATA)
     public data: {
       type: TYPE_FORM_KEY;
@@ -69,7 +75,7 @@ export class DialogPhanPhoiChuongTrinhComponent extends ComponentBaseAbstract {
     this.loadOptions();
 
     if (this.data.data) {
-      this.form.patchValue(this.data.data);
+      this.patchFormFromResponse(this.data.data);
     } else if (
       this.data.type !== this.TYPE_FORM.CREATE &&
       this.data.id != null
@@ -77,55 +83,49 @@ export class DialogPhanPhoiChuongTrinhComponent extends ComponentBaseAbstract {
       this.phanPhoiChuongTrinhService
         .getById(this.data.id)
         .subscribe(({ data }) => {
-          this.form.patchValue(data);
+          this.patchFormFromResponse(data);
         });
     }
   }
 
   onSubmit(): void {
+    const unitId = this.getCurrentUnitId();
+    if (unitId == null) {
+      this.toastr.warning('Không xác định được đơn vị từ tài khoản đăng nhập', 'Cảnh báo');
+      return;
+    }
+
     const value = this.form.getRawValue();
     const payload: PhanPhoiChuongTrinhFormRequest = {
+      unitId,
       week: Number(value[this.key.WEEK] ?? 0),
+      weekNumber: Number(value[this.key.WEEK] ?? 0),
       classId: value[this.key.CLASS_ID],
+      classroomId: value[this.key.CLASS_ID],
       subjectId: value[this.key.SUBJECT_ID],
-      subSubject: value[this.key.SUB_SUBJECT] ?? '',
       period: value[this.key.PERIOD] ?? '',
+      periodPpct: value[this.key.PERIOD] ?? '',
+      orderNumber: this.orderNumber,
       lessonName: value[this.key.LESSON_NAME] ?? '',
       note: value[this.key.NOTE] ?? '',
     };
 
-    if (this.data.type === TYPE_FORM.CREATE) {
-      this.phanPhoiChuongTrinhService.create(payload).subscribe({
-        next: () => {
-          this.toastr.success('Lưu thành công', 'Thành công');
-          this.dialogRef.close(true);
-        },
-        error: (error) => {
-          this.toastr.error(
-            error?.error?.userMessage ??
-              error?.error?.message ??
-              'Lưu thất bại',
-            'Thất bại'
-          );
-        },
-      });
-      return;
-    }
-
-    this.phanPhoiChuongTrinhService.update(this.data.id!, payload).subscribe({
+    this.phanPhoiChuongTrinhService
+      .create(payload)
+      .subscribe({
       next: () => {
-        this.toastr.success('Cập nhật thành công', 'Thành công');
+        this.toastr.success('Lưu thành công', 'Thành công');
         this.dialogRef.close(true);
       },
       error: (error) => {
         this.toastr.error(
           error?.error?.userMessage ??
             error?.error?.message ??
-            'Cập nhật thất bại',
+            'Lưu thất bại',
           'Thất bại'
         );
       },
-    });
+      });
   }
 
   switchUpdate(): void {
@@ -135,14 +135,27 @@ export class DialogPhanPhoiChuongTrinhComponent extends ComponentBaseAbstract {
   }
 
   private loadOptions(): void {
-    this.lopService.getOptions().subscribe(({ data }) => {
-      this.findFormControl(this.$formItem, this.key.CLASS_ID).options = (
+    this.weekConfigService.getComboboxOptions().subscribe(({ data }) => {
+      this.findFormControl(this.$formItem, this.key.WEEK).options = (
         data ?? []
-      ).map((item: LopResponse) => ({
-        value: item.id,
+      ).map((item) => ({
+        value: this.resolveWeekValue(item.id, item.name),
         label: item.name,
       }));
     });
+
+    const unitId = this.getCurrentUnitId();
+    if (unitId) {
+      this.loadClassOptions(unitId);
+    } else {
+      // Nếu chưa có unitId, đợi currentUser thay đổi
+      this.authService.currentUser$.subscribe(() => {
+        const updatedUnitId = this.getCurrentUnitId();
+        if (updatedUnitId) {
+          this.loadClassOptions(updatedUnitId);
+        }
+      });
+    }
 
     this.monHocService.getOptions().subscribe(({ data }) => {
       this.findFormControl(this.$formItem, this.key.SUBJECT_ID).options = (
@@ -152,5 +165,59 @@ export class DialogPhanPhoiChuongTrinhComponent extends ComponentBaseAbstract {
         label: item.name,
       }));
     });
+  }
+
+  private loadClassOptions(unitId: ID_TYPE): void {
+    this.lopService
+      .getOptions({ unitId })
+      .subscribe(({ data }) => {
+        this.findFormControl(this.$formItem, this.key.CLASS_ID).options = (
+          data ?? []
+        ).map((item: LopResponse) => ({
+          value: item.id,
+          label: item.name,
+        }));
+      });
+  }
+
+  private patchFormFromResponse(data: PhanPhoiChuongTrinhResponse): void {
+    const rawData = data as Record<string, unknown>;
+    const weekValue = Number(
+      rawData['weekNumber'] ?? data[this.key.WEEK] ?? 0
+    );
+    const classIdValue =
+      data[this.key.CLASS_ID] ??
+      (rawData[this.key.CLASSROOM_ID] as ID_TYPE | undefined) ??
+      undefined;
+    const subjectIdValue =
+      data[this.key.SUBJECT_ID] ??
+      (rawData[this.key.SUBJECT_ID] as ID_TYPE | undefined) ??
+      undefined;
+
+    this.orderNumber = Number(
+      data[this.key.ORDER_NUMBER] ??
+        rawData['orderNumber'] ??
+        0
+    );
+
+    this.form.patchValue({
+      ...data,
+      [this.key.WEEK]: weekValue,
+      [this.key.CLASS_ID]: classIdValue,
+      [this.key.SUBJECT_ID]: subjectIdValue,
+      [this.key.PERIOD]:
+        data[this.key.PERIOD] ??
+        (rawData['periodPpct'] as string | undefined) ??
+        '',
+    });
+  }
+
+  private resolveWeekValue(id: ID_TYPE, name: string): ID_TYPE | number {
+    const parsed = Number(String(name ?? '').replace(/[^0-9]/g, ''));
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : id;
+  }
+
+  private getCurrentUnitId(): ID_TYPE | null {
+    return this.authService.currentUser?.unit?.id ?? null;
   }
 }

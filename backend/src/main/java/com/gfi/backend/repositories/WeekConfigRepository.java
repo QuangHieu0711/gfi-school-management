@@ -5,6 +5,7 @@ import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import com.gfi.backend.models.entities.WeekConfig;
@@ -35,4 +36,13 @@ public interface WeekConfigRepository extends JpaRepository<WeekConfig, Long> {
     Optional<WeekConfig> findByIdAndDeletedFlag(Long id, Integer deletedFlag);
 
     List<WeekConfig> findByDeletedFlagOrderBySemesterSemesterOrderAscWeekNumberAscIdAsc(Integer deletedFlag);
+
+    @Query("""
+            select w
+            from WeekConfig w
+            where w.deletedFlag = 0
+              and w.schoolYear.id = :schoolYearId
+              and w.weekNumber = :weekNumber
+            """)
+    Optional<WeekConfig> findBySchoolYearIdAndWeekNumber(@Param("schoolYearId") Long schoolYearId, @Param("weekNumber") Integer weekNumber);
 }

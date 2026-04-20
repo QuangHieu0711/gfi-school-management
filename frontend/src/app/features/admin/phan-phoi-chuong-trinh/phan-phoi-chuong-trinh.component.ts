@@ -7,7 +7,7 @@ import { TYPE_FORM, TYPE_FORM_KEY } from '@constant/constant';
 import { ComponentBaseAbstract } from '@layout';
 import { COMMON_TABLE_KEY, TableQueryEvent } from '@model/table.model';
 import { FORM_CONTROL_MODULE, MATERIAL_MODULE } from '@modules';
-import { PermissionCheckService } from '@service';
+import { AuthService, PermissionCheckService } from '@service';
 
 import {
   PHAN_PHOI_CHUONG_TRINH_FILTER_FORM,
@@ -19,7 +19,6 @@ import { LopResponse } from '@app/model/admin/lop.model';
 import { MonHocOptionResponse } from '@app/model/admin/mon-hoc.model';
 import { DialogPhanPhoiChuongTrinhComponent } from './dialog-phan-phoi-chuong-trinh/dialog-phan-phoi-chuong-trinh.component';
 import { DialogImportComponent } from './dialog-import/dialog-import.component';
-import { DonViService } from '@app/service/admin/don-vi.service';
 import { KhoiService } from '@app/service/admin/khoi.service';
 import { LopService } from '@app/service/admin/lop.service';
 import { MonHocService } from '@app/service/admin/mon-hoc.service';
@@ -52,6 +51,13 @@ export class PhanPhoiChuongTrinhComponent extends ComponentBaseAbstract {
   key = PHAN_PHOI_CHUONG_TRINH_KEY;
   dataSource: PhanPhoiChuongTrinhResponse[] = [];
 
+  private readonly backendField = {
+    WEEK_NAME: 'weekName',
+    WEEK_NUMBER: 'weekNumber',
+    CLASSROOM_NAME: 'classroomName',
+    PERIOD_PPCT: 'periodPpct',
+  } as const;
+
   get canAdd(): boolean {
     return this.permissionCheckService.canAdd(this.menuCode);
   }
@@ -67,11 +73,11 @@ export class PhanPhoiChuongTrinhComponent extends ComponentBaseAbstract {
   constructor(
     protected override injector: Injector,
     private readonly phanPhoiChuongTrinhService: PhanPhoiChuongTrinhService,
-    private readonly donViService: DonViService,
     private readonly khoiService: KhoiService,
     private readonly lopService: LopService,
     private readonly monHocService: MonHocService,
     private readonly weekConfigService: WeekConfigService,
+    private readonly authService: AuthService,
     private readonly permissionCheckService: PermissionCheckService
   ) {
     super(injector);
@@ -84,8 +90,7 @@ export class PhanPhoiChuongTrinhComponent extends ComponentBaseAbstract {
       { header: 'Tuần', field: this.key.WEEK, class: 'text-center' },
       { header: 'Tên lớp', field: this.key.CLASS_NAME },
       { header: 'Môn học', field: this.key.SUBJECT_NAME },
-      { header: 'Phân môn', field: this.key.SUB_SUBJECT },
-      { header: 'Tiết PPCT', field: this.key.PERIOD },
+      { header: 'Tiết PPCT', class: 'text-center', field: this.key.PERIOD },
       {
         header: 'Tên bài học',
         field: this.key.LESSON_NAME,
@@ -98,15 +103,6 @@ export class PhanPhoiChuongTrinhComponent extends ComponentBaseAbstract {
         type: 'button',
         class: 'text-center',
         buttons: [
-          {
-            type: 'icon',
-            icon: 'visibility',
-            class: 'action-view',
-            tooltip: 'Chi tiết',
-            iif: () => this.permissionCheckService.canView(this.menuCode),
-            click: (rowData: PhanPhoiChuongTrinhResponse) =>
-              this.openDialog(this.TYPE_FORM.DETAIL, rowData),
-          },
           {
             type: 'icon',
             icon: 'edit',
@@ -144,7 +140,17 @@ export class PhanPhoiChuongTrinhComponent extends ComponentBaseAbstract {
 
     this.phanPhoiChuongTrinhService.filter(payload).subscribe({
       next: ({ data }) => {
-        this.dataSource = data.items || data.data || [];
+        const rawItems = (data.items || data.data || []) as Array<
+          PhanPhoiChuongTrinhResponse & {
+            weekName?: string;
+            weekNumber?: number | string;
+            classroomName?: string;
+            periodPpct?: string;
+            note ?: string;
+          }
+        >;
+
+        this.dataSource = rawItems.map((item) => this.normalizeRow(item));
         this.dataSourceTotal = data.recordTotal || this.dataSource.length;
       },
       error: (error) => {
@@ -164,25 +170,49 @@ export class PhanPhoiChuongTrinhComponent extends ComponentBaseAbstract {
   }
 
   openDialog(type: TYPE_FORM_KEY, rowData?: PhanPhoiChuongTrinhResponse): void {
-    this.dialog.componentDialog(
-      DialogPhanPhoiChuongTrinhComponent,
-      {
-        width: '640px',
-        data: {
-          type,
-          id: rowData?.id,
-          data: rowData,
+    const openWithData = (data?: PhanPhoiChuongTrinhResponse): void => {
+      this.dialog.componentDialog(
+        DialogPhanPhoiChuongTrinhComponent,
+        {
+          width: '640px',
+          data: {
+            type,
+            id: rowData?.id,
+            data,
+          },
         },
-      },
-      (result?: boolean) => {
-        if (result) {
-          this.filterData({
-            pageIndex: this.pageIndex,
-            pageSize: this.pageSize,
-          });
+        (result?: boolean) => {
+          if (result) {
+            this.filterData({
+              pageIndex: this.pageIndex,
+              pageSize: this.pageSize,
+            });
+          }
         }
-      }
-    );
+      );
+    };
+
+    if (type === this.TYPE_FORM.CREATE) {
+      openWithData(undefined);
+      return;
+    }
+
+    if (!rowData?.id) {
+      openWithData(undefined);
+      return;
+    }
+
+    this.phanPhoiChuongTrinhService.getById(rowData.id).subscribe({
+      next: ({ data }) => openWithData(data),
+      error: (error) => {
+        this.toastr.error(
+          error?.error?.userMessage ??
+            error?.error?.message ??
+            'Không lấy được dữ liệu chi tiết',
+          'Thất bại'
+        );
+      },
+    });
   }
 
   openWeekConfig(): void {
@@ -254,7 +284,7 @@ export class PhanPhoiChuongTrinhComponent extends ComponentBaseAbstract {
       pageNow: (pageChangeEvent?.pageIndex ?? this.pageIndex) + 1,
       filter: {
         week: formValues[this.key.WEEK] ?? undefined,
-        unitId: formValues[this.key.UNIT_ID] ?? undefined,
+        unitId: this.getCurrentUnitId() ?? undefined,
         khoi: formValues[this.key.KHOI] ?? undefined,
         classId: formValues[this.key.CLASS_ID] ?? undefined,
         subjectId: formValues[this.key.SUBJECT_ID] ?? undefined,
@@ -272,15 +302,6 @@ export class PhanPhoiChuongTrinhComponent extends ComponentBaseAbstract {
       }));
     });
 
-    this.donViService.getOptions().subscribe(({ data }) => {
-      this.findFormControl(this.$formItem, this.key.UNIT_ID).options = (
-        data ?? []
-      ).map((item) => ({
-        value: item.id,
-        label: item.name,
-      }));
-    });
-
     this.khoiService.getOptions().subscribe(({ data }) => {
       this.findFormControl(this.$formItem, this.key.KHOI).options = (
         data ?? []
@@ -290,7 +311,9 @@ export class PhanPhoiChuongTrinhComponent extends ComponentBaseAbstract {
       }));
     });
 
-    this.lopService.getOptions().subscribe(({ data }) => {
+    this.lopService
+      .getOptions({ unitId: this.getCurrentUnitId() ?? undefined })
+      .subscribe(({ data }) => {
       this.findFormControl(this.$formItem, this.key.CLASS_ID).options = (
         data ?? []
       ).map((item: LopResponse) => ({
@@ -307,5 +330,36 @@ export class PhanPhoiChuongTrinhComponent extends ComponentBaseAbstract {
         label: item.name,
       }));
     });
+  }
+
+  private normalizeRow(
+    item: PhanPhoiChuongTrinhResponse & {
+      weekName?: string;
+      weekNumber?: number | string;
+      classroomName?: string;
+      periodPpct?: string;
+    }
+  ): PhanPhoiChuongTrinhResponse {
+    const weekValue =
+      item[this.key.WEEK] ??
+      item[this.backendField.WEEK_NAME] ??
+      item[this.backendField.WEEK_NUMBER] ??
+      '';
+
+    return {
+      ...item,
+      [this.key.WEEK]: weekValue,
+      [this.key.CLASS_NAME]:
+        item[this.key.CLASS_NAME] ?? item[this.backendField.CLASSROOM_NAME] ?? '',
+      [this.key.PERIOD]:
+        item[this.key.PERIOD] ?? item[this.backendField.PERIOD_PPCT] ?? '',
+      [this.key.SUBJECT_NAME]: item[this.key.SUBJECT_NAME] ?? '',
+      [this.key.LESSON_NAME]: item[this.key.LESSON_NAME] ?? '',
+      [this.key.NOTE]: item[this.key.NOTE] ?? '',
+    };
+  }
+
+  private getCurrentUnitId(): number | string | null {
+    return this.authService.currentUser?.unit?.id ?? null;
   }
 }

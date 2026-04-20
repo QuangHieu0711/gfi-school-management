@@ -51,7 +51,7 @@ public class UserScopesLoadingFilter extends OncePerRequestFilter {
                 logger.info("resolvedUsername={}", username);
 
                 if (username != null && !username.isBlank() && !"anonymousUser".equals(username)) {
-                    var user = userRepository.findByUsernameWithRole(username).orElse(null);
+                    var user = userRepository.findByUsernameWithStaffAndRole(username).orElse(null);
 
                     if (user != null && user.getRole() != null) {
                         logger.info("loading scopes for userId={}, roleId={}", user.getId(), user.getRole().getId());

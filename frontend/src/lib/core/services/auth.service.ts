@@ -50,6 +50,12 @@ interface BackendLoginStaff {
   } | null;
 }
 
+interface BackendLoginUnit {
+  id?: number | string;
+  code?: string;
+  name?: string;
+}
+
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   private readonly currentUserSubject =
@@ -69,7 +75,7 @@ export class AuthService {
       'all'
     ) as ICurrentUserWithTokens | null;
     if (userInfo) {
-      this.currentUserSubject.next(userInfo);
+      this.currentUserSubject.next(this.normalizeStoredUser(userInfo));
       this.permissionCheckService.setPermissions(
         this.mapRulesToPermissions(userInfo.role?.rules ?? [])
       );
@@ -85,13 +91,14 @@ export class AuthService {
     const token = response?.data?.token ?? {};
     const user = response?.data?.user ?? {};
     const staff = this.normalizeStaff(user.staff);
+    const unit = this.normalizeUnit(user.unit) ?? staff?.unit ?? null;
     const menus = this.normalizeMenus(response?.data?.permissions?.menus ?? []);
     return {
       id: user.id,
       username,
-      fullName: staff?.fullName ?? user.username ?? username,
-      email: staff?.email ?? null,
-      phone: staff?.phone ?? '',
+      fullName: staff?.fullName ?? user.fullName ?? user.username ?? username,
+      email: staff?.email ?? user.email ?? null,
+      phone: staff?.phone ?? user.phone ?? '',
       status: user.status,
       role: {
         id: user.role?.id,
@@ -99,7 +106,7 @@ export class AuthService {
         name: user.role?.name,
         rules,
       },
-      unit: staff?.unit ?? null,
+      unit,
       staff,
       lastLoginAt: user.lastLoginAt ?? null,
       permissions: { menus },
@@ -318,13 +325,44 @@ export class AuthService {
       fullName: staff.fullName ?? '',
       email: staff.email ?? null,
       phone: staff.phone ?? '',
-      unit: staff.unit
-        ? {
-            id: staff.unit.id ?? '',
-            code: staff.unit.code ?? '',
-            name: staff.unit.name ?? '',
-          }
-        : null,
+      unit: this.normalizeUnit(staff.unit),
+    };
+  }
+
+  private normalizeUnit(unit: BackendLoginUnit | null | undefined) {
+    if (!unit) return null;
+
+    return {
+      id: unit.id ?? '',
+      code: unit.code ?? '',
+      name: unit.name ?? '',
+    };
+  }
+
+  private normalizeStoredUser(
+    user: ICurrentUserWithTokens
+  ): ICurrentUserWithTokens {
+    if (user.unit != null) {
+      return user;
+    }
+
+    const fallbackUnitId = user.permissions?.menus
+      ?.flatMap((menu) => this.flattenMenus([menu]))
+      .flatMap((menu) => menu.dataScopes ?? [])
+      .find((scope) => scope?.scopeType === 'UNIT')
+      ?.scopeValues?.[0];
+
+    if (fallbackUnitId == null) {
+      return user;
+    }
+
+    return {
+      ...user,
+      unit: {
+        id: fallbackUnitId,
+        code: '',
+        name: '',
+      },
     };
   }
 

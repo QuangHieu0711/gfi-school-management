@@ -35,6 +35,7 @@ src/main/resources/application-secret.properties
 
 .m2repo/
 **/.m2repo/
+.m2/
 
 # MinIO local data
 minio-data/

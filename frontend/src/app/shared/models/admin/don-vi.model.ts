@@ -18,6 +18,7 @@ export const DON_VI_API_ENDPOINT = {
   BASE_PATH: 'units',
   FILTER: 'search',
   OPTIONS: 'options',
+  USER_CREATION_OPTIONS: 'user-creation-options',
 };
 
 export interface DonViOptionResponse {

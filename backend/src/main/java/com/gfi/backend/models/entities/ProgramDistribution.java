@@ -27,8 +27,8 @@ public class ProgramDistribution extends BaseEntity {
     private SchoolYear schoolYear;
 
     @ManyToOne
-    @JoinColumn(name = "semester_id", nullable = false, foreignKey = @ForeignKey(name = "fk_program_distributions_semesters"))
-    private Semester semester;
+    @JoinColumn(name = "unit_id", nullable = false, foreignKey = @ForeignKey(name = "fk_program_distributions_units"))
+    private Unit unit;
 
     @ManyToOne
     @JoinColumn(name = "classroom_id", nullable = false, foreignKey = @ForeignKey(name = "fk_program_distributions_classes"))

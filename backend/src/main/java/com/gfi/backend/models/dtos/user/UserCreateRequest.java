@@ -20,7 +20,7 @@ public class UserCreateRequest {
 
     private Long unitId;
     
-    private Long staffId;  // Optional: link User to Staff
+    private Long staffId; 
 
     private Integer status;
 }

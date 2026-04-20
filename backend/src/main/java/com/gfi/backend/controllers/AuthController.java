@@ -67,7 +67,7 @@ public class AuthController extends ApiBaseController {
 
                         TokenResponse tokens = tokenService.generateTokens(userDetails);
 
-                        User user = userRepository.findByUsername(userDetails.getUsername())
+                        User user = userRepository.findByUsernameWithStaffAndRole(userDetails.getUsername())
                                         .orElseThrow(() -> new BadCredentialsException(
                                                         CommonErrorCode.INVALID_CREDENTIALS.getMessage()));
 

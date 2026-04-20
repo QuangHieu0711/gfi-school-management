@@ -63,7 +63,7 @@ public class ClassroomController extends ApiBaseController {
      * Cho phép filter theo đơn vị, khối lớp, năm học để chỉ lấy các lớp phù hợp.
      */
     @GetMapping("/options")
-    @DataScoped(feature = "CLASS_MANAGEMENT", action = ActionType.VIEW)
+    @DataScoped(feature = "CURRICULUM_DISTRIBUTION", action = ActionType.VIEW)
     @Operation(summary = "Danh sách lớp cho combobox", description = "Lấy danh sách id và tên lớp.")
     public ResponseEntity<ApiResult<List<LookupItemDto>>> getOptions(
             @RequestParam(required = false) Long unitId,

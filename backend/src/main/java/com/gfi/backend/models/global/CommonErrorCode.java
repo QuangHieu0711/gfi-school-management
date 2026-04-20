@@ -73,6 +73,9 @@ public enum CommonErrorCode {
     PROGRAM_DISTRIBUTION_WEEK_NOT_FOUND(1064, "Tuần trong file Excel không tồn tại trong cấu hình tuần"),
     PROGRAM_DISTRIBUTION_DUPLICATE_ORDER_NUMBER(1065, "Số thứ tự trong file Excel bị trùng"),
     PROGRAM_DISTRIBUTION_LESSON_NAME_REQUIRED(1066, "Tên bài học không được để trống"),
+    PROGRAM_DISTRIBUTION_CLASSROOM_UNIT_MISMATCH(1067, "Lớp không thuộc đơn vị đã chọn"),
+    RECORD_NOT_FOUND(1068, "Không tìm thấy dữ liệu"),
+    INVALID_REQUEST(1069, "Yêu cầu không hợp lệ"),
     ACCESS_DENIED(1403, "Bạn không có quyền truy cập tài nguyên này"),
     BAD_REQUEST(1400, "Dữ liệu không hợp lệ, vui lòng kiểm tra lại"),
     INTERNAL_SERVER_ERROR(1500, "Lỗi hệ thống, vui lòng thử lại sau.");

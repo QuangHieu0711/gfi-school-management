@@ -60,7 +60,7 @@ CREATE TABLE IF NOT EXISTS week_configs (
 CREATE TABLE IF NOT EXISTS program_distributions (
     id BIGSERIAL PRIMARY KEY,
     school_year_id BIGINT NOT NULL,
-    semester_id BIGINT NOT NULL,
+    unit_id BIGINT NOT NULL,
     classroom_id BIGINT NOT NULL,
     subject_id BIGINT NOT NULL,
     order_number INTEGER NOT NULL,
@@ -76,7 +76,7 @@ CREATE TABLE IF NOT EXISTS program_distributions (
     deleted_at TIMESTAMP NULL,
     deleted_by VARCHAR(255),
     CONSTRAINT fk_program_distributions_school_years FOREIGN KEY (school_year_id) REFERENCES school_years(id),
-    CONSTRAINT fk_program_distributions_semesters FOREIGN KEY (semester_id) REFERENCES semesters(id),
+    CONSTRAINT fk_program_distributions_units FOREIGN KEY (unit_id) REFERENCES units(id),
     CONSTRAINT fk_program_distributions_classes FOREIGN KEY (classroom_id) REFERENCES classes(id),
     CONSTRAINT fk_program_distributions_subjects FOREIGN KEY (subject_id) REFERENCES subjects(id)
 );

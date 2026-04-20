@@ -8,6 +8,7 @@ import { TableDataSource, TableRequest } from '@model/table.model';
 
 export enum PHAN_PHOI_CHUONG_TRINH_KEY {
   ID = 'id',
+  ORDER_NUMBER = 'orderNumber',
   SCHOOL_YEAR_ID = 'schoolYearId',
   SEMESTER_ID = 'semesterId',
   CLASSROOM_ID = 'classroomId',
@@ -45,24 +46,37 @@ export interface PhanPhoiChuongTrinhFilterRequest extends TableRequest {
 }
 
 export interface PhanPhoiChuongTrinhFormRequest {
+  unitId?: ID_TYPE;
   week: number;
+  weekNumber?: number;
   classId: ID_TYPE;
+  classroomId?: ID_TYPE;
   subjectId: ID_TYPE;
-  subSubject?: string;
   period?: string;
+  periodPpct?: string;
+  orderNumber?: number;
+  lessonName: string;
+  note?: string;
+}
+
+export interface PhanPhoiChuongTrinhUpdateRequest {
+  weekNumber: number;
+  orderNumber: number;
+  periodPpct?: string;
   lessonName: string;
   note?: string;
 }
 
 export interface PhanPhoiChuongTrinhImportRequest {
   schoolYearId: ID_TYPE;
-  semesterId: ID_TYPE;
+  unitId: ID_TYPE;
   classroomId: ID_TYPE;
   subjectId: ID_TYPE;
 }
 
 export interface PhanPhoiChuongTrinhResponse extends TableDataSource {
   [PHAN_PHOI_CHUONG_TRINH_KEY.ID]: ID_TYPE;
+  [PHAN_PHOI_CHUONG_TRINH_KEY.ORDER_NUMBER]?: number;
   [PHAN_PHOI_CHUONG_TRINH_KEY.WEEK]?: number | string;
   [PHAN_PHOI_CHUONG_TRINH_KEY.CLASS_ID]?: ID_TYPE;
   [PHAN_PHOI_CHUONG_TRINH_KEY.CLASS_NAME]?: string;
@@ -78,13 +92,6 @@ export const PHAN_PHOI_CHUONG_TRINH_FILTER_FORM = [
   SELECT_CONTROL({
     controlName: PHAN_PHOI_CHUONG_TRINH_KEY.WEEK,
     placeholder: 'Tuần',
-    required: false,
-    clearable: true,
-    listOption: [],
-  }),
-  SELECT_CONTROL({
-    controlName: PHAN_PHOI_CHUONG_TRINH_KEY.UNIT_ID,
-    placeholder: 'Đơn vị',
     required: false,
     clearable: true,
     listOption: [],
@@ -113,12 +120,13 @@ export const PHAN_PHOI_CHUONG_TRINH_FILTER_FORM = [
 ];
 
 export const PHAN_PHOI_CHUONG_TRINH_FORM = [
-  TEXT_CONTROL({
+  SELECT_CONTROL({
     controlName: PHAN_PHOI_CHUONG_TRINH_KEY.WEEK,
     label: 'Tuần',
-    placeholder: 'Nhập tuần',
+    placeholder: 'Chọn tuần',
     required: true,
-    type: 'number',
+    clearable: true,
+    listOption: [],
   }),
   SELECT_CONTROL({
     controlName: PHAN_PHOI_CHUONG_TRINH_KEY.CLASS_ID,
@@ -133,13 +141,6 @@ export const PHAN_PHOI_CHUONG_TRINH_FORM = [
     placeholder: 'Chọn môn học',
     required: true,
     listOption: [],
-  }),
-  TEXT_CONTROL({
-    controlName: PHAN_PHOI_CHUONG_TRINH_KEY.SUB_SUBJECT,
-    label: 'Phân môn',
-    placeholder: 'Nhập phân môn',
-    required: false,
-    maxLength: 255,
   }),
   TEXT_CONTROL({
     controlName: PHAN_PHOI_CHUONG_TRINH_KEY.PERIOD,

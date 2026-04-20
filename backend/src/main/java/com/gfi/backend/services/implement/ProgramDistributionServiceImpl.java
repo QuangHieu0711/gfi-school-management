@@ -4,8 +4,10 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import org.apache.poi.ss.usermodel.BorderStyle;
@@ -21,27 +23,35 @@ import org.apache.poi.ss.usermodel.VerticalAlignment;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.ss.util.CellRangeAddress;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.gfi.backend.controllers.exceptions.UserMessageException;
+import com.gfi.backend.models.dtos.common.PageRequestDto;
+import com.gfi.backend.models.dtos.common.PageResponseDto;
+import com.gfi.backend.models.dtos.programdistribution.ProgramDistributionDetailDto;
+import com.gfi.backend.models.dtos.programdistribution.ProgramDistributionFilterDto;
 import com.gfi.backend.models.dtos.programdistribution.ProgramDistributionItemDto;
 import com.gfi.backend.models.dtos.programdistribution.ProgramDistributionImportResultDto;
-import com.gfi.backend.models.entities.Classroom;
+import com.gfi.backend.models.dtos.programdistribution.ProgramDistributionUpdateRequest;import com.gfi.backend.models.dtos.programdistribution.ProgramDistributionCreateRequest;import com.gfi.backend.models.entities.Classroom;
 import com.gfi.backend.models.entities.ProgramDistribution;
 import com.gfi.backend.models.entities.SchoolYear;
-import com.gfi.backend.models.entities.Semester;
 import com.gfi.backend.models.entities.Subject;
+import com.gfi.backend.models.entities.Unit;
 import com.gfi.backend.models.entities.WeekConfig;
 import com.gfi.backend.models.global.CommonErrorCode;
 import com.gfi.backend.repositories.ClassroomRepository;
 import com.gfi.backend.repositories.ClassroomSubjectRepository;
 import com.gfi.backend.repositories.ProgramDistributionRepository;
 import com.gfi.backend.repositories.SchoolYearRepository;
-import com.gfi.backend.repositories.SemesterRepository;
 import com.gfi.backend.repositories.SubjectRepository;
+import com.gfi.backend.repositories.UnitRepository;
 import com.gfi.backend.repositories.WeekConfigRepository;
+import com.gfi.backend.repositories.specifications.ProgramDistributionSpecification;
 import com.gfi.backend.services.interfaces.ProgramDistributionService;
 import com.gfi.backend.utils.SecurityUtils;
 
@@ -64,19 +74,20 @@ public class ProgramDistributionServiceImpl implements ProgramDistributionServic
 
     private final ProgramDistributionRepository programDistributionRepository;
     private final SchoolYearRepository schoolYearRepository;
-    private final SemesterRepository semesterRepository;
     private final ClassroomRepository classroomRepository;
     private final SubjectRepository subjectRepository;
+    private final UnitRepository unitRepository;
     private final WeekConfigRepository weekConfigRepository;
     private final ClassroomSubjectRepository classroomSubjectRepository;
+    private final ProgramDistributionSpecification programDistributionSpecification;
 
     @Override
     @Transactional(readOnly = true)
-    public byte[] exportExcelTemplate(Long schoolYearId, Long semesterId, Long classroomId, Long subjectId) {
-        ExportContext context = buildContext(schoolYearId, semesterId, classroomId, subjectId);
+    public byte[] exportExcelTemplate(Long schoolYearId, Long unitId, Long classroomId, Long subjectId) {
+        ExportContext context = buildContext(schoolYearId, unitId, classroomId, subjectId);
         List<ProgramDistribution> existingItems = programDistributionRepository
-                .findBySchoolYearIdAndSemesterIdAndClassroomIdAndSubjectIdAndDeletedFlagOrderByOrderNumberAscIdAsc(
-                        schoolYearId, semesterId, classroomId, subjectId, 0);
+                .findBySchoolYearIdAndUnitIdAndClassroomIdAndSubjectIdAndDeletedFlagOrderByOrderNumberAscIdAsc(
+                        schoolYearId, unitId, classroomId, subjectId, 0);
 
         List<TemplateRowData> rows = buildTemplateRows(context.weekConfigs(), existingItems);
         if (rows.isEmpty()) {
@@ -95,16 +106,14 @@ public class ProgramDistributionServiceImpl implements ProgramDistributionServic
 
     @Override
     @Transactional
-    public ProgramDistributionImportResultDto importExcel(Long schoolYearId, Long classroomId,
+    public ProgramDistributionImportResultDto importExcel(Long schoolYearId, Long unitId, Long classroomId,
             Long subjectId,
             MultipartFile file) {
         validateExcelFile(file);
-        
-        // Extract semesterId from file metadata
-        Long semesterId = extractSemesterIdFromFile(file);
-        
-        ExportContext context = buildContext(schoolYearId, semesterId, classroomId, subjectId);
-        List<ImportRowData> importedRows = readImportRows(file, context.weekConfigs(), schoolYearId, semesterId, classroomId, subjectId);
+
+        ExportContext context = buildContext(schoolYearId, unitId, classroomId, subjectId);
+        List<ImportRowData> importedRows = readImportRows(file, context.weekConfigs(), schoolYearId, unitId,
+                classroomId, subjectId);
         replaceProgramDistributions(context, importedRows);
 
         return ProgramDistributionImportResultDto.builder()
@@ -113,34 +122,13 @@ public class ProgramDistributionServiceImpl implements ProgramDistributionServic
                 .build();
     }
 
-    private Long extractSemesterIdFromFile(MultipartFile file) {
-        DataFormatter formatter = new DataFormatter();
-        try (Workbook workbook = new XSSFWorkbook(file.getInputStream())) {
-            Sheet sheet = workbook.getSheetAt(0);
-            Row row1 = sheet.getRow(1);
-            
-            if (row1 == null) {
-                throw new UserMessageException(CommonErrorCode.PROGRAM_DISTRIBUTION_INVALID_FILE);
-            }
-            
-            Long semesterId = readLongCell(row1.getCell(7), formatter);
-            if (semesterId == null) {
-                throw new UserMessageException(CommonErrorCode.PROGRAM_DISTRIBUTION_INVALID_FILE);
-            }
-            
-            return semesterId;
-        } catch (IOException ex) {
-            throw new UserMessageException(CommonErrorCode.PROGRAM_DISTRIBUTION_INVALID_FILE);
-        }
-    }
-
-    private ExportContext buildContext(Long schoolYearId, Long semesterId, Long classroomId, Long subjectId) {
+    private ExportContext buildContext(Long schoolYearId, Long unitId, Long classroomId, Long subjectId) {
         SchoolYear schoolYear = schoolYearRepository.findById(schoolYearId)
                 .filter(item -> item.getDeletedFlag() == 0)
                 .orElseThrow(() -> new UserMessageException(CommonErrorCode.SCHOOL_YEAR_NOT_FOUND));
-        Semester semester = semesterRepository.findById(semesterId)
+        Unit unit = unitRepository.findById(unitId)
                 .filter(item -> item.getDeletedFlag() == 0)
-                .orElseThrow(() -> new UserMessageException(CommonErrorCode.SEMESTER_NOT_FOUND));
+                .orElseThrow(() -> new UserMessageException(CommonErrorCode.UNIT_NOT_FOUND));
         Classroom classroom = classroomRepository.findById(classroomId)
                 .filter(item -> item.getDeletedFlag() == 0)
                 .orElseThrow(() -> new UserMessageException(CommonErrorCode.CLASS_NOT_FOUND));
@@ -148,23 +136,28 @@ public class ProgramDistributionServiceImpl implements ProgramDistributionServic
                 .filter(item -> item.getDeletedFlag() == 0)
                 .orElseThrow(() -> new UserMessageException(CommonErrorCode.SUBJECT_NOT_FOUND));
 
-        if (!semester.getSchoolYear().getId().equals(schoolYearId)) {
-            throw new UserMessageException(CommonErrorCode.WEEK_CONFIG_SEMESTER_SCHOOL_YEAR_MISMATCH);
-        }
         if (!classroom.getSchoolYear().getId().equals(schoolYearId)) {
             throw new UserMessageException(CommonErrorCode.PROGRAM_DISTRIBUTION_CLASSROOM_SCHOOL_YEAR_MISMATCH);
+        }
+        if (!classroom.getUnit().getId().equals(unitId)) {
+            throw new UserMessageException(CommonErrorCode.PROGRAM_DISTRIBUTION_CLASSROOM_UNIT_MISMATCH);
         }
         if (!classroomSubjectRepository.existsByClassroomIdAndSubjectId(classroomId, subjectId)) {
             throw new UserMessageException(CommonErrorCode.PROGRAM_DISTRIBUTION_SUBJECT_NOT_ASSIGNED_TO_CLASSROOM);
         }
 
         List<WeekConfig> weekConfigs = weekConfigRepository
-                .findBySemesterIdAndDeletedFlagOrderByWeekNumberAscIdAsc(semesterId, 0);
+                .search(schoolYearId, null);
         if (weekConfigs.isEmpty()) {
             throw new UserMessageException(CommonErrorCode.PROGRAM_DISTRIBUTION_TEMPLATE_DATA_NOT_FOUND);
         }
 
-        return new ExportContext(schoolYear, semester, classroom, subject, weekConfigs);
+        Map<Integer, WeekConfig> weekConfigByWeekNumber = new HashMap<>();
+        for (WeekConfig weekConfig : weekConfigs) {
+            weekConfigByWeekNumber.put(weekConfig.getWeekNumber(), weekConfig);
+        }
+
+        return new ExportContext(schoolYear, unit, classroom, subject, weekConfigs, weekConfigByWeekNumber);
     }
 
     private List<TemplateRowData> buildTemplateRows(List<WeekConfig> weekConfigs,
@@ -192,19 +185,19 @@ public class ProgramDistributionServiceImpl implements ProgramDistributionServic
         CellStyle bodyStyle = createBodyStyle(workbook);
         CellStyle guideStyle = createGuideStyle(workbook);
 
-        // Lưu metadata: SchoolYearId, SemesterId, ClassroomId, SubjectId vào các cell ẩn (column G)
+        // Lưu metadata: SchoolYearId, ClassroomId, SubjectId vào các cell ẩn (column G)
         createCell(sheet.createRow(0), 6, "SchoolYearId", null);
         createCell(sheet.getRow(0), 7, context.schoolYear().getId(), bodyStyle);
-        
-        createCell(sheet.createRow(1), 6, "SemesterId", null);
-        createCell(sheet.getRow(1), 7, context.semester().getId(), bodyStyle);
-        
+
+        createCell(sheet.createRow(1), 6, "UnitId", null);
+        createCell(sheet.getRow(1), 7, context.unit().getId(), bodyStyle);
+
         createCell(sheet.createRow(2), 6, "ClassroomId", null);
         createCell(sheet.getRow(2), 7, context.classroom().getId(), bodyStyle);
-        
+
         createCell(sheet.createRow(3), 6, "SubjectId", null);
         createCell(sheet.getRow(3), 7, context.subject().getId(), bodyStyle);
-        
+
         // Ẩn column G và H (metadata)
         sheet.setColumnWidth(6, 0);
         sheet.setColumnWidth(7, 0);
@@ -212,7 +205,7 @@ public class ProgramDistributionServiceImpl implements ProgramDistributionServic
         // Dòng 1: Đơn vị
         sheet.addMergedRegion(new CellRangeAddress(0, 0, 0, 4));
         Row unitRow = sheet.getRow(0) != null ? sheet.getRow(0) : sheet.createRow(0);
-        createCell(unitRow, 0, context.classroom().getUnit().getName(), topStyle);
+        createCell(unitRow, 0, context.unit().getName(), topStyle);
 
         // Dòng 2: Trống
         if (sheet.getRow(1) == null) {
@@ -228,13 +221,13 @@ public class ProgramDistributionServiceImpl implements ProgramDistributionServic
         sheet.addMergedRegion(new CellRangeAddress(3, 3, 0, 4));
         Row subtitleRow = sheet.getRow(3) != null ? sheet.getRow(3) : sheet.createRow(3);
         String subtitle = context.subject().getName() + " • " + context.classroom().getName() + " • "
-                + context.semester().getName() + " • " + context.schoolYear().getName();
+                + context.schoolYear().getName();
         createCell(subtitleRow, 0, subtitle, subtitleStyle);
 
         // Dòng 5: Hướng dẫn sử dụng
         sheet.addMergedRegion(new CellRangeAddress(4, 4, 0, 4));
         Row guideRow = sheet.createRow(4);
-        createCell(guideRow, 0, "ℹ️ Hướng dẫn: Không sửa STT và Tuần • Tên bài học bắt buộc, tối đa 250 ký tự", guideStyle);
+        createCell(guideRow, 0, "Hướng dẫn: Không sửa tiêu đề của mẫu", guideStyle);
 
         // Header row
         Row headerRow = sheet.createRow(HEADER_ROW_INDEX);
@@ -268,11 +261,11 @@ public class ProgramDistributionServiceImpl implements ProgramDistributionServic
         }
 
         // Set column widths
-        sheet.setColumnWidth(0, 8 * 256);      // STT
-        sheet.setColumnWidth(1, 10 * 256);     // Tuần
-        sheet.setColumnWidth(2, 15 * 256);     // Tiết PPCT
-        sheet.setColumnWidth(3, 50 * 256);     // Tên bài học
-        sheet.setColumnWidth(4, 35 * 256);     // Ghi chú
+        sheet.setColumnWidth(0, 8 * 256); // STT
+        sheet.setColumnWidth(1, 10 * 256); // Tuần
+        sheet.setColumnWidth(2, 15 * 256); // Tiết PPCT
+        sheet.setColumnWidth(3, 50 * 256); // Tên bài học
+        sheet.setColumnWidth(4, 35 * 256); // Ghi chú
 
         // Freeze panes
         sheet.createFreezePane(0, HEADER_ROW_INDEX + 1);
@@ -406,19 +399,19 @@ public class ProgramDistributionServiceImpl implements ProgramDistributionServic
     }
 
     private List<ImportRowData> readImportRows(MultipartFile file, List<WeekConfig> weekConfigs,
-            Long schoolYearId, Long semesterId, Long classroomId, Long subjectId) {
+            Long schoolYearId, Long unitId, Long classroomId, Long subjectId) {
         Set<Integer> validWeekNumbers = weekConfigs.stream().map(WeekConfig::getWeekNumber).collect(HashSet::new,
                 Set::add, Set::addAll);
-        Set<Integer> uniqueOrderNumbers = new HashSet<>();
         List<ImportRowData> rows = new ArrayList<>();
         DataFormatter formatter = new DataFormatter();
+        Integer autoOrderNumber = 1;
 
         try (Workbook workbook = new XSSFWorkbook(file.getInputStream())) {
             Sheet sheet = workbook.getSheetAt(0);
-            
+
             // Validate metadata from file
-            validateFileMetadata(sheet, formatter, schoolYearId, semesterId, classroomId, subjectId);
-            
+            validateFileMetadata(sheet, formatter, schoolYearId, unitId, classroomId, subjectId);
+
             for (int i = DATA_START_ROW_INDEX; i <= sheet.getLastRowNum(); i++) {
                 Row row = sheet.getRow(i);
                 if (row == null || isBlankRow(row, formatter)) {
@@ -431,11 +424,14 @@ public class ProgramDistributionServiceImpl implements ProgramDistributionServic
                 String lessonName = readStringCell(row.getCell(3), formatter);
                 String note = readStringCell(row.getCell(4), formatter);
 
-                if (orderNumber == null || weekNumber == null) {
-                    throw new UserMessageException(CommonErrorCode.PROGRAM_DISTRIBUTION_INVALID_FILE);
+                // Auto-generate orderNumber if not provided
+                if (orderNumber == null) {
+                    orderNumber = autoOrderNumber;
                 }
-                if (!uniqueOrderNumbers.add(orderNumber)) {
-                    throw new UserMessageException(CommonErrorCode.PROGRAM_DISTRIBUTION_DUPLICATE_ORDER_NUMBER);
+                autoOrderNumber++;
+
+                if (weekNumber == null) {
+                    throw new UserMessageException(CommonErrorCode.PROGRAM_DISTRIBUTION_INVALID_FILE);
                 }
                 if (!validWeekNumbers.contains(weekNumber)) {
                     throw new UserMessageException(CommonErrorCode.PROGRAM_DISTRIBUTION_WEEK_NOT_FOUND);
@@ -458,7 +454,7 @@ public class ProgramDistributionServiceImpl implements ProgramDistributionServic
         return rows;
     }
 
-    private void validateFileMetadata(Sheet sheet, DataFormatter formatter, Long schoolYearId, Long semesterId,
+    private void validateFileMetadata(Sheet sheet, DataFormatter formatter, Long schoolYearId, Long unitId,
             Long classroomId, Long subjectId) {
         // Đọc metadata từ các cell ẩn (column G, H)
         Row row0 = sheet.getRow(0);
@@ -472,17 +468,19 @@ public class ProgramDistributionServiceImpl implements ProgramDistributionServic
 
         try {
             Long fileSchoolYearId = readLongCell(row0.getCell(7), formatter);
-            Long fileSemesterId = readLongCell(row1.getCell(7), formatter);
+            Long fileUnitId = readLongCell(row1.getCell(7), formatter);
             Long fileClassroomId = readLongCell(row2.getCell(7), formatter);
             Long fileSubjectId = readLongCell(row3.getCell(7), formatter);
 
-            if (fileSchoolYearId == null || fileSemesterId == null || fileClassroomId == null || fileSubjectId == null) {
+            if (fileSchoolYearId == null || fileUnitId == null || fileClassroomId == null || fileSubjectId == null) {
                 throw new UserMessageException(CommonErrorCode.PROGRAM_DISTRIBUTION_INVALID_FILE);
             }
 
             // So sánh với parameters
-            if (!fileSchoolYearId.equals(schoolYearId) || !fileSemesterId.equals(semesterId)
-                    || !fileClassroomId.equals(classroomId) || !fileSubjectId.equals(subjectId)) {
+            if (!fileSchoolYearId.equals(schoolYearId)
+                    || !fileUnitId.equals(unitId)
+                    || !fileClassroomId.equals(classroomId)
+                    || !fileSubjectId.equals(subjectId)) {
                 throw new UserMessageException(CommonErrorCode.PROGRAM_DISTRIBUTION_INVALID_FILE);
             }
         } catch (UserMessageException ex) {
@@ -552,48 +550,105 @@ public class ProgramDistributionServiceImpl implements ProgramDistributionServic
 
     private void replaceProgramDistributions(ExportContext context, List<ImportRowData> importedRows) {
         List<ProgramDistribution> existingItems = programDistributionRepository
-                .findBySchoolYearIdAndSemesterIdAndClassroomIdAndSubjectIdAndDeletedFlagOrderByOrderNumberAscIdAsc(
-                        context.schoolYear().getId(), context.semester().getId(), context.classroom().getId(),
+                .findBySchoolYearIdAndUnitIdAndClassroomIdAndSubjectIdAndDeletedFlagOrderByOrderNumberAscIdAsc(
+                        context.schoolYear().getId(), context.unit().getId(), context.classroom().getId(),
                         context.subject().getId(), 0);
 
-        for (ProgramDistribution existingItem : existingItems) {
-            existingItem.setDeletedFlag(1);
-            existingItem.setDeletedAt(LocalDateTime.now());
-            existingItem.setDeletedBy(getCurrentUsername());
-            existingItem.setUpdatedBy(getCurrentUsername());
-        }
-        if (!existingItems.isEmpty()) {
-            programDistributionRepository.saveAll(existingItems);
+        // Map existing items by key (weekNumber:orderNumber) to try to update in-place
+        Map<String, ProgramDistribution> existingMap = new HashMap<>();
+        for (ProgramDistribution e : existingItems) {
+            String key = (e.getWeekNumber() == null ? "" : e.getWeekNumber().toString()) + ":"
+                    + (e.getOrderNumber() == null ? "" : e.getOrderNumber().toString());
+            existingMap.put(key, e);
         }
 
-        List<ProgramDistribution> newItems = new ArrayList<>();
+        List<ProgramDistribution> toSave = new ArrayList<>();
+        Set<Long> matchedIds = new HashSet<>();
+
         for (ImportRowData importedRow : importedRows) {
-            ProgramDistribution item = new ProgramDistribution();
-            item.setSchoolYear(context.schoolYear());
-            item.setSemester(context.semester());
-            item.setClassroom(context.classroom());
-            item.setSubject(context.subject());
-            item.setOrderNumber(importedRow.orderNumber());
-            item.setWeekNumber(importedRow.weekNumber());
-            item.setPeriodPpct(importedRow.periodPpct());
-            item.setLessonName(importedRow.lessonName());
-            item.setNote(importedRow.note());
-            item.setCreatedBy(getCurrentUsername());
-            newItems.add(item);
+            if (context.weekConfigByWeekNumber().get(importedRow.weekNumber()) == null) {
+                throw new UserMessageException(CommonErrorCode.PROGRAM_DISTRIBUTION_WEEK_NOT_FOUND);
+            }
+
+            String key = (importedRow.weekNumber() == null ? "" : importedRow.weekNumber().toString()) + ":"
+                    + (importedRow.orderNumber() == null ? "" : importedRow.orderNumber().toString());
+
+            ProgramDistribution existing = existingMap.get(key);
+            if (existing != null) {
+                // update existing record in-place to preserve its id
+                existing.setWeekNumber(importedRow.weekNumber());
+                existing.setOrderNumber(importedRow.orderNumber());
+                existing.setPeriodPpct(importedRow.periodPpct());
+                existing.setLessonName(importedRow.lessonName());
+                existing.setNote(importedRow.note());
+                existing.setDeletedFlag(0);
+                existing.setUpdatedBy(getCurrentUsername());
+                existing.setUpdatedAt(LocalDateTime.now());
+                toSave.add(existing);
+                matchedIds.add(existing.getId());
+            } else {
+                // create new
+                ProgramDistribution item = new ProgramDistribution();
+                item.setSchoolYear(context.schoolYear());
+                item.setUnit(context.unit());
+                item.setClassroom(context.classroom());
+                item.setSubject(context.subject());
+                item.setOrderNumber(importedRow.orderNumber());
+                item.setWeekNumber(importedRow.weekNumber());
+                item.setPeriodPpct(importedRow.periodPpct());
+                item.setLessonName(importedRow.lessonName());
+                item.setNote(importedRow.note());
+                item.setCreatedBy(getCurrentUsername());
+                toSave.add(item);
+            }
         }
 
-        programDistributionRepository.saveAll(newItems);
+        // Soft-delete existing items that were not matched
+        for (ProgramDistribution existingItem : existingItems) {
+            if (existingItem.getId() != null && !matchedIds.contains(existingItem.getId())) {
+                existingItem.setDeletedFlag(1);
+                existingItem.setDeletedAt(LocalDateTime.now());
+                existingItem.setDeletedBy(getCurrentUsername());
+                existingItem.setUpdatedBy(getCurrentUsername());
+                toSave.add(existingItem);
+            }
+        }
+
+        if (!toSave.isEmpty()) {
+            programDistributionRepository.saveAll(toSave);
+        }
     }
 
     private ProgramDistributionItemDto toDto(ProgramDistribution item) {
         return ProgramDistributionItemDto.builder()
                 .id(item.getId())
-                .schoolYearId(item.getSchoolYear().getId())
-                .semesterId(item.getSemester().getId())
-                .classroomId(item.getClassroom().getId())
-                .subjectId(item.getSubject().getId())
+                .schoolYearName(item.getSchoolYear().getName())
+                .unitName(item.getUnit().getName())
+                .classroomName(item.getClassroom().getName())
+                .subjectName(item.getSubject().getName())
                 .orderNumber(item.getOrderNumber())
                 .weekNumber(item.getWeekNumber())
+                .weekName("Tuần " + item.getWeekNumber())
+                .periodPpct(item.getPeriodPpct())
+                .lessonName(item.getLessonName())
+                .note(item.getNote())
+                .build();
+    }
+
+    private ProgramDistributionDetailDto toDetailDto(ProgramDistribution item) {
+        return ProgramDistributionDetailDto.builder()
+                .id(item.getId())
+                .schoolYearId(item.getSchoolYear().getId())
+                .schoolYearName(item.getSchoolYear().getName())
+                .unitId(item.getUnit().getId())
+                .unitName(item.getUnit().getName())
+                .classroomId(item.getClassroom().getId())
+                .classroomName(item.getClassroom().getName())
+                .subjectId(item.getSubject().getId())
+                .subjectName(item.getSubject().getName())
+                .orderNumber(item.getOrderNumber())
+                .weekNumber(item.getWeekNumber())
+                .weekName("Tuần " + item.getWeekNumber())
                 .periodPpct(item.getPeriodPpct())
                 .lessonName(item.getLessonName())
                 .note(item.getNote())
@@ -614,19 +669,135 @@ public class ProgramDistributionServiceImpl implements ProgramDistributionServic
 
     @Override
     @Transactional(readOnly = true)
-    public List<ProgramDistributionItemDto> findList(Long schoolYearId, Long semesterId, Long classroomId,
-            Long subjectId) {
-        buildContext(schoolYearId, semesterId, classroomId, subjectId);
-        
-        List<ProgramDistribution> items = programDistributionRepository
-                .findBySchoolYearIdAndSemesterIdAndClassroomIdAndSubjectIdAndDeletedFlagOrderByOrderNumberAscIdAsc(
-                        schoolYearId, semesterId, classroomId, subjectId, 0);
-        
-        return items.stream().map(this::toDto).toList();
+    public PageResponseDto<ProgramDistributionItemDto, ProgramDistributionFilterDto> search(
+            PageRequestDto<ProgramDistributionFilterDto> request) {
+        ProgramDistributionFilterDto filter = request.getFilter() != null ? request.getFilter()
+                : new ProgramDistributionFilterDto();
+        Integer pageNow = request.getPageNow() != null && request.getPageNow() > 0 ? request.getPageNow() : 1;
+        Integer pageSize = request.getPageSize() != null && request.getPageSize() > 0 ? request.getPageSize() : 10;
+
+        Page<ProgramDistribution> page = programDistributionRepository.findAll(
+                programDistributionSpecification.buildSpecification(
+                        filter.getSchoolYearId(),
+                        filter.getUnitId(),
+                        filter.getClassroomId(),
+                        filter.getSubjectId()),
+                PageRequest.of(
+                        pageNow - 1,
+                        pageSize,
+                        Sort.by(
+                                Sort.Order.asc("orderNumber"),
+                                Sort.Order.asc("id"))));
+
+        return PageResponseDto.<ProgramDistributionItemDto, ProgramDistributionFilterDto>builder()
+                .pageNow(pageNow)
+                .pageSize(pageSize)
+                .pageTotal((int) Math.ceil((double) page.getTotalElements() / pageSize))
+                .recordTotal(page.getTotalElements())
+                .filter(filter)
+                .items(page.getContent().stream().map(this::toDto).toList())
+                .build();
     }
 
-    private record ExportContext(SchoolYear schoolYear, Semester semester, Classroom classroom, Subject subject,
-            List<WeekConfig> weekConfigs) {
+    @Override
+    @Transactional
+    public ProgramDistributionDetailDto create(ProgramDistributionCreateRequest request) {
+        // Validate and fetch related entities
+        SchoolYear schoolYear = schoolYearRepository.findById(request.getSchoolYearId())
+                .orElseThrow(() -> new UserMessageException(CommonErrorCode.SCHOOL_YEAR_NOT_FOUND));
+
+        Unit unit = unitRepository.findById(request.getUnitId())
+                .orElseThrow(() -> new UserMessageException(CommonErrorCode.UNIT_NOT_FOUND));
+
+        Classroom classroom = classroomRepository.findById(request.getClassroomId())
+                .orElseThrow(() -> new UserMessageException(CommonErrorCode.CLASS_NOT_FOUND));
+
+        Subject subject = subjectRepository.findById(request.getSubjectId())
+                .orElseThrow(() -> new UserMessageException(CommonErrorCode.SUBJECT_NOT_FOUND));
+
+        // Validate classroom belongs to unit and school year
+        if (!classroom.getUnit().getId().equals(unit.getId())) {
+            throw new UserMessageException(CommonErrorCode.PROGRAM_DISTRIBUTION_CLASSROOM_UNIT_MISMATCH);
+        }
+        if (!classroom.getSchoolYear().getId().equals(schoolYear.getId())) {
+            throw new UserMessageException(CommonErrorCode.PROGRAM_DISTRIBUTION_CLASSROOM_SCHOOL_YEAR_MISMATCH);
+        }
+
+        // Validate subject is assigned to classroom
+        boolean isSubjectAssigned = classroomSubjectRepository.existsByClassroomIdAndSubjectId(
+                classroom.getId(), subject.getId());
+        if (!isSubjectAssigned) {
+            throw new UserMessageException(CommonErrorCode.PROGRAM_DISTRIBUTION_SUBJECT_NOT_ASSIGNED_TO_CLASSROOM);
+        }
+
+        // Validate week exists
+        WeekConfig weekConfig = weekConfigRepository.findBySchoolYearIdAndWeekNumber(
+                schoolYear.getId(), request.getWeekNumber())
+                .orElseThrow(() -> new UserMessageException(CommonErrorCode.PROGRAM_DISTRIBUTION_WEEK_NOT_FOUND));
+
+        ProgramDistribution entity = new ProgramDistribution();
+        entity.setSchoolYear(schoolYear);
+        entity.setUnit(unit);
+        entity.setClassroom(classroom);
+        entity.setSubject(subject);
+        entity.setOrderNumber(request.getOrderNumber());
+        entity.setWeekNumber(request.getWeekNumber());
+        entity.setPeriodPpct(request.getPeriodPpct());
+        entity.setLessonName(request.getLessonName());
+        entity.setNote(request.getNote());
+        entity.setCreatedBy(SecurityUtils.getCurrentUsername());
+
+        ProgramDistribution saved = programDistributionRepository.save(entity);
+        return toDetailDto(saved);
+    }
+
+    @Override
+    public ProgramDistributionDetailDto getById(Long id) {
+        ProgramDistribution entity = programDistributionRepository.findById(id)
+                .orElseThrow(() -> new UserMessageException(CommonErrorCode.RECORD_NOT_FOUND));
+        return toDetailDto(entity);
+    }
+
+    @Override
+    @Transactional
+    public ProgramDistributionDetailDto update(Long id, ProgramDistributionUpdateRequest request) {
+        ProgramDistribution entity = programDistributionRepository.findById(id)
+                .orElseThrow(() -> new UserMessageException(CommonErrorCode.RECORD_NOT_FOUND));
+
+        // Validate weekNumber exists
+        WeekConfig weekConfig = weekConfigRepository.findBySchoolYearIdAndWeekNumber(
+                entity.getSchoolYear().getId(), request.getWeekNumber())
+                .orElseThrow(
+                        () -> new UserMessageException(CommonErrorCode.INVALID_REQUEST));
+
+        entity.setWeekNumber(request.getWeekNumber());
+        if (request.getOrderNumber() != null) {
+            entity.setOrderNumber(request.getOrderNumber());
+        }
+        entity.setPeriodPpct(request.getPeriodPpct());
+        entity.setLessonName(request.getLessonName());
+        entity.setNote(request.getNote());
+        entity.setUpdatedBy(SecurityUtils.getCurrentUsername());
+        entity.setUpdatedAt(LocalDateTime.now());
+
+        ProgramDistribution saved = programDistributionRepository.save(entity);
+        return toDetailDto(saved);
+    }
+
+    @Override
+    @Transactional
+    public void delete(Long id) {
+        ProgramDistribution entity = programDistributionRepository.findById(id)
+                .orElseThrow(() -> new UserMessageException(CommonErrorCode.RECORD_NOT_FOUND));
+        entity.setDeletedFlag(1);
+        entity.setDeletedAt(LocalDateTime.now());
+        entity.setDeletedBy(SecurityUtils.getCurrentUsername());
+
+        programDistributionRepository.save(entity);
+    }
+
+    private record ExportContext(SchoolYear schoolYear, Unit unit, Classroom classroom, Subject subject,
+            List<WeekConfig> weekConfigs, Map<Integer, WeekConfig> weekConfigByWeekNumber) {
     }
 
     private record TemplateRowData(Integer orderNumber, Integer weekNumber, String periodPpct, String lessonName,

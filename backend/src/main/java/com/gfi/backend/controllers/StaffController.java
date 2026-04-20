@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.gfi.backend.controllers.annotations.DataScoped;
 import com.gfi.backend.models.dtos.common.PageRequestDto;
 import com.gfi.backend.models.dtos.common.PageResponseDto;
 import com.gfi.backend.models.dtos.staff.StaffCreateRequest;
@@ -20,6 +21,7 @@ import com.gfi.backend.models.dtos.staff.StaffDetailDto;
 import com.gfi.backend.models.dtos.staff.StaffFilterDto;
 import com.gfi.backend.models.dtos.staff.StaffItemDto;
 import com.gfi.backend.models.dtos.staff.StaffUpdateRequest;
+import com.gfi.backend.models.enums.ActionType;
 import com.gfi.backend.models.global.ApiResult;
 import com.gfi.backend.services.interfaces.StaffCodeGeneratorService;
 import com.gfi.backend.services.interfaces.StaffService;
@@ -32,13 +34,14 @@ import lombok.RequiredArgsConstructor;
 @RestController
 @RequestMapping("/api/staffs")
 @RequiredArgsConstructor
-@Tag(name = "Quản lý cán bộ/giảng viên- Staff")
+@Tag(name = "Quản lý cán bộ/giảng viên - Staff")
 public class StaffController extends ApiBaseController {
 
     private final StaffService staffService;
     private final StaffCodeGeneratorService staffCodeGeneratorService;
 
     @PostMapping("/search")
+    @DataScoped(feature = "STAFF_PROFILE", action = ActionType.VIEW)
     @Operation(summary = "Danh sách cán bộ", description = "Lấy danh sách cán bộ có phân trang và filter.")
     public ResponseEntity<ApiResult<PageResponseDto<StaffItemDto, StaffFilterDto>>> search(
             @RequestBody(required = false) PageRequestDto<StaffFilterDto> request) {
@@ -48,6 +51,7 @@ public class StaffController extends ApiBaseController {
     }
 
     @GetMapping("/generate-code")
+    @DataScoped(feature = "STAFF_PROFILE", action = ActionType.ADD)
     @Operation(summary = "Sinh mã cán bộ", description = "Sinh mã cán bộ tự động theo format: CB-{UNIT_CODE}-{YEAR}-{STT}.")
     public ResponseEntity<ApiResult<String>> generateStaffCode(@RequestParam Long unitId) {
         return executeApiResult(() -> {
@@ -58,6 +62,7 @@ public class StaffController extends ApiBaseController {
     }
 
     @GetMapping("/{id}")
+    @DataScoped(feature = "STAFF_PROFILE", action = ActionType.VIEW)
     @Operation(summary = "Chi tiết cán bộ", description = "Lấy thông tin chi tiết cán bộ theo id.")
     public ResponseEntity<ApiResult<StaffDetailDto>> getById(@PathVariable Long id) {
         return executeApiResult(
@@ -65,6 +70,7 @@ public class StaffController extends ApiBaseController {
     }
 
     @PostMapping
+    @DataScoped(feature = "STAFF_PROFILE", action = ActionType.ADD)
     @Operation(summary = "Thêm cán bộ", description = "Tạo mới cán bộ.")
     public ResponseEntity<ApiResult<StaffDetailDto>> create(@Valid @RequestBody StaffCreateRequest request) {
         return executeApiResult(
@@ -72,6 +78,7 @@ public class StaffController extends ApiBaseController {
     }
 
     @PutMapping("/{id}")
+    @DataScoped(feature = "STAFF_PROFILE", action = ActionType.EDIT)
     @Operation(summary = "Sửa cán bộ", description = "Cập nhật thông tin cán bộ.")
     public ResponseEntity<ApiResult<StaffDetailDto>> update(@PathVariable Long id,
             @Valid @RequestBody StaffUpdateRequest request) {
@@ -80,6 +87,7 @@ public class StaffController extends ApiBaseController {
     }
 
     @DeleteMapping("/{id}")
+    @DataScoped(feature = "STAFF_PROFILE", action = ActionType.DELETE)
     @Operation(summary = "Xóa cán bộ", description = "Xóa cán bộ theo id.")
     public ResponseEntity<ApiResult<String>> delete(@PathVariable Long id) {
         return executeApiResult(() -> {

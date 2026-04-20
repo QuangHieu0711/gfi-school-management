@@ -45,7 +45,7 @@ export class DonViService {
 
   getCreateUserUnitOptions() {
     return this.http.get<IResponse<DonViOptionResponse[]>>(
-      `${this.baseUrl}/${DON_VI_API_ENDPOINT.OPTIONS}`
+      `${this.baseUrl}/${DON_VI_API_ENDPOINT.USER_CREATION_OPTIONS}`
     );
   }
 

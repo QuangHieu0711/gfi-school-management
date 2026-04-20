@@ -2,6 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
+import { ICurrentUser, IMenuPermission } from '@model/auth.model';
 import { NAVIGATOR_ENDPOINT } from '@constant/navigator';
 import { MATERIAL_MODULE } from '@modules';
 import {
@@ -156,17 +157,14 @@ export class LoginComponent {
     this.showPassword = !this.showPassword;
   }
 
-  private getFirstAccessibleRoute(user?: {
-    role?: { rules?: Array<{ menuCode?: string; isView?: number }> };
-    permissions?: {
-      menus?: any[];
-    };
-  }): string[] {
+  private getFirstAccessibleRoute(
+    user?: Pick<ICurrentUser, 'role' | 'permissions'>
+  ): string[] {
     const userRules = user?.role?.rules ?? [];
     const visibleMenuCodes = new Set(
       this.flattenMenus(user?.permissions?.menus ?? [])
-        .filter((menu: any) => Number(menu?.actions?.isView ?? 0) === 1)
-        .map((menu: any) => (menu?.menuCode ?? '').trim().toUpperCase())
+        .filter((menu) => Number(menu.actions?.isView ?? 0) === 1)
+        .map((menu) => (menu.menuCode ?? '').trim().toUpperCase())
     );
     const firstAllowed = this.defaultRedirects.find(
       ({ menuCode }) =>
@@ -180,14 +178,22 @@ export class LoginComponent {
     );
 
     return firstAllowed?.commands
-      ? [...firstAllowed.commands]
+      ? this.normalizeRouteCommands(firstAllowed.commands)
       : [NAVIGATOR_ENDPOINT.ACCESS_DENIED];
   }
 
-  private flattenMenus(menus: any[]): any[] {
-    return (menus ?? []).flatMap((menu: any) => [
+  private normalizeRouteCommands(commands: readonly string[]): string[] {
+    return commands.flatMap((command) =>
+      String(command)
+        .split('/')
+        .filter((segment) => segment.trim() !== '')
+    );
+  }
+
+  private flattenMenus(menus: IMenuPermission[]): IMenuPermission[] {
+    return (menus ?? []).flatMap((menu) => [
       menu,
-      ...this.flattenMenus(menu?.children ?? []),
+      ...this.flattenMenus(menu.children ?? []),
     ]);
   }
 }

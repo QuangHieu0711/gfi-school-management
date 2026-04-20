@@ -7,7 +7,7 @@
         <span class="block max-w-full truncate">Kết nạp dữ liệu</span>
       </h6>
       <button
-        color="info"
+        color="primary"
         matButton="text"
         (click)="downloadTemplate()"
         [disabled]="isDownloading || isSubmitting">
@@ -24,9 +24,6 @@
     <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
       <app-select-control
         [item]="findFormControl($formItem, key.SCHOOL_YEAR_ID)"
-        [form]="form"></app-select-control>
-      <app-select-control
-        [item]="findFormControl($formItem, key.SEMESTER_ID)"
         [form]="form"></app-select-control>
       <app-select-control
         [item]="findFormControl($formItem, key.CLASSROOM_ID)"
@@ -46,15 +43,15 @@
 
 <ng-template #Actions>
   <button
-    color="info"
+    color="primary"
     matButton="outlined"
     mat-dialog-close
     [disabled]="isSubmitting || isDownloading">
-    Thoát
+    Hủy
   </button>
   <button
     type="button"
-    color="info"
+    color="primary"
     matButton="filled"
     (click)="formTpl.submit()"
     [disabled]="isSubmitting || isDownloading"

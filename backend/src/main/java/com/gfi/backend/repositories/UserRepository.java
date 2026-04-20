@@ -84,10 +84,18 @@ public interface UserRepository extends JpaRepository<User, Long>, JpaSpecificat
     Optional<User> findByIdAndUnitIdIn(@Param("id") Long id, @Param("unitIds") List<Long> unitIds);
     
     /**
-     * Find user by username with role and staff eagerly fetched
-     * ✅ NEW: Must get role + staff without lazy loading for auth flow
+     * Find user by username with role, staff, and unit eagerly fetched.
+     * Auth flow reads profile fields via user.staff and user.staff.unit, so all
+     * of them must be initialized before leaving repository layer.
      */
-    @Query("SELECT u FROM User u LEFT JOIN FETCH u.role LEFT JOIN FETCH u.staff WHERE u.username = :username AND u.deletedFlag = 0")
+    @Query("""
+            SELECT u
+            FROM User u
+            LEFT JOIN FETCH u.role
+            LEFT JOIN FETCH u.staff s
+            LEFT JOIN FETCH s.unit
+            WHERE u.username = :username AND u.deletedFlag = 0
+            """)
     Optional<User> findByUsernameWithStaffAndRole(@Param("username") String username);
     
     /**
