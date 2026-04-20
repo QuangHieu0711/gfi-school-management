@@ -94,6 +94,7 @@
                         <div class="info-item"><span class="info-label">Nơi cấp CCCD</span><span class="info-value">{{ getValue(staff.cccdIssuePlace) }}</span></div>
                         <div class="info-item"><span class="info-label">Bảo hiểm XH</span><span class="info-value">{{ getValue(staff.socialInsuranceNo) }}</span></div>
                         <div class="info-item"><span class="info-label">Sức khỏe</span><span class="info-value">{{ getValue(staff.healthStatus) }}</span></div>
+                        <div class="info-item"><span class="info-label">Khối</span><span class="info-value">{{ getValue(staff.gradeName) }}</span></div>
                         <div class="info-item"><span class="info-label">Trạng thái</span><span class="info-value">{{ getStatusLabel(staff.status) }}</span></div>
                         <div class="info-item full"><span class="info-label">Ghi chú</span><span class="info-value">{{ getValue(staff.note) }}</span></div>
                       </div>
@@ -264,6 +265,7 @@
                         <app-text-control [item]="findFormControl(profileItems, 'cccdIssuePlace')" [form]="form"></app-text-control>
                         <app-text-control [item]="findFormControl(profileItems, 'socialInsuranceNo')" [form]="form"></app-text-control>
                         <app-text-control [item]="findFormControl(profileItems, 'healthStatus')" [form]="form"></app-text-control>
+                        <app-select-control [item]="findFormControl(profileItems, 'gradeId')" [form]="form"></app-select-control>
                         <app-select-control [item]="findFormControl(profileItems, 'status')" [form]="form"></app-select-control>
 
                         <!-- Account Checkbox -->

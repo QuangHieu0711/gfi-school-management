@@ -10,6 +10,7 @@ public class StaffUpdateRequest {
     private String fullName;
 
     private Long unitId;
+    private Long gradeId;
     private String aliasName;
     private String identityCode;
     private String gender;

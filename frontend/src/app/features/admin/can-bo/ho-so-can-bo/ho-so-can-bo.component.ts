@@ -28,6 +28,7 @@ import { DonViService } from '@app/service/admin/don-vi.service';
 import { StaffTrainingService } from '@app/service/admin/dao-tao-can-bo.service';
 import { StaffForeignLanguageService } from '@app/service/admin/thong-tin-ngoai-ngu-can-bo.service';
 import { StaffJobHistoryService } from '@app/service/admin/qua-trinh-cong-tac.service';
+import { KhoiService } from '@app/service/admin/khoi.service';
 import { DAN_TOC_OPTIONS } from '@app/model/admin/dan-toc.model';
 import {
   CAN_BO_GENDER_OPTIONS,
@@ -56,7 +57,7 @@ import {
 import { DialogThongTinDaoTaoComponent } from './thong-tin-dao-tao/dialog-thong-tin-dao-tao.component';
 import { DialogThongTinNgoaiNguComponent } from './thong-tin-ngoai-ngu/dialog-thong-tin-ngoai-ngu.component';
 import { DialogQuaTrinhCongTacComponent } from './qua-trinh-cong-tac/dialog-qua-trinh-cong-tac.component';
-import { DialogPhanCongGiangDayComponent } from '../phan-cong-giang-day/dialog-phan-cong-giang-day.component';
+import { DialogPhanCongGiangDayComponent } from '../phan-cong-giang-day/dialog-phan-cong-giang-day/dialog-phan-cong-giang-day.component';
 import { PhanCongGiangDayService } from '@app/service/admin/phan-cong-giang-day.service';
 import { PhanCongGiangDayResponse } from '@app/model/admin/phan-cong-giang-day.model';
 import {
@@ -122,6 +123,7 @@ export class HoSoCanBoComponent extends ComponentBaseAbstract {
   staff: CanBoDetailResponse = { ...CAN_BO_PROFILE_FALLBACK };
   hasExistingUserAccount = false;
   unitOptions: IOptions[] = [];
+  gradeOptions: IOptions[] = [];
   profileItems: FormType[] = [];
 
   // Tables
@@ -170,6 +172,7 @@ export class HoSoCanBoComponent extends ComponentBaseAbstract {
     private readonly locationService: Location,
     private readonly canBoService: CanBoService,
     private readonly donViService: DonViService,
+    private readonly khoiService: KhoiService,
     private readonly staffJobHistoryService: StaffJobHistoryService,
     private readonly staffTrainingService: StaffTrainingService,
     private readonly staffForeignLanguageService: StaffForeignLanguageService,
@@ -214,6 +217,7 @@ export class HoSoCanBoComponent extends ComponentBaseAbstract {
     this.initForeignLanguageColumns();
     this.initTeachingAssignmentColumns();
     this.loadUnitOptions();
+    this.loadGradeOptions();
     this.loadCreateUserRoleOptions();
     this.loadProvinces();
     this.bindGenerateCode();
@@ -1069,6 +1073,14 @@ export class HoSoCanBoComponent extends ComponentBaseAbstract {
         required: false,
       }),
       SELECT_CONTROL({
+        controlName: 'gradeId',
+        label: 'Khối',
+        placeholder: 'Khối',
+        required: false,
+        clearable: true,
+        listOption: [],
+      }),
+      SELECT_CONTROL({
         controlName: 'status',
         label: 'Trạng thái',
         placeholder: 'Trạng thái',
@@ -1796,6 +1808,20 @@ export class HoSoCanBoComponent extends ComponentBaseAbstract {
     });
   }
 
+  private loadGradeOptions(): void {
+    this.khoiService.getOptions().subscribe({
+      next: ({ data }) => {
+        this.gradeOptions = (data ?? []).map((i) => ({
+          value: i.id,
+          label: i.name,
+        }));
+
+        this.findFormControl(this.profileItems, 'gradeId').options =
+          this.gradeOptions;
+      },
+    });
+  }
+
   private loadCreateUserRoleOptions(): void {
     this.nguoiDungService.getCreateUserRoleOptions().subscribe({
       next: ({ data }) => {
@@ -1875,6 +1901,14 @@ export class HoSoCanBoComponent extends ComponentBaseAbstract {
     );
   }
 
+  private getGradeLabel(gradeId?: string | number | null): string {
+    if (gradeId === null || gradeId === undefined || gradeId === '') return '';
+    return (
+      this.gradeOptions.find((o) => `${o.value}` === `${gradeId}`)?.label ??
+      `${gradeId}`
+    );
+  }
+
   // ════════════════════════════════════════
   //  Form patching / payload
   // ════════════════════════════════════════
@@ -1901,6 +1935,7 @@ export class HoSoCanBoComponent extends ComponentBaseAbstract {
         phone: d.phone ?? '',
         email: d.email ?? '',
         healthStatus: d.healthStatus ?? '',
+        gradeId: d.gradeId ?? '',
         socialInsuranceNo: d.socialInsuranceNo ?? '',
         status: d.status ?? 'ACTIVE',
         note: d.note ?? '',
@@ -2015,6 +2050,7 @@ export class HoSoCanBoComponent extends ComponentBaseAbstract {
       phone: v.phone ?? '',
       email: v.email ?? '',
       healthStatus: v.healthStatus ?? '',
+      gradeId: v.gradeId || null,
       socialInsuranceNo: v.socialInsuranceNo ?? '',
       // Note: form doesn't have avatarFileId yet, maybe sending avatarUrl is acceptable or
       // the backend handles both. I'll include avatarFileId if it exists in data.
@@ -2108,6 +2144,7 @@ export class HoSoCanBoComponent extends ComponentBaseAbstract {
       gender: this.normalizeGenderValue(data.gender),
       dateOfBirth: this.formatDate(data.dateOfBirth),
       cccdIssueDate: this.formatDate(data.cccdIssueDate),
+      gradeName: data.gradeName ?? this.getGradeLabel(data.gradeId),
     };
   }
 

@@ -25,7 +25,7 @@ import { LopService } from '@app/service/admin/lop.service';
 import { MonHocService } from '@app/service/admin/mon-hoc.service';
 import { NamHocService } from '@app/service/admin/nam-hoc.service';
 import { PhanCongGiangDayService } from '@app/service/admin/phan-cong-giang-day.service';
-import { DialogPhanCongGiangDayComponent } from './dialog-phan-cong-giang-day.component';
+import { DialogPhanCongGiangDayComponent } from './dialog-phan-cong-giang-day/dialog-phan-cong-giang-day.component';
 
 @Component({
   selector: 'phan-cong-giang-day-page',

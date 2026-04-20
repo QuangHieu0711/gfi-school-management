@@ -33,7 +33,11 @@ export class LopService {
     });
   }
 
-  getOptions(params?: { unitId?: number | string; gradeLevelId?: number | string; schoolYearId?: number | string; }) {
+  getOptions(params?: {
+    unitId?: number | string;
+    gradeLevelId?: number | string;
+    schoolYearId?: number | string;
+  }) {
     const queryParams: Record<string, string | number> = {};
     if (params?.unitId) queryParams['unitId'] = params.unitId;
     if (params?.gradeLevelId) queryParams['gradeLevelId'] = params.gradeLevelId;
@@ -52,9 +56,13 @@ export class LopService {
   }
 
   update(id: string | number, payload: LopFormRequest) {
-    return this.http.put<IResponse<LopResponse>>(`${this.baseUrl}/${id}`, payload, {
-      context: this.silentContext,
-    });
+    return this.http.put<IResponse<LopResponse>>(
+      `${this.baseUrl}/${id}`,
+      payload,
+      {
+        context: this.silentContext,
+      }
+    );
   }
 
   delete(id: string | number) {

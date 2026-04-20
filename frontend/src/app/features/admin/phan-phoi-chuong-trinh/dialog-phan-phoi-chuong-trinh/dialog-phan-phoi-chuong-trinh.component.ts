@@ -76,6 +76,7 @@ export class DialogPhanPhoiChuongTrinhComponent extends ComponentBaseAbstract {
 
     if (this.data.data) {
       this.patchFormFromResponse(this.data.data);
+      this.ensureClassOption(this.data.data);
     } else if (
       this.data.type !== this.TYPE_FORM.CREATE &&
       this.data.id != null
@@ -84,14 +85,20 @@ export class DialogPhanPhoiChuongTrinhComponent extends ComponentBaseAbstract {
         .getById(this.data.id)
         .subscribe(({ data }) => {
           this.patchFormFromResponse(data);
+          this.ensureClassOption(data);
         });
+    } else {
+      this.loadClassOptionsForCurrentUnit();
     }
   }
 
   onSubmit(): void {
     const unitId = this.getCurrentUnitId();
     if (unitId == null) {
-      this.toastr.warning('Không xác định được đơn vị từ tài khoản đăng nhập', 'Cảnh báo');
+      this.toastr.warning(
+        'Không xác định được đơn vị từ tài khoản đăng nhập',
+        'Cảnh báo'
+      );
       return;
     }
 
@@ -110,28 +117,25 @@ export class DialogPhanPhoiChuongTrinhComponent extends ComponentBaseAbstract {
       note: value[this.key.NOTE] ?? '',
     };
 
-    this.phanPhoiChuongTrinhService
-      .create(payload)
-      .subscribe({
+    this.phanPhoiChuongTrinhService.create(payload).subscribe({
       next: () => {
         this.toastr.success('Lưu thành công', 'Thành công');
         this.dialogRef.close(true);
       },
       error: (error) => {
         this.toastr.error(
-          error?.error?.userMessage ??
-            error?.error?.message ??
-            'Lưu thất bại',
+          error?.error?.userMessage ?? error?.error?.message ?? 'Lưu thất bại',
           'Thất bại'
         );
       },
-      });
+    });
   }
 
   switchUpdate(): void {
     this.form.enable();
     this.title = 'Chỉnh sửa phân phối chương trình';
     this.data.type = this.TYPE_FORM.UPDATE;
+    this.loadClassOptionsForCurrentUnit();
   }
 
   private loadOptions(): void {
@@ -144,19 +148,6 @@ export class DialogPhanPhoiChuongTrinhComponent extends ComponentBaseAbstract {
       }));
     });
 
-    const unitId = this.getCurrentUnitId();
-    if (unitId) {
-      this.loadClassOptions(unitId);
-    } else {
-      // Nếu chưa có unitId, đợi currentUser thay đổi
-      this.authService.currentUser$.subscribe(() => {
-        const updatedUnitId = this.getCurrentUnitId();
-        if (updatedUnitId) {
-          this.loadClassOptions(updatedUnitId);
-        }
-      });
-    }
-
     this.monHocService.getOptions().subscribe(({ data }) => {
       this.findFormControl(this.$formItem, this.key.SUBJECT_ID).options = (
         data ?? []
@@ -168,23 +159,63 @@ export class DialogPhanPhoiChuongTrinhComponent extends ComponentBaseAbstract {
   }
 
   private loadClassOptions(unitId: ID_TYPE): void {
-    this.lopService
-      .getOptions({ unitId })
-      .subscribe(({ data }) => {
-        this.findFormControl(this.$formItem, this.key.CLASS_ID).options = (
-          data ?? []
-        ).map((item: LopResponse) => ({
-          value: item.id,
-          label: item.name,
-        }));
+    this.lopService.getOptions({ unitId }).subscribe(({ data }) => {
+      this.findFormControl(this.$formItem, this.key.CLASS_ID).options = (
+        data ?? []
+      ).map((item: LopResponse) => ({
+        value: item.id,
+        label: item.name,
+      }));
+    });
+  }
+
+  private loadClassOptionsForCurrentUnit(): void {
+    const unitId = this.getCurrentUnitId();
+    if (unitId != null) {
+      this.loadClassOptions(unitId);
+      return;
+    }
+
+    this.authService.currentUser$
+      .pipe(
+        filter((user) => !!user?.unit?.id),
+        take(1)
+      )
+      .subscribe((user) => {
+        const updatedUnitId = user?.unit?.id;
+        if (updatedUnitId != null) {
+          this.loadClassOptions(updatedUnitId);
+        }
       });
+  }
+
+  private ensureClassOption(data: PhanPhoiChuongTrinhResponse): void {
+    const rawData = data as Record<string, unknown>;
+    const classIdValue =
+      data[this.key.CLASS_ID] ??
+      (rawData[this.key.CLASSROOM_ID] as ID_TYPE | undefined) ??
+      undefined;
+    const classLabel =
+      data[this.key.CLASS_NAME] ??
+      (rawData['classroomName'] as string | undefined) ??
+      '';
+
+    if (classIdValue != null && classLabel) {
+      this.findFormControl(this.$formItem, this.key.CLASS_ID).options = [
+        {
+          value: classIdValue,
+          label: classLabel,
+        },
+      ];
+      return;
+    }
+
+    this.loadClassOptionsForCurrentUnit();
   }
 
   private patchFormFromResponse(data: PhanPhoiChuongTrinhResponse): void {
     const rawData = data as Record<string, unknown>;
-    const weekValue = Number(
-      rawData['weekNumber'] ?? data[this.key.WEEK] ?? 0
-    );
+    const weekValue = Number(rawData['weekNumber'] ?? data[this.key.WEEK] ?? 0);
     const classIdValue =
       data[this.key.CLASS_ID] ??
       (rawData[this.key.CLASSROOM_ID] as ID_TYPE | undefined) ??
@@ -195,9 +226,7 @@ export class DialogPhanPhoiChuongTrinhComponent extends ComponentBaseAbstract {
       undefined;
 
     this.orderNumber = Number(
-      data[this.key.ORDER_NUMBER] ??
-        rawData['orderNumber'] ??
-        0
+      data[this.key.ORDER_NUMBER] ?? rawData['orderNumber'] ?? 0
     );
 
     this.form.patchValue({

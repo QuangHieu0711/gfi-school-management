@@ -15,6 +15,7 @@ public class StaffCreateRequest {
 
     @NotNull(message = "Đơn vị không được để trống")
     private Long unitId;
+    private Long gradeId;
 
     private String aliasName;
     private String identityCode;

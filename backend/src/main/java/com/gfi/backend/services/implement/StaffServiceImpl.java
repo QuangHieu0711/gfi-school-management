@@ -7,6 +7,7 @@ import com.gfi.backend.models.entities.Staff;
 import com.gfi.backend.models.entities.StaffAddress;
 import com.gfi.backend.models.entities.StaffFamilyMember;
 import com.gfi.backend.models.entities.Unit;
+import com.gfi.backend.models.entities.GradeLevel;
 import com.gfi.backend.models.global.CommonErrorCode;
 import com.gfi.backend.controllers.exceptions.UserMessageException;
 import com.gfi.backend.repositories.StaffAddressRepository;
@@ -49,6 +50,7 @@ public class StaffServiceImpl implements StaffService {
 
     private final StaffRepository staffRepository;
     private final UnitRepository unitRepository;
+    private final com.gfi.backend.repositories.GradeLevelRepository gradeLevelRepository;
     private final StaffAddressRepository staffAddressRepository;
     private final StaffFamilyMemberRepository staffFamilyMemberRepository;
     private final FileStorageService fileStorageService;
@@ -97,10 +99,17 @@ public class StaffServiceImpl implements StaffService {
         Unit unit = unitRepository.findById(request.getUnitId())
                 .orElseThrow(() -> new UserMessageException(CommonErrorCode.UNIT_NOT_FOUND));
 
+        GradeLevel gradeLevel = null;
+        if (request.getGradeId() != null) {
+            gradeLevel = gradeLevelRepository.findById(request.getGradeId())
+                .orElseThrow(() -> new UserMessageException(CommonErrorCode.GRADE_LEVEL_NOT_FOUND));
+        }
+
         Staff staff = new Staff();
         applyStaffFields(staff, request);
         staff.setStaffCode(staffCode);
         staff.setUnit(unit);
+        staff.setGradeLevel(gradeLevel);
         applyMediaFields(staff, unit, request.getAvatarUrl(), request.getSignatureUrl());
         staff.setStatus(request.getStatus() != null ? request.getStatus() : "ACTIVE");
         staff.setCreatedBy(SecurityUtils.getCurrentUsername());
@@ -120,6 +129,13 @@ public class StaffServiceImpl implements StaffService {
             Unit unit = unitRepository.findById(request.getUnitId())
                     .orElseThrow(() -> new UserMessageException(CommonErrorCode.UNIT_NOT_FOUND));
             staff.setUnit(unit);
+        }
+        if (request.getGradeId() != null) {
+            GradeLevel gradeLevel = gradeLevelRepository.findById(request.getGradeId())
+                    .orElseThrow(() -> new UserMessageException(CommonErrorCode.GRADE_LEVEL_NOT_FOUND));
+            if (staff.getGradeLevel() == null || !request.getGradeId().equals(staff.getGradeLevel().getId())) {
+                staff.setGradeLevel(gradeLevel);
+            }
         }
         applyStaffFields(staff, request);
         applyMediaFields(staff, staff.getUnit(), request.getAvatarUrl(), request.getSignatureUrl());
@@ -229,6 +245,7 @@ public class StaffServiceImpl implements StaffService {
                 .fullName(staff.getFullName())
                 .aliasName(staff.getAliasName())
                 .unitId(staff.getUnit().getId())
+                .gradeId(staff.getGradeLevel() == null ? null : staff.getGradeLevel().getId())
                 .gender(staff.getGender())
                 .dateOfBirth(staff.getDateOfBirth())
                 .phone(staff.getPhone())
@@ -254,6 +271,7 @@ public class StaffServiceImpl implements StaffService {
                 .id(staff.getId())
                 .userId(staff.getUser() != null ? staff.getUser().getId() : null)
                 .unitId(staff.getUnit().getId())
+                .gradeId(staff.getGradeLevel() == null ? null : staff.getGradeLevel().getId())
                 .staffCode(staff.getStaffCode())
                 .identityCode(staff.getIdentityCode())
                 .fullName(staff.getFullName())

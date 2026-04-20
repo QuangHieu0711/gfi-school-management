@@ -25,10 +25,9 @@ export class KhoiService {
   filter(
     payload: KhoiFilterRequest
   ): Observable<IResponse<ITableResponse<KhoiResponse> | KhoiResponse[]>> {
-    return this.http.post<IResponse<ITableResponse<KhoiResponse> | KhoiResponse[]>>(
-      `${this.baseUrl}/${KHOI_API_ENDPOINT.FILTER}`,
-      payload
-    );
+    return this.http.post<
+      IResponse<ITableResponse<KhoiResponse> | KhoiResponse[]>
+    >(`${this.baseUrl}/${KHOI_API_ENDPOINT.FILTER}`, payload);
   }
 
   getById(id: string | number) {
@@ -50,9 +49,13 @@ export class KhoiService {
   }
 
   update(id: string | number, payload: KhoiFormRequest) {
-    return this.http.put<IResponse<KhoiResponse>>(`${this.baseUrl}/${id}`, payload, {
-      context: this.silentContext,
-    });
+    return this.http.put<IResponse<KhoiResponse>>(
+      `${this.baseUrl}/${id}`,
+      payload,
+      {
+        context: this.silentContext,
+      }
+    );
   }
 
   delete(id: string | number) {

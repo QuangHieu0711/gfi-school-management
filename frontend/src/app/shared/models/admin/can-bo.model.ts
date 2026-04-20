@@ -98,6 +98,8 @@ export interface CanBoDetailResponse extends CanBoResponse {
   cccdIssuePlace?: string;
   socialInsuranceNo?: string;
   healthStatus?: string;
+  gradeId?: ID_TYPE | null;
+  gradeName?: string;
   note?: string;
   status?: string;
   signatureFileId?: ID_TYPE | null;
@@ -153,6 +155,7 @@ export interface CanBoFormRequest {
   email?: string;
   healthStatus?: string;
   socialInsuranceNo?: string;
+  gradeId?: string | number;
   avatarFileId?: number | string;
   avatarUrl?: string;
   signatureFileId?: number | string;

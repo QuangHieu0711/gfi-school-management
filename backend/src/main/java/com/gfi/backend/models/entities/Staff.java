@@ -26,6 +26,10 @@ public class Staff extends BaseEntity {
     @JoinColumn(name = "unit_id", nullable = false, foreignKey = @ForeignKey(name = "fk_staffs_unit"))
     private Unit unit;
 
+    @ManyToOne
+    @JoinColumn(name = "grade_id", foreignKey = @ForeignKey(name = "fk_staffs_grade_level"))
+    private GradeLevel gradeLevel;
+
     @Column(nullable = false, unique = true, length = 50)
     private String staffCode;
 

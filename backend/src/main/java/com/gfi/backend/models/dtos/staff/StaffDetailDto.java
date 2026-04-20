@@ -10,6 +10,7 @@ public class StaffDetailDto {
     private Long id;
     private Long userId;
     private Long unitId;
+    private Long gradeId;
     private String staffCode;
     private String identityCode;
     private String fullName;
