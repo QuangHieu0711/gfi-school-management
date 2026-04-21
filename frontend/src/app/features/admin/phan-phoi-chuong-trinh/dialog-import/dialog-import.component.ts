@@ -235,11 +235,7 @@ export class DialogImportComponent extends ComponentBaseAbstract {
 
   private updateOptions(
     controlName: string,
-    items: (
-      | NamHocOptionResponse
-      | LopResponse
-      | MonHocOptionResponse
-    )[] = [],
+    items: (NamHocOptionResponse | LopResponse | MonHocOptionResponse)[] = [],
     valueKey: 'id' = 'id',
     labelKey: 'name' = 'name'
   ): void {
@@ -261,7 +257,7 @@ export class DialogImportComponent extends ComponentBaseAbstract {
     // Đợi currentUser ready, sau đó reload classroom options
     this.authService.currentUser$
       .pipe(
-        filter(user => user != null),
+        filter((user) => user != null),
         take(1),
         takeUntil(this.ngUnsubscribe)
       )
@@ -313,7 +309,11 @@ export class DialogImportComponent extends ComponentBaseAbstract {
   }
 
   private validateMetadataForm(): boolean {
-    const keys = [this.key.SCHOOL_YEAR_ID, this.key.CLASSROOM_ID, this.key.SUBJECT_ID];
+    const keys = [
+      this.key.SCHOOL_YEAR_ID,
+      this.key.CLASSROOM_ID,
+      this.key.SUBJECT_ID,
+    ];
 
     keys.forEach((key) => this.form.get(key)?.markAsTouched());
 
@@ -323,7 +323,10 @@ export class DialogImportComponent extends ComponentBaseAbstract {
     );
 
     if (this.getCurrentUnitId() == null) {
-      this.toastr.warning('Không xác định được đơn vị từ tài khoản đăng nhập', 'Cảnh báo');
+      this.toastr.warning(
+        'Không xác định được đơn vị từ tài khoản đăng nhập',
+        'Cảnh báo'
+      );
       return false;
     }
 

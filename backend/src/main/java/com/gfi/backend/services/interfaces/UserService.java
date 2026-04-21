@@ -8,6 +8,7 @@ import com.gfi.backend.models.dtos.user.UserDetailDto;
 import com.gfi.backend.models.dtos.user.UserFilterDto;
 import com.gfi.backend.models.dtos.user.UserListItemDto;
 import com.gfi.backend.models.dtos.user.UserUpdateRequest;
+import com.gfi.backend.models.enums.ExportType;
 import java.util.List;
 
 /**
@@ -31,6 +32,11 @@ public interface UserService {
      * Trả về DTO list view chứa thông tin tối thiểu.
      */
     PageResponseDto<UserListItemDto, UserFilterDto> search(PageRequestDto<UserFilterDto> request);
+
+    /**
+     * Export toàn bộ dữ liệu người dùng theo điều kiện filter.
+     */
+    byte[] export(PageRequestDto<UserFilterDto> request, ExportType exportType);
 
     /**
      * Lấy chi tiết user theo ID.

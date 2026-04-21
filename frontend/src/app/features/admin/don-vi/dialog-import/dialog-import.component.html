@@ -1,0 +1,49 @@
+<app-dialog>
+  <ng-container app-dialog-header>
+    <h1 mat-dialog-title>Kết nạp danh sách đơn vị</h1>
+  </ng-container>
+
+  <ng-container app-dialog-content>
+    <form [formGroup]="form" class="flex flex-col gap-4">
+      <div class="flex items-center justify-between rounded border border-solid border-surface-200 bg-surface-50 p-4">
+        <span class="text-base font-medium text-neutral-700">
+          Tải file mẫu để kết nạp dữ liệu
+        </span>
+        <button
+          type="button"
+          color="primary"
+          matButton
+          (click)="downloadTemplate()">
+          <app-icon
+            icon="cloud_download"
+            [size]="18"
+            class="mr-1" />
+          Tải mẫu
+        </button>
+      </div>
+
+      <app-file-control
+        [item]="findFormControl($formItem, 'file')"
+        [form]="form"></app-file-control>
+    </form>
+  </ng-container>
+
+  <ng-container app-dialog-footer>
+    <button
+      type="button"
+      color="primary"
+      matButton
+      mat-raised-button
+      (click)="onSubmit()">
+      Kết nạp
+    </button>
+    <button
+      type="button"
+      color="accent"
+      matButton
+      mat-stroked-button
+      mat-dialog-close>
+      Đóng
+    </button>
+  </ng-container>
+</app-dialog>

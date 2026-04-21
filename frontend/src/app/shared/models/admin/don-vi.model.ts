@@ -17,6 +17,7 @@ export enum DON_VI_KEY {
 export const DON_VI_API_ENDPOINT = {
   BASE_PATH: 'units',
   FILTER: 'search',
+  EXPORT: 'export',
   OPTIONS: 'options',
   USER_CREATION_OPTIONS: 'user-creation-options',
 };
@@ -34,6 +35,10 @@ export interface DonViFilter {
 export interface DonViFilterRequest extends TableRequest {
   pageNow?: number;
   filter?: DonViFilter;
+}
+
+export interface DonViExportRequest extends DonViFilterRequest {
+  exportType?: 'PDF' | 'EXCEL';
 }
 
 export interface DonViFormRequest {

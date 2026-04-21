@@ -304,10 +304,18 @@ export class NguoiDungComponent extends ComponentBaseAbstract {
   }
 
   exportPdf(): void {
+    if (!this.canDownload) {
+      this.toastr.warning('Bạn không có quyền tải xuống', 'Cảnh báo');
+      return;
+    }
     this.exportFile('PDF');
   }
 
   exportExcel(): void {
+    if (!this.canDownload) {
+      this.toastr.warning('Bạn không có quyền tải xuống', 'Cảnh báo');
+      return;
+    }
     this.exportFile('EXCEL');
   }
 
@@ -355,6 +363,10 @@ export class NguoiDungComponent extends ComponentBaseAbstract {
   }
 
   import() {
+    if (!this.canAdd) {
+      this.toastr.warning('Bạn không có quyền kết nạp dữ liệu', 'Cảnh báo');
+      return;
+    }
     this.dialog.componentDialog(
       DialogImportComponent,
       {
@@ -466,10 +478,26 @@ export class NguoiDungComponent extends ComponentBaseAbstract {
     const match = disposition.match(/filename\*?=(?:UTF-8'')?"?([^";]+)/i);
     if (!match?.[1]) return fallbackName;
 
+    const rawFileName = match[1].trim();
+
     try {
-      return decodeURIComponent(match[1]);
+      return this.decodeMimeFileName(decodeURIComponent(rawFileName));
     } catch {
-      return match[1];
+      return this.decodeMimeFileName(rawFileName);
+    }
+  }
+
+  private decodeMimeFileName(fileName: string): string {
+    const mimeMatch = fileName.match(/^=\?UTF-8\?Q\?(.+)\?=$/i);
+    if (!mimeMatch?.[1]) return fileName;
+
+    const normalized = mimeMatch[1].replace(/_/g, ' ');
+    const decoded = normalized.replace(/=([0-9A-F]{2})/gi, '%$1');
+
+    try {
+      return decodeURIComponent(decoded);
+    } catch {
+      return fileName;
     }
   }
 }

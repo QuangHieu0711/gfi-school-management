@@ -1,7 +1,7 @@
 import {
   HttpClient,
   HttpContext,
-  HttpHeaders,
+  HttpParams,
   HttpResponse,
 } from '@angular/common/http';
 import { Injectable } from '@angular/core';
@@ -9,6 +9,7 @@ import { ERROR_CONTEXT } from '@constant/error.registry';
 import { environment } from '@env/environment';
 import {
   NGUOI_DUNG_API_ENDPOINT,
+  NguoiDungExportRequest,
   NguoiDungFilterRequest,
   NguoiDungFormRequest,
   NguoiDungResponse,
@@ -72,28 +73,21 @@ export class NguoiDungService {
     });
   }
 
-  export(payload: {
-    exportType?: 'PDF' | 'EXCEL';
-  }): Observable<HttpResponse<Blob>> {
-    const content =
-      payload.exportType === 'PDF'
-        ? 'DANH SACH NGUOI DUNG'
-        : 'ID,HoTen,TenTaiKhoan,Email,DonVi,TrangThai,NhomQuyen\n';
-    const blob = new Blob([content], {
-      type:
-        payload.exportType === 'PDF'
-          ? 'application/pdf'
-          : 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  export(payload: NguoiDungExportRequest): Observable<HttpResponse<Blob>> {
+    const params = new HttpParams({
+      fromObject: {
+        exportType: payload.exportType ?? 'EXCEL',
+      },
     });
-    const extension = payload.exportType === 'PDF' ? 'pdf' : 'xlsx';
 
-    return of(
-      new HttpResponse({
-        body: blob,
-        headers: new HttpHeaders({
-          'content-disposition': `attachment; filename="nguoi-dung.${extension}"`,
-        }),
-      })
+    return this.http.post(
+      `${this.baseUrl}/${NGUOI_DUNG_API_ENDPOINT.EXPORT}`,
+      payload,
+      {
+        params,
+        observe: 'response',
+        responseType: 'blob',
+      }
     );
   }
 
@@ -122,7 +116,8 @@ export class NguoiDungService {
   }
 
   private omitId(payload: NguoiDungFormRequest) {
-    const { id, ...rest } = payload;
+    const rest = { ...payload };
+    delete rest.id;
     return rest;
   }
 }

@@ -21,6 +21,7 @@ export enum NGUOI_DUNG_KEY {
 export const NGUOI_DUNG_API_ENDPOINT = {
   BASE_PATH: 'users',
   FILTER: 'search',
+  EXPORT: 'export',
   OPTIONS: 'unit-options',
   ROLE: 'role-options',
 };
@@ -57,6 +58,10 @@ export interface NguoiDungFormRequest {
   [NGUOI_DUNG_KEY.AVATAR]?: string;
   [NGUOI_DUNG_KEY.STATUS]?: number;
   staffId?: ID_TYPE;
+}
+
+export interface NguoiDungExportRequest extends NguoiDungFilterRequest {
+  exportType?: 'PDF' | 'EXCEL';
 }
 
 export const NGUOI_DUNG_FORM = (requiredPassword = false) => [

@@ -6,15 +6,18 @@ import { TYPE_FORM, TYPE_FORM_KEY } from '@constant/constant';
 import { COMMON_TABLE_KEY, TableQueryEvent } from '@model/table.model';
 import { ComponentBaseAbstract } from '@layout';
 import { FORM_CONTROL_MODULE, MATERIAL_MODULE } from '@modules';
+import { defaultExportFileName, saveBlobAsFile } from '@utils/file-util';
 
 import {
   DON_VI_FILTER_FORM,
   DON_VI_KEY,
+  DonViExportRequest,
   DonViResponse,
 } from '@app/model/admin/don-vi.model';
 import { DonViService } from '@app/service/admin/don-vi.service';
 import { PermissionCheckService } from '@service';
 import { DialogDonViComponent } from './dialog-don-vi/dialog-don-vi.component';
+import { DialogImportComponent } from './dialog-import/dialog-import.component';
 
 @Component({
   selector: 'don-vi',
@@ -23,6 +26,7 @@ import { DialogDonViComponent } from './dialog-don-vi/dialog-don-vi.component';
   imports: [
     AppTableComponent,
     IconComponent,
+    DialogImportComponent,
     ...MATERIAL_MODULE,
     ...FORM_CONTROL_MODULE,
   ],
@@ -43,6 +47,10 @@ export class DonViComponent extends ComponentBaseAbstract {
 
   get canAdd(): boolean {
     return this.permissionCheckService.canAdd(this.menuCode);
+  }
+
+  get canDownload(): boolean {
+    return this.permissionCheckService.canDownload(this.menuCode);
   }
 
   constructor(

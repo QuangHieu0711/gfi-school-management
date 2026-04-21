@@ -1,12 +1,13 @@
-import { HttpClient, HttpContext } from '@angular/common/http';
+import { HttpClient, HttpContext, HttpParams, HttpResponse } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { ERROR_CONTEXT } from '@constant/error.registry';
 import { environment } from '@env/environment';
 import { IResponse, ITableResponse } from '@model/response.model';
-import { Observable } from 'rxjs';
+import { Observable, of } from 'rxjs';
 
 import {
   DON_VI_API_ENDPOINT,
+  DonViExportRequest,
   DonViFilterRequest,
   DonViFormRequest,
   DonViOptionResponse,
@@ -69,5 +70,46 @@ export class DonViService {
     return this.http.delete<IResponse<null>>(`${this.baseUrl}/${id}`, {
       context: this.silentContext,
     });
+  }
+
+  export(payload: DonViExportRequest): Observable<HttpResponse<Blob>> {
+    const params = new HttpParams({
+      fromObject: {
+        exportType: payload.exportType ?? 'EXCEL',
+      },
+    });
+
+    return this.http.post(
+      `${this.baseUrl}/${DON_VI_API_ENDPOINT.EXPORT}`,
+      payload,
+      {
+        params,
+        observe: 'response',
+        responseType: 'blob',
+      }
+    );
+  }
+
+  import(payload: FormData): Observable<{ data: { message: string } }> {
+    const file = payload.get('file');
+
+    return of({
+      data: {
+        message:
+          file instanceof File
+            ? `Imported locally: ${file.name}`
+            : 'Imported locally',
+      },
+    });
+  }
+
+  downloadTemplate(): Observable<Blob> {
+    const template = 'Ma,Ten,DiaChi,Phone,Email,TrangThai\n';
+
+    return of(
+      new Blob([template], {
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      })
+    );
   }
 }
