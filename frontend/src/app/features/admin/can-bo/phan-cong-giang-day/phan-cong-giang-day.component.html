@@ -1,25 +1,25 @@
-<app-table
-  tableTitle="Phan cong giang day"
-  [pageIndex]="pageIndex"
-  [pageSize]="pageSize"
-  [total]="dataSourceTotal"
-  [tableConfig]="tableConfig"
-  [dataSource]="dataSource"
-  [tableColumns]="columns"
-  (queryChange)="filterData($event)">
-  <ng-container custom-buttons>
-    <div class="flex gap-2 items-center">
+<section class="assignment-page">
+  <div class="assignment-toolbar">
+    <div class="assignment-heading">
+      <h2 class="assignment-title">Phân công giảng dạy</h2>
+      @if (staffDisplayName) {
+        <div class="assignment-staff-caption">Cán bộ: {{ staffDisplayName }}</div>
+      }
+    </div>
+
+    <div class="assignment-actions">
       @if (selectedStaffId) {
         <button
           color="primary"
           matButton="outlined"
           class="btn-tight"
+          type="button"
           (click)="goToStaffProfile()">
           <app-icon
             icon="arrow_back"
             [size]="18"
             class="btn-icon" />
-          Ho so can bo
+          Hồ sơ cán bộ
         </button>
       }
       @if (canAdd) {
@@ -27,43 +27,38 @@
           color="primary"
           matButton="filled"
           class="btn-tight"
+          type="button"
           (click)="openDialog(TYPE_FORM.CREATE)">
           <app-icon
             icon="add_box"
             [size]="18"
             class="btn-icon" />
-          Them moi
+          Thêm mới
         </button>
       }
     </div>
-    @if (staffDisplayName) {
-      <div class="assignment-staff-caption">Can bo: {{ staffDisplayName }}</div>
-    }
-  </ng-container>
+  </div>
 
-  <ng-container filter-panel>
+  <div class="assignment-filter">
     <app-form-control
       [form]="form"
       (submitEvent)="filterData()"
       (resetEvent)="resetFilter()">
-      <div class="flex gap-2 items-center flex-wrap">
+      <div class="filter-row">
         <app-select-control
           [item]="findFormControl($formItem, key.SCHOOL_YEAR_ID)"
-          [form]="form"></app-select-control>
-        <app-select-control
-          [item]="findFormControl($formItem, key.CLASS_ID)"
           [form]="form"></app-select-control>
         <app-select-control
           [item]="findFormControl($formItem, key.SUBJECT_ID)"
           [form]="form"></app-select-control>
         <app-select-control
-          [item]="findFormControl($formItem, key.DEPARTMENT_ID)"
+          [item]="findFormControl($formItem, key.SEMESTER_ID)"
           [form]="form"></app-select-control>
-        <div class="flex gap-1 items-center">
+        <div class="filter-actions">
           <button
             color="dark"
             matIconButton="text"
-            matTooltip="Tim kiem"
+            matTooltip="Tìm kiếm"
             type="submit">
             <app-icon
               icon="svg:search"
@@ -72,7 +67,7 @@
           <button
             color="dark"
             matIconButton="text"
-            matTooltip="Lam moi"
+            matTooltip="Làm mới"
             type="reset">
             <app-icon
               icon="svg:cached"
@@ -81,13 +76,109 @@
         </div>
       </div>
     </app-form-control>
-  </ng-container>
-</app-table>
+  </div>
 
-<ng-template
-  #homeroomTpl
-  let-row>
-  <span class="homeroom-pill" [class.is-yes]="row?.[key.IS_HOMEROOM]">
-    {{ row?.[key.IS_HOMEROOM] ? 'Co' : 'Khong' }}
-  </span>
-</ng-template>
+  <div class="assignment-table-card">
+    <div class="table-scroll">
+      <table class="assignment-table">
+        <thead>
+          <tr>
+            <th class="stt-col">STT</th>
+            <th class="code-col">Mã cán bộ</th>
+            <th class="name-col">Họ tên cán bộ</th>
+            <th class="subject-col">Môn học</th>
+            <th class="class-col">Lớp phân công</th>
+            <th class="action-col">Hành động</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          @for (row of dataSource; track trackByRow($index, row)) {
+            <tr [class.is-striped-group]="row.isStripedGroup">
+              @if (row.isGroupHead) {
+                <td
+                  class="group-cell stt-col"
+                  [class.is-striped-group]="row.isStripedGroup"
+                  [attr.rowspan]="row.groupRowSpan">
+                  {{ row.groupStt }}
+                </td>
+                <td
+                  class="group-cell code-col"
+                  [class.is-striped-group]="row.isStripedGroup"
+                  [attr.rowspan]="row.groupRowSpan">
+                  {{ row.staffCode || '--' }}
+                </td>
+                <td
+                  class="group-cell name-col"
+                  [class.is-striped-group]="row.isStripedGroup"
+                  [attr.rowspan]="row.groupRowSpan">
+                  {{ row.staffName || '--' }}
+                </td>
+              }
+
+              <td class="subject-col">{{ row.subjectName || '--' }}</td>
+              <td class="class-col">{{ (row.classNames || []).join(', ') || '--' }}</td>
+
+              @if (row.isGroupHead) {
+                <td
+                  class="group-cell action-col"
+                  [class.is-striped-group]="row.isStripedGroup"
+                  [attr.rowspan]="row.groupRowSpan">
+                  <div class="row-actions">
+                    @if (canView) {
+                      <button
+                        type="button"
+                        class="icon-action"
+                        matTooltip="Chi tiết"
+                        (click)="openDialog(TYPE_FORM.DETAIL, row)">
+                        <app-icon
+                          icon="visibility"
+                          color="#5e9fb4"></app-icon>
+                      </button>
+                    }
+                    @if (canEdit) {
+                      <button
+                        type="button"
+                        class="icon-action"
+                        matTooltip="Chỉnh sửa"
+                        (click)="openDialog(TYPE_FORM.UPDATE, row)">
+                        <app-icon
+                          icon="edit"
+                          color="#d39a06"></app-icon>
+                      </button>
+                    }
+                  </div>
+                </td>
+              }
+            </tr>
+          } @empty {
+            <tr>
+              <td
+                class="empty-row"
+                colspan="6">
+                <div class="empty-state">
+                  <img
+                    class="empty-state__image"
+                    src="assets/images/nodata.svg"
+                    alt="nodata" />
+                  <p class="empty-state__title">Không tìm thấy kết quả.</p>
+                  <p class="empty-state__hint">
+                    Hãy thử điều chỉnh tìm kiếm hoặc bộ lọc để tìm thứ bạn đang tìm.
+                  </p>
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <app-paginator
+    [total]="dataSourceTotal"
+    [pageIndex]="pageIndex"
+    [pageSize]="pageSize"
+    [pageSizeOptions]="[10, 20, 50]"
+    (pageChange)="onPageChange($event)">
+  </app-paginator>
+</section>

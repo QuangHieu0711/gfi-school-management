@@ -11,13 +11,19 @@ export enum PHAN_CONG_GIANG_DAY_KEY {
   ID = 'id',
   UNIT_ID = 'unitId',
   STAFF_ID = 'staffId',
+  STAFF_CODE = 'staffCode',
+  STAFF_NAME = 'staffName',
   SCHOOL_YEAR_ID = 'schoolYearId',
   SCHOOL_YEAR_NAME = 'schoolYearName',
+  SEMESTER_ID = 'semesterId',
   CLASS_ID = 'classId',
   CLASS_IDS = 'classIds',
   CLASS_NAME = 'className',
+  CLASS_NAMES = 'classNames',
   SUBJECT_ID = 'subjectId',
   SUBJECT_NAME = 'subjectName',
+  SUB_SUBJECT_ID = 'subSubjectId',
+  SUB_SUBJECT_NAME = 'subSubjectName',
   DEPARTMENT_ID = 'departmentId',
   DEPARTMENT_NAME = 'departmentName',
   IS_HOMEROOM = 'isHomeroom',
@@ -33,11 +39,12 @@ export const PHAN_CONG_GIANG_DAY_API_ENDPOINT = {
 };
 
 export interface PhanCongGiangDayFilter {
-  staffId?: ID_TYPE;
+  unitId?: ID_TYPE;
   schoolYearId?: ID_TYPE;
-  classId?: ID_TYPE;
+  semesterId?: ID_TYPE;
+  staffId?: ID_TYPE;
+  staffCode?: string;
   subjectId?: ID_TYPE;
-  departmentId?: ID_TYPE;
 }
 
 export interface PhanCongGiangDayFilterRequest extends TableRequest {
@@ -45,26 +52,46 @@ export interface PhanCongGiangDayFilterRequest extends TableRequest {
   filter?: PhanCongGiangDayFilter;
 }
 
+export interface PhanCongGiangDayAssignmentItem {
+  subjectId?: ID_TYPE;
+  subjectName?: string;
+  classIds?: ID_TYPE[];
+  classNames?: string[];
+}
+
 export interface PhanCongGiangDayResponse extends TableDataSource {
   [PHAN_CONG_GIANG_DAY_KEY.ID]: ID_TYPE;
   [PHAN_CONG_GIANG_DAY_KEY.UNIT_ID]?: ID_TYPE;
   [PHAN_CONG_GIANG_DAY_KEY.STAFF_ID]?: ID_TYPE;
+  [PHAN_CONG_GIANG_DAY_KEY.STAFF_CODE]?: string;
+  [PHAN_CONG_GIANG_DAY_KEY.STAFF_NAME]?: string;
   [PHAN_CONG_GIANG_DAY_KEY.SCHOOL_YEAR_ID]?: ID_TYPE;
   [PHAN_CONG_GIANG_DAY_KEY.SCHOOL_YEAR_NAME]?: string;
+  [PHAN_CONG_GIANG_DAY_KEY.SEMESTER_ID]?: ID_TYPE;
   [PHAN_CONG_GIANG_DAY_KEY.CLASS_ID]?: ID_TYPE;
+  [PHAN_CONG_GIANG_DAY_KEY.CLASS_IDS]?: ID_TYPE[];
   [PHAN_CONG_GIANG_DAY_KEY.CLASS_NAME]?: string;
+  [PHAN_CONG_GIANG_DAY_KEY.CLASS_NAMES]?: string[];
   [PHAN_CONG_GIANG_DAY_KEY.SUBJECT_ID]?: ID_TYPE;
   [PHAN_CONG_GIANG_DAY_KEY.SUBJECT_NAME]?: string;
+  assignments?: PhanCongGiangDayAssignmentItem[];
+  [PHAN_CONG_GIANG_DAY_KEY.SUB_SUBJECT_ID]?: ID_TYPE;
+  [PHAN_CONG_GIANG_DAY_KEY.SUB_SUBJECT_NAME]?: string;
   [PHAN_CONG_GIANG_DAY_KEY.DEPARTMENT_ID]?: ID_TYPE;
   [PHAN_CONG_GIANG_DAY_KEY.DEPARTMENT_NAME]?: string;
   [PHAN_CONG_GIANG_DAY_KEY.IS_HOMEROOM]?: boolean;
   [PHAN_CONG_GIANG_DAY_KEY.TEACHING_LOAD]?: number | string;
   [PHAN_CONG_GIANG_DAY_KEY.NOTE]?: string;
+  groupStt?: number;
+  isGroupHead?: boolean;
+  groupRowSpan?: number;
+  isStripedGroup?: boolean;
 }
 
 export interface PhanCongGiangDayFormRequest {
   staffId?: ID_TYPE;
   schoolYearId?: ID_TYPE;
+  semesterId?: ID_TYPE;
   classId?: ID_TYPE;
   classIds?: ID_TYPE[];
   subjectId?: ID_TYPE;
@@ -83,6 +110,7 @@ export interface PhanCongGiangDayUpsertRequest {
   unitId?: ID_TYPE;
   staffId?: ID_TYPE;
   schoolYearId?: ID_TYPE;
+  semesterId?: ID_TYPE;
   assignments: PhanCongGiangDayAssignmentRequest[];
 }
 
@@ -104,8 +132,15 @@ export interface PhanCongGiangDayDetailResponse {
 export const PHAN_CONG_GIANG_DAY_FORM = [
   SELECT_CONTROL({
     controlName: PHAN_CONG_GIANG_DAY_KEY.SCHOOL_YEAR_ID,
-    label: 'Năm học',
+    label: 'Năm học (Chọn)',
     placeholder: 'Chọn năm học',
+    required: true,
+    listOption: [],
+  }),
+  SELECT_CONTROL({
+    controlName: PHAN_CONG_GIANG_DAY_KEY.SEMESTER_ID,
+    label: 'Học kỳ',
+    placeholder: 'Chọn học kỳ',
     required: true,
     listOption: [],
   }),

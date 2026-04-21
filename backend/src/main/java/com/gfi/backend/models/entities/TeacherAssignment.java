@@ -6,7 +6,7 @@ import lombok.Setter;
 
 @Entity
 @Table(name = "teacher_assignments", uniqueConstraints = {
-        @UniqueConstraint(name = "uk_staff_schoolyear_class", columnNames = { "staff_id", "school_year_id", "class_id" })
+        @UniqueConstraint(name = "uk_staff_schoolyear_semester_class", columnNames = { "staff_id", "school_year_id", "semester_id", "class_id" })
 })
 @Getter
 @Setter
@@ -23,6 +23,10 @@ public class TeacherAssignment {
     @ManyToOne
     @JoinColumn(name = "school_year_id", nullable = false, foreignKey = @ForeignKey(name = "fk_teacher_assignments_schoolyear"))
     private SchoolYear schoolYear;
+
+    @ManyToOne
+    @JoinColumn(name = "semester_id", nullable = false, foreignKey = @ForeignKey(name = "fk_teacher_assignments_semester"))
+    private Semester semester;
 
     @ManyToOne
     @JoinColumn(name = "class_id", nullable = true, foreignKey = @ForeignKey(name = "fk_teacher_assignments_classroom"))

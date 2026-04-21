@@ -2,7 +2,7 @@ import { HttpClient, HttpContext } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { ERROR_CONTEXT } from '@constant/error.registry';
 import { environment } from '@env/environment';
-import { IResponse, ITableResponse } from '@model/response.model';
+import { ID_TYPE, IResponse, ITableResponse } from '@model/response.model';
 import { Observable } from 'rxjs';
 
 import {
@@ -56,5 +56,15 @@ export class HocKyService {
     return this.http.delete<IResponse<null>>(`${this.baseUrl}/${id}`, {
       context: this.silentContext,
     });
+  }
+
+  getOptions(schoolYearId: ID_TYPE): Observable<IResponse<{ id: number; name: string }[]>> {
+    return this.http.get<IResponse<{ id: number; name: string }[]>>(
+      `${this.baseUrl}/${HOC_KY_API_ENDPOINT.OPTIONS}`,
+      {
+        params: { schoolYearId },
+        context: this.silentContext,
+      }
+    );
   }
 }

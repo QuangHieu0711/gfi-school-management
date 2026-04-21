@@ -27,6 +27,9 @@ export interface ITableResponse<T> {
   data: T[];
   // New API structure
   items: T[];
+  pageNow?: number;
+  totalItems?: number;
+  totalPages?: number;
   recordTotal: number;
   pageTotal?: number;
 }

@@ -1,23 +1,221 @@
-.assignment-staff-caption {
-  margin-left: 8px;
-  color: #2f6672;
-  font-weight: 600;
+.assignment-page {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 
-.homeroom-pill {
+.assignment-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.assignment-heading {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+.assignment-title {
+  margin: 0;
+  color: inherit;
+  font-size: 1.125rem;
+  font-weight: 600;
+  line-height: 1.75rem;
+  letter-spacing: 0.025em;
+}
+
+.assignment-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.assignment-staff-caption {
+  color: #2f6672;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.assignment-table-card {
+  border: 1px solid #e6ebef;
+  border-radius: 16px;
+  background: #fff;
+  overflow: hidden;
+}
+
+.assignment-filter {
+  background: transparent;
+}
+
+.filter-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.filter-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.table-scroll {
+  overflow-x: auto;
+}
+
+.assignment-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  min-width: 840px;
+}
+
+.assignment-table th,
+.assignment-table td {
+  padding: 0 14px;
+  vertical-align: middle;
+  font-family: inherit;
+}
+
+.assignment-table th {
+  background: #dcecf1;
+  color: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 20px;
+  text-align: center;
+  height: 46px;
+  border-bottom: 1px solid #d8e1e6;
+  border-right: 1px solid #d1dde3;
+}
+
+.assignment-table th:first-child {
+  border-top-left-radius: 14px;
+}
+
+.assignment-table th:last-child {
+  border-top-right-radius: 14px;
+  border-right: 0;
+}
+
+.assignment-table td {
+  color: inherit;
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 18px;
+  background: #ffffff;
+  min-height: 54px;
+  padding-top: 12px;
+  padding-bottom: 12px;
+  border-top: 1px solid #eef2f4;
+}
+
+.assignment-table tbody tr:not(.is-striped-group) > td,
+.assignment-table tbody tr:not(.is-striped-group) > td.group-cell {
+  background: #ffffff;
+}
+
+.assignment-table tbody tr.is-striped-group > td,
+.assignment-table tbody tr.is-striped-group > td.group-cell {
+  background: #f1f4f6;
+}
+
+.group-cell {
+  text-align: center;
+  font-weight: 400;
+  background: inherit;
+}
+
+.name-col {
+  min-width: 160px;
+}
+
+.subject-col {
+  min-width: 140px;
+}
+
+.class-col {
+  min-width: 260px;
+}
+
+.action-col {
+  width: 120px;
+  text-align: center;
+}
+
+.row-actions {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 64px;
-  padding: 4px 10px;
-  border-radius: 999px;
-  background: #f3f5f7;
-  color: #58636f;
-  font-size: 12px;
-  font-weight: 600;
+  gap: 10px;
 }
 
-.homeroom-pill.is-yes {
-  background: #e8fff3;
-  color: #198754;
+.icon-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.icon-action:hover {
+  background: #eef4f7;
+}
+
+.empty-row {
+  padding: 0;
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 230px;
+  padding: 32px 16px;
+}
+
+.empty-state__image {
+  width: 96px;
+  height: 96px;
+  object-fit: contain;
+  pointer-events: none;
+}
+
+.empty-state__title {
+  margin: 0;
+  color: #6b7280;
+  font-size: 20px;
+  font-weight: 400;
+  line-height: 1.4;
+}
+
+.empty-state__hint {
+  margin: 0;
+  color: #b8c0c8;
+  font-size: 14px;
+  font-weight: 300;
+  line-height: 1.4;
+  text-align: center;
+}
+
+@media (max-width: 768px) {
+  .assignment-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .assignment-actions {
+    justify-content: flex-start;
+  }
 }

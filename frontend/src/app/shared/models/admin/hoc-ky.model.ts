@@ -24,6 +24,7 @@ export enum HOC_KY_KEY {
 export const HOC_KY_API_ENDPOINT = {
   BASE_PATH: 'semesters',
   FILTER: 'search',
+  OPTIONS: 'options',
 };
 
 export interface HocKyFilter {

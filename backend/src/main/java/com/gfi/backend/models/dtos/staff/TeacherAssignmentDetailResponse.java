@@ -10,6 +10,7 @@ public class TeacherAssignmentDetailResponse {
     private Long unitId;
     private Long staffId;
     private Long schoolYearId;
+    private Long semesterId;
     private Long subjectId;
     private List<Long> classIds;
 }

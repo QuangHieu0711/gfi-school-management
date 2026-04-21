@@ -9,6 +9,7 @@ public class TeacherAssignmentItemDto {
     private Long id;
     private Long staffId;
     private Long schoolYearId;
+    private Long semesterId;
     private Long classId;
     private Long subjectId;
 }

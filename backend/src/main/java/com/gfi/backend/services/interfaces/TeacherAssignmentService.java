@@ -1,19 +1,22 @@
 package com.gfi.backend.services.interfaces;
 
 import com.gfi.backend.models.dtos.staff.TeacherAssignmentItemDto;
-import com.gfi.backend.models.dtos.staff.TeacherAssignmentFilterDto;
 import com.gfi.backend.models.dtos.staff.TeacherAssignmentCreateRequest;
 import com.gfi.backend.models.dtos.staff.TeacherAssignmentDetailRequest;
 import com.gfi.backend.models.dtos.staff.TeacherAssignmentDetailResponse;
-import com.gfi.backend.models.dtos.common.PageRequestDto;
-import com.gfi.backend.models.dtos.common.PageResponseDto;
+import com.gfi.backend.models.dtos.staff.TeacherAssignmentImportResultDto;
+import com.gfi.backend.models.dtos.staff.TeacherAssignmentSearchRequest;
+import com.gfi.backend.models.dtos.staff.TeacherAssignmentSearchResponse;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
 public interface TeacherAssignmentService {
-    PageResponseDto<TeacherAssignmentItemDto, TeacherAssignmentFilterDto> search(PageRequestDto<TeacherAssignmentFilterDto> request);
+    TeacherAssignmentSearchResponse search(TeacherAssignmentSearchRequest request);
     TeacherAssignmentDetailResponse getDetail(TeacherAssignmentDetailRequest request);
     List<TeacherAssignmentItemDto> create(TeacherAssignmentCreateRequest request);
     List<TeacherAssignmentItemDto> update(TeacherAssignmentCreateRequest request);
+    byte[] exportExcelTemplate(Long schoolYearId, Long unitId);
+    TeacherAssignmentImportResultDto importExcel(Long schoolYearId, Long unitId, MultipartFile file);
     void delete(Long id);
 }

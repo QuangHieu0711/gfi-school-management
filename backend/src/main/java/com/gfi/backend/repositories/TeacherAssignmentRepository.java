@@ -12,5 +12,7 @@ public interface TeacherAssignmentRepository extends JpaRepository<TeacherAssign
     List<TeacherAssignment> findByStaffId(Long staffId);
     List<TeacherAssignment> findBySchoolYearId(Long schoolYearId);
     List<TeacherAssignment> findByStaffIdAndSchoolYearId(Long staffId, Long schoolYearId);
-    List<TeacherAssignment> findByStaffIdAndSchoolYearIdAndClassroomIdIn(Long staffId, Long schoolYearId, List<Long> classroomIds);
+    List<TeacherAssignment> findByStaffIdAndSchoolYearIdAndSemesterId(Long staffId, Long schoolYearId, Long semesterId);
+    List<TeacherAssignment> findByStaffIdAndSchoolYearIdAndSemesterIdAndClassroomIdIn(Long staffId, Long schoolYearId, Long semesterId, List<Long> classroomIds);
+    void deleteBySchoolYearIdAndSemesterIdAndClassroom_Unit_Id(Long schoolYearId, Long semesterId, Long unitId);
 }

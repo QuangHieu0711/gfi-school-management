@@ -188,6 +188,10 @@ export class AppTableComponent implements OnDestroy {
   get columnSortable(): boolean {
     return this.config?.columnSortable;
   }
+  get cellMerge(): boolean {
+    return this.config?.cellMerge;
+  }
+
   get columnPinnable(): boolean {
     return this.config?.columnPinnable;
   }

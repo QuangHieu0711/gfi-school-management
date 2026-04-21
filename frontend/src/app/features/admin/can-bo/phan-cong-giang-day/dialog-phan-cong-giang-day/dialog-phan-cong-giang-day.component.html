@@ -42,10 +42,15 @@
       </div>
 
       <div class="assignment-form">
-        <div class="assignment-form__single">
+        <div class="assignment-form__row">
           <app-select-control
             [item]="findFormControl($formItem, key.SCHOOL_YEAR_ID)"
             [form]="form"></app-select-control>
+          <app-select-control
+            [item]="findFormControl($formItem, key.SEMESTER_ID)"
+            [form]="form"></app-select-control>
+        </div>
+        <div class="assignment-form__single">
           <app-select-control
             [item]="findFormControl($formItem, key.SUBJECT_ID)"
             [form]="form"></app-select-control>

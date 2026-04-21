@@ -28,6 +28,7 @@ export interface TableConfig {
   columnSortable?: boolean;
   columnPinnable?: boolean;
   showPaginator?: boolean;
+  cellMerge?: boolean;
 }
 
 export const DEFAULT_TABLE_CONFIG: Required<TableConfig> = {
@@ -47,6 +48,7 @@ export const DEFAULT_TABLE_CONFIG: Required<TableConfig> = {
   columnSortable: false,
   columnPinnable: false,
   showPaginator: true,
+  cellMerge: false,
 };
 
 export enum COMMON_TABLE_KEY {
@@ -73,4 +75,5 @@ export type HeaderRows = HeaderCell[];
 /** Extended column definition for the table */
 export interface TableColumns extends MtxGridColumn {
   rowspan?: number;
+  cellMerge?: boolean;
 }

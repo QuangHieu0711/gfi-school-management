@@ -18,6 +18,9 @@ public class TeacherAssignmentCreateRequest {
     @NotNull(message = "Năm học không được để trống")
     private Long schoolYearId;
 
+    @NotNull(message = "Há»c ká»³ khÃ´ng Ä‘Æ°á»£c Ä‘á»ƒ trá»‘ng")
+    private Long semesterId;
+
     @Valid
     @NotEmpty(message = "Danh sách phân công không được để trống")
     private List<SubjectAssignmentRequest> assignments;

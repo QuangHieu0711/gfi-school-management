@@ -96,7 +96,6 @@ export class PhanPhoiChuongTrinhComponent extends ComponentBaseAbstract {
         field: this.key.LESSON_NAME,
         cellTemplate: this.lessonTpl,
       },
-      { header: 'Ghi chú', field: this.key.NOTE },
       {
         header: 'Thao tác',
         field: COMMON_TABLE_KEY.ACTION,
@@ -140,15 +139,14 @@ export class PhanPhoiChuongTrinhComponent extends ComponentBaseAbstract {
 
     this.phanPhoiChuongTrinhService.filter(payload).subscribe({
       next: ({ data }) => {
-        const rawItems = (data.items || data.data || []) as Array<
-          PhanPhoiChuongTrinhResponse & {
-            weekName?: string;
-            weekNumber?: number | string;
-            classroomName?: string;
-            periodPpct?: string;
-            note ?: string;
-          }
-        >;
+        const rawItems = (data.items ||
+          data.data ||
+          []) as (PhanPhoiChuongTrinhResponse & {
+          weekName?: string;
+          weekNumber?: number | string;
+          classroomName?: string;
+          periodPpct?: string;
+        })[];
 
         this.dataSource = rawItems.map((item) => this.normalizeRow(item));
         this.dataSourceTotal = data.recordTotal || this.dataSource.length;
@@ -314,13 +312,13 @@ export class PhanPhoiChuongTrinhComponent extends ComponentBaseAbstract {
     this.lopService
       .getOptions({ unitId: this.getCurrentUnitId() ?? undefined })
       .subscribe(({ data }) => {
-      this.findFormControl(this.$formItem, this.key.CLASS_ID).options = (
-        data ?? []
-      ).map((item: LopResponse) => ({
-        value: item.id,
-        label: item.name,
-      }));
-    });
+        this.findFormControl(this.$formItem, this.key.CLASS_ID).options = (
+          data ?? []
+        ).map((item: LopResponse) => ({
+          value: item.id,
+          label: item.name,
+        }));
+      });
 
     this.monHocService.getOptions().subscribe(({ data }) => {
       this.findFormControl(this.$formItem, this.key.SUBJECT_ID).options = (
@@ -350,7 +348,9 @@ export class PhanPhoiChuongTrinhComponent extends ComponentBaseAbstract {
       ...item,
       [this.key.WEEK]: weekValue,
       [this.key.CLASS_NAME]:
-        item[this.key.CLASS_NAME] ?? item[this.backendField.CLASSROOM_NAME] ?? '',
+        item[this.key.CLASS_NAME] ??
+        item[this.backendField.CLASSROOM_NAME] ??
+        '',
       [this.key.PERIOD]:
         item[this.key.PERIOD] ?? item[this.backendField.PERIOD_PPCT] ?? '',
       [this.key.SUBJECT_NAME]: item[this.key.SUBJECT_NAME] ?? '',

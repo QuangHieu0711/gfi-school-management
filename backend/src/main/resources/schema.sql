@@ -80,3 +80,18 @@ CREATE TABLE IF NOT EXISTS program_distributions (
     CONSTRAINT fk_program_distributions_classes FOREIGN KEY (classroom_id) REFERENCES classes(id),
     CONSTRAINT fk_program_distributions_subjects FOREIGN KEY (subject_id) REFERENCES subjects(id)
 );
+
+CREATE TABLE IF NOT EXISTS teacher_assignments (
+    id BIGSERIAL PRIMARY KEY,
+    staff_id BIGINT NOT NULL,
+    school_year_id BIGINT NOT NULL,
+    semester_id BIGINT NOT NULL,
+    class_id BIGINT,
+    subject_id BIGINT,
+    CONSTRAINT uk_staff_schoolyear_semester_class UNIQUE (staff_id, school_year_id, semester_id, class_id),
+    CONSTRAINT fk_teacher_assignments_staff FOREIGN KEY (staff_id) REFERENCES staffs(id),
+    CONSTRAINT fk_teacher_assignments_schoolyear FOREIGN KEY (school_year_id) REFERENCES school_years(id),
+    CONSTRAINT fk_teacher_assignments_semester FOREIGN KEY (semester_id) REFERENCES semesters(id),
+    CONSTRAINT fk_teacher_assignments_classroom FOREIGN KEY (class_id) REFERENCES classes(id),
+    CONSTRAINT fk_teacher_assignments_subject FOREIGN KEY (subject_id) REFERENCES subjects(id)
+);

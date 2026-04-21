@@ -102,6 +102,13 @@
 .assignment-form__single {
   width: min(760px, 100%);
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px;
+}
+
+.assignment-form__row {
+  width: min(760px, 100%);
+  display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
 }
@@ -177,10 +184,12 @@
   }
 
   .assignment-form__grid,
+  .assignment-form__row,
   .assignment-form__single {
     width: 100%;
   }
 
+  .assignment-form__row,
   .assignment-form__single {
     grid-template-columns: 1fr;
   }

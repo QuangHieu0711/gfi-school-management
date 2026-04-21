@@ -154,8 +154,8 @@ export class DialogPhanCongGiangDayComponent extends ComponentBaseAbstract {
         error: (error) => {
           this.toastr.error(
             error?.error?.userMessage ??
-              error?.error?.message ??
-              'Lưu thất bại',
+            error?.error?.message ??
+            'Lưu thất bại',
             'Thất bại'
           );
         },
@@ -171,8 +171,8 @@ export class DialogPhanCongGiangDayComponent extends ComponentBaseAbstract {
       error: (error) => {
         this.toastr.error(
           error?.error?.userMessage ??
-            error?.error?.message ??
-            'Cập nhật thất bại',
+          error?.error?.message ??
+          'Cập nhật thất bại',
           'Thất bại'
         );
       },
@@ -321,9 +321,9 @@ export class DialogPhanCongGiangDayComponent extends ComponentBaseAbstract {
     const nextClassIds = checked
       ? Array.from(new Set([...selectedIds, ...displayedClassIds]))
       : selectedIds.filter(
-          (item) =>
-            !displayedClassIds.some((displayed) => `${displayed}` === `${item}`)
-        );
+        (item) =>
+          !displayedClassIds.some((displayed) => `${displayed}` === `${item}`)
+      );
 
     this.form
       .get(this.key.CLASS_ID)
@@ -479,8 +479,8 @@ export class DialogPhanCongGiangDayComponent extends ComponentBaseAbstract {
   ): void {
     const selectedClassIds = Array.isArray(data.classIds)
       ? data.classIds.filter(
-          (item) => item !== null && item !== undefined && item !== ''
-        )
+        (item) => item !== null && item !== undefined && item !== ''
+      )
       : data.classId != null && data.classId !== ''
         ? [data.classId]
         : [];
@@ -493,10 +493,7 @@ export class DialogPhanCongGiangDayComponent extends ComponentBaseAbstract {
           : (selectedClassIds[0] ?? ''),
         subjectId: data.subjectId ?? '',
         departmentId: data.departmentId ?? '',
-        isHomeroom: data.isHomeroom ?? false,
-        teachingLoad: data.teachingLoad ?? '',
         assignmentSummary: data.className ?? '',
-        note: data.note ?? '',
       },
       { emitEvent: false }
     );

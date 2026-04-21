@@ -70,6 +70,7 @@ export const DEFAULT_TABLE_CONFIG: Required<TableConfig> = {
   columnSortable: false,
   columnPinnable: false,
   showPaginator: true,
+  cellMerge: false,
 };
 
 // Account options
