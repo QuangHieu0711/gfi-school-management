@@ -1,4 +1,4 @@
-package com.gfi.backend.services.implement;
+﻿package com.gfi.backend.services.implement;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -7,9 +7,11 @@ import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 
 import org.apache.poi.ss.usermodel.BorderStyle;
@@ -19,6 +21,7 @@ import org.apache.poi.ss.usermodel.DataFormatter;
 import org.apache.poi.ss.usermodel.FillPatternType;
 import org.apache.poi.ss.usermodel.Font;
 import org.apache.poi.ss.usermodel.HorizontalAlignment;
+import org.apache.poi.ss.usermodel.IndexedColors;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.VerticalAlignment;
@@ -37,6 +40,7 @@ import com.gfi.backend.controllers.exceptions.UserMessageException;
 import com.gfi.backend.models.dtos.common.LookupItemDto;
 import com.gfi.backend.models.dtos.common.PageRequestDto;
 import com.gfi.backend.models.dtos.common.PageResponseDto;
+import com.gfi.backend.models.dtos.common.TemporaryFileDto;
 import com.gfi.backend.models.dtos.unit.UnitCreateRequest;
 import com.gfi.backend.models.dtos.unit.UnitDetailDto;
 import com.gfi.backend.models.dtos.unit.UnitFilterDto;
@@ -55,8 +59,8 @@ import com.gfi.backend.repositories.UnitRepository;
 import com.gfi.backend.repositories.UserRepository;
 import com.gfi.backend.repositories.specifications.UnitSpecification;
 import com.gfi.backend.services.interfaces.DataScopeFilterService;
+import com.gfi.backend.services.interfaces.ImportErrorFileStorageService;
 import com.gfi.backend.services.interfaces.UnitService;
-import com.gfi.backend.utils.PageableUtils;
 import com.gfi.backend.utils.SecurityUtils;
 import com.gfi.backend.models.security.FeatureKey;
 
@@ -73,9 +77,9 @@ import com.lowagie.text.pdf.PdfPTable;
 import com.lowagie.text.pdf.PdfWriter;
 
 /**
- * Service xử lý logic quản lý đơn vị.
+ * Service xá»­ lÃ½ logic quáº£n lÃ½ Ä‘Æ¡n vá»‹.
  * 
- * Trách nhiệm tách biệt:
+ * TrÃ¡ch nhiá»‡m tÃ¡ch biá»‡t:
  * - Logic query: UnitSpecification
  * - Logic mapping: UnitMapper
  * - Validate & load relations: private helpers
@@ -96,18 +100,23 @@ public class UnitServiceImpl implements UnitService {
     private final UnitSpecification unitSpecification;
     private final UnitMapper unitMapper;
     private final DataScopeFilterService dataScopeFilterService;
+    private final ImportErrorFileStorageService importErrorFileStorageService;
     
     // Feature key cho phân quyền
     private static final String FEATURE = FeatureKey.UNIT_MANAGEMENT.getCode();
 
-    // Tìm kiếm và phân trang units với filter
+    // Tìm kiếm và phân trang đơn vị với filter
     @Override
     @Transactional(readOnly = true)
     public PageResponseDto<UnitListItemDto, UnitFilterDto> search(PageRequestDto<UnitFilterDto> request) {
         UnitFilterDto filter = request.getFilter() == null ? new UnitFilterDto() : request.getFilter();
         int pageSize = normalizePageSize(request.getPageSize());
         int pageNow = normalizePageNow(request.getPageNow());
-        Pageable pageable = PageableUtils.newestFirst(pageNow, pageSize);
+        Pageable pageable = org.springframework.data.domain.PageRequest.of(
+                pageNow - 1,
+                pageSize,
+                Sort.by(Sort.Direction.DESC, "createdAt")
+                        .and(Sort.by(Sort.Direction.DESC, "id")));
         List<ResolvedScope> resolvedScopes = dataScopeFilterService.getResolvedScopes(FEATURE, ActionType.VIEW);
 
         Page<Unit> page = unitRepository.findAll(unitSpecification.buildSpecification(filter, resolvedScopes), pageable);
@@ -130,14 +139,20 @@ public class UnitServiceImpl implements UnitService {
     public byte[] export(PageRequestDto<UnitFilterDto> request, ExportType exportType) {
         UnitFilterDto filter = request == null || request.getFilter() == null ? new UnitFilterDto() : request.getFilter();
         List<ResolvedScope> resolvedScopes = dataScopeFilterService.getResolvedScopes(FEATURE, ActionType.VIEW);
-        List<Unit> items = unitRepository
-                .findAll(unitSpecification.buildSpecification(filter, resolvedScopes), Sort.by(Sort.Direction.ASC, "name").and(Sort.by("id")))
-                .toList();
+        List<Unit> items = unitRepository.findAll(
+                unitSpecification.buildSpecification(filter, resolvedScopes),
+                Sort.by(Sort.Direction.ASC, "name").and(Sort.by("id")));
 
         return switch (exportType) {
             case EXCEL -> exportUnitsExcel(items);
             case PDF -> exportUnitsPdf(items);
         };
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public byte[] exportExcelTemplate() {
+        return exportUnitsExcelTemplate();
     }
 
     @Override
@@ -156,8 +171,11 @@ public class UnitServiceImpl implements UnitService {
 
             DataFormatter formatter = new DataFormatter();
             int successCount = 0;
+            int failedCount = 0;
+            int dataStartRowIndex = findUnitImportDataStartRow(sheet, formatter);
+            Map<Integer, String> rowErrors = new LinkedHashMap<>();
 
-            for (int rowIndex = 6; rowIndex <= sheet.getLastRowNum(); rowIndex++) {
+            for (int rowIndex = dataStartRowIndex; rowIndex <= sheet.getLastRowNum(); rowIndex++) {
                 Row row = sheet.getRow(rowIndex);
                 if (row == null) {
                     continue;
@@ -174,37 +192,66 @@ public class UnitServiceImpl implements UnitService {
                     continue;
                 }
                 if (!StringUtils.hasText(code) || !StringUtils.hasText(name)) {
-                    throw new UserMessageException("Mã đơn vị và tên đơn vị là bắt buộc tại dòng " + (rowIndex + 1));
+                    failedCount++;
+                    rowErrors.put(rowIndex, "Mã đơn vị và tên đơn vị là bắt buộc");
+                    continue;
                 }
 
-                Unit unit = unitRepository.findByCode(code.trim())
-                        .orElseGet(Unit::new);
-                unit.setCode(code.trim());
-                unit.setName(name.trim());
-                unit.setAddress(normalizeNullable(address));
-                unit.setPhone(normalizeNullable(phone));
-                unit.setEmail(normalizeNullable(email));
-                unit.setStatus(parseStatus(statusText));
-                unit.setDeletedFlag(0);
-                if (unit.getId() == null) {
-                    unit.setCreatedBy(SecurityUtils.getCurrentUsername());
-                } else {
-                    unit.setUpdatedBy(SecurityUtils.getCurrentUsername());
+                String normalizedCode = code.trim();
+                if (unitRepository.findByCode(normalizedCode).isPresent()) {
+                    failedCount++;
+                    rowErrors.put(rowIndex, "Mã đơn vị đã tồn tại");
+                    continue;
                 }
-                unitRepository.save(unit);
-                successCount++;
+
+                try {
+                    Unit unit = new Unit();
+                    unit.setCode(normalizedCode);
+                    unit.setName(name.trim());
+                    unit.setAddress(normalizeNullable(address));
+                    unit.setPhone(normalizeNullable(phone));
+                    unit.setEmail(normalizeNullable(email));
+                    unit.setStatus(parseStatus(statusText));
+                    unit.setDeletedFlag(0);
+                    unit.setCreatedBy(SecurityUtils.getCurrentUsername());
+                    unitRepository.save(unit);
+                    successCount++;
+                } catch (UserMessageException ex) {
+                    failedCount++;
+                    rowErrors.put(rowIndex, ex.getMessage());
+                }
+            }
+
+            String errorFileToken = null;
+            String errorFileName = null;
+            if (!rowErrors.isEmpty()) {
+                byte[] errorFileContent = buildUnitImportErrorFile(workbook, sheet, rowErrors);
+                errorFileName = "unit_import_error_" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss")) + ".xlsx";
+                errorFileToken = importErrorFileStorageService.store(
+                        errorFileName,
+                        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                        errorFileContent);
             }
 
             return UnitImportResultDto.builder()
                     .successCount(successCount)
-                    .failedCount(0)
+                    .failedCount(failedCount)
+                    .hasErrorFile(!rowErrors.isEmpty())
+                    .errorFileName(errorFileName)
+                    .errorFileToken(errorFileToken)
                     .build();
         } catch (IOException ex) {
             throw new UserMessageException("Không thể đọc file Excel đơn vị");
         }
     }
 
-    // Lấy danh sách đơn vị cho dropdown/combobox
+    @Override
+    @Transactional(readOnly = true)
+    public TemporaryFileDto getImportErrorFile(String token) {
+        return importErrorFileStorageService.get(token);
+    }
+
+    // Láº¥y danh sÃ¡ch Ä‘Æ¡n vá»‹ cho dropdown/combobox
     @Override
     @Transactional(readOnly = true)
     public List<LookupItemDto> getOptions() {
@@ -222,7 +269,7 @@ public class UnitServiceImpl implements UnitService {
                 .toList();
     }
 
-    // Chi tiết đơn vị theo ID
+    // Chi tiáº¿t Ä‘Æ¡n vá»‹ theo ID
     @Override
     @Transactional(readOnly = true)
     public UnitDetailDto getById(Long id) {
@@ -251,7 +298,9 @@ public class UnitServiceImpl implements UnitService {
         return unitMapper.toDetailDto(unitRepository.save(unit));
     }
 
-    // Cập nhật đơn vị
+    /*
+    * Cập nhật đơn vị
+     */
     @Override
     @Transactional
     public UnitDetailDto update(Long id, UnitUpdateRequest request) {
@@ -273,7 +322,7 @@ public class UnitServiceImpl implements UnitService {
         return unitMapper.toDetailDto(unitRepository.save(unit));
     }
 
-    // Xóa đơn vị (xóa mềm)
+    // Xóa mềm
     @Override
     @Transactional
     public void delete(Long id) {
@@ -297,10 +346,10 @@ public class UnitServiceImpl implements UnitService {
     }
 
     /**
-     * Validate code không trùng.
-     * Khi update: excludeId cho phép unit giữ nguyên code của chính nó.
+     * Validate code khoảng trắng thừa và chuyển thành chữ hoa để chuẩn hóa.
+     * Khi update: excludeId cho phép giữ nguyên code hiện tại nếu không thay đổi.
      * 
-     * @param code mã unit cần check
+     * @param code mã đơn vị cần check
      * @param excludeId ID unit loại trừ (null khi create)
      */
     private void validateCodeDuplicate(String code, Long excludeId) {
@@ -324,35 +373,22 @@ public class UnitServiceImpl implements UnitService {
             CellStyle infoStyle = createExportInfoStyle(workbook);
             CellStyle headerStyle = createExportHeaderStyle(workbook);
             CellStyle bodyStyle = createExportBodyStyle(workbook);
-            CellStyle guideStyle = createGuideStyle(workbook);
 
             Row infoRow = sheet.createRow(0);
             createCell(infoRow, 0, buildExportInfoLine(), infoStyle);
             sheet.addMergedRegion(new CellRangeAddress(0, 0, 0, 6));
 
             Row titleRow = sheet.createRow(1);
-            createCell(titleRow, 0, "DANH SÁCH ĐƠN VỊ", titleStyle);
+            createCell(titleRow, 0, "DANH SÃCH ÄÆ N Vá»Š", titleStyle);
             sheet.addMergedRegion(new CellRangeAddress(1, 1, 0, 6));
 
-            Row guide1 = sheet.createRow(2);
-            createCell(guide1, 0, "Hướng dẫn: Có thể sửa trực tiếp file này rồi import lại bằng API import-excel.", guideStyle);
-            sheet.addMergedRegion(new CellRangeAddress(2, 2, 0, 6));
-
-            Row guide2 = sheet.createRow(3);
-            createCell(guide2, 0, "Cột bắt buộc: Mã đơn vị, Tên đơn vị. Trạng thái nhận: 1/0 hoặc Hoạt động/Không hoạt động.", guideStyle);
-            sheet.addMergedRegion(new CellRangeAddress(3, 3, 0, 6));
-
-            Row guide3 = sheet.createRow(4);
-            createCell(guide3, 0, "Import sẽ cập nhật theo mã đơn vị nếu đã tồn tại, chưa có sẽ tạo mới.", guideStyle);
-            sheet.addMergedRegion(new CellRangeAddress(4, 4, 0, 6));
-
-            Row headerRow = sheet.createRow(5);
-            String[] headers = { "STT", "Mã đơn vị", "Tên đơn vị", "Địa chỉ", "Điện thoại", "Email", "Trạng thái" };
+            Row headerRow = sheet.createRow(3);
+            String[] headers = { "STT", "MÃ£ Ä‘Æ¡n vá»‹", "TÃªn Ä‘Æ¡n vá»‹", "Äá»‹a chá»‰", "Äiá»‡n thoáº¡i", "Email", "Tráº¡ng thÃ¡i" };
             for (int i = 0; i < headers.length; i++) {
                 createCell(headerRow, i, headers[i], headerStyle);
             }
 
-            int rowIndex = 6;
+            int rowIndex = 4;
             int stt = 1;
             for (Unit item : items) {
                 Row row = sheet.createRow(rowIndex++);
@@ -376,7 +412,61 @@ public class UnitServiceImpl implements UnitService {
             workbook.write(outputStream);
             return outputStream.toByteArray();
         } catch (IOException ex) {
-            throw new UserMessageException("Không thể tạo file Excel danh sách đơn vị");
+            throw new UserMessageException("KhÃ´ng thá»ƒ táº¡o file Excel danh sÃ¡ch Ä‘Æ¡n vá»‹");
+        }
+    }
+
+    private byte[] exportUnitsExcelTemplate() {
+        try (Workbook workbook = new XSSFWorkbook(); ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
+            Sheet sheet = workbook.createSheet("DonVi");
+            CellStyle titleStyle = createExportTitleStyle(workbook);
+            CellStyle headerStyle = createExportHeaderStyle(workbook);
+            CellStyle bodyStyle = createExportBodyStyle(workbook);
+            CellStyle guideStyle = createGuideStyle(workbook);
+
+            Row titleRow = sheet.createRow(0);
+            createCell(titleRow, 0, "IMPORT ĐƠN VỊ", titleStyle);
+            sheet.addMergedRegion(new CellRangeAddress(0, 0, 0, 6));
+
+            Row guide1 = sheet.createRow(1);
+            createCell(guide1, 0, "Hướng dẫn: Có thể chỉnh sửa trực tiếp file này, sau đó tải file lên để nhập dữ liệu.", guideStyle);
+            sheet.addMergedRegion(new CellRangeAddress(1, 1, 0, 6));
+
+            Row guide2 = sheet.createRow(2);
+            createCell(guide2, 0, "Các cột bắt buộc: Mã đơn vị, Tên đơn vị. Giá trị hợp lệ của cột Trạng thái: Hoạt động / Không hoạt động.", guideStyle);
+            sheet.addMergedRegion(new CellRangeAddress(2, 2, 0, 6));
+
+            Row guide3 = sheet.createRow(3);
+            createCell(guide3, 0, "Mã đơn vị đã tồn tại, hệ thống sẽ cập nhật; nếu chưa tồn tại, hệ thống sẽ tạo mới.", guideStyle);
+            sheet.addMergedRegion(new CellRangeAddress(3, 3, 0, 6));
+
+            Row headerRow = sheet.createRow(4);
+            String[] headers = { "STT", "Mã đơn vị", "Tên đơn vị", "Địa chỉ", "Điện thoại", "Email", "Trạng thái" };
+            for (int i = 0; i < headers.length; i++) {
+                createCell(headerRow, i, headers[i], headerStyle);
+            }
+
+            Row sampleRow = sheet.createRow(5);
+            createCell(sampleRow, 0, 1, bodyStyle);
+            createCell(sampleRow, 1, "THVN001", bodyStyle);
+            createCell(sampleRow, 2, "Trường Tiểu học Mẫu", bodyStyle);
+            createCell(sampleRow, 3, "123 Đường ABC", bodyStyle);
+            createCell(sampleRow, 4, "0901000001", bodyStyle);
+            createCell(sampleRow, 5, "thvn001@example.com", bodyStyle);
+            createCell(sampleRow, 6, "Hoạt động", bodyStyle);
+
+            sheet.setColumnWidth(0, 8 * 256);
+            sheet.setColumnWidth(1, 20 * 256);
+            sheet.setColumnWidth(2, 34 * 256);
+            sheet.setColumnWidth(3, 38 * 256);
+            sheet.setColumnWidth(4, 20 * 256);
+            sheet.setColumnWidth(5, 28 * 256);
+            sheet.setColumnWidth(6, 18 * 256);
+
+            workbook.write(outputStream);
+            return outputStream.toByteArray();
+        } catch (IOException ex) {
+            throw new UserMessageException("Không thể tạo file Excel mẫu đơn vị");
         }
     }
 
@@ -550,6 +640,82 @@ public class UnitServiceImpl implements UnitService {
     private String readCellText(Cell cell, DataFormatter formatter) {
         return cell == null ? "" : formatter.formatCellValue(cell).trim();
     }
+    private byte[] buildUnitImportErrorFile(Workbook workbook, Sheet sheet, Map<Integer, String> rowErrors) {
+        CellStyle resultHeaderStyle = createImportResultHeaderStyle(workbook);
+        CellStyle errorCellStyle = createImportErrorCellStyle(workbook);
+        int resultColumnIndex = 7;
+        int reasonColumnIndex = 8;
+
+        Row headerRow = sheet.getRow(findUnitImportDataStartRow(sheet, new DataFormatter()) - 1);
+        createCell(headerRow, resultColumnIndex, "Kết quả", resultHeaderStyle);
+        createCell(headerRow, reasonColumnIndex, "Lý do lỗi", resultHeaderStyle);
+
+        for (Map.Entry<Integer, String> entry : rowErrors.entrySet()) {
+            Row row = sheet.getRow(entry.getKey());
+            if (row == null) {
+                continue;
+            }
+
+            for (int columnIndex = 0; columnIndex <= reasonColumnIndex; columnIndex++) {
+                Cell cell = row.getCell(columnIndex);
+                if (cell == null) {
+                    cell = row.createCell(columnIndex);
+                }
+                cell.setCellStyle(errorCellStyle);
+            }
+            row.getCell(resultColumnIndex).setCellValue("Thất bại");
+            row.getCell(reasonColumnIndex).setCellValue(entry.getValue());
+        }
+
+        sheet.setColumnWidth(resultColumnIndex, 16 * 256);
+        sheet.setColumnWidth(reasonColumnIndex, 42 * 256);
+
+        try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
+            workbook.write(outputStream);
+            return outputStream.toByteArray();
+        } catch (IOException ex) {
+            throw new UserMessageException("Không thể tạo file lỗi import đơn vị");
+        }
+    }
+
+    private CellStyle createImportResultHeaderStyle(Workbook workbook) {
+        CellStyle style = createExportHeaderStyle(workbook);
+        style.setFillForegroundColor(IndexedColors.ROSE.getIndex());
+        style.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+        return style;
+    }
+
+    private CellStyle createImportErrorCellStyle(Workbook workbook) {
+        CellStyle style = workbook.createCellStyle();
+        style.setVerticalAlignment(VerticalAlignment.TOP);
+        style.setBorderTop(BorderStyle.THIN);
+        style.setBorderBottom(BorderStyle.THIN);
+        style.setBorderLeft(BorderStyle.THIN);
+        style.setBorderRight(BorderStyle.THIN);
+        style.setWrapText(true);
+        style.setFillForegroundColor(IndexedColors.ROSE.getIndex());
+        style.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+        Font font = workbook.createFont();
+        font.setFontName(EXPORT_FONT_NAME);
+        style.setFont(font);
+        return style;
+    }
+
+    private int findUnitImportDataStartRow(Sheet sheet, DataFormatter formatter) {
+        for (int rowIndex = 0; rowIndex <= sheet.getLastRowNum(); rowIndex++) {
+            Row row = sheet.getRow(rowIndex);
+            if (row == null) {
+                continue;
+            }
+
+            String codeHeader = normalizeImportText(readCellText(row.getCell(1), formatter));
+            String nameHeader = normalizeImportText(readCellText(row.getCell(2), formatter));
+            if ("ma don vi".equals(codeHeader) && "ten don vi".equals(nameHeader)) {
+                return rowIndex + 1;
+            }
+        }
+        throw new UserMessageException("File import không đúng định dạng: không tìm thấy dòng tiêu đề dữ liệu");
+    }
 
     private void validateExcelFile(MultipartFile file) {
         if (file == null || file.isEmpty() || file.getOriginalFilename() == null
@@ -562,12 +728,22 @@ public class UnitServiceImpl implements UnitService {
         if (!StringUtils.hasText(value)) {
             return 1;
         }
-        String normalized = value.trim().toLowerCase(Locale.ROOT);
+        String normalized = normalizeImportText(value);
         return switch (normalized) {
-            case "1", "hoạt động", "hoat dong", "active" -> 1;
-            case "0", "không hoạt động", "khong hoat dong", "inactive" -> 0;
+            case "1", "hoat dong", "active" -> 1;
+            case "0", "khong hoat dong", "inactive" -> 0;
             default -> throw new UserMessageException("Trạng thái không hợp lệ: " + value);
         };
+    }
+
+    private String normalizeImportText(String value) {
+        if (!StringUtils.hasText(value)) {
+            return "";
+        }
+        String normalized = java.text.Normalizer.normalize(value.trim().toLowerCase(Locale.ROOT), java.text.Normalizer.Form.NFD);
+        normalized = normalized.replaceAll("\\p{M}+", "");
+        normalized = normalized.replace('đ', 'd');
+        return normalized.replaceAll("\\s+", " ").trim();
     }
 
     private String statusLabel(Integer status) {

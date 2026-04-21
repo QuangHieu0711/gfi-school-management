@@ -22,6 +22,7 @@ import com.gfi.backend.controllers.annotations.DataScoped;
 import com.gfi.backend.models.dtos.common.LookupItemDto;
 import com.gfi.backend.models.dtos.common.PageRequestDto;
 import com.gfi.backend.models.dtos.common.PageResponseDto;
+import com.gfi.backend.models.dtos.common.TemporaryFileDto;
 import com.gfi.backend.models.dtos.unit.UnitCreateRequest;
 import com.gfi.backend.models.dtos.unit.UnitDetailDto;
 import com.gfi.backend.models.dtos.unit.UnitFilterDto;
@@ -81,6 +82,21 @@ public class UnitController extends ApiBaseController {
                 .body(content);
     }
 
+    @PostMapping(value = "/excel-template", produces = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+    @DataScoped(feature = "UNIT_MANAGEMENT", action = ActionType.DOWNLOAD)
+    @Operation(summary = "Tải mẫu Excel đơn vị", description = "Tải file mẫu Excel để import đơn vị.")
+    public ResponseEntity<byte[]> exportExcelTemplate() {
+        byte[] content = unitService.exportExcelTemplate();
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, ContentDisposition.attachment()
+                        .filename("mau-import-don-vi.xlsx", StandardCharsets.UTF_8)
+                        .build()
+                        .toString())
+                .contentType(MediaType.parseMediaType(
+                        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+                .body(content);
+    }
+
     @GetMapping("/options")
     @DataScoped(feature = "UNIT_MANAGEMENT", action = ActionType.VIEW)
     @Operation(summary = "Danh sách đơn vị cho combobox", description = "Lấy danh sách id và tên đơn vị.")
@@ -100,7 +116,27 @@ public class UnitController extends ApiBaseController {
     @DataScoped(feature = "UNIT_MANAGEMENT", action = ActionType.ADD)
     @Operation(summary = "Import Excel đơn vị", description = "Đọc file Excel và tạo/cập nhật danh sách đơn vị.")
     public ResponseEntity<ApiResult<UnitImportResultDto>> importExcel(@RequestParam MultipartFile file) {
-        return executeApiResult(() -> ApiResult.success(unitService.importExcel(file), "Import đơn vị thành công"));
+        return executeApiResult(() -> {
+            UnitImportResultDto result = unitService.importExcel(file);
+            String message = result.getFailedCount() > 0
+                    ? String.format("Import hoàn tất: %d thành công, %d lỗi", result.getSuccessCount(), result.getFailedCount())
+                    : String.format("Import đơn vị thành công: %d bản ghi", result.getSuccessCount());
+            return ApiResult.success(result, message);
+        });
+    }
+
+    @GetMapping("/import-error-file/{token}")
+    @DataScoped(feature = "UNIT_MANAGEMENT", action = ActionType.ADD)
+    @Operation(summary = "Tải file lỗi import đơn vị", description = "Tải file Excel phản hồi sau khi import đơn vị có lỗi.")
+    public ResponseEntity<byte[]> downloadImportErrorFile(@PathVariable String token) {
+        TemporaryFileDto file = unitService.getImportErrorFile(token);
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, ContentDisposition.attachment()
+                        .filename(file.getFileName(), StandardCharsets.UTF_8)
+                        .build()
+                        .toString())
+                .contentType(MediaType.parseMediaType(file.getContentType()))
+                .body(file.getContent());
     }
 
     @GetMapping("/{id}")

@@ -1,15 +1,21 @@
-import { HttpClient, HttpContext, HttpParams, HttpResponse } from '@angular/common/http';
+import {
+  HttpClient,
+  HttpContext,
+  HttpParams,
+  HttpResponse,
+} from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { ERROR_CONTEXT } from '@constant/error.registry';
 import { environment } from '@env/environment';
 import { IResponse, ITableResponse } from '@model/response.model';
-import { Observable, of } from 'rxjs';
+import { Observable } from 'rxjs';
 
 import {
   DON_VI_API_ENDPOINT,
   DonViExportRequest,
   DonViFilterRequest,
   DonViFormRequest,
+  DonViImportResponseData,
   DonViOptionResponse,
   DonViResponse,
 } from '@app/model/admin/don-vi.model';
@@ -78,10 +84,11 @@ export class DonViService {
         exportType: payload.exportType ?? 'EXCEL',
       },
     });
+    const { exportType: _exportType, ...body } = payload;
 
     return this.http.post(
       `${this.baseUrl}/${DON_VI_API_ENDPOINT.EXPORT}`,
-      payload,
+      body,
       {
         params,
         observe: 'response',
@@ -90,26 +97,30 @@ export class DonViService {
     );
   }
 
-  import(payload: FormData): Observable<{ data: { message: string } }> {
-    const file = payload.get('file');
+  import(payload: FormData): Observable<IResponse<DonViImportResponseData>> {
+    return this.http.post<IResponse<DonViImportResponseData>>(
+      `${this.baseUrl}/${DON_VI_API_ENDPOINT.IMPORT_EXCEL}`,
+      payload
+    );
+  }
 
-    return of({
-      data: {
-        message:
-          file instanceof File
-            ? `Imported locally: ${file.name}`
-            : 'Imported locally',
-      },
-    });
+  downloadImportErrorFile(errorFileToken: string): Observable<HttpResponse<Blob>> {
+    return this.http.get(
+      `${this.baseUrl}/${DON_VI_API_ENDPOINT.IMPORT_ERROR_FILE}/${encodeURIComponent(errorFileToken)}`,
+      {
+        observe: 'response',
+        responseType: 'blob',
+      }
+    );
   }
 
   downloadTemplate(): Observable<Blob> {
-    const template = 'Ma,Ten,DiaChi,Phone,Email,TrangThai\n';
-
-    return of(
-      new Blob([template], {
-        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      })
+    return this.http.post(
+      `${this.baseUrl}/${DON_VI_API_ENDPOINT.EXCEL_TEMPLATE}`,
+      {},
+      {
+        responseType: 'blob',
+      }
     );
   }
 }

@@ -1,5 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import { CommonModule } from '@angular/common';
 import { Component, Inject, Injector } from '@angular/core';
+import { ReactiveFormsModule } from '@angular/forms';
 import { FILE_CONTROL, FormType } from '@model/form-control.model';
 import { FileControlComponent } from '@components/form-group/file-control/file-control.component';
 import { ComponentBaseAbstract } from '@layout';
@@ -11,11 +13,14 @@ import { DonViService } from '@app/service/admin/don-vi.service';
 
 @Component({
   selector: 'dialog-import',
+  standalone: true,
   templateUrl: './dialog-import.component.html',
   imports: [
+    CommonModule,
+    ReactiveFormsModule,
     FileControlComponent,
-    AppDialogComponent,
     ...MATERIAL_MODULE,
+    AppDialogComponent,
     IconComponent,
   ],
 })
@@ -77,10 +82,97 @@ export class DialogImportComponent extends ComponentBaseAbstract {
     formData.append('file', file, file.name);
 
     this.donViService.import(formData).subscribe({
-      next: () => {
-        this.toastr.success('Tải lên file thành công', 'Thành công');
+      next: ({ data, userMessage }) => {
+        const successCount = data?.successCount ?? 0;
+        const failedCount = data?.failedCount ?? 0;
+        const message =
+          typeof userMessage === 'string'
+            ? userMessage
+            : `Import hoàn tất: ${successCount} bản ghi thành công, ${failedCount} bản ghi lỗi`;
+
+        if (failedCount > 0) {
+          this.toastr.warning(message, 'Kết nạp hoàn tất');
+
+          if (data?.hasErrorFile && data.errorFileToken) {
+            this.dialog.confirm(
+              {
+                title: 'Tải file lỗi',
+                message:
+                  'Có bản ghi import lỗi. Bạn có muốn tải file lỗi để chỉnh sửa không?',
+              },
+              (confirmed?: boolean) => {
+                if (confirmed) {
+                  this.downloadErrorFile(
+                    String(data.errorFileToken),
+                    typeof data.errorFileName === 'string'
+                      ? data.errorFileName
+                      : undefined
+                  );
+                }
+                this.dialogRef.close(true);
+              }
+            );
+            return;
+          }
+
+          this.dialogRef.close(true);
+          return;
+        }
+
+        this.toastr.success(message, 'Thành công');
         this.dialogRef.close(true);
       },
+      error: (error) => {
+        this.toastr.error(
+          error?.error?.userMessage ??
+            error?.error?.message ??
+            'Kết nạp dữ liệu thất bại',
+          'Thất bại'
+        );
+      },
     });
+  }
+
+  private downloadErrorFile(
+    errorFileToken: string,
+    fallbackFileName?: string
+  ): void {
+    this.donViService.downloadImportErrorFile(errorFileToken).subscribe({
+      next: ({ body, headers }) => {
+        if (!body) {
+          this.toastr.error('Không tải được file lỗi', 'Thất bại');
+          return;
+        }
+
+        const fileName =
+          this.getFileNameFromDisposition(headers.get('content-disposition')) ??
+          fallbackFileName ??
+          'don-vi-import-error.xlsx';
+
+        this.fileService.downloadFile(body, fileName);
+        this.toastr.success('Tải file lỗi thành công', 'Thành công');
+      },
+      error: (error) => {
+        this.toastr.error(
+          error?.error?.userMessage ??
+            error?.error?.message ??
+            'Không tải được file lỗi',
+          'Thất bại'
+        );
+      },
+    });
+  }
+
+  private getFileNameFromDisposition(
+    disposition: string | null
+  ): string | null {
+    if (!disposition) return null;
+
+    const utf8Match = disposition.match(/filename\*=UTF-8''([^;]+)/i)?.[1];
+    if (utf8Match) {
+      return decodeURIComponent(utf8Match);
+    }
+
+    return disposition.match(/filename="?([^"]+)"?/i)?.[1] ?? null;
   }
 }

@@ -26,7 +26,6 @@ import { DialogImportComponent } from './dialog-import/dialog-import.component';
   imports: [
     AppTableComponent,
     IconComponent,
-    DialogImportComponent,
     ...MATERIAL_MODULE,
     ...FORM_CONTROL_MODULE,
   ],
@@ -219,5 +218,153 @@ export class DonViComponent extends ComponentBaseAbstract {
         });
       }
     );
+  }
+
+  exportPdf(): void {
+    if (!this.canDownload) {
+      this.toastr.warning('Bạn không có quyền tải xuống', 'Cảnh báo');
+      return;
+    }
+    this.exportFile('PDF');
+  }
+
+  exportExcel(): void {
+    if (!this.canDownload) {
+      this.toastr.warning('Bạn không có quyền tải xuống', 'Cảnh báo');
+      return;
+    }
+    this.exportFile('EXCEL');
+  }
+
+  import() {
+    if (!this.canAdd) {
+      this.toastr.warning('Bạn không có quyền kết nạp dữ liệu', 'Cảnh báo');
+      return;
+    }
+    this.dialog.componentDialog(
+      DialogImportComponent,
+      {
+        width: '900px',
+      },
+      (result) => {
+        if (result) {
+          this.resetFilter();
+        }
+      }
+    );
+  }
+
+  downloadTemplate(): void {
+    this.donViService.downloadTemplate().subscribe({
+      next: (response: any) => {
+        const blob = response?.data ?? response;
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'template_import_danh_sach_don_vi.xlsx';
+        a.click();
+        setTimeout(() => window.URL.revokeObjectURL(url), 10000);
+      },
+      error: () => {
+        this.toastr.error('Không tải được file mẫu', 'Thất bại');
+      },
+    });
+  }
+
+  private exportFile(exportType: 'PDF' | 'EXCEL'): void {
+    const formValues = this.form.getRawValue();
+    const payload: DonViExportRequest = {
+      pageSize: this.pageSize,
+      pageNow: this.pageIndex + 1,
+      exportType,
+      filter: {
+        unitName: formValues[DON_VI_KEY.NAME],
+        status: formValues[DON_VI_KEY.STATUS],
+      },
+    };
+
+    this.donViService.export(payload).subscribe({
+      next: (res: any) => {
+        this.toastr.removeToastr();
+
+        const blob = this.extractBlob(res);
+        if (!blob) {
+          this.toastr.error(
+            `Xuất ${exportType} thất bại: Dữ liệu không hợp lệ`,
+            'Lỗi'
+          );
+          return;
+        }
+
+        const ext = exportType === 'PDF' ? 'pdf' : 'xlsx';
+        const fallbackName = defaultExportFileName('don-vi', ext);
+        const disposition = this.getHeader(res, 'content-disposition');
+        const fileName = this.getFileNameFromDisposition(
+          disposition,
+          fallbackName
+        );
+
+        saveBlobAsFile(blob, fileName);
+        this.toastr.success(
+          `Tải xuống ${exportType} thành công`,
+          `Xuất ${exportType}`
+        );
+      },
+      error: () => {
+        this.toastr.removeToastr();
+        this.toastr.error(`Xuất ${exportType} thất bại`, 'Lỗi');
+      },
+    });
+  }
+
+  private extractBlob(res: any): Blob | null {
+    if (res instanceof Blob) return res;
+    if (res?.body instanceof Blob) return res.body;
+    if (res?.data instanceof Blob) return res.data;
+    return null;
+  }
+
+  private getHeader(res: any, headerName: string): string | null {
+    if (res?.headers?.get) return res.headers.get(headerName);
+
+    const headers = res?.headers;
+    if (headers && typeof headers === 'object') {
+      const key = headerName.toLowerCase();
+      return headers[headerName] ?? headers[key] ?? null;
+    }
+
+    return null;
+  }
+
+  private getFileNameFromDisposition(
+    disposition: string | null,
+    fallbackName: string
+  ): string {
+    if (!disposition) return fallbackName;
+
+    const match = disposition.match(/filename\*?=(?:UTF-8'')?"?([^";]+)/i);
+    if (!match?.[1]) return fallbackName;
+
+    const rawFileName = match[1].trim();
+
+    try {
+      return this.decodeMimeFileName(decodeURIComponent(rawFileName));
+    } catch {
+      return this.decodeMimeFileName(rawFileName);
+    }
+  }
+
+  private decodeMimeFileName(fileName: string): string {
+    const mimeMatch = fileName.match(/^=\?UTF-8\?Q\?(.+)\?=$/i);
+    if (!mimeMatch?.[1]) return fileName;
+
+    const normalized = mimeMatch[1].replace(/_/g, ' ');
+    const decoded = normalized.replace(/=([0-9A-F]{2})/gi, '%$1');
+
+    try {
+      return decodeURIComponent(decoded);
+    } catch {
+      return fileName;
+    }
   }
 }

@@ -5,6 +5,7 @@ import java.util.List;
 import com.gfi.backend.models.dtos.common.LookupItemDto;
 import com.gfi.backend.models.dtos.common.PageRequestDto;
 import com.gfi.backend.models.dtos.common.PageResponseDto;
+import com.gfi.backend.models.dtos.common.TemporaryFileDto;
 import com.gfi.backend.models.dtos.unit.UnitCreateRequest;
 import com.gfi.backend.models.dtos.unit.UnitDetailDto;
 import com.gfi.backend.models.dtos.unit.UnitFilterDto;
@@ -26,7 +27,9 @@ public interface UnitService {
      */
     PageResponseDto<UnitListItemDto, UnitFilterDto> search(PageRequestDto<UnitFilterDto> request);
     byte[] export(PageRequestDto<UnitFilterDto> request, ExportType exportType);
+    byte[] exportExcelTemplate();
     UnitImportResultDto importExcel(MultipartFile file);
+    TemporaryFileDto getImportErrorFile(String token);
     
     /**
      * Lấy danh sách units để dropdown/select.

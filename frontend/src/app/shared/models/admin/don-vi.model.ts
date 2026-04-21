@@ -18,6 +18,9 @@ export const DON_VI_API_ENDPOINT = {
   BASE_PATH: 'units',
   FILTER: 'search',
   EXPORT: 'export',
+  EXCEL_TEMPLATE: 'excel-template',
+  IMPORT_EXCEL: 'import-excel',
+  IMPORT_ERROR_FILE: 'import-error-file',
   OPTIONS: 'options',
   USER_CREATION_OPTIONS: 'user-creation-options',
 };
@@ -39,6 +42,14 @@ export interface DonViFilterRequest extends TableRequest {
 
 export interface DonViExportRequest extends DonViFilterRequest {
   exportType?: 'PDF' | 'EXCEL';
+}
+
+export interface DonViImportResponseData {
+  successCount: number;
+  failedCount: number;
+  hasErrorFile?: boolean;
+  errorFileName?: string;
+  errorFileToken?: string;
 }
 
 export interface DonViFormRequest {

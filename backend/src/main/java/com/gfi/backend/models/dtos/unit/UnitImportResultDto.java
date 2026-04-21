@@ -8,4 +8,7 @@ import lombok.Data;
 public class UnitImportResultDto {
     private int successCount;
     private int failedCount;
+    private boolean hasErrorFile;
+    private String errorFileToken;
+    private String errorFileName;
 }
