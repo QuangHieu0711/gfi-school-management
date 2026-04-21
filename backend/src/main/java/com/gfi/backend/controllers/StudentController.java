@@ -1,5 +1,8 @@
 package com.gfi.backend.controllers;
 
+import java.time.LocalDate;
+import java.util.List;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -12,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.gfi.backend.controllers.annotations.DataScoped;
+import com.gfi.backend.models.dtos.common.LookupItemDto;
 import com.gfi.backend.models.dtos.common.PageRequestDto;
 import com.gfi.backend.models.dtos.common.PageResponseDto;
 import com.gfi.backend.models.dtos.student.StudentCreateRequest;
@@ -26,8 +30,6 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-
-import java.time.LocalDate;
 
 @RestController
 @RequestMapping("/api/students")
@@ -50,13 +52,22 @@ public class StudentController extends ApiBaseController {
 
     @GetMapping("/generate-code")
     @DataScoped(feature = "STUDENT_PROFILE", action = ActionType.ADD)
-    @Operation(summary = "Sinh mã học sinh", description = "Sinh mã học sinh tự động theo format: HS-{UNIT_CODE}-{YEAR}-{STT}. Backend tự lấy year từ ngày hiện tại.")
+    @Operation(summary = "Sinh mã học sinh", description = "Sinh mã học sinh tự động theo format: HS-{UNIT_CODE}-{YEAR}-{STT}.")
     public ResponseEntity<ApiResult<String>> generateStudentCode(@RequestParam Long unitId) {
         return executeApiResult(() -> {
             Integer year = LocalDate.now().getYear();
             String studentCode = studentCodeGeneratorService.generateStudentCode(unitId, year);
             return ApiResult.success(studentCode, "Sinh mã học sinh thành công");
         });
+    }
+
+    @GetMapping("/by-classroom")
+    @DataScoped(feature = "STUDENT_PROFILE", action = ActionType.VIEW)
+    @Operation(summary = "Danh sách học sinh thuộc lớp", description = "Lấy danh sách học sinh đang thuộc một lớp.")
+    public ResponseEntity<ApiResult<List<LookupItemDto>>> getStudentsByClassroom(@RequestParam Long classroomId) {
+        return executeApiResult(() -> ApiResult.success(
+                studentService.getStudentsByClassroom(classroomId),
+                "Hiển thị danh sách học sinh theo lớp thành công"));
     }
 
     @PostMapping

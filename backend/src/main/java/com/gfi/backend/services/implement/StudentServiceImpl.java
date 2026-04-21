@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.gfi.backend.controllers.exceptions.UserMessageException;
+import com.gfi.backend.models.dtos.common.LookupItemDto;
 import com.gfi.backend.models.dtos.common.PageRequestDto;
 import com.gfi.backend.models.dtos.common.PageResponseDto;
 import com.gfi.backend.models.dtos.student.StudentAddressCreateRequest;
@@ -104,6 +105,20 @@ public class StudentServiceImpl implements StudentService {
                 .recordTotal(page.getTotalElements())
                 .items(items)
                 .build();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<LookupItemDto> getStudentsByClassroom(Long classroomId) {
+        findClassroom(classroomId);
+        return studentEnrollmentRepository.findByClassroomIdAndDeletedFlagOrderByStudentFullNameAsc(classroomId, 0)
+                .stream()
+                .map(StudentEnrollment::getStudent)
+                .map(student -> LookupItemDto.builder()
+                        .id(student.getId())
+                        .name(student.getStudentCode() + " - " + student.getFullName())
+                        .build())
+                .toList();
     }
 
     @Override
