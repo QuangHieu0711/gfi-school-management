@@ -12,6 +12,7 @@ public class StaffItemDto {
     private String fullName;
     private String aliasName;
     private Long unitId;
+    private String unitName;
     private Long gradeId;
     private String gender;
     private LocalDate dateOfBirth;

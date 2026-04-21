@@ -326,15 +326,6 @@ public class WeekConfigServiceImpl implements WeekConfigService {
             }
         }
     }
-
-    private void validateWeekNumberUnique(Long semesterId, Integer weekNumber, Long excludeId) {
-        weekConfigRepository.findBySemesterIdAndWeekNumberAndDeletedFlag(semesterId, weekNumber, 0)
-                .filter(item -> excludeId == null || !item.getId().equals(excludeId))
-                .ifPresent(item -> {
-                    throw new UserMessageException(CommonErrorCode.WEEK_CONFIG_WEEK_NUMBER_ALREADY_EXISTS);
-                });
-    }
-
     private void validateEditedWeekNumber(WeekConfig currentWeekConfig, Integer requestWeekNumber) {
         if (!currentWeekConfig.getWeekNumber().equals(requestWeekNumber)) {
             throw new UserMessageException(CommonErrorCode.WEEK_CONFIG_WEEK_NUMBER_ALREADY_EXISTS);
@@ -344,19 +335,6 @@ public class WeekConfigServiceImpl implements WeekConfigService {
     private boolean isDateChanged(WeekConfig currentWeekConfig, WeekConfigBulkUpdateItemRequest requestItem) {
         return !currentWeekConfig.getStartDate().equals(requestItem.getStartDate())
                 || !currentWeekConfig.getEndDate().equals(requestItem.getEndDate());
-    }
-
-    private void validateNoOverlappingWeek(Long semesterId, LocalDate startDate, LocalDate endDate, Long excludeId) {
-        List<WeekConfig> existing = weekConfigRepository.findBySemesterIdAndDeletedFlagOrderByWeekNumberAscIdAsc(semesterId, 0);
-
-        for (WeekConfig item : existing) {
-            if (excludeId != null && item.getId().equals(excludeId)) {
-                continue;
-            }
-            if (!startDate.isAfter(item.getEndDate()) && !endDate.isBefore(item.getStartDate())) {
-                throw new UserMessageException(CommonErrorCode.WEEK_CONFIG_DATE_OVERLAP);
-            }
-        }
     }
 
     private void validateWeekInsideSemester(Semester semester, LocalDate startDate, LocalDate endDate) {

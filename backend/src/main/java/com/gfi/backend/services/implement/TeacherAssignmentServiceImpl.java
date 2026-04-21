@@ -12,7 +12,6 @@ import com.gfi.backend.models.dtos.staff.TeacherAssignmentSearchRequest;
 import com.gfi.backend.models.dtos.staff.TeacherAssignmentSearchResponse;
 import com.gfi.backend.models.dtos.staff.TeacherAssignmentSearchStaffItemDto;
 import com.gfi.backend.models.entities.Classroom;
-import com.gfi.backend.models.entities.ClassroomSubject;
 import com.gfi.backend.models.entities.SchoolYear;
 import com.gfi.backend.models.entities.Semester;
 import com.gfi.backend.models.entities.Staff;
@@ -56,7 +55,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -507,6 +505,7 @@ public class TeacherAssignmentServiceImpl implements TeacherAssignmentService {
         Row row3 = sheet.createRow(3);
         createCell(row3, 7, "SemesterTwoId", bodyStyle);
         createCell(row3, 8, context.semesterTwo() != null ? context.semesterTwo().getId() : null, bodyStyle);
+        Row row4 = sheet.createRow(4);
         sheet.setColumnHidden(7, true);
         sheet.setColumnHidden(8, true);
 

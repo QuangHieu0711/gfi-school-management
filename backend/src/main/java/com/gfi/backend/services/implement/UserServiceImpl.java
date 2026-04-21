@@ -2,9 +2,11 @@ package com.gfi.backend.services.implement;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.function.Supplier;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -67,6 +69,7 @@ public class UserServiceImpl implements UserService {
     
     // Feature key cho phân quyền - match với DB (ACCOUNT_MANAGEMENT)
     private static final String FEATURE = FeatureKey.ACCOUNT_MANAGEMENT.getCode();
+    private static final String STAFF_FEATURE = FeatureKey.STAFF_PROFILE.getCode();
 
     /**
      * Lấy danh sách unit options cho form tạo người dùng.
@@ -77,11 +80,7 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional(readOnly = true)
     public List<LookupItemDto> getUnitOptionsForCreateUser() {
-        // Check functional access: USER_MANAGEMENT
-        ScopeFilterUtils.checkAccess(FEATURE);
-
-        // Get allowed unit scopes for this user - with action-level permission
-        List<ResolvedScope> allowedScopes = ScopeFilterUtils.getScopesForQuery(FEATURE, ActionType.ADD);
+        List<ResolvedScope> allowedScopes = resolveScopesForCreateUserOptions();
         
         // Check if user has unrestricted access
         boolean isUnrestricted = allowedScopes.stream().anyMatch(ResolvedScope::isUnrestricted);
@@ -107,10 +106,46 @@ public class UserServiceImpl implements UserService {
                 .toList();
     }
 
+    private void ensureAccessForCreateUserOptions() {
+        tryPrimaryThenFallback(
+                () -> {
+                    ScopeFilterUtils.checkAccess(FEATURE);
+                    return null;
+                },
+                () -> {
+                    ScopeFilterUtils.checkAccess(STAFF_FEATURE);
+                    return null;
+                });
+    }
+
+    private List<ResolvedScope> resolveScopesForCreateUserOptions() {
+        return tryPrimaryThenFallback(
+                () -> {
+                    ScopeFilterUtils.checkAccess(FEATURE);
+                    return ScopeFilterUtils.getScopesForQuery(FEATURE, ActionType.ADD);
+                },
+                () -> {
+                    ScopeFilterUtils.checkAccess(STAFF_FEATURE);
+                    return ScopeFilterUtils.getScopesForQuery(STAFF_FEATURE, ActionType.ADD);
+                });
+    }
+
+    private <T> T tryPrimaryThenFallback(Supplier<T> primary, Supplier<T> fallback) {
+        try {
+            return primary.get();
+        } catch (AccessDeniedException primaryException) {
+            try {
+                return fallback.get();
+            } catch (AccessDeniedException fallbackException) {
+                throw primaryException;
+            }
+        }
+    }
+
     @Override
     @Transactional(readOnly = true)
     public List<LookupItemDto> getRoleOptionsForCreateUser() {
-        ScopeFilterUtils.checkAccess(FEATURE);
+        ensureAccessForCreateUserOptions();
 
         UserScopes userScopes = SecurityContextUtils.getCurrentUserScopes()
                 .orElseThrow(() -> new UserMessageException(CommonErrorCode.ACCESS_DENIED));

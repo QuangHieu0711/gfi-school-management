@@ -26,6 +26,7 @@ import { HocKyService } from '@app/service/admin/hoc-ky.service';
 import { MonHocService } from '@app/service/admin/mon-hoc.service';
 import { NamHocService } from '@app/service/admin/nam-hoc.service';
 import { PhanCongGiangDayService } from '@app/service/admin/phan-cong-giang-day.service';
+import { DialogImportPhanCongGiangDayComponent } from './dialog-import/dialog-import.component';
 import { DialogPhanCongGiangDayComponent } from './dialog-phan-cong-giang-day/dialog-phan-cong-giang-day.component';
 
 @Component({
@@ -85,6 +86,10 @@ export class PhanCongGiangDayComponent extends ComponentBaseAbstract {
 
   get canEdit(): boolean {
     return this.permissionCheckService.canEdit(this.menuCode);
+  }
+
+  get canImport(): boolean {
+    return this.permissionCheckService.canAdd(this.menuCode);
   }
 
   constructor(
@@ -155,6 +160,23 @@ export class PhanCongGiangDayComponent extends ComponentBaseAbstract {
       pageIndex: event.pageIndex,
       pageSize: event.pageSize,
     });
+  }
+
+  openImportDialog(): void {
+    this.dialog.componentDialog(
+      DialogImportPhanCongGiangDayComponent,
+      {
+        width: '640px',
+      },
+      (result?: boolean) => {
+        if (result) {
+          this.filterData({
+            pageIndex: this.pageIndex,
+            pageSize: this.pageSize,
+          });
+        }
+      }
+    );
   }
 
   openDialog(type: TYPE_FORM_KEY, rowData?: PhanCongGiangDayResponse): void {

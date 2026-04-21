@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, Inject, Injector } from '@angular/core';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
-import { forkJoin } from 'rxjs';
+import { distinctUntilChanged, forkJoin, takeUntil } from 'rxjs';
 
 import { AppDialogComponent } from '@components/app-dialog/app-dialog.component';
 import { TYPE_FORM, TYPE_FORM_KEY } from '@constant/constant';
@@ -27,11 +27,13 @@ import {
 import { LopResponse } from '@app/model/admin/lop.model';
 import { MonHocResponse } from '@app/model/admin/mon-hoc.model';
 import { NamHocOptionResponse } from '@app/model/admin/nam-hoc.model';
+import { HocKyResponse } from '@app/model/admin/hoc-ky.model';
 import { CanBoService } from '@app/service/admin/can-bo.service';
 import { KhoiService } from '@app/service/admin/khoi.service';
 import { LopService } from '@app/service/admin/lop.service';
 import { MonHocService } from '@app/service/admin/mon-hoc.service';
 import { NamHocService } from '@app/service/admin/nam-hoc.service';
+import { HocKyService } from '@app/service/admin/hoc-ky.service';
 import { PhanCongGiaoVienService } from '@app/service/admin/phan-cong-giao-vien.service';
 import { PhanCongGiangDayService } from '@app/service/admin/phan-cong-giang-day.service';
 
@@ -85,6 +87,7 @@ export class DialogPhanCongGiangDayComponent extends ComponentBaseAbstract {
     private readonly dialogRef: MatDialogRef<DialogPhanCongGiangDayComponent>,
     private readonly phanCongService: PhanCongGiangDayService,
     private readonly namHocService: NamHocService,
+    private readonly hocKyService: HocKyService,
     private readonly lopService: LopService,
     private readonly monHocService: MonHocService,
     private readonly canBoService: CanBoService,
@@ -375,7 +378,7 @@ export class DialogPhanCongGiangDayComponent extends ComponentBaseAbstract {
               data?.id != null &&
               (schoolYearValue == null || schoolYearValue === '')
             ) {
-              schoolYearControl?.setValue(data.id, { emitEvent: false });
+              schoolYearControl?.setValue(data.id, { emitEvent: true });
             }
           },
         });
@@ -467,10 +470,46 @@ export class DialogPhanCongGiangDayComponent extends ComponentBaseAbstract {
   }
 
   private bindFormChanges(): void {
+    this.form
+      .get(this.key.SCHOOL_YEAR_ID)
+      ?.valueChanges.pipe(distinctUntilChanged(), takeUntil(this.ngUnsubscribe))
+      .subscribe((schoolYearId) => {
+        this.form.patchValue(
+          {
+            [this.key.SEMESTER_ID]: null,
+          },
+          { emitEvent: false }
+        );
+
+        this.findFormControl(this.$formItem, this.key.SEMESTER_ID).options = [];
+
+        if (schoolYearId == null || schoolYearId === '') {
+          return;
+        }
+
+        this.loadSemesterOptions(schoolYearId as ID_TYPE);
+      });
+
     this.form.get(this.key.SUBJECT_ID)?.valueChanges.subscribe((subjectId) => {
       this.persistSelectionBySubject(this.previousSubjectId);
       this.previousSubjectId = subjectId;
       this.reloadClassOptionsBySubject();
+    });
+  }
+
+  private loadSemesterOptions(schoolYearId: ID_TYPE): void {
+    this.hocKyService.getOptions(schoolYearId).subscribe({
+      next: ({ data }) => {
+        this.findFormControl(this.$formItem, this.key.SEMESTER_ID).options = (
+          data ?? []
+        ).map((item: HocKyResponse | { id: number; name: string }) => ({
+          label: item.name ?? '',
+          value: item.id,
+        })) as IOptions[];
+      },
+      error: () => {
+        this.findFormControl(this.$formItem, this.key.SEMESTER_ID).options = [];
+      },
     });
   }
 
@@ -488,6 +527,7 @@ export class DialogPhanCongGiangDayComponent extends ComponentBaseAbstract {
     this.form.patchValue(
       {
         schoolYearId: data.schoolYearId ?? '',
+        semesterId: data.semesterId ?? '',
         classId: this.isCreateMode()
           ? selectedClassIds
           : (selectedClassIds[0] ?? ''),
@@ -721,6 +761,7 @@ export class DialogPhanCongGiangDayComponent extends ComponentBaseAbstract {
       unitId: this.getCurrentUnitId(),
       staffId: this.selectedStaff?.id ?? this.data.staffId,
       schoolYearId: value.schoolYearId ?? '',
+      semesterId: value.semesterId ?? '',
     };
 
     if (this.isCreateMode()) {

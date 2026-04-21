@@ -8,6 +8,7 @@ import {
   PhanCongGiangDayDetailRequest,
   PhanCongGiangDayDetailResponse,
   PhanCongGiangDayFilterRequest,
+  PhanCongGiangDayImportRequest,
   PhanCongGiangDayResponse,
   PhanCongGiangDayUpsertRequest,
 } from '@app/model/admin/phan-cong-giang-day.model';
@@ -59,5 +60,38 @@ export class PhanCongGiangDayService {
     return this.http.delete<IResponse<null>>(`${this.baseUrl}/${id}`, {
       context: this.silentContext,
     });
+  }
+
+  downloadTemplate(params: PhanCongGiangDayImportRequest) {
+    return this.http.post(
+      `${this.baseUrl}/${PHAN_CONG_GIANG_DAY_API_ENDPOINT.EXCEL_TEMPLATE}`,
+      null,
+      {
+        params: this.buildImportQueryParams(params),
+        observe: 'response',
+        responseType: 'blob',
+      }
+    );
+  }
+
+  importExcel(params: PhanCongGiangDayImportRequest, file: File) {
+    const formData = new FormData();
+    formData.append('file', file, file.name);
+
+    return this.http.post<IResponse<null>>(
+      `${this.baseUrl}/${PHAN_CONG_GIANG_DAY_API_ENDPOINT.IMPORT_EXCEL}`,
+      formData,
+      {
+        params: this.buildImportQueryParams(params),
+        context: this.silentContext,
+      }
+    );
+  }
+
+  private buildImportQueryParams(params: PhanCongGiangDayImportRequest) {
+    return {
+      schoolYearId: String(params.schoolYearId),
+      unitId: String(params.unitId),
+    };
   }
 }

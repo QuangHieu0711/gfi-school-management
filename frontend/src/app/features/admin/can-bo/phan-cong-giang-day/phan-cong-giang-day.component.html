@@ -36,6 +36,20 @@
           Thêm mới
         </button>
       }
+      @if (canImport) {
+        <button
+          color="primary"
+          matButton="filled"
+          class="btn-tight"
+          type="button"
+          (click)="openImportDialog()">
+          <app-icon
+            icon="upload"
+            [size]="18"
+            class="btn-icon" />
+          Kết nạp
+        </button>
+      }
     </div>
   </div>
 

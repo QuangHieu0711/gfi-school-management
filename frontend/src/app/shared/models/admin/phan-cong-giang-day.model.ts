@@ -36,6 +36,8 @@ export const PHAN_CONG_GIANG_DAY_API_ENDPOINT = {
   BASE_PATH: 'teacher-assignments',
   FILTER: 'search',
   DETAIL: 'detail',
+  IMPORT_EXCEL: 'import-excel',
+  EXCEL_TEMPLATE: 'excel-template',
 };
 
 export interface PhanCongGiangDayFilter {
@@ -112,6 +114,11 @@ export interface PhanCongGiangDayUpsertRequest {
   schoolYearId?: ID_TYPE;
   semesterId?: ID_TYPE;
   assignments: PhanCongGiangDayAssignmentRequest[];
+}
+
+export interface PhanCongGiangDayImportRequest {
+  schoolYearId: ID_TYPE;
+  unitId: ID_TYPE;
 }
 
 export interface PhanCongGiangDayDetailRequest {
