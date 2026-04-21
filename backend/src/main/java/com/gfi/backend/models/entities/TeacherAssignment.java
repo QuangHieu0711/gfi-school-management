@@ -3,7 +3,6 @@ package com.gfi.backend.models.entities;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
-import java.math.BigDecimal;
 
 @Entity
 @Table(name = "teacher_assignments", uniqueConstraints = {
@@ -32,16 +31,4 @@ public class TeacherAssignment {
     @ManyToOne
     @JoinColumn(name = "subject_id", nullable = true, foreignKey = @ForeignKey(name = "fk_teacher_assignments_subject"))
     private Subject subject;
-
-    @Column
-    private Boolean isHomeroom;
-
-    @Column
-    private Long departmentId;
-
-    @Column(precision = 5, scale = 2)
-    private BigDecimal teachingLoad;
-
-    @Column(columnDefinition = "TEXT")
-    private String note;
 }

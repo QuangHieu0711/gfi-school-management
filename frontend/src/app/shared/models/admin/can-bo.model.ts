@@ -24,6 +24,7 @@ export enum CAN_BO_KEY {
 export const CAN_BO_API_ENDPOINT = {
   BASE_PATH: 'staffs',
   FILTER: 'search',
+  BY_GRADE: 'grade',
 };
 
 export interface CanBoFilter {

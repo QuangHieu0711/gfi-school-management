@@ -158,6 +158,18 @@ public class StaffServiceImpl implements StaffService {
         staffRepository.save(staff);
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public List<StaffGradeItemDto> getByGrade(Long gradeLevelId, Long unitId) {
+        List<Staff> staffs;
+        if (unitId != null) {
+            staffs = staffRepository.findByUnitIdAndGradeLevelId(unitId, gradeLevelId);
+        } else {
+            staffs = staffRepository.findByGradeLevelId(gradeLevelId);
+        }
+        return staffs.stream().map(this::toGradeItemDto).toList();
+    }
+
     private Specification<Staff> buildSpecification(StaffFilterDto filter) {
         return (root, query, cb) -> {
             List<Predicate> predicates = new java.util.ArrayList<>();
@@ -253,6 +265,16 @@ public class StaffServiceImpl implements StaffService {
                 .status(staff.getStatus())
                 .cccdNo(staff.getCccdNo())
                 .avatarUrl(staff.getAvatarUrl())
+                .build();
+    }
+
+    private StaffGradeItemDto toGradeItemDto(Staff staff) {
+        return StaffGradeItemDto.builder()
+                .id(staff.getId())
+                .staffCode(staff.getStaffCode())
+                .fullName(staff.getFullName())
+                .unitId(staff.getUnit() == null ? null : staff.getUnit().getId())
+                .gradeId(staff.getGradeLevel() == null ? null : staff.getGradeLevel().getId())
                 .build();
     }
 

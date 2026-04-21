@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.gfi.backend.models.dtos.common.LookupItemDto;
@@ -21,6 +22,7 @@ import com.gfi.backend.models.dtos.subject.SubjectDetailDto;
 import com.gfi.backend.models.dtos.subject.SubjectListItemDto;
 import com.gfi.backend.models.dtos.subject.SubjectUpdateRequest;
 import com.gfi.backend.models.global.ApiResult;
+import com.gfi.backend.services.interfaces.ClassroomSubjectService;
 import com.gfi.backend.services.interfaces.SubjectService;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -39,6 +41,7 @@ import lombok.RequiredArgsConstructor;
 public class SubjectController extends ApiBaseController {
 
     private final SubjectService subjectService;
+    private final ClassroomSubjectService classroomSubjectService;
 
     /**
      * Tìm kiếm và phân trang môn học với filter.
@@ -64,6 +67,15 @@ public class SubjectController extends ApiBaseController {
     public ResponseEntity<ApiResult<List<LookupItemDto>>> getOptions() {
         return executeApiResult(
                 () -> ApiResult.success(subjectService.getOptions(), "Hiển thị danh sách môn học thành công"));
+    }
+
+    @GetMapping("/{subjectId}/classrooms")
+    @Operation(summary = "Danh sách lớp theo môn học", description = "Lấy danh sách lớp đang cấu hình môn học được chọn.")
+    public ResponseEntity<ApiResult<List<LookupItemDto>>> getClassroomsBySubjectId(@PathVariable Long subjectId,
+            @RequestParam(required = false) Long unitId) {
+        return executeApiResult(() -> ApiResult.success(
+                classroomSubjectService.getClassroomsBySubjectId(subjectId, unitId),
+                "Hiển thị danh sách lớp theo môn học thành công"));
     }
 
     /**

@@ -29,9 +29,12 @@ export class CanBoService {
   }
 
   getById(id: string | number) {
-    return this.http.get<IResponse<CanBoDetailResponse>>(`${this.baseUrl}/${id}`, {
-      context: this.silentContext,
-    });
+    return this.http.get<IResponse<CanBoDetailResponse>>(
+      `${this.baseUrl}/${id}`,
+      {
+        context: this.silentContext,
+      }
+    );
   }
 
   update(id: string | number, payload: CanBoFormRequest) {
@@ -65,5 +68,20 @@ export class CanBoService {
       params: { unitId },
       context: this.silentContext,
     });
+  }
+
+  getByGrade(gradeId: string | number, unitId?: string | number) {
+    const params: Record<string, string | number> = {};
+    if (unitId !== undefined && unitId !== null && unitId !== '') {
+      params['unitId'] = unitId;
+    }
+
+    return this.http.get<IResponse<CanBoResponse[]>>(
+      `${this.baseUrl}/${CAN_BO_API_ENDPOINT.BY_GRADE}/${gradeId}`,
+      {
+        params,
+        context: this.silentContext,
+      }
+    );
   }
 }

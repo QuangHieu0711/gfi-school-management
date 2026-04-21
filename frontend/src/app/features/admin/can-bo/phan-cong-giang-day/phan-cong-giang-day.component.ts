@@ -201,7 +201,7 @@ export class PhanCongGiangDayComponent extends ComponentBaseAbstract {
     this.dialog.componentDialog(
       DialogPhanCongGiangDayComponent,
       {
-        width: '720px',
+        width: '1080px',
         data: {
           type,
           id: rowData?.id,

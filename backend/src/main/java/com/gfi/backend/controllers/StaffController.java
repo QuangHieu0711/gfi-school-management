@@ -19,6 +19,7 @@ import com.gfi.backend.models.dtos.common.PageResponseDto;
 import com.gfi.backend.models.dtos.staff.StaffCreateRequest;
 import com.gfi.backend.models.dtos.staff.StaffDetailDto;
 import com.gfi.backend.models.dtos.staff.StaffFilterDto;
+import com.gfi.backend.models.dtos.staff.StaffGradeItemDto;
 import com.gfi.backend.models.dtos.staff.StaffItemDto;
 import com.gfi.backend.models.dtos.staff.StaffUpdateRequest;
 import com.gfi.backend.models.enums.ActionType;
@@ -94,5 +95,14 @@ public class StaffController extends ApiBaseController {
             staffService.delete(id);
             return ApiResult.success(null, "Xóa cán bộ thành công");
         });
+    }
+
+    @GetMapping("/grade/{gradeId}")
+    @DataScoped(feature = "STAFF_PROFILE", action = ActionType.VIEW)
+    @Operation(summary = "Danh sách cán bộ theo khối", description = "Lấy danh sách cán bộ thuộc khối (grade).")
+    public ResponseEntity<ApiResult<java.util.List<StaffGradeItemDto>>> getByGrade(@PathVariable Long gradeId,
+            @RequestParam(required = false) Long unitId) {
+        return executeApiResult(
+                () -> ApiResult.success(staffService.getByGrade(gradeId, unitId), "Hiển thị danh sách cán bộ theo khối thành công"));
     }
 }

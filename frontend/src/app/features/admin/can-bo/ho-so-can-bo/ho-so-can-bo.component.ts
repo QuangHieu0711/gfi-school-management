@@ -900,7 +900,7 @@ export class HoSoCanBoComponent extends ComponentBaseAbstract {
     this.dialog.componentDialog(
       DialogPhanCongGiangDayComponent,
       {
-        width: '720px',
+        width: '1080px',
         data: {
           type,
           staffId: Number(this.staffId),

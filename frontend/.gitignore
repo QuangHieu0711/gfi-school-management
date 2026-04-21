@@ -50,5 +50,24 @@ os_del_doc.cmd
 derby.log
 
 README.md
-/BanGiao_KhachHang
 
+# temp / local shell files
+.bash_history
+.bash_profile
+.bashrc
+
+# local tool configs
+.angular-config.json
+.claude.json
+.adbkey
+.adbkey.pub
+.analytics.settings
+
+# emulator / local machine files
+debug.keystore
+debug.keystore.lock
+emu-last-feature-flags.protobuf
+emu-update-last-check.ini
+maps.key
+modem-nv-ram-*
+adbcommand*

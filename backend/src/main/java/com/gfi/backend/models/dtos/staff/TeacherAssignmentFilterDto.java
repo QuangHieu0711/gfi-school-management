@@ -8,5 +8,4 @@ public class TeacherAssignmentFilterDto {
     private Long schoolYearId;
     private Long classId;
     private Long subjectId;
-    private Boolean isHomeroom;
 }

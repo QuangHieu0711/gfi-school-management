@@ -5,41 +5,111 @@
     #formTpl
     [form]="form"
     (submitEvent)="onSubmit()">
-    <div class="form-grid">
-      @if (!data.staffId) {
-        <app-select-control
-          [item]="findFormControl($formItem, key.STAFF_ID)"
-          [form]="form"></app-select-control>
-      }
+    <div class="assignment-dialog">
+      <div class="staff-panel">
+        <div class="staff-panel__scroll">
+          @if (staffGroups.length) {
+            @for (group of staffGroups; track group.gradeId) {
+              <div class="staff-group">
+                <button
+                  type="button"
+                  class="staff-group__header"
+                  (click)="toggleGroup(group)">
+                  <mat-icon>
+                    {{ group.expanded ? 'expand_more' : 'chevron_right' }}
+                  </mat-icon>
+                  <span>{{ group.gradeName }}</span>
+                </button>
+                @if (group.expanded && group.staffs.length) {
+                  <div class="staff-list">
+                    @for (staff of group.staffs; track staff.id) {
+                      <button
+                        type="button"
+                        class="staff-item"
+                        [class.active]="isSelectedStaff(staff.id)"
+                        (click)="selectStaff(staff, group.gradeId)">
+                        {{ staff.fullName }}
+                      </button>
+                    }
+                  </div>
+                }
+              </div>
+            }
+          } @else {
+            <div class="staff-panel__empty">Chưa có danh sách cán bộ</div>
+          }
+        </div>
+      </div>
 
-      <app-select-control
-        [item]="findFormControl($formItem, key.SCHOOL_YEAR_ID)"
-        [form]="form"></app-select-control>
+      <div class="assignment-form">
+        <div class="assignment-form__single">
+          <app-select-control
+            [item]="findFormControl($formItem, key.SCHOOL_YEAR_ID)"
+            [form]="form"></app-select-control>
+          <app-select-control
+            [item]="findFormControl($formItem, key.SUBJECT_ID)"
+            [form]="form"></app-select-control>
+        </div>
+        <app-text-control
+          [item]="findFormControl($formItem, key.ASSIGNMENT_SUMMARY)"
+          [form]="form"></app-text-control>
 
-      <app-select-control
-        [item]="findFormControl($formItem, key.DEPARTMENT_ID)"
-        [form]="form"></app-select-control>
-
-      <app-select-control
-        [item]="findFormControl($formItem, key.CLASS_ID)"
-        [form]="form"></app-select-control>
-
-      <app-select-control
-        [item]="findFormControl($formItem, key.SUBJECT_ID)"
-        [form]="form"></app-select-control>
-
-      <app-text-control
-        [item]="findFormControl($formItem, key.TEACHING_LOAD)"
-        [form]="form"></app-text-control>
-
-      <app-checkbox-control
-        [item]="findFormControl($formItem, key.IS_HOMEROOM)"
-        [form]="form"></app-checkbox-control>
-
-      <app-textarea-control
-        [item]="findFormControl($formItem, key.NOTE)"
-        [form]="form"
-        class="full-row"></app-textarea-control>
+        <div class="assignment-table">
+          <div class="assignment-table__wrap">
+            <table class="assignment-table__element">
+              <thead>
+                <tr>
+                  <th class="assignment-table__check">
+                    <mat-checkbox
+                      [checked]="isAllDisplayedSelected()"
+                      [indeterminate]="isSomeDisplayedSelected()"
+                      [disabled]="
+                        data.type === TYPE_FORM.DETAIL ||
+                        !getDisplayedClassOptions().length
+                      "
+                      (change)="toggleSelectAllClasses($event.checked)"></mat-checkbox>
+                  </th>
+                  <th class="assignment-table__class-name">Tên lớp</th>
+                </tr>
+              </thead>
+              <tbody>
+                @if (getDisplayedClassOptions().length) {
+                  @for (
+                    classItem of getDisplayedClassOptions();
+                    track classItem.value
+                  ) {
+                    <tr
+                      class="assignment-table__row"
+                      [class.selected]="isClassSelected(classItem.value)">
+                      <td class="assignment-table__check">
+                        <mat-checkbox
+                          [checked]="isClassSelected(classItem.value)"
+                          [disabled]="data.type === TYPE_FORM.DETAIL"
+                          (change)="
+                            selectClass(classItem.value, $event.checked)
+                          "></mat-checkbox>
+                      </td>
+                      <td
+                        class="assignment-table__class-name"
+                        (click)="selectClass(classItem.value)">
+                        {{ classItem.label }}
+                      </td>
+                    </tr>
+                  }
+                } @else {
+                  <tr>
+                    <td
+                      colspan="2"
+                      class="assignment-table__empty">
+                      Chưa có lớp phù hợp với môn đang chọn
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
     </div>
   </app-form-control>
 
@@ -48,14 +118,14 @@
       color="primary"
       matButton="outlined"
       mat-dialog-close>
-      Huy
+      Hủy
     </button>
     @if (data.type !== TYPE_FORM.DETAIL) {
       <button
         color="primary"
         matButton="filled"
         (click)="formTpl.submit()">
-        Luu
+        Lưu
       </button>
     }
     @if (data.type === TYPE_FORM.DETAIL) {
@@ -63,7 +133,7 @@
         color="primary"
         matButton="filled"
         (click)="switchUpdate()">
-        Chinh sua
+        Chỉnh sửa
       </button>
     }
   </ng-template>

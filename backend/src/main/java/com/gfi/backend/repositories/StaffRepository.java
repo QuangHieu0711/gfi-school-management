@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
+import java.util.List;
 
 @Repository
 public interface StaffRepository extends JpaRepository<Staff, Long>, JpaSpecificationExecutor<Staff> {
@@ -28,4 +29,10 @@ public interface StaffRepository extends JpaRepository<Staff, Long>, JpaSpecific
      */
     @Query("SELECT s FROM Staff s WHERE s.user IS NOT NULL AND s.deletedFlag = 0")
     Page<Staff> findStaffsWithUserAccount(Pageable pageable);
+
+    @Query("SELECT s FROM Staff s WHERE s.gradeLevel.id = ?1 AND s.deletedFlag = 0")
+    List<Staff> findByGradeLevelId(Long gradeLevelId);
+
+    @Query("SELECT s FROM Staff s WHERE s.unit.id = ?1 AND s.gradeLevel.id = ?2 AND s.deletedFlag = 0")
+    List<Staff> findByUnitIdAndGradeLevelId(Long unitId, Long gradeLevelId);
 }

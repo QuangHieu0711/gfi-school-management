@@ -27,19 +27,19 @@ public class ClassroomSubjectController extends ApiBaseController {
     private final ClassroomSubjectService classroomSubjectService;
 
     @GetMapping("/{classroomId}")
-    @Operation(summary = "Chi tiet cau hinh mon hoc cua lop", description = "Lay danh sach mon hoc lop duoc ke thua tu khoi va trang thai dang bat.")
+    @Operation(summary = "Chi tiết cấu hình môn học của lớp", description = "Lấy danh sách môn học theo lớp, bao gồm cả môn học kế thừa từ khối và môn học được cấu hình riêng cho lớp.")
     public ResponseEntity<ApiResult<ClassroomSubjectConfigDto>> getByClassroomId(@PathVariable Long classroomId) {
         return executeApiResult(() -> ApiResult.success(
                 classroomSubjectService.getByClassroomId(classroomId),
-                "Hien thi cau hinh mon hoc cua lop thanh cong"));
+                "Hiển thị cấu hình môn học của lớp thành công"));
     }
 
     @PostMapping("/assign")
-    @Operation(summary = "Cap nhat mon hoc cua lop", description = "Luu danh sach mon hoc dang ap dung cho lop trong pham vi mon hoc cua khoi.")
+    @Operation(summary = "Cập nhật môn học của lớp", description = "Lưu danh sách môn học đang áp dụng cho lớp trong phạm vi môn học của khối.")
     public ResponseEntity<ApiResult<ClassroomSubjectConfigDto>> assignSubjects(
             @Valid @RequestBody ClassroomSubjectAssignRequest request) {
         return executeApiResult(() -> ApiResult.success(
                 classroomSubjectService.assignSubjects(request),
-                "Luu cau hinh mon hoc cua lop thanh cong"));
+                "Lưu cấu hình môn học của lớp thành công"));
     }
 }

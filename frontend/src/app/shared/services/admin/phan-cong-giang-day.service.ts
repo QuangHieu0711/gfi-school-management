@@ -5,9 +5,11 @@ import { environment } from '@env/environment';
 import { IResponse, ITableResponse } from '@model/response.model';
 import {
   PHAN_CONG_GIANG_DAY_API_ENDPOINT,
+  PhanCongGiangDayDetailRequest,
+  PhanCongGiangDayDetailResponse,
   PhanCongGiangDayFilterRequest,
-  PhanCongGiangDayFormRequest,
   PhanCongGiangDayResponse,
+  PhanCongGiangDayUpsertRequest,
 } from '@app/model/admin/phan-cong-giang-day.model';
 
 @Injectable({ providedIn: 'root' })
@@ -26,11 +28,14 @@ export class PhanCongGiangDayService {
     );
   }
 
-  getById(id: string | number) {
-    return this.http.get<IResponse<PhanCongGiangDayResponse>>(`${this.baseUrl}/${id}`);
+  getDetail(payload: PhanCongGiangDayDetailRequest) {
+    return this.http.post<IResponse<PhanCongGiangDayDetailResponse>>(
+      `${this.baseUrl}/${PHAN_CONG_GIANG_DAY_API_ENDPOINT.DETAIL}`,
+      payload
+    );
   }
 
-  create(payload: PhanCongGiangDayFormRequest) {
+  create(payload: PhanCongGiangDayUpsertRequest) {
     return this.http.post<IResponse<PhanCongGiangDayResponse>>(
       this.baseUrl,
       payload,
@@ -40,9 +45,9 @@ export class PhanCongGiangDayService {
     );
   }
 
-  update(id: string | number, payload: PhanCongGiangDayFormRequest) {
+  update(payload: PhanCongGiangDayUpsertRequest) {
     return this.http.put<IResponse<PhanCongGiangDayResponse>>(
-      `${this.baseUrl}/${id}`,
+      this.baseUrl,
       payload,
       {
         context: this.silentContext,

@@ -14,6 +14,7 @@ import com.gfi.backend.controllers.exceptions.UserMessageException;
 import com.gfi.backend.models.dtos.classroomsubject.ClassroomSubjectAssignRequest;
 import com.gfi.backend.models.dtos.classroomsubject.ClassroomSubjectConfigDto;
 import com.gfi.backend.models.dtos.classroomsubject.ClassroomSubjectItemDto;
+import com.gfi.backend.models.dtos.common.LookupItemDto;
 import com.gfi.backend.models.entities.Classroom;
 import com.gfi.backend.models.entities.ClassroomSubject;
 import com.gfi.backend.models.entities.GradeLevelSubject;
@@ -22,6 +23,7 @@ import com.gfi.backend.models.global.CommonErrorCode;
 import com.gfi.backend.repositories.ClassroomRepository;
 import com.gfi.backend.repositories.ClassroomSubjectRepository;
 import com.gfi.backend.repositories.GradeLevelSubjectRepository;
+import com.gfi.backend.repositories.SubjectRepository;
 import com.gfi.backend.services.interfaces.ClassroomSubjectService;
 
 import lombok.RequiredArgsConstructor;
@@ -33,6 +35,7 @@ public class ClassroomSubjectServiceImpl implements ClassroomSubjectService {
     private final ClassroomRepository classroomRepository;
     private final ClassroomSubjectRepository classroomSubjectRepository;
     private final GradeLevelSubjectRepository gradeLevelSubjectRepository;
+    private final SubjectRepository subjectRepository;
 
     @Override
     public ClassroomSubjectConfigDto getByClassroomId(Long classroomId) {
@@ -64,6 +67,21 @@ public class ClassroomSubjectServiceImpl implements ClassroomSubjectService {
         List<ClassroomSubject> classroomSubjects = classroomSubjectRepository.findByClassroomId(classroom.getId());
         return toConfigDto(classroom, inheritedSubjects, classroomSubjects);
     }
+
+        @Override
+        @Transactional(readOnly = true)
+        public List<LookupItemDto> getClassroomsBySubjectId(Long subjectId, Long unitId) {
+        subjectRepository.findById(subjectId)
+            .orElseThrow(() -> new UserMessageException(CommonErrorCode.SUBJECT_NOT_FOUND));
+
+        return classroomSubjectRepository.findActiveClassroomsBySubjectId(subjectId, unitId)
+            .stream()
+            .map(item -> LookupItemDto.builder()
+                .id(item.getId())
+                .name(item.getName())
+                .build())
+            .toList();
+        }
 
     @Override
     @Transactional
