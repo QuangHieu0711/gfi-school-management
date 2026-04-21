@@ -2,17 +2,17 @@
 import { CommonModule } from '@angular/common';
 import { Component, Inject, Injector } from '@angular/core';
 import { ReactiveFormsModule } from '@angular/forms';
-import { FILE_CONTROL, FormType } from '@model/form-control.model';
+import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
+import { AppDialogComponent } from '@components/app-dialog/app-dialog.component';
+import { IconComponent } from '@components/app-icon/app-icon.component';
 import { FileControlComponent } from '@components/form-group/file-control/file-control.component';
 import { ComponentBaseAbstract } from '@layout';
-import { AppDialogComponent } from '@components/app-dialog/app-dialog.component';
+import { FILE_CONTROL, FormType } from '@model/form-control.model';
 import { MATERIAL_MODULE } from '@modules';
-import { IconComponent } from '@components/app-icon/app-icon.component';
-import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
-import { DonViService } from '@app/service/admin/don-vi.service';
+import { MonHocService } from '@app/service/admin/mon-hoc.service';
 
 @Component({
-  selector: 'dialog-import',
+  selector: 'dialog-import-mon-hoc',
   standalone: true,
   templateUrl: './dialog-import.component.html',
   imports: [
@@ -24,7 +24,7 @@ import { DonViService } from '@app/service/admin/don-vi.service';
     IconComponent,
   ],
 })
-export class DialogImportComponent extends ComponentBaseAbstract {
+export class DialogImportMonHocComponent extends ComponentBaseAbstract {
   $formItem: FormType[] = [
     FILE_CONTROL({
       controlName: 'file',
@@ -36,27 +36,22 @@ export class DialogImportComponent extends ComponentBaseAbstract {
 
   constructor(
     protected override injector: Injector,
-    private readonly donViService: DonViService,
-    private dialogRef: MatDialogRef<DialogImportComponent>,
-    @Inject(MAT_DIALOG_DATA)
-    public data: any
+    private readonly monHocService: MonHocService,
+    private readonly dialogRef: MatDialogRef<DialogImportMonHocComponent>,
+    @Inject(MAT_DIALOG_DATA) public data: any
   ) {
     super(injector);
     this.form = this.itemControl.toFormGroup(this.$formItem);
   }
 
-  protected override componentInit(): void {
-    super.componentInit();
-  }
-
   downloadTemplate(): void {
-    this.donViService.downloadTemplate().subscribe({
+    this.monHocService.downloadTemplate().subscribe({
       next: (response: any) => {
         const blob = response?.data ?? response;
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = 'template_import_danh_sach_don_vi.xlsx';
+        a.download = 'template_import_danh_sach_mon_hoc.xlsx';
         a.click();
         setTimeout(() => window.URL.revokeObjectURL(url), 10000);
       },
@@ -71,19 +66,18 @@ export class DialogImportComponent extends ComponentBaseAbstract {
     if (this.form.invalid) return;
 
     const controlValue = this.form.get('file')?.value;
-
     const file: File | null =
       controlValue instanceof File ? controlValue : controlValue[0];
+
     if (!file) {
       this.toastr.warning('Chưa chọn file!', 'Cảnh báo');
       return;
     }
 
     const formData = new FormData();
-
     formData.append('file', file, file.name);
 
-    this.donViService.import(formData).subscribe({
+    this.monHocService.import(formData).subscribe({
       next: ({ data, userMessage }) => {
         const successCount = data?.successCount ?? 0;
         const failedCount = data?.failedCount ?? 0;
@@ -139,7 +133,7 @@ export class DialogImportComponent extends ComponentBaseAbstract {
     errorFileToken: string,
     fallbackFileName?: string
   ): void {
-    this.donViService.downloadImportErrorFile(errorFileToken).subscribe({
+    this.monHocService.downloadImportErrorFile(errorFileToken).subscribe({
       next: ({ body, headers }) => {
         if (!body) {
           this.toastr.error('Không tải được file lỗi', 'Thất bại');
@@ -149,7 +143,7 @@ export class DialogImportComponent extends ComponentBaseAbstract {
         const fileName =
           this.getFileNameFromDisposition(headers.get('content-disposition')) ??
           fallbackFileName ??
-          'don-vi-import-error.xlsx';
+          'mon-hoc-import-error.xlsx';
 
         this.fileService.downloadFile(body, fileName);
         this.toastr.success('Tải file lỗi thành công', 'Thành công');

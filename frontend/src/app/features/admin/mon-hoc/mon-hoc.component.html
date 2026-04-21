@@ -9,8 +9,8 @@
   (queryChange)="filterData($event)">
   <ng-container custom-buttons>
     <div class="flex gap-2 items-center">
-      @if(canAdd){
       <button
+        *ngIf="canAdd"
         color="primary"
         matButton="filled"
         class="btn-tight"
@@ -21,7 +21,42 @@
           class="btn-icon" />
         Thêm mới
       </button>
-      }
+      <button
+        *ngIf="canAdd"
+        class="btn-tight"
+        color="primary"
+        matButton
+        (click)="import()">
+        <app-icon
+          class="btn-icon"
+          icon="upload"
+          [size]="18" />
+        Kết nạp
+      </button>
+      <button
+        *ngIf="canDownload"
+        color="primary"
+        matButton
+        class="btn-tight"
+        (click)="exportExcel()">
+        <app-icon
+          icon="file_download"
+          [size]="18"
+          class="btn-icon" />
+        Xuất Excel
+      </button>
+      <button
+        *ngIf="canDownload"
+        color="primary"
+        matButton
+        class="btn-tight"
+        (click)="exportPdf()">
+        <app-icon
+          icon="file_download"
+          [size]="18"
+          class="btn-icon" />
+        Xuất PDF
+      </button>
     </div>
   </ng-container>
   <ng-container filter-panel>

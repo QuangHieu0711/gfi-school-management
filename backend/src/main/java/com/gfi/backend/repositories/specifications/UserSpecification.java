@@ -48,6 +48,10 @@ public class UserSpecification {
                 predicates.add(unitJoin.get("id").in(filter.getUnitId()));
             }
 
+            if (filter.getUserIds() != null && !filter.getUserIds().isEmpty()) {
+                predicates.add(root.get("id").in(filter.getUserIds()));
+            }
+
             if (filter.getStatus() != null) {
                 predicates.add(cb.equal(root.get("status"), filter.getStatus()));
             }

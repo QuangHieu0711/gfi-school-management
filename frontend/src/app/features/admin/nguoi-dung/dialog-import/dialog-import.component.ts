@@ -40,7 +40,9 @@ export class DialogImportComponent extends ComponentBaseAbstract {
     this.form = this.itemControl.toFormGroup(this.$formItem);
   }
 
-  protected override componentInit(): void {}
+  protected override componentInit(): void {
+    super.componentInit();
+  }
 
   downloadTemplate(): void {
     this.nguoiDungService.downloadTemplate().subscribe({

@@ -21,6 +21,10 @@ export enum NAM_HOC_KEY {
 export const NAM_HOC_API_ENDPOINT = {
   BASE_PATH: 'school-years',
   FILTER: 'search',
+  EXPORT: 'export',
+  EXCEL_TEMPLATE: 'excel-template',
+  IMPORT_EXCEL: 'import-excel',
+  IMPORT_ERROR_FILE: 'import-error-file',
   OPTIONS: 'options',
   CURRENT: 'current',
 };
@@ -51,6 +55,18 @@ export interface NamHocFilter {
 export interface NamHocFilterRequest extends TableRequest {
   pageNow?: number;
   filter?: NamHocFilter;
+}
+
+export interface NamHocExportRequest extends NamHocFilterRequest {
+  exportType?: 'PDF' | 'EXCEL';
+}
+
+export interface NamHocImportResponseData {
+  successCount: number;
+  failedCount: number;
+  hasErrorFile?: boolean;
+  errorFileName?: string;
+  errorFileToken?: string;
 }
 
 export interface NamHocFormRequest {

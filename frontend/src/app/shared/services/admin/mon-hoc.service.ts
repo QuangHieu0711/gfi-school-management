@@ -1,13 +1,21 @@
-import { HttpClient, HttpContext } from '@angular/common/http';
+import {
+  HttpClient,
+  HttpContext,
+  HttpParams,
+  HttpResponse,
+} from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { ERROR_CONTEXT } from '@constant/error.registry';
 import { environment } from '@env/environment';
 import { IResponse, ITableResponse } from '@model/response.model';
+import { Observable } from 'rxjs';
 
 import {
   MON_HOC_API_ENDPOINT,
+  MonHocExportRequest,
   MonHocFilterRequest,
   MonHocFormRequest,
+  MonHocImportResponseData,
   MonHocOptionResponse,
   MonHocResponse,
 } from '@app/model/admin/mon-hoc.model';
@@ -60,5 +68,53 @@ export class MonHocService {
     return this.http.delete<IResponse<null>>(`${this.baseUrl}/${id}`, {
       context: this.silentContext,
     });
+  }
+
+  export(payload: MonHocExportRequest): Observable<HttpResponse<Blob>> {
+    const params = new HttpParams({
+      fromObject: {
+        exportType: payload.exportType ?? 'EXCEL',
+      },
+    });
+    const { exportType: _exportType, ...body } = payload;
+
+    return this.http.post(
+      `${this.baseUrl}/${MON_HOC_API_ENDPOINT.EXPORT}`,
+      body,
+      {
+        params,
+        observe: 'response',
+        responseType: 'blob',
+      }
+    );
+  }
+
+  import(payload: FormData): Observable<IResponse<MonHocImportResponseData>> {
+    return this.http.post<IResponse<MonHocImportResponseData>>(
+      `${this.baseUrl}/${MON_HOC_API_ENDPOINT.IMPORT_EXCEL}`,
+      payload
+    );
+  }
+
+  downloadImportErrorFile(
+    errorFileToken: string
+  ): Observable<HttpResponse<Blob>> {
+    return this.http.get(
+      `${this.baseUrl}/${MON_HOC_API_ENDPOINT.IMPORT_ERROR_FILE}/${encodeURIComponent(errorFileToken)}`,
+      {
+        observe: 'response',
+        responseType: 'blob',
+      }
+    );
+  }
+
+  downloadTemplate(): Observable<Blob> {
+    return this.http.post(
+      `${this.baseUrl}/${MON_HOC_API_ENDPOINT.EXCEL_TEMPLATE}`,
+      {},
+      {
+        responseType: 'blob',
+      }
+    );
   }
 }

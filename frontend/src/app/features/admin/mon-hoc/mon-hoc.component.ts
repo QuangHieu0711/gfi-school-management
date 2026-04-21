@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { CommonModule } from '@angular/common';
 import { Component, Injector, TemplateRef, ViewChild } from '@angular/core';
 import { MtxGridColumn } from '@ng-matero/extensions/grid';
 import { AppTableComponent } from '@components/app-table/app-table.component';
@@ -6,22 +8,26 @@ import { TYPE_FORM, TYPE_FORM_KEY } from '@constant/constant';
 import { COMMON_TABLE_KEY, TableQueryEvent } from '@model/table.model';
 import { ComponentBaseAbstract } from '@layout';
 import { FORM_CONTROL_MODULE, MATERIAL_MODULE } from '@modules';
+import { defaultExportFileName, saveBlobAsFile } from '@utils/file-util';
 
 import {
   MON_HOC_FILTER_FORM,
   MON_HOC_KEY,
   MON_HOC_TYPE_OPTIONS,
+  MonHocExportRequest,
   MonHocResponse,
 } from '@app/model/admin/mon-hoc.model';
 import { MonHocService } from '@app/service/admin/mon-hoc.service';
 import { DialogMonHocComponent } from './dialog-mon-hoc/dialog-mon-hoc.component';
 import { PermissionCheckService } from '@service';
+import { DialogImportMonHocComponent } from './dialog-import/dialog-import.component';
 
 @Component({
   selector: 'mon-hoc',
   templateUrl: './mon-hoc.component.html',
   styleUrls: ['./mon-hoc.component.scss'],
   imports: [
+    CommonModule,
     AppTableComponent,
     IconComponent,
     ...MATERIAL_MODULE,
@@ -45,6 +51,10 @@ export class MonHocComponent extends ComponentBaseAbstract {
 
   get canAdd(): boolean {
     return this.permissionCheckService.canAdd(this.menuCode);
+  }
+
+  get canDownload(): boolean {
+    return this.permissionCheckService.canDownload(this.menuCode);
   }
 
   constructor(
@@ -203,9 +213,142 @@ export class MonHocComponent extends ComponentBaseAbstract {
     );
   }
 
+  exportPdf(): void {
+    if (!this.canDownload) {
+      this.toastr.warning('Bạn không có quyền tải xuống', 'Cảnh báo');
+      return;
+    }
+    this.exportFile('PDF');
+  }
+
+  exportExcel(): void {
+    if (!this.canDownload) {
+      this.toastr.warning('Bạn không có quyền tải xuống', 'Cảnh báo');
+      return;
+    }
+    this.exportFile('EXCEL');
+  }
+
+  import(): void {
+    if (!this.canAdd) {
+      this.toastr.warning('Bạn không có quyền kết nạp dữ liệu', 'Cảnh báo');
+      return;
+    }
+
+    this.dialog.componentDialog(
+      DialogImportMonHocComponent,
+      {
+        width: '900px',
+      },
+      (result) => {
+        if (result) {
+          this.resetFilter();
+        }
+      }
+    );
+  }
+
   getTypeLabel(type?: number) {
     return (
       MON_HOC_TYPE_OPTIONS.find((item) => item.value === type)?.label ?? '--'
     );
+  }
+
+  private exportFile(exportType: 'PDF' | 'EXCEL'): void {
+    const formValues = this.form.getRawValue();
+    const payload: MonHocExportRequest = {
+      pageSize: this.pageSize,
+      pageNow: this.pageIndex + 1,
+      exportType,
+      filter: {
+        subject: formValues[MON_HOC_KEY.NAME],
+        type: formValues[MON_HOC_KEY.TYPE],
+        status: formValues[MON_HOC_KEY.STATUS],
+      },
+    };
+
+    this.monHocService.export(payload).subscribe({
+      next: (res: any) => {
+        this.toastr.removeToastr();
+
+        const blob = this.extractBlob(res);
+        if (!blob) {
+          this.toastr.error(
+            `Xuất ${exportType} thất bại: Dữ liệu không hợp lệ`,
+            'Lỗi'
+          );
+          return;
+        }
+
+        const ext = exportType === 'PDF' ? 'pdf' : 'xlsx';
+        const fallbackName = defaultExportFileName('mon-hoc', ext);
+        const disposition = this.getHeader(res, 'content-disposition');
+        const fileName = this.getFileNameFromDisposition(
+          disposition,
+          fallbackName
+        );
+
+        saveBlobAsFile(blob, fileName);
+        this.toastr.success(
+          `Tải xuống ${exportType} thành công`,
+          `Xuất ${exportType}`
+        );
+      },
+      error: () => {
+        this.toastr.removeToastr();
+        this.toastr.error(`Xuất ${exportType} thất bại`, 'Lỗi');
+      },
+    });
+  }
+
+  private extractBlob(res: any): Blob | null {
+    if (res instanceof Blob) return res;
+    if (res?.body instanceof Blob) return res.body;
+    if (res?.data instanceof Blob) return res.data;
+    return null;
+  }
+
+  private getHeader(res: any, headerName: string): string | null {
+    if (res?.headers?.get) return res.headers.get(headerName);
+
+    const headers = res?.headers;
+    if (headers && typeof headers === 'object') {
+      const key = headerName.toLowerCase();
+      return headers[headerName] ?? headers[key] ?? null;
+    }
+
+    return null;
+  }
+
+  private getFileNameFromDisposition(
+    disposition: string | null,
+    fallbackName: string
+  ): string {
+    if (!disposition) return fallbackName;
+
+    const match = disposition.match(/filename\*?=(?:UTF-8'')?"?([^";]+)/i);
+    if (!match?.[1]) return fallbackName;
+
+    const rawFileName = match[1].trim();
+
+    try {
+      return this.decodeMimeFileName(decodeURIComponent(rawFileName));
+    } catch {
+      return this.decodeMimeFileName(rawFileName);
+    }
+  }
+
+  private decodeMimeFileName(fileName: string): string {
+    const mimeMatch = fileName.match(/^=\?UTF-8\?Q\?(.+)\?=$/i);
+    if (!mimeMatch?.[1]) return fileName;
+
+    const normalized = mimeMatch[1].replace(/_/g, ' ');
+    const decoded = normalized.replace(/=([0-9A-F]{2})/gi, '%$1');
+
+    try {
+      return decodeURIComponent(decoded);
+    } catch {
+      return fileName;
+    }
   }
 }

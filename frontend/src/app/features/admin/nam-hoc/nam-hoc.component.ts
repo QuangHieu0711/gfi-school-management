@@ -1,3 +1,4 @@
+import { CommonModule } from '@angular/common';
 import { Component, Injector, TemplateRef, ViewChild } from '@angular/core';
 import { MtxGridColumn } from '@ng-matero/extensions/grid';
 import { AppTableComponent } from '@components/app-table/app-table.component';
@@ -6,6 +7,7 @@ import { TYPE_FORM, TYPE_FORM_KEY } from '@constant/constant';
 import { COMMON_TABLE_KEY, TableQueryEvent } from '@model/table.model';
 import { ComponentBaseAbstract } from '@layout';
 import { FORM_CONTROL_MODULE, MATERIAL_MODULE } from '@modules';
+import { defaultExportFileName, saveBlobAsFile } from '@utils/file-util';
 import {
   FormType,
   SELECT_CONTROL,
@@ -15,6 +17,7 @@ import {
 import {
   BOOLEAN_OPTIONS,
   NAM_HOC_KEY,
+  NamHocExportRequest,
   NamHocResponse,
   SCHOOL_YEAR_STATUS_OPTIONS,
 } from '@app/model/admin/nam-hoc.model';
@@ -22,12 +25,14 @@ import { NamHocService } from '@app/service/admin/nam-hoc.service';
 import { DialogNamHocComponent } from './dialog-nam-hoc/dialog-nam-hoc.component';
 import { DialogCauHinhHocKyComponent } from './dialog-cau-hinh-hoc-ky/dialog-cau-hinh-hoc-ky.component';
 import { PermissionCheckService } from '@service';
+import { DialogImportNamHocComponent } from './dialog-import/dialog-import.component';
 
 @Component({
   selector: 'nam-hoc',
   templateUrl: './nam-hoc.component.html',
   styleUrls: ['./nam-hoc.component.scss'],
   imports: [
+    CommonModule,
     AppTableComponent,
     IconComponent,
     ...MATERIAL_MODULE,
@@ -77,6 +82,10 @@ export class NamHocComponent extends ComponentBaseAbstract {
 
   get canAdd(): boolean {
     return this.permissionCheckService.canAdd(this.menuCode);
+  }
+
+  get canDownload(): boolean {
+    return this.permissionCheckService.canDownload(this.menuCode);
   }
 
   constructor(
@@ -306,6 +315,41 @@ export class NamHocComponent extends ComponentBaseAbstract {
     return `${this.formatDate(start)} - ${this.formatDate(end)}`;
   }
 
+  exportPdf(): void {
+    if (!this.canDownload) {
+      this.toastr.warning('Bạn không có quyền tải xuống', 'Cảnh báo');
+      return;
+    }
+    this.exportFile('PDF');
+  }
+
+  exportExcel(): void {
+    if (!this.canDownload) {
+      this.toastr.warning('Bạn không có quyền tải xuống', 'Cảnh báo');
+      return;
+    }
+    this.exportFile('EXCEL');
+  }
+
+  import(): void {
+    if (!this.canAdd) {
+      this.toastr.warning('Bạn không có quyền kết nạp dữ liệu', 'Cảnh báo');
+      return;
+    }
+
+    this.dialog.componentDialog(
+      DialogImportNamHocComponent,
+      {
+        width: '900px',
+      },
+      (result) => {
+        if (result) {
+          this.resetFilter();
+        }
+      }
+    );
+  }
+
   private formatDate(value?: string): string {
     if (!value) return '--';
     const raw = value.slice(0, 10);
@@ -320,5 +364,110 @@ export class NamHocComponent extends ComponentBaseAbstract {
       this.permissionCheckService.canEdit(this.menuCode) ||
       this.permissionCheckService.canDelete(this.menuCode)
     );
+  }
+
+  private exportFile(exportType: 'PDF' | 'EXCEL'): void {
+    const formValues = this.form.getRawValue();
+    const keyword = formValues[NAM_HOC_KEY.NAME] ?? undefined;
+    const payload: NamHocExportRequest = {
+      pageSize: this.pageSize,
+      pageNow: this.pageIndex + 1,
+      exportType,
+      filter: {
+        code: keyword,
+        name: keyword,
+        status: formValues[NAM_HOC_KEY.STATUS],
+        isCurrent:
+          formValues[NAM_HOC_KEY.IS_CURRENT] === '' ||
+          formValues[NAM_HOC_KEY.IS_CURRENT] === null ||
+          formValues[NAM_HOC_KEY.IS_CURRENT] === undefined
+            ? undefined
+            : formValues[NAM_HOC_KEY.IS_CURRENT],
+      },
+    };
+
+    this.namHocService.export(payload).subscribe({
+      next: (res: any) => {
+        this.toastr.removeToastr();
+
+        const blob = this.extractBlob(res);
+        if (!blob) {
+          this.toastr.error(
+            `Xuất ${exportType} thất bại: Dữ liệu không hợp lệ`,
+            'Lỗi'
+          );
+          return;
+        }
+
+        const ext = exportType === 'PDF' ? 'pdf' : 'xlsx';
+        const fallbackName = defaultExportFileName('nam-hoc', ext);
+        const disposition = this.getHeader(res, 'content-disposition');
+        const fileName = this.getFileNameFromDisposition(
+          disposition,
+          fallbackName
+        );
+
+        saveBlobAsFile(blob, fileName);
+        this.toastr.success(
+          `Tải xuống ${exportType} thành công`,
+          `Xuất ${exportType}`
+        );
+      },
+      error: () => {
+        this.toastr.removeToastr();
+        this.toastr.error(`Xuất ${exportType} thất bại`, 'Lỗi');
+      },
+    });
+  }
+
+  private extractBlob(res: any): Blob | null {
+    if (res instanceof Blob) return res;
+    if (res?.body instanceof Blob) return res.body;
+    if (res?.data instanceof Blob) return res.data;
+    return null;
+  }
+
+  private getHeader(res: any, headerName: string): string | null {
+    if (res?.headers?.get) return res.headers.get(headerName);
+
+    const headers = res?.headers;
+    if (headers && typeof headers === 'object') {
+      const key = headerName.toLowerCase();
+      return headers[headerName] ?? headers[key] ?? null;
+    }
+
+    return null;
+  }
+
+  private getFileNameFromDisposition(
+    disposition: string | null,
+    fallbackName: string
+  ): string {
+    if (!disposition) return fallbackName;
+
+    const match = disposition.match(/filename\*?=(?:UTF-8'')?"?([^";]+)/i);
+    if (!match?.[1]) return fallbackName;
+
+    const rawFileName = match[1].trim();
+
+    try {
+      return this.decodeMimeFileName(decodeURIComponent(rawFileName));
+    } catch {
+      return this.decodeMimeFileName(rawFileName);
+    }
+  }
+
+  private decodeMimeFileName(fileName: string): string {
+    const mimeMatch = fileName.match(/^=\?UTF-8\?Q\?(.+)\?=$/i);
+    if (!mimeMatch?.[1]) return fileName;
+
+    const normalized = mimeMatch[1].replace(/_/g, ' ');
+    const decoded = normalized.replace(/=([0-9A-F]{2})/gi, '%$1');
+
+    try {
+      return decodeURIComponent(decoded);
+    } catch {
+      return fileName;
+    }
   }
 }

@@ -437,7 +437,7 @@ public class UnitServiceImpl implements UnitService {
             sheet.addMergedRegion(new CellRangeAddress(2, 2, 0, 6));
 
             Row guide3 = sheet.createRow(3);
-            createCell(guide3, 0, "Mã đơn vị đã tồn tại, hệ thống sẽ cập nhật; nếu chưa tồn tại, hệ thống sẽ tạo mới.", guideStyle);
+            createCell(guide3, 0, "Mã đơn vị không được trùng với mã đã tồn tại trong hệ thống. Nếu mã đã tồn tại, hệ thống sẽ từ chối cập nhật/tạo mới.", guideStyle);
             sheet.addMergedRegion(new CellRangeAddress(3, 3, 0, 6));
 
             Row headerRow = sheet.createRow(4);

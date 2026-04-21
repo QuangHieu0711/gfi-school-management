@@ -1,4 +1,9 @@
-import { HttpClient, HttpContext } from '@angular/common/http';
+import {
+  HttpClient,
+  HttpContext,
+  HttpParams,
+  HttpResponse,
+} from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { ERROR_CONTEXT } from '@constant/error.registry';
 import { environment } from '@env/environment';
@@ -7,8 +12,10 @@ import { Observable } from 'rxjs';
 
 import {
   NAM_HOC_API_ENDPOINT,
+  NamHocExportRequest,
   NamHocFilterRequest,
   NamHocFormRequest,
+  NamHocImportResponseData,
   NamHocOptionResponse,
   NamHocResponse,
 } from '@app/model/admin/nam-hoc.model';
@@ -69,5 +76,53 @@ export class NamHocService {
     return this.http.delete<IResponse<null>>(`${this.baseUrl}/${id}`, {
       context: this.silentContext,
     });
+  }
+
+  export(payload: NamHocExportRequest): Observable<HttpResponse<Blob>> {
+    const params = new HttpParams({
+      fromObject: {
+        exportType: payload.exportType ?? 'EXCEL',
+      },
+    });
+    const { exportType: _exportType, ...body } = payload;
+
+    return this.http.post(
+      `${this.baseUrl}/${NAM_HOC_API_ENDPOINT.EXPORT}`,
+      body,
+      {
+        params,
+        observe: 'response',
+        responseType: 'blob',
+      }
+    );
+  }
+
+  import(payload: FormData): Observable<IResponse<NamHocImportResponseData>> {
+    return this.http.post<IResponse<NamHocImportResponseData>>(
+      `${this.baseUrl}/${NAM_HOC_API_ENDPOINT.IMPORT_EXCEL}`,
+      payload
+    );
+  }
+
+  downloadImportErrorFile(
+    errorFileToken: string
+  ): Observable<HttpResponse<Blob>> {
+    return this.http.get(
+      `${this.baseUrl}/${NAM_HOC_API_ENDPOINT.IMPORT_ERROR_FILE}/${encodeURIComponent(errorFileToken)}`,
+      {
+        observe: 'response',
+        responseType: 'blob',
+      }
+    );
+  }
+
+  downloadTemplate(): Observable<Blob> {
+    return this.http.post(
+      `${this.baseUrl}/${NAM_HOC_API_ENDPOINT.EXCEL_TEMPLATE}`,
+      {},
+      {
+        responseType: 'blob',
+      }
+    );
   }
 }

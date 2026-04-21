@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 import org.apache.poi.ss.usermodel.BorderStyle;
 import org.apache.poi.ss.usermodel.CellStyle;
@@ -247,13 +248,9 @@ public class UserServiceImpl implements UserService {
     public UserDetailDto getById(Long id) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new UserMessageException(CommonErrorCode.USER_NOT_FOUND));
-        
-        // Enforce scope: validate user's unit is within allowed scopes
-        Long unitId = user.getUnitId();
-        if (unitId != null) {
-            ScopeFilterUtils.validateAccess(FEATURE, ActionType.VIEW, ScopeType.UNIT, unitId);
-        }
-        
+
+        validateUserAccess(user, ActionType.VIEW);
+
         return userMapper.toDetailDto(user);
     }
 
@@ -357,11 +354,7 @@ public class UserServiceImpl implements UserService {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new UserMessageException(CommonErrorCode.USER_NOT_FOUND));
 
-        // Enforce scope: validate user's unit is within allowed scopes before allowing update
-        Long unitId = user.getUnitId();
-        if (unitId != null) {
-            ScopeFilterUtils.validateAccess(FEATURE, ActionType.EDIT, ScopeType.UNIT, unitId);
-        }
+        validateUserAccess(user, ActionType.EDIT);
 
         String username = normalize(request.getUsername());
         validateUsernameDuplicate(username, id);
@@ -402,11 +395,7 @@ public class UserServiceImpl implements UserService {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new UserMessageException(CommonErrorCode.USER_NOT_FOUND));
 
-        // Enforce scope: validate user's unit is within allowed scopes before allowing delete
-        Long unitId = user.getUnitId();
-        if (unitId != null) {
-            ScopeFilterUtils.validateAccess(FEATURE, ActionType.DELETE, ScopeType.UNIT, unitId);
-        }
+        validateUserAccess(user, ActionType.DELETE);
 
         // Xóa mềm: đánh dấu xóa 
         user.setDeletedFlag(1);
@@ -497,12 +486,30 @@ public class UserServiceImpl implements UserService {
         }
 
         Set<Long> allowedUnitIds = allowedScopes.stream()
-                .flatMap(rs -> rs.getScopeIds().stream())
+                .filter(scope -> scope.getScopeType() == ScopeType.UNIT)
+                .flatMap(scope -> scope.getScopeIds().stream())
                 .filter(id -> id != null)
-                .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new));
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+
+        Set<Long> allowedUserIds = allowedScopes.stream()
+                .filter(scope -> scope.getScopeType() == ScopeType.SELF || scope.getScopeType() == ScopeType.USER)
+                .flatMap(scope -> scope.getScopeIds().stream())
+                .filter(id -> id != null)
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+
+        if (!allowedUserIds.isEmpty()) {
+            scopedFilter.setUserIds(new ArrayList<>(allowedUserIds));
+        }
 
         if (requestedUnitIds.isEmpty()) {
-            scopedFilter.setUnitId(allowedUnitIds.isEmpty() ? List.of(-1L) : new ArrayList<>(allowedUnitIds));
+            if (allowedUnitIds.isEmpty()) {
+                scopedFilter.setUnitId(null);
+                if (allowedUserIds.isEmpty()) {
+                    scopedFilter.setUserIds(List.of(-1L));
+                }
+            } else {
+                scopedFilter.setUnitId(new ArrayList<>(allowedUnitIds));
+            }
             return scopedFilter;
         }
 
@@ -511,6 +518,32 @@ public class UserServiceImpl implements UserService {
                 .toList();
         scopedFilter.setUnitId(intersectedUnitIds.isEmpty() ? List.of(-1L) : intersectedUnitIds);
         return scopedFilter;
+    }
+
+    private void validateUserAccess(User user, ActionType action) {
+        Long userId = user.getId();
+        if (userId != null) {
+            try {
+                ScopeFilterUtils.validateAccess(FEATURE, action, ScopeType.SELF, userId);
+                return;
+            } catch (AccessDeniedException ignored) {
+                // Fall through to other supported scope types.
+            }
+        }
+
+        Long unitId = user.getUnitId();
+        if (unitId != null) {
+            ScopeFilterUtils.validateAccess(FEATURE, action, ScopeType.UNIT, unitId);
+            return;
+        }
+
+        if (userId != null) {
+            ScopeFilterUtils.validateAccess(FEATURE, action, ScopeType.USER, userId);
+            return;
+        }
+
+        throw new AccessDeniedException(
+                String.format("Access denied to %s action=%s for user id=%s", FEATURE, action, userId));
     }
 
     private byte[] exportUsersExcel(List<UserListItemDto> items) {

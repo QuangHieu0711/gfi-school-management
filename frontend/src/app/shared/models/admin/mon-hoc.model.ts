@@ -18,6 +18,10 @@ export enum MON_HOC_KEY {
 export const MON_HOC_API_ENDPOINT = {
   BASE_PATH: 'subjects',
   FILTER: 'search',
+  EXPORT: 'export',
+  EXCEL_TEMPLATE: 'excel-template',
+  IMPORT_EXCEL: 'import-excel',
+  IMPORT_ERROR_FILE: 'import-error-file',
   OPTIONS: 'options',
 };
 
@@ -45,6 +49,18 @@ export interface MonHocFilter {
 export interface MonHocFilterRequest extends TableRequest {
   pageNow?: number;
   filter?: MonHocFilter;
+}
+
+export interface MonHocExportRequest extends MonHocFilterRequest {
+  exportType?: 'PDF' | 'EXCEL';
+}
+
+export interface MonHocImportResponseData {
+  successCount: number;
+  failedCount: number;
+  hasErrorFile?: boolean;
+  errorFileName?: string;
+  errorFileToken?: string;
 }
 
 export interface MonHocFormRequest {
