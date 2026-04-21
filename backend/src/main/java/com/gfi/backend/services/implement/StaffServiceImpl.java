@@ -74,11 +74,12 @@ public class StaffServiceImpl implements StaffService {
     public PageResponseDto<StaffItemDto, StaffFilterDto> search(PageRequestDto<StaffFilterDto> request) {
         StaffFilterDto filter = request.getFilter() == null ? new StaffFilterDto() : request.getFilter();
         Long currentStaffId = resolveCurrentStaffIdForSelfScope(ActionType.VIEW);
+        List<ResolvedScope> resolvedScopes = ScopeFilterUtils.getScopesForQuery(FEATURE, ActionType.VIEW);
         int pageSize = normalizePageSize(request.getPageSize());
         int pageNow = normalizePageNow(request.getPageNow());
         Pageable pageable = PageableUtils.newestFirst(pageNow, pageSize);
 
-        Page<Staff> page = staffRepository.findAll(buildSpecification(filter, currentStaffId), pageable);
+        Page<Staff> page = staffRepository.findAll(buildSpecification(filter, currentStaffId, resolvedScopes), pageable);
         List<StaffItemDto> items = page.getContent().stream()
                 .map(this::toItemDto)
                 .toList();
@@ -99,8 +100,8 @@ public class StaffServiceImpl implements StaffService {
     @Override
     @Transactional(readOnly = true)
     public StaffDetailDto getById(Long id) {
-        validateSelfAccess(id, ActionType.VIEW);
         Staff staff = findStaff(id);
+        validateStaffAccess(staff, ActionType.VIEW);
         return toDetailDto(staff);
     }
 
@@ -158,8 +159,8 @@ public class StaffServiceImpl implements StaffService {
     @Override
     @Transactional
     public StaffDetailDto update(Long id, StaffUpdateRequest request) {
-        validateSelfAccess(id, ActionType.EDIT);
         Staff staff = findStaff(id);
+        validateStaffAccess(staff, ActionType.EDIT);
         if (request.getUnitId() != null
                 && (staff.getUnit() == null || !request.getUnitId().equals(staff.getUnit().getId()))) {
             Unit unit = unitRepository.findById(request.getUnitId())
@@ -193,8 +194,8 @@ public class StaffServiceImpl implements StaffService {
     @Override
     @Transactional
     public void delete(Long id) {
-        validateSelfAccess(id, ActionType.DELETE);
         Staff staff = findStaff(id);
+        validateStaffAccess(staff, ActionType.DELETE);
         staffAddressRepository.deleteByStaffId(id);
         staffFamilyMemberRepository.deleteByStaffId(id);
         staff.setDeletedFlag(1);
@@ -224,7 +225,7 @@ public class StaffServiceImpl implements StaffService {
     /*
      * Xây dựng điều kiện lọc cho truy vấn cán bộ
      */
-    private Specification<Staff> buildSpecification(StaffFilterDto filter, Long forcedStaffId) {
+    private Specification<Staff> buildSpecification(StaffFilterDto filter, Long forcedStaffId, List<ResolvedScope> resolvedScopes) {
         return (root, query, cb) -> {
             List<Predicate> predicates = new java.util.ArrayList<>();
 
@@ -254,6 +255,11 @@ public class StaffServiceImpl implements StaffService {
                 predicates.add(cb.equal(root.get("id"), forcedStaffId));
             }
 
+            Predicate scopePredicate = buildStaffScopePredicate(cb, root, resolvedScopes, forcedStaffId);
+            if (scopePredicate != null) {
+                predicates.add(scopePredicate);
+            }
+
             // Always filter deleted flag
             predicates.add(cb.equal(root.get("deletedFlag"), 0));
 
@@ -261,11 +267,106 @@ public class StaffServiceImpl implements StaffService {
         };
     }
 
-    private void validateSelfAccess(Long targetStaffId, ActionType actionType) {
+    private void validateStaffAccess(Staff staff, ActionType actionType) {
         Long currentStaffId = resolveCurrentStaffIdForSelfScope(actionType);
-        if (currentStaffId != null && !currentStaffId.equals(targetStaffId)) {
+        List<ResolvedScope> resolvedScopes = ScopeFilterUtils.getScopesForQuery(FEATURE, actionType);
+        if (!hasStaffAccess(staff, resolvedScopes, currentStaffId)) {
             throw new UserMessageException(CommonErrorCode.ACCESS_DENIED);
         }
+    }
+
+    private Predicate buildStaffScopePredicate(jakarta.persistence.criteria.CriteriaBuilder cb,
+            jakarta.persistence.criteria.Root<Staff> root,
+            List<ResolvedScope> resolvedScopes,
+            Long currentStaffId) {
+        if (resolvedScopes == null || resolvedScopes.isEmpty()) {
+            return cb.disjunction();
+        }
+
+        List<Predicate> requiredPredicates = new java.util.ArrayList<>();
+        List<Predicate> selfPredicates = new java.util.ArrayList<>();
+        boolean hasUnitScope = false;
+        boolean hasGradeScope = false;
+        for (ResolvedScope scope : resolvedScopes) {
+            if (scope == null) {
+                continue;
+            }
+            if (scope.isUnrestricted() || scope.getScopeType() == ScopeType.ALL) {
+                return cb.conjunction();
+            }
+
+            switch (scope.getScopeType()) {
+                case SELF -> {
+                    if (currentStaffId != null) {
+                        selfPredicates.add(cb.equal(root.get("id"), currentStaffId));
+                    }
+                }
+                case UNIT -> {
+                    if (scope.getScopeIds() != null && !scope.getScopeIds().isEmpty()) {
+                        hasUnitScope = true;
+                        requiredPredicates.add(root.get("unit").get("id").in(scope.getScopeIds()));
+                    }
+                }
+                case GRADE -> {
+                    if (scope.getScopeIds() != null && !scope.getScopeIds().isEmpty()) {
+                        hasGradeScope = true;
+                        requiredPredicates.add(root.get("gradeLevel").get("id").in(scope.getScopeIds()));
+                    }
+                }
+                default -> {
+                }
+            }
+        }
+
+        if (!selfPredicates.isEmpty()) {
+            return cb.or(selfPredicates.toArray(new Predicate[0]));
+        }
+
+        if (hasUnitScope || hasGradeScope) {
+            return requiredPredicates.isEmpty()
+                    ? cb.disjunction()
+                    : cb.and(requiredPredicates.toArray(new Predicate[0]));
+        }
+
+        return cb.disjunction();
+    }
+
+    private boolean hasStaffAccess(Staff staff, List<ResolvedScope> resolvedScopes, Long currentStaffId) {
+        if (staff == null || resolvedScopes == null || resolvedScopes.isEmpty()) {
+            return false;
+        }
+
+        for (ResolvedScope scope : resolvedScopes) {
+            if (scope == null) {
+                continue;
+            }
+            if (scope.isUnrestricted() || scope.getScopeType() == ScopeType.ALL) {
+                return true;
+            }
+            switch (scope.getScopeType()) {
+                case SELF -> {
+                    if (currentStaffId != null && currentStaffId.equals(staff.getId())) {
+                        return true;
+                    }
+                }
+                case UNIT -> {
+                    if (staff.getUnit() != null && scope.getScopeIds() != null
+                            && scope.getScopeIds().contains(staff.getUnit().getId())) {
+                        return true;
+                    }
+                }
+                case GRADE -> {
+                    if (staff.getGradeLevel() != null && scope.getScopeIds() != null
+                            && scope.getScopeIds().contains(staff.getGradeLevel().getId())) {
+                        return true;
+                    }
+                }
+                default -> {
+                }
+            }
+        }
+
+        return false;
     }
 
     private Long resolveCurrentStaffIdForSelfScope(ActionType actionType) {

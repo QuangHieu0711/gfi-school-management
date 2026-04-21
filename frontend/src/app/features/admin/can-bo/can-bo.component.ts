@@ -56,10 +56,21 @@ export class CanBoComponent extends ComponentBaseAbstract {
     return this.permissionCheckService.canEdit(this.menuCode);
   }
 
+  get canView(): boolean {
+    return this.permissionCheckService.canView(this.menuCode);
+  }
+
   get canDelete(): boolean {
     return this.permissionCheckService.canDelete(this.menuCode);
   }
 
+  get hasRowActions(): boolean {
+    return this.canView || this.canEdit || this.canDelete;
+  }
+
+  get canAdd(): boolean {
+    return this.permissionCheckService.canAdd(this.menuCode);
+  }
   constructor(
     protected override injector: Injector,
     private readonly canBoService: CanBoService,
@@ -152,13 +163,6 @@ export class CanBoComponent extends ComponentBaseAbstract {
         staff[this.key.ID],
       ],
       { state: { staff } }
-    );
-  }
-
-  updateStatus(_staff: CanBoResponse): void {
-    this.toastr.info(
-      'Chức năng cập nhật trạng thái đang được hoàn thiện',
-      'Thông báo'
     );
   }
 

@@ -94,7 +94,7 @@
   width: 88px;
   min-width: 88px;
   text-align: center;
-  padding: 0 !important;
+  padding: 0 8px !important;
 }
 
 .alias-col {
@@ -120,21 +120,52 @@
   font-size: 14px;
 }
 
-.action-trigger {
-  width: 36px;
-  height: 36px;
+.action-list {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 36px;
+}
+
+.action-icon {
+  width: 28px;
+  height: 28px;
   border: 0;
-  border-radius: 8px;
-  background: #6aa6af;
-  color: #fff;
+  background: transparent;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
+  padding: 0;
 }
 
-.action-trigger:hover {
-  background: #4f848c;
+.action-icon .mat-icon {
+  font-size: 20px;
+  width: 20px;
+  height: 20px;
+}
+
+.action-icon-view {
+  color: #4da3c7;
+}
+
+.action-icon-edit {
+  color: #d59a00;
+}
+
+.action-icon-delete {
+  color: #d64545;
+}
+
+.action-empty {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 36px;
+  color: #98a2b3;
+  font-size: 14px;
+  line-height: 1;
 }
 
 .status-col {

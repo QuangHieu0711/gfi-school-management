@@ -8,18 +8,20 @@
     </div>
 
     <div class="toolbar-actions">
-      <button
-        type="button"
-        color="primary"
-        matButton="filled"
-        class="btn-tight"
-        (click)="addNewStaff()">
+      @if (canAdd) {
+        <button
+          type="button"
+          color="primary"
+          matButton="filled"
+          class="btn-tight"
+          (click)="addNewStaff()">
         <app-icon
           icon="add_box"
           [size]="18"
           class="btn-icon" />
         Thêm mới cán bộ
       </button>
+      }
     </div>
   </div>
 
@@ -32,7 +34,9 @@
         <thead>
           <tr class="heading-row">
             <th class="stt-col">STT</th>
-            <th class="action-col">Thao tác</th>
+            @if (hasRowActions) {
+              <th class="action-col">Hành động</th>
+            }
             <th>Mã cán bộ</th>
             <th>Họ và tên</th>
             <th class="alias-col">Tên gọi khác</th>
@@ -47,7 +51,9 @@
 
           <tr class="filter-row">
             <th class="stt-col"></th>
-            <th class="action-col"></th>
+            @if (hasRowActions) {
+              <th class="action-col"></th>
+            }
             <th class="filter-cell">
               <app-text-control
                 [item]="findFormControl($formItem, key.STAFF_CODE)"
@@ -97,16 +103,39 @@
           @for (row of dataSource; track row.id; let index = $index) {
             <tr>
               <td class="stt-col">{{ pageIndex * pageSize + index + 1 }}</td>
-              <td class="action-col">
-                <button
-                  type="button"
-                  class="action-trigger"
-                  [matMenuTriggerFor]="actionMenu"
-                  [matMenuTriggerData]="{ staff: row }"
-                  aria-label="Thao tác cán bộ">
-                  <mat-icon>settings</mat-icon>
-                </button>
-              </td>
+              @if (hasRowActions) {
+                <td class="action-col">
+                  <div class="action-list">
+                    @if (canView) {
+                      <button
+                        type="button"
+                        class="action-icon action-icon-view"
+                        aria-label="Xem chi tiết cán bộ"
+                        (click)="openDetail(row)">
+                        <mat-icon>visibility</mat-icon>
+                      </button>
+                    }
+                    @if (canEdit) {
+                      <button
+                        type="button"
+                        class="action-icon action-icon-edit"
+                        aria-label="Cập nhật cán bộ"
+                        (click)="openEdit(row)">
+                        <mat-icon>edit</mat-icon>
+                      </button>
+                    }
+                    @if (canDelete) {
+                      <button
+                        type="button"
+                        class="action-icon action-icon-delete"
+                        aria-label="Xóa cán bộ"
+                        (click)="deleteStaff(row)">
+                        <mat-icon>delete</mat-icon>
+                      </button>
+                    }
+                  </div>
+                </td>
+              }
               <td>{{ row.staffCode || '' }}</td>
               <td class="name-col">
                 <button
@@ -133,7 +162,7 @@
             <tr>
               <td
                 class="empty-row"
-                colspan="12">
+                [attr.colspan]="hasRowActions ? 12 : 11">
                 Không có dữ liệu
               </td>
             </tr>
@@ -142,41 +171,6 @@
       </table>
     </div>
   </form>
-
-  <mat-menu #actionMenu="matMenu">
-    <ng-template
-      matMenuContent
-      let-staff="staff">
-      @if (canEdit) {
-        <button
-          type="button"
-          mat-menu-item
-          (click)="openEdit(staff)">
-          Cập nhật hồ sơ
-        </button>
-        <button
-          type="button"
-          mat-menu-item
-          (click)="updateStatus(staff)">
-          Cập nhật trạng thái
-        </button>
-        <button
-          type="button"
-          mat-menu-item
-          (click)="assignTeaching(staff)">
-          Phân công giảng dạy
-        </button>
-      }
-      @if (canDelete) {
-        <button
-          type="button"
-          mat-menu-item
-          (click)="deleteStaff(staff)">
-          Xóa cán bộ
-        </button>
-      }
-    </ng-template>
-  </mat-menu>
 
   <app-paginator
     [total]="dataSourceTotal"
