@@ -74,6 +74,7 @@ public class TeacherAssignmentServiceImpl implements TeacherAssignmentService {
 
     private static final int HEADER_ROW_INDEX = 5;
     private static final int DATA_START_ROW_INDEX = 6;
+    private static final String EXCEL_FONT_NAME = "Times New Roman";
     private static final Pattern ASSIGNMENT_PATTERN = Pattern.compile("^([^()]+)\\(([^()]*)\\)$");
 
     private final TeacherAssignmentRepository teacherAssignmentRepository;
@@ -516,16 +517,20 @@ public class TeacherAssignmentServiceImpl implements TeacherAssignmentService {
             sheet.addMergedRegion(new CellRangeAddress(rowIndex, rowIndex, 2, 5));
         }
         createCell(row1, 1, "Hướng dẫn:", guideLabelStyle);
-        createCell(row1, 2, "Môn học nhập theo ký hiệu môn học trong sheet {MonHoc}", guideContentStyle);
+        createCell(row1, 2, "Môn học nhập theo ký hiệu môn học trong sheet {Monhoc}", guideContentStyle);
         createCell(row2, 2,
-                "Phân công giảng dạy nhập theo quy tắc: KyHieuMonHoc(ten lop 1, ten lop 2, ...)",
+            "Phân công giảng dạy nhập theo quy tắc: Ký hiệu môn học (tên lớp 1, tên lớp 2, ...)\n"
+                + "ví dụ: giáo viên được phân công dạy môn toán các lớp 1A1, 1A2, 1A3, 1A4 viết là: Toan(1A1, 1A2, 1A3, 1A4)",
                 guideContentStyle);
         createCell(row3, 2,
-                "Nhiều môn phân biệt bởi dấu '+'. Ví dụ: TOAN(1A1, 1A2)+AN(1A3)",
+            "Giáo viên được phân công giảng dạy nhiều môn thì các môn học phân biệt với nhau bởi dấu '+'\n"
+                + "ví dụ: giáo viên được phân công giảng dạy môn toán các lớp 1A1, 1A2, âm nhạc các lớp 1A3, 1A4 viết là: Toan(1A1, 1A2)+AN(1A3, 1A4)",
                 guideContentStyle);
         createCell(row4, 2,
-                "Giáo viên không có phân công trong học kỳ thì để trống ô tương ứng",
+            "Các giáo viên không có phân công giảng dạy, thầy/cô xóa thông tin giáo viên trong file excel",
                 guideContentStyle);
+        row2.setHeightInPoints(34);
+        row3.setHeightInPoints(34);
 
         Row headerRow = sheet.createRow(HEADER_ROW_INDEX);
         createCell(headerRow, 0, "STT", headerStyle);
@@ -794,22 +799,31 @@ public class TeacherAssignmentServiceImpl implements TeacherAssignmentService {
         Font font = workbook.createFont();
         font.setBold(true);
         font.setFontHeightInPoints((short) 14);
+        font.setFontName(EXCEL_FONT_NAME);
         style.setFont(font);
         return style;
     }
 
     private CellStyle createGuideLabelStyle(Workbook workbook) {
-        CellStyle style = createBodyStyle(workbook);
+        CellStyle style = workbook.createCellStyle();
+        style.setVerticalAlignment(VerticalAlignment.TOP);
+        style.setWrapText(true);
         Font font = workbook.createFont();
         font.setBold(true);
+        font.setFontName(EXCEL_FONT_NAME);
         style.setFont(font);
         style.setAlignment(HorizontalAlignment.CENTER);
         return style;
     }
 
     private CellStyle createGuideContentStyle(Workbook workbook) {
-        CellStyle style = createBodyStyle(workbook);
+        CellStyle style = workbook.createCellStyle();
+        style.setVerticalAlignment(VerticalAlignment.TOP);
         style.setWrapText(true);
+        Font font = workbook.createFont();
+        font.setItalic(true);
+        font.setFontName(EXCEL_FONT_NAME);
+        style.setFont(font);
         return style;
     }
 
@@ -825,6 +839,7 @@ public class TeacherAssignmentServiceImpl implements TeacherAssignmentService {
         style.setBorderRight(BorderStyle.THIN);
         Font font = workbook.createFont();
         font.setBold(true);
+        font.setFontName(EXCEL_FONT_NAME);
         style.setFont(font);
         return style;
     }
@@ -837,6 +852,9 @@ public class TeacherAssignmentServiceImpl implements TeacherAssignmentService {
         style.setBorderLeft(BorderStyle.THIN);
         style.setBorderRight(BorderStyle.THIN);
         style.setWrapText(true);
+        Font font = workbook.createFont();
+        font.setFontName(EXCEL_FONT_NAME);
+        style.setFont(font);
         return style;
     }
 

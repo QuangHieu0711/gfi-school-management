@@ -58,6 +58,16 @@ public class AuthController extends ApiBaseController {
         public ResponseEntity<ApiResult<TokenResponse>> login(
                         @org.springframework.web.bind.annotation.RequestBody LoginRequest loginRequest) {
                 try {
+                        User user = userRepository.findByUsernameWithStaffAndRole(loginRequest.getUsername())
+                                        .orElse(null);
+                        if (user != null && Integer.valueOf(0).equals(user.getStatus())) {
+                                return ResponseEntity
+                                                .status(HttpStatus.UNAUTHORIZED)
+                                                .body(ApiResult.fail(
+                                                                CommonErrorCode.USER_INACTIVE.getCode(),
+                                                                CommonErrorCode.USER_INACTIVE.getMessage()));
+                        }
+
                         Authentication authentication = authenticationManager.authenticate(
                                         new UsernamePasswordAuthenticationToken(
                                                         loginRequest.getUsername(),
@@ -67,7 +77,7 @@ public class AuthController extends ApiBaseController {
 
                         TokenResponse tokens = tokenService.generateTokens(userDetails);
 
-                        User user = userRepository.findByUsernameWithStaffAndRole(userDetails.getUsername())
+                        user = userRepository.findByUsernameWithStaffAndRole(userDetails.getUsername())
                                         .orElseThrow(() -> new BadCredentialsException(
                                                         CommonErrorCode.INVALID_CREDENTIALS.getMessage()));
 

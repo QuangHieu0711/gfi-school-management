@@ -328,7 +328,6 @@ public class UserServiceImpl implements UserService {
         validateUsernameDuplicate(username, id);
 
         Role role = getRoleById(request.getRoleId());
-        Unit unit = getUnitById(request.getUnitId());
 
         // If role is changing, validate current user can update to target role
         if (!user.getRole().getId().equals(request.getRoleId())) {
@@ -350,7 +349,7 @@ public class UserServiceImpl implements UserService {
             }
         }
 
-        applyCommonFields(user, request, role, unit);
+        applyCommonFields(user, request, role);
         applyPasswordIfPresent(user, request.getPassword());
         user.setUpdatedBy(SecurityUtils.getCurrentUsername());
 
@@ -386,14 +385,6 @@ public class UserServiceImpl implements UserService {
     }
 
     /**
-     * Lấy Unit theo ID, throw exception nếu không tìm thấy.
-     */
-    private Unit getUnitById(Long unitId) {
-        return unitRepository.findById(unitId)
-                .orElseThrow(() -> new UserMessageException(CommonErrorCode.UNIT_NOT_FOUND));
-    }
-
-    /**
      * Validate username không trùng.
      * Khi update: excludeId cho phép user giữ nguyên username của chính nó.
      * 
@@ -415,7 +406,7 @@ public class UserServiceImpl implements UserService {
      *  Profile fields (fullName, email, phone, unit) are now managed via Staff
      * User is authentication-only.
      */
-    private void applyCommonFields(User user, UserUpdateRequest request, Role role, Unit unit) {
+    private void applyCommonFields(User user, UserUpdateRequest request, Role role) {
         user.setUsername(normalize(request.getUsername()));
         user.setRole(role);
         user.setStatus(request.getStatus());

@@ -17,7 +17,6 @@ public class UserUpdateRequest {
     @NotNull(message = "Vai trò không được để trống")
     private Long roleId;
 
-    @NotNull(message = "Đơn vị không được để trống")
     private Long unitId;
 
     private Integer status;
