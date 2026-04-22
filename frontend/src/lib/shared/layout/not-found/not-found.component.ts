@@ -9,10 +9,15 @@ import { IconComponent } from '@components/app-icon/app-icon.component';
   selector: 'not-found-component',
   standalone: true,
   templateUrl: './not-found.component.html',
+  styleUrls: ['./not-found.component.scss'],
   imports: [...MATERIAL_MODULE, RouterModule, TranslateModule, IconComponent],
 })
 export class NotFoundComponent extends ComponentBaseAbstract {
   constructor(protected override injector: Injector) {
     super(injector);
+  }
+
+  goBack(): void {
+    this.location.back();
   }
 }
