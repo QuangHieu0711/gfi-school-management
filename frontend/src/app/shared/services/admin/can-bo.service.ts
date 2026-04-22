@@ -1,14 +1,22 @@
-import { HttpClient, HttpContext } from '@angular/common/http';
+import {
+  HttpClient,
+  HttpContext,
+  HttpParams,
+  HttpResponse,
+} from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { ERROR_CONTEXT } from '@constant/error.registry';
 import { environment } from '@env/environment';
 import { IResponse, ITableResponse } from '@model/response.model';
+import { Observable } from 'rxjs';
 
 import {
   CAN_BO_API_ENDPOINT,
   CanBoDetailResponse,
+  CanBoExportRequest,
   CanBoFilterRequest,
   CanBoFormRequest,
+  CanBoImportResponseData,
   CanBoResponse,
 } from '@app/model/admin/can-bo.model';
 
@@ -51,6 +59,50 @@ export class CanBoService {
     return this.http.delete<IResponse<null>>(`${this.baseUrl}/${id}`, {
       context: this.silentContext,
     });
+  }
+
+  export(payload: CanBoExportRequest): Observable<HttpResponse<Blob>> {
+    const params = new HttpParams({
+      fromObject: {
+        exportType: payload.exportType ?? 'EXCEL',
+      },
+    });
+    const { exportType: _exportType, ...body } = payload;
+
+    return this.http.post(
+      `${this.baseUrl}/${CAN_BO_API_ENDPOINT.EXPORT}`,
+      body,
+      {
+        params,
+        observe: 'response',
+        responseType: 'blob',
+      }
+    );
+  }
+
+  import(
+    unitId: string | number,
+    payload: FormData
+  ): Observable<IResponse<CanBoImportResponseData>> {
+    return this.http.post<IResponse<CanBoImportResponseData>>(
+      `${this.baseUrl}/${CAN_BO_API_ENDPOINT.IMPORT_EXCEL}`,
+      payload,
+      {
+        params: { unitId },
+      }
+    );
+  }
+
+  downloadTemplate(unitId: string | number): Observable<HttpResponse<Blob>> {
+    return this.http.post(
+      `${this.baseUrl}/${CAN_BO_API_ENDPOINT.EXCEL_TEMPLATE}`,
+      {},
+      {
+        params: { unitId },
+        observe: 'response',
+        responseType: 'blob',
+      }
+    );
   }
 
   create(payload: CanBoFormRequest) {

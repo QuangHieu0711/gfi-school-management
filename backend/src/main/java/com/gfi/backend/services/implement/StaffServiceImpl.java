@@ -1,24 +1,64 @@
 package com.gfi.backend.services.implement;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.text.Normalizer;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+import org.apache.poi.ss.usermodel.BorderStyle;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.CellStyle;
+import org.apache.poi.ss.usermodel.DataFormatter;
+import org.apache.poi.ss.usermodel.FillPatternType;
+import org.apache.poi.ss.usermodel.Font;
+import org.apache.poi.ss.usermodel.HorizontalAlignment;
+import org.apache.poi.ss.usermodel.IndexedColors;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.VerticalAlignment;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.ss.util.CellRangeAddress;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
+import org.springframework.web.multipart.MultipartFile;
+
 import com.gfi.backend.models.dtos.staff.*;
 import com.gfi.backend.models.dtos.common.PageRequestDto;
 import com.gfi.backend.models.dtos.common.PageResponseDto;
+import com.gfi.backend.models.dtos.common.TemporaryFileDto;
 import com.gfi.backend.models.entities.Staff;
 import com.gfi.backend.models.entities.StaffAddress;
+import com.gfi.backend.models.entities.StaffEducation;
 import com.gfi.backend.models.entities.StaffFamilyMember;
 import com.gfi.backend.models.entities.Unit;
 import com.gfi.backend.models.entities.GradeLevel;
 import com.gfi.backend.models.global.CommonErrorCode;
 import com.gfi.backend.controllers.exceptions.UserMessageException;
 import com.gfi.backend.repositories.StaffAddressRepository;
+import com.gfi.backend.repositories.StaffEducationRepository;
 import com.gfi.backend.repositories.StaffFamilyMemberRepository;
 import com.gfi.backend.repositories.StaffRepository;
 import com.gfi.backend.repositories.UnitRepository;
 import com.gfi.backend.repositories.UserRepository;
 import com.gfi.backend.models.enums.ActionType;
+import com.gfi.backend.models.enums.ExportType;
 import com.gfi.backend.models.enums.ScopeType;
 import com.gfi.backend.models.security.ResolvedScope;
 import com.gfi.backend.services.FileStorageService;
+import com.gfi.backend.services.interfaces.ImportErrorFileStorageService;
+import com.gfi.backend.services.interfaces.StaffCodeGeneratorService;
 import com.gfi.backend.services.interfaces.StaffService;
 import com.gfi.backend.utils.PageableUtils;
 import com.gfi.backend.utils.ScopeFilterUtils;
@@ -27,18 +67,6 @@ import com.gfi.backend.utils.SecurityUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import jakarta.persistence.criteria.Predicate;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.domain.Specification;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
-import java.time.LocalDate;
-import java.util.List;
-import java.util.Map;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 @Service
 @RequiredArgsConstructor
@@ -53,16 +81,87 @@ public class StaffServiceImpl implements StaffService {
     private static final String RELATION_SPOUSE_FATHER = "SPOUSE_FATHER";
     private static final String RELATION_SPOUSE_MOTHER = "SPOUSE_MOTHER";
     private static final String RELATION_CHILDREN = "CHILDREN";
+    private static final String EDUCATION_TYPE_TRAINING = "TRAINING";
+    private static final String EDUCATION_TYPE_FOREIGN_LANGUAGE = "FOREIGN_LANGUAGE";
 
     private final StaffRepository staffRepository;
     private final UnitRepository unitRepository;
     private final com.gfi.backend.repositories.GradeLevelRepository gradeLevelRepository;
     private final StaffAddressRepository staffAddressRepository;
+    private final StaffEducationRepository staffEducationRepository;
     private final StaffFamilyMemberRepository staffFamilyMemberRepository;
     private final FileStorageService fileStorageService;
     private final UserRepository userRepository;
+    private final ImportErrorFileStorageService importErrorFileStorageService;
+    private final StaffCodeGeneratorService staffCodeGeneratorService;
 
     private static final String FEATURE = "STAFF_PROFILE";
+    private static final String EXCEL_CONTENT_TYPE = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+    private static final String EXPORT_FONT_NAME = "Times New Roman";
+    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+    private static final int STAFF_TEMPLATE_GROUP_HEADER_ROW_INDEX = 6;
+    private static final int STAFF_IMPORT_HEADER_ROW_INDEX = 7;
+    private static final int STAFF_TEMPLATE_SAMPLE_ROW_INDEX = 8;
+    private static final int STAFF_LEGACY_CODE_COLUMN_INDEX = 1;
+    private static final int STAFF_COL_FULL_NAME = 1;
+    private static final int STAFF_COL_ALIAS_NAME = 2;
+    private static final int STAFF_COL_GENDER = 3;
+    private static final int STAFF_COL_DOB = 4;
+    private static final int STAFF_COL_PHONE = 5;
+    private static final int STAFF_COL_EMAIL = 6;
+    private static final int STAFF_COL_GRADE_ID = 7;
+    private static final int STAFF_COL_STATUS = 8;
+    private static final int STAFF_COL_NOTE = 9;
+    private static final int STAFF_COL_IDENTITY_CODE = 10;
+    private static final int STAFF_COL_ETHNICITY = 11;
+    private static final int STAFF_COL_RELIGION = 12;
+    private static final int STAFF_COL_NATIONALITY = 13;
+    private static final int STAFF_COL_CCCD_NO = 14;
+    private static final int STAFF_COL_CCCD_ISSUE_DATE = 15;
+    private static final int STAFF_COL_CCCD_ISSUE_PLACE = 16;
+    private static final int STAFF_COL_HEALTH_STATUS = 17;
+    private static final int STAFF_COL_SOCIAL_INSURANCE_NO = 18;
+    private static final int STAFF_COL_PERMANENT_ADDRESS = 19;
+    private static final int STAFF_COL_TEMPORARY_ADDRESS = 20;
+    private static final int STAFF_COL_BIRTH_PLACE_ADDRESS = 21;
+    private static final int STAFF_COL_FATHER_NAME = 22;
+    private static final int STAFF_COL_FATHER_BIRTH_YEAR = 23;
+    private static final int STAFF_COL_FATHER_HOMETOWN = 24;
+    private static final int STAFF_COL_FATHER_OCCUPATION = 25;
+    private static final int STAFF_COL_FATHER_PHONE = 26;
+    private static final int STAFF_COL_MOTHER_NAME = 27;
+    private static final int STAFF_COL_MOTHER_BIRTH_YEAR = 28;
+    private static final int STAFF_COL_MOTHER_HOMETOWN = 29;
+    private static final int STAFF_COL_MOTHER_OCCUPATION = 30;
+    private static final int STAFF_COL_MOTHER_PHONE = 31;
+    private static final int STAFF_COL_SPOUSE_NAME = 32;
+    private static final int STAFF_COL_SPOUSE_BIRTH_YEAR = 33;
+    private static final int STAFF_COL_SPOUSE_OCCUPATION = 34;
+    private static final int STAFF_COL_SPOUSE_PHONE = 35;
+    private static final int STAFF_COL_SPOUSE_FATHER_NAME = 36;
+    private static final int STAFF_COL_SPOUSE_FATHER_BIRTH_YEAR = 37;
+    private static final int STAFF_COL_SPOUSE_FATHER_HOMETOWN = 38;
+    private static final int STAFF_COL_SPOUSE_FATHER_OCCUPATION = 39;
+    private static final int STAFF_COL_SPOUSE_FATHER_PHONE = 40;
+    private static final int STAFF_COL_SPOUSE_MOTHER_NAME = 41;
+    private static final int STAFF_COL_SPOUSE_MOTHER_BIRTH_YEAR = 42;
+    private static final int STAFF_COL_SPOUSE_MOTHER_HOMETOWN = 43;
+    private static final int STAFF_COL_SPOUSE_MOTHER_OCCUPATION = 44;
+    private static final int STAFF_COL_SPOUSE_MOTHER_PHONE = 45;
+    private static final int STAFF_COL_CHILDREN_DETAIL = 46;
+    private static final int STAFF_COL_TRAINING_SCHOOL = 47;
+    private static final int STAFF_COL_TRAINING_MAJOR = 48;
+    private static final int STAFF_COL_TRAINING_FORM = 49;
+    private static final int STAFF_COL_TRAINING_CERTIFICATE = 50;
+    private static final int STAFF_COL_TRAINING_FROM_DATE = 51;
+    private static final int STAFF_COL_TRAINING_TO_DATE = 52;
+    private static final int STAFF_COL_TRAINING_NOTE = 53;
+    private static final int STAFF_COL_FOREIGN_LANGUAGE_NAME = 54;
+    private static final int STAFF_COL_FOREIGN_LANGUAGE_LEVEL = 55;
+    private static final int STAFF_COL_FOREIGN_LANGUAGE_ISSUE_DATE = 56;
+    private static final int STAFF_COL_FOREIGN_LANGUAGE_SCORE = 57;
+    private static final int STAFF_COL_FOREIGN_LANGUAGE_NOTE = 58;
+    private static final int STAFF_IMPORT_LAST_DATA_COLUMN = STAFF_COL_FOREIGN_LANGUAGE_NOTE;
 
     /*
      * Tìm kiếm cán bộ
@@ -79,7 +178,8 @@ public class StaffServiceImpl implements StaffService {
         int pageNow = normalizePageNow(request.getPageNow());
         Pageable pageable = PageableUtils.newestFirst(pageNow, pageSize);
 
-        Page<Staff> page = staffRepository.findAll(buildSpecification(filter, currentStaffId, resolvedScopes), pageable);
+        Page<Staff> page = staffRepository.findAll(buildSpecification(filter, currentStaffId, resolvedScopes),
+                pageable);
         List<StaffItemDto> items = page.getContent().stream()
                 .map(this::toItemDto)
                 .toList();
@@ -225,7 +325,8 @@ public class StaffServiceImpl implements StaffService {
     /*
      * Xây dựng điều kiện lọc cho truy vấn cán bộ
      */
-    private Specification<Staff> buildSpecification(StaffFilterDto filter, Long forcedStaffId, List<ResolvedScope> resolvedScopes) {
+    private Specification<Staff> buildSpecification(StaffFilterDto filter, Long forcedStaffId,
+            List<ResolvedScope> resolvedScopes) {
         return (root, query, cb) -> {
             List<Predicate> predicates = new java.util.ArrayList<>();
 
@@ -847,5 +948,802 @@ public class StaffServiceImpl implements StaffService {
      */
     private int normalizePageNow(Integer pageNow) {
         return pageNow == null || pageNow < 0 ? 0 : pageNow;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public byte[] export(PageRequestDto<StaffFilterDto> request, Long unitId, ExportType exportType) {
+        if (exportType == ExportType.PDF) {
+            throw new UserMessageException("Chưa hỗ trợ export PDF cho cán bộ");
+        }
+        StaffFilterDto filter = request.getFilter() == null ? new StaffFilterDto() : request.getFilter();
+        if (unitId != null) {
+            filter.setUnitId(unitId);
+        }
+        PageRequestDto<StaffFilterDto> exportRequest = new PageRequestDto<>();
+        exportRequest.setFilter(filter);
+        exportRequest.setPageNow(1);
+        exportRequest.setPageSize(Integer.MAX_VALUE);
+        List<StaffItemDto> items = search(exportRequest).getItems();
+        return buildStaffExportWorkbook(items, unitId);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public byte[] exportExcelTemplate(Long unitId) {
+        Unit unit = unitRepository.findById(unitId)
+                .orElseThrow(() -> new UserMessageException(CommonErrorCode.UNIT_NOT_FOUND));
+        try (Workbook workbook = new XSSFWorkbook(); ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
+            Sheet sheet = workbook.createSheet("CanBo");
+            CellStyle govHeaderStyle = createExcelGovHeaderStyle(workbook);
+            CellStyle govSubHeaderStyle = createExcelGovSubHeaderStyle(workbook);
+            CellStyle titleStyle = createExcelTitleStyle(workbook);
+            CellStyle headerStyle = createExcelHeaderStyle(workbook);
+            CellStyle guideStyle = createExcelGuideStyle(workbook);
+            CellStyle bodyStyle = createExcelBodyStyle(workbook);
+            int middleColumn = STAFF_IMPORT_LAST_DATA_COLUMN / 2;
+
+            Row govHeaderRow = sheet.createRow(0);
+            createCell(govHeaderRow, 0, "BỘ GIÁO DỤC VÀ ĐÀO TẠO", govHeaderStyle);
+            sheet.addMergedRegion(new CellRangeAddress(0, 0, 0, middleColumn));
+            createCell(govHeaderRow, middleColumn + 1, "CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM", govHeaderStyle);
+            sheet.addMergedRegion(new CellRangeAddress(0, 0, middleColumn + 1, STAFF_IMPORT_LAST_DATA_COLUMN));
+
+            Row govSubHeaderRow = sheet.createRow(1);
+            createCell(govSubHeaderRow, 0, unit.getName(), govSubHeaderStyle);
+            sheet.addMergedRegion(new CellRangeAddress(1, 1, 0, middleColumn));
+            createCell(govSubHeaderRow, middleColumn + 1, "Độc lập - Tự do - Hạnh phúc", govSubHeaderStyle);
+            sheet.addMergedRegion(new CellRangeAddress(1, 1, middleColumn + 1, STAFF_IMPORT_LAST_DATA_COLUMN));
+
+            createCell(sheet.createRow(3), 0, "MẪU IMPORT CÁN BỘ", titleStyle);
+            sheet.addMergedRegion(new CellRangeAddress(3, 3, 0, STAFF_IMPORT_LAST_DATA_COLUMN));
+            createCell(sheet.createRow(4), 0,
+                    "Cột bắt buộc: Họ tên. Mã cán bộ sẽ được tự sinh theo đơn vị khi import.",
+                    guideStyle);
+            sheet.addMergedRegion(new CellRangeAddress(4, 4, 0, STAFF_IMPORT_LAST_DATA_COLUMN));
+            createCell(sheet.createRow(5), 0,
+                    "Giới tính: Nam/Nữ/Khác. Trạng thái: Hoạt động/Không hoạt động. Các cột còn lại là tùy chọn.",
+                    guideStyle);
+            sheet.addMergedRegion(new CellRangeAddress(5, 5, 0, STAFF_IMPORT_LAST_DATA_COLUMN));
+
+            Row groupHeaderRow = sheet.createRow(STAFF_TEMPLATE_GROUP_HEADER_ROW_INDEX);
+            fillRowWithStyle(groupHeaderRow, 0, STAFF_IMPORT_LAST_DATA_COLUMN, headerStyle);
+            createCell(groupHeaderRow, 0, "THÔNG TIN CÁN BỘ", headerStyle);
+            sheet.addMergedRegion(new CellRangeAddress(STAFF_TEMPLATE_GROUP_HEADER_ROW_INDEX,
+                    STAFF_TEMPLATE_GROUP_HEADER_ROW_INDEX, 0, STAFF_COL_BIRTH_PLACE_ADDRESS));
+            createCell(groupHeaderRow, STAFF_COL_FATHER_NAME, "Cha", headerStyle);
+            sheet.addMergedRegion(new CellRangeAddress(STAFF_TEMPLATE_GROUP_HEADER_ROW_INDEX,
+                    STAFF_TEMPLATE_GROUP_HEADER_ROW_INDEX, STAFF_COL_FATHER_NAME, STAFF_COL_FATHER_PHONE));
+            createCell(groupHeaderRow, STAFF_COL_MOTHER_NAME, "Mẹ", headerStyle);
+            sheet.addMergedRegion(new CellRangeAddress(STAFF_TEMPLATE_GROUP_HEADER_ROW_INDEX,
+                    STAFF_TEMPLATE_GROUP_HEADER_ROW_INDEX, STAFF_COL_MOTHER_NAME, STAFF_COL_MOTHER_PHONE));
+            createCell(groupHeaderRow, STAFF_COL_SPOUSE_NAME, "Vợ/Chồng", headerStyle);
+            sheet.addMergedRegion(new CellRangeAddress(STAFF_TEMPLATE_GROUP_HEADER_ROW_INDEX,
+                    STAFF_TEMPLATE_GROUP_HEADER_ROW_INDEX, STAFF_COL_SPOUSE_NAME, STAFF_COL_SPOUSE_PHONE));
+            createCell(groupHeaderRow, STAFF_COL_SPOUSE_FATHER_NAME, "Bố vợ/chồng", headerStyle);
+            sheet.addMergedRegion(new CellRangeAddress(STAFF_TEMPLATE_GROUP_HEADER_ROW_INDEX,
+                    STAFF_TEMPLATE_GROUP_HEADER_ROW_INDEX, STAFF_COL_SPOUSE_FATHER_NAME,
+                    STAFF_COL_SPOUSE_FATHER_PHONE));
+            createCell(groupHeaderRow, STAFF_COL_SPOUSE_MOTHER_NAME, "Mẹ vợ/chồng", headerStyle);
+            sheet.addMergedRegion(new CellRangeAddress(STAFF_TEMPLATE_GROUP_HEADER_ROW_INDEX,
+                    STAFF_TEMPLATE_GROUP_HEADER_ROW_INDEX, STAFF_COL_SPOUSE_MOTHER_NAME,
+                    STAFF_COL_SPOUSE_MOTHER_PHONE));
+            createCell(groupHeaderRow, STAFF_COL_CHILDREN_DETAIL, "Con", headerStyle);
+            createCell(groupHeaderRow, STAFF_COL_TRAINING_SCHOOL, "Đào tạo", headerStyle);
+            sheet.addMergedRegion(new CellRangeAddress(STAFF_TEMPLATE_GROUP_HEADER_ROW_INDEX,
+                    STAFF_TEMPLATE_GROUP_HEADER_ROW_INDEX, STAFF_COL_TRAINING_SCHOOL, STAFF_COL_TRAINING_NOTE));
+            createCell(groupHeaderRow, STAFF_COL_FOREIGN_LANGUAGE_NAME, "Ngoại ngữ", headerStyle);
+            sheet.addMergedRegion(new CellRangeAddress(STAFF_TEMPLATE_GROUP_HEADER_ROW_INDEX,
+                    STAFF_TEMPLATE_GROUP_HEADER_ROW_INDEX, STAFF_COL_FOREIGN_LANGUAGE_NAME,
+                    STAFF_COL_FOREIGN_LANGUAGE_NOTE));
+
+            Row headerRow = sheet.createRow(STAFF_IMPORT_HEADER_ROW_INDEX);
+            String[] headers = {
+                    "STT", "Họ tên *", "Tên gọi khác", "Giới tính", "Ngày sinh",
+                    "Điện thoại", "Email", "Khối", "Trạng thái", "Ghi chú", "Mã định danh",
+                    "Dân tộc", "Tôn giáo", "Quốc tịch", "CCCD/CMND", "Ngày cấp CCCD", "Nơi cấp CCCD",
+                    "Tình trạng sức khỏe", "Số BHXH", "Địa chỉ thường trú", "Địa chỉ tạm trú", "Địa chỉ nơi sinh",
+                    "Họ tên", "Năm sinh", "Quê quán", "Nghề nghiệp", "Điện thoại",
+                    "Họ tên", "Năm sinh", "Quê quán", "Nghề nghiệp", "Điện thoại",
+                    "Họ tên", "Năm sinh", "Nghề nghiệp", "Điện thoại",
+                    "Họ tên", "Năm sinh", "Quê quán",
+                    "Nghề nghiệp", "Điện thoại",
+                    "Họ tên", "Năm sinh", "Quê quán",
+                    "Nghề nghiệp", "Điện thoại", "Thông tin con"
+            };
+            headers = java.util.Arrays.copyOf(headers, STAFF_IMPORT_LAST_DATA_COLUMN + 1);
+            headers[STAFF_COL_TRAINING_SCHOOL] = "Trường đào tạo";
+            headers[STAFF_COL_TRAINING_MAJOR] = "Chuyên ngành";
+            headers[STAFF_COL_TRAINING_FORM] = "Hình thức đào tạo";
+            headers[STAFF_COL_TRAINING_CERTIFICATE] = "Chứng chỉ";
+            headers[STAFF_COL_TRAINING_FROM_DATE] = "Từ ngày";
+            headers[STAFF_COL_TRAINING_TO_DATE] = "Đến ngày";
+            headers[STAFF_COL_TRAINING_NOTE] = "Ghi chú đào tạo";
+            headers[STAFF_COL_FOREIGN_LANGUAGE_NAME] = "Tên ngoại ngữ";
+            headers[STAFF_COL_FOREIGN_LANGUAGE_LEVEL] = "Trình độ";
+            headers[STAFF_COL_FOREIGN_LANGUAGE_ISSUE_DATE] = "Ngày cấp";
+            headers[STAFF_COL_FOREIGN_LANGUAGE_SCORE] = "Điểm/kết quả";
+            headers[STAFF_COL_FOREIGN_LANGUAGE_NOTE] = "Ghi chú ngoại ngữ";
+            for (int i = 0; i < headers.length; i++) {
+                createCell(headerRow, i, headers[i], headerStyle);
+            }
+
+            Row sampleRow = sheet.createRow(STAFF_TEMPLATE_SAMPLE_ROW_INDEX);
+            Object[] sampleValues = {
+                    1, "Trần Thị B", "Thị B", "Nữ", "01/01/1990", "0912345678",
+                    "b@example.com", "", "Hoạt động", "Dữ liệu mẫu", "ID-CB-001",
+                    "KINH", "KHONG", "VN", "079090012345", "10/03/2018", "Cục CSQLHC",
+                    "Tốt", "BHXH001", "Số 1 Đường A", "Số 2 Đường B", "Buôn C",
+                    "Trần Văn C", 1960, "Đắk Lắk", "Nông dân", "0900000001",
+                    "Nguyễn Thị D", 1965, "Đắk Lắk", "Nội trợ", "0900000002",
+                    "Lê Văn E", 1988, "Giáo viên", "0900000003",
+                    "Lê Văn F", 1962, "Đắk Lắk", "Làm vườn", "0900000004",
+                    "Phạm Thị G", 1964, "Đắk Lắk", "Nội trợ", "0900000005",
+                    "Con trai: Nguyễn Văn A; Con gái: Nguyễn Thị B"
+            };
+            sampleValues = java.util.Arrays.copyOf(sampleValues, STAFF_IMPORT_LAST_DATA_COLUMN + 1);
+            sampleValues[STAFF_COL_TRAINING_SCHOOL] = "DHSP Hà Nội";
+            sampleValues[STAFF_COL_TRAINING_MAJOR] = "Sư phạm Toán học";
+            sampleValues[STAFF_COL_TRAINING_FORM] = "Chính quy";
+            sampleValues[STAFF_COL_TRAINING_CERTIFICATE] = "Cử nhân";
+            sampleValues[STAFF_COL_TRAINING_FROM_DATE] = "01/09/2008";
+            sampleValues[STAFF_COL_TRAINING_TO_DATE] = "30/06/2012";
+            sampleValues[STAFF_COL_TRAINING_NOTE] = "Tốt nghiệp loại Giỏi";
+            sampleValues[STAFF_COL_FOREIGN_LANGUAGE_NAME] = "Tiếng Anh";
+            sampleValues[STAFF_COL_FOREIGN_LANGUAGE_LEVEL] = "B2";
+            sampleValues[STAFF_COL_FOREIGN_LANGUAGE_ISSUE_DATE] = "10/08/2020";
+            sampleValues[STAFF_COL_FOREIGN_LANGUAGE_SCORE] = "7.5";
+            sampleValues[STAFF_COL_FOREIGN_LANGUAGE_NOTE] = "Chứng chỉ sư phạm tiếng Anh";
+            for (int i = 0; i < sampleValues.length; i++) {
+                createCell(sampleRow, i, sampleValues[i], bodyStyle);
+            }
+
+            sheet.createFreezePane(0, STAFF_TEMPLATE_SAMPLE_ROW_INDEX);
+            autosize(sheet, headers.length);
+            workbook.write(outputStream);
+            return outputStream.toByteArray();
+        } catch (IOException ex) {
+            throw new UserMessageException("Không thể tạo file Excel mẫu import cán bộ");
+        }
+    }
+
+    @Override
+    @Transactional
+    public StaffImportResultDto importExcel(Long unitId, MultipartFile file) {
+        Unit unit = unitRepository.findById(unitId)
+                .orElseThrow(() -> new UserMessageException(CommonErrorCode.UNIT_NOT_FOUND));
+        validateExcelFile(file);
+        int successCount = 0;
+        Map<Integer, String> rowErrors = new java.util.LinkedHashMap<>();
+
+        try (Workbook workbook = new XSSFWorkbook(file.getInputStream())) {
+            Sheet sheet = workbook.getSheetAt(0);
+            DataFormatter formatter = new DataFormatter();
+            int headerRowIndex = findStaffImportHeaderRow(sheet, formatter);
+            boolean hasLegacyCodeColumn = isLegacyStaffCodeColumn(sheet.getRow(headerRowIndex), formatter);
+            int dataStartRowIndex = headerRowIndex + 1;
+
+            for (int rowIndex = dataStartRowIndex; rowIndex <= sheet.getLastRowNum(); rowIndex++) {
+                Row row = sheet.getRow(rowIndex);
+                int fromColumn = hasLegacyCodeColumn ? STAFF_LEGACY_CODE_COLUMN_INDEX : STAFF_COL_FULL_NAME;
+                int toColumn = hasLegacyCodeColumn ? STAFF_IMPORT_LAST_DATA_COLUMN + 1 : STAFF_IMPORT_LAST_DATA_COLUMN;
+                if (isExcelRowEmpty(row, fromColumn, toColumn, formatter)) {
+                    continue;
+                }
+                try {
+                    upsertStaffFromExcelRow(unit, row, formatter, hasLegacyCodeColumn);
+                    successCount++;
+                } catch (Exception ex) {
+                    rowErrors.put(rowIndex, ex.getMessage());
+                }
+            }
+            String token = null;
+            String fileName = null;
+            if (!rowErrors.isEmpty()) {
+                byte[] errorFile = buildStaffImportErrorFile(workbook, sheet, rowErrors, headerRowIndex);
+                fileName = "staff-import-errors.xlsx";
+                token = importErrorFileStorageService.store(fileName, EXCEL_CONTENT_TYPE, errorFile);
+            }
+            return StaffImportResultDto.builder()
+                    .successCount(successCount)
+                    .failedCount(rowErrors.size())
+                    .hasErrorFile(token != null)
+                    .errorFileToken(token)
+                    .errorFileName(fileName)
+                    .build();
+        } catch (IOException ex) {
+            throw new UserMessageException("Không thể đọc file Excel cán bộ");
+        }
+    }
+
+    @Override
+    public TemporaryFileDto getImportErrorFile(String token) {
+        return importErrorFileStorageService.get(token);
+    }
+
+    private byte[] buildStaffExportWorkbook(List<StaffItemDto> items, Long unitId) {
+        try (Workbook workbook = new XSSFWorkbook(); ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
+            Sheet sheet = workbook.createSheet("CanBo");
+            CellStyle headerStyle = createExcelHeaderStyle(workbook);
+            CellStyle bodyStyle = createExcelBodyStyle(workbook);
+            createCell(sheet.createRow(0), 0,
+                    "Danh sach can bo" + (unitId == null ? "" : " - UnitId: " + unitId), headerStyle);
+            sheet.addMergedRegion(new CellRangeAddress(0, 0, 0, 8));
+            Row headerRow = sheet.createRow(2);
+            String[] headers = { "STT", "Ma can bo", "Ho ten", "Gioi tinh", "Ngay sinh", "Dien thoai", "Email",
+                    "Trang thai", "Grade ID" };
+            for (int i = 0; i < headers.length; i++) {
+                createCell(headerRow, i, headers[i], headerStyle);
+            }
+            int rowIndex = 3;
+            int stt = 1;
+            for (StaffItemDto item : items) {
+                Row row = sheet.createRow(rowIndex++);
+                createCell(row, 0, stt++, bodyStyle);
+                createCell(row, 1, item.getStaffCode(), bodyStyle);
+                createCell(row, 2, item.getFullName(), bodyStyle);
+                createCell(row, 3, item.getGender(), bodyStyle);
+                createCell(row, 4, formatDate(item.getDateOfBirth()), bodyStyle);
+                createCell(row, 5, item.getPhone(), bodyStyle);
+                createCell(row, 6, item.getEmail(), bodyStyle);
+                createCell(row, 7, item.getStatus(), bodyStyle);
+                createCell(row, 8, item.getGradeId(), bodyStyle);
+            }
+            autosize(sheet, headers.length);
+            workbook.write(outputStream);
+            return outputStream.toByteArray();
+        } catch (IOException ex) {
+            throw new UserMessageException("Không thể xuất cán bộ");
+        }
+    }
+
+    private void upsertStaffFromExcelRow(Unit unit, Row row, DataFormatter formatter, boolean hasLegacyCodeColumn) {
+        String staffCode = hasLegacyCodeColumn
+                ? normalizeNullable(readCellText(row.getCell(STAFF_LEGACY_CODE_COLUMN_INDEX), formatter))
+                : null;
+        String fullName = normalizeNullable(
+                readCellText(row.getCell(staffCol(STAFF_COL_FULL_NAME, hasLegacyCodeColumn)), formatter));
+        if (!StringUtils.hasText(fullName)) {
+            throw new UserMessageException("Họ tên cán bộ không được để trống");
+        }
+
+        Staff existing = StringUtils.hasText(staffCode)
+                ? staffRepository.findByStaffCode(staffCode).orElse(null)
+                : null;
+
+        if (existing == null) {
+            StaffCreateRequest request = new StaffCreateRequest();
+            request.setStaffCode(resolveImportStaffCode(unit, staffCode));
+            request.setFullName(fullName);
+            request.setAliasName(normalizeNullable(
+                    readCellText(row.getCell(staffCol(STAFF_COL_ALIAS_NAME, hasLegacyCodeColumn)), formatter)));
+            request.setIdentityCode(normalizeNullable(
+                    readCellText(row.getCell(staffCol(STAFF_COL_IDENTITY_CODE, hasLegacyCodeColumn)), formatter)));
+            request.setGender(parseStaffGenderCell(
+                    readCellText(row.getCell(staffCol(STAFF_COL_GENDER, hasLegacyCodeColumn)), formatter)));
+            request.setDateOfBirth(parseOptionalDateCell(
+                    readCellText(row.getCell(staffCol(STAFF_COL_DOB, hasLegacyCodeColumn)), formatter)));
+            request.setEthnicityId(normalizeNullable(
+                    readCellText(row.getCell(staffCol(STAFF_COL_ETHNICITY, hasLegacyCodeColumn)), formatter)));
+            request.setReligionId(normalizeNullable(
+                    readCellText(row.getCell(staffCol(STAFF_COL_RELIGION, hasLegacyCodeColumn)), formatter)));
+            request.setNationalityId(normalizeNullable(
+                    readCellText(row.getCell(staffCol(STAFF_COL_NATIONALITY, hasLegacyCodeColumn)), formatter)));
+            request.setCccdNo(normalizeNullable(
+                    readCellText(row.getCell(staffCol(STAFF_COL_CCCD_NO, hasLegacyCodeColumn)), formatter)));
+            request.setCccdIssueDate(parseOptionalDateCell(
+                    readCellText(row.getCell(staffCol(STAFF_COL_CCCD_ISSUE_DATE, hasLegacyCodeColumn)), formatter)));
+            request.setCccdIssuePlace(normalizeNullable(
+                    readCellText(row.getCell(staffCol(STAFF_COL_CCCD_ISSUE_PLACE, hasLegacyCodeColumn)), formatter)));
+            request.setPhone(normalizeNullable(
+                    readCellText(row.getCell(staffCol(STAFF_COL_PHONE, hasLegacyCodeColumn)), formatter)));
+            request.setEmail(normalizeNullable(
+                    readCellText(row.getCell(staffCol(STAFF_COL_EMAIL, hasLegacyCodeColumn)), formatter)));
+            request.setHealthStatus(normalizeNullable(
+                    readCellText(row.getCell(staffCol(STAFF_COL_HEALTH_STATUS, hasLegacyCodeColumn)), formatter)));
+            request.setSocialInsuranceNo(normalizeNullable(readCellText(
+                    row.getCell(staffCol(STAFF_COL_SOCIAL_INSURANCE_NO, hasLegacyCodeColumn)), formatter)));
+            request.setGradeId(parseOptionalLongCell(
+                    readCellText(row.getCell(staffCol(STAFF_COL_GRADE_ID, hasLegacyCodeColumn)), formatter)));
+            request.setStatus(parseStaffStatusCell(
+                    readCellText(row.getCell(staffCol(STAFF_COL_STATUS, hasLegacyCodeColumn)), formatter)));
+            request.setNote(normalizeNullable(
+                    readCellText(row.getCell(staffCol(STAFF_COL_NOTE, hasLegacyCodeColumn)), formatter)));
+            request.setPermanentAddress(buildAddressFromFullAddressCell(
+                    readCellText(row.getCell(staffCol(STAFF_COL_PERMANENT_ADDRESS, hasLegacyCodeColumn)), formatter)));
+            request.setTemporaryAddress(buildAddressFromFullAddressCell(
+                    readCellText(row.getCell(staffCol(STAFF_COL_TEMPORARY_ADDRESS, hasLegacyCodeColumn)), formatter)));
+            request.setBirthPlaceAddress(buildAddressFromFullAddressCell(readCellText(
+                    row.getCell(staffCol(STAFF_COL_BIRTH_PLACE_ADDRESS, hasLegacyCodeColumn)), formatter)));
+            request.setFatherInfo(buildFamilyMemberRequest(
+                    readCellText(row.getCell(staffCol(STAFF_COL_FATHER_NAME, hasLegacyCodeColumn)), formatter),
+                    readCellText(row.getCell(staffCol(STAFF_COL_FATHER_BIRTH_YEAR, hasLegacyCodeColumn)), formatter),
+                    readCellText(row.getCell(staffCol(STAFF_COL_FATHER_HOMETOWN, hasLegacyCodeColumn)), formatter),
+                    readCellText(row.getCell(staffCol(STAFF_COL_FATHER_OCCUPATION, hasLegacyCodeColumn)), formatter),
+                    readCellText(row.getCell(staffCol(STAFF_COL_FATHER_PHONE, hasLegacyCodeColumn)), formatter)));
+            request.setMotherInfo(buildFamilyMemberRequest(
+                    readCellText(row.getCell(staffCol(STAFF_COL_MOTHER_NAME, hasLegacyCodeColumn)), formatter),
+                    readCellText(row.getCell(staffCol(STAFF_COL_MOTHER_BIRTH_YEAR, hasLegacyCodeColumn)), formatter),
+                    readCellText(row.getCell(staffCol(STAFF_COL_MOTHER_HOMETOWN, hasLegacyCodeColumn)), formatter),
+                    readCellText(row.getCell(staffCol(STAFF_COL_MOTHER_OCCUPATION, hasLegacyCodeColumn)), formatter),
+                    readCellText(row.getCell(staffCol(STAFF_COL_MOTHER_PHONE, hasLegacyCodeColumn)), formatter)));
+            request.setSpouseInfo(buildFamilyMemberRequest(
+                    readCellText(row.getCell(staffCol(STAFF_COL_SPOUSE_NAME, hasLegacyCodeColumn)), formatter),
+                    readCellText(row.getCell(staffCol(STAFF_COL_SPOUSE_BIRTH_YEAR, hasLegacyCodeColumn)), formatter),
+                    null,
+                    readCellText(row.getCell(staffCol(STAFF_COL_SPOUSE_OCCUPATION, hasLegacyCodeColumn)), formatter),
+                    readCellText(row.getCell(staffCol(STAFF_COL_SPOUSE_PHONE, hasLegacyCodeColumn)), formatter)));
+            request.setSpouseFatherInfo(buildFamilyMemberRequest(
+                    readCellText(row.getCell(staffCol(STAFF_COL_SPOUSE_FATHER_NAME, hasLegacyCodeColumn)), formatter),
+                    readCellText(row.getCell(staffCol(STAFF_COL_SPOUSE_FATHER_BIRTH_YEAR, hasLegacyCodeColumn)),
+                            formatter),
+                    readCellText(row.getCell(staffCol(STAFF_COL_SPOUSE_FATHER_HOMETOWN, hasLegacyCodeColumn)),
+                            formatter),
+                    readCellText(row.getCell(staffCol(STAFF_COL_SPOUSE_FATHER_OCCUPATION, hasLegacyCodeColumn)),
+                            formatter),
+                    readCellText(row.getCell(staffCol(STAFF_COL_SPOUSE_FATHER_PHONE, hasLegacyCodeColumn)),
+                            formatter)));
+            request.setSpouseMotherInfo(buildFamilyMemberRequest(
+                    readCellText(row.getCell(staffCol(STAFF_COL_SPOUSE_MOTHER_NAME, hasLegacyCodeColumn)), formatter),
+                    readCellText(row.getCell(staffCol(STAFF_COL_SPOUSE_MOTHER_BIRTH_YEAR, hasLegacyCodeColumn)),
+                            formatter),
+                    readCellText(row.getCell(staffCol(STAFF_COL_SPOUSE_MOTHER_HOMETOWN, hasLegacyCodeColumn)),
+                            formatter),
+                    readCellText(row.getCell(staffCol(STAFF_COL_SPOUSE_MOTHER_OCCUPATION, hasLegacyCodeColumn)),
+                            formatter),
+                    readCellText(row.getCell(staffCol(STAFF_COL_SPOUSE_MOTHER_PHONE, hasLegacyCodeColumn)),
+                            formatter)));
+            request.setChildrenDetail(normalizeNullable(
+                    readCellText(row.getCell(staffCol(STAFF_COL_CHILDREN_DETAIL, hasLegacyCodeColumn)), formatter)));
+            request.setUnitId(unit.getId());
+            StaffDetailDto created = create(request);
+            syncImportedEducationSections(created.getId(), row, formatter, hasLegacyCodeColumn);
+            return;
+        }
+
+        StaffUpdateRequest request = new StaffUpdateRequest();
+        request.setFullName(fullName);
+        request.setAliasName(normalizeNullable(
+                readCellText(row.getCell(staffCol(STAFF_COL_ALIAS_NAME, hasLegacyCodeColumn)), formatter)));
+        request.setIdentityCode(normalizeNullable(
+                readCellText(row.getCell(staffCol(STAFF_COL_IDENTITY_CODE, hasLegacyCodeColumn)), formatter)));
+        request.setGender(parseStaffGenderCell(
+                readCellText(row.getCell(staffCol(STAFF_COL_GENDER, hasLegacyCodeColumn)), formatter)));
+        request.setDateOfBirth(parseOptionalDateCell(
+                readCellText(row.getCell(staffCol(STAFF_COL_DOB, hasLegacyCodeColumn)), formatter)));
+        request.setEthnicityId(normalizeNullable(
+                readCellText(row.getCell(staffCol(STAFF_COL_ETHNICITY, hasLegacyCodeColumn)), formatter)));
+        request.setReligionId(normalizeNullable(
+                readCellText(row.getCell(staffCol(STAFF_COL_RELIGION, hasLegacyCodeColumn)), formatter)));
+        request.setNationalityId(normalizeNullable(
+                readCellText(row.getCell(staffCol(STAFF_COL_NATIONALITY, hasLegacyCodeColumn)), formatter)));
+        request.setCccdNo(normalizeNullable(
+                readCellText(row.getCell(staffCol(STAFF_COL_CCCD_NO, hasLegacyCodeColumn)), formatter)));
+        request.setCccdIssueDate(parseOptionalDateCell(
+                readCellText(row.getCell(staffCol(STAFF_COL_CCCD_ISSUE_DATE, hasLegacyCodeColumn)), formatter)));
+        request.setCccdIssuePlace(normalizeNullable(
+                readCellText(row.getCell(staffCol(STAFF_COL_CCCD_ISSUE_PLACE, hasLegacyCodeColumn)), formatter)));
+        request.setPhone(normalizeNullable(
+                readCellText(row.getCell(staffCol(STAFF_COL_PHONE, hasLegacyCodeColumn)), formatter)));
+        request.setEmail(normalizeNullable(
+                readCellText(row.getCell(staffCol(STAFF_COL_EMAIL, hasLegacyCodeColumn)), formatter)));
+        request.setHealthStatus(normalizeNullable(
+                readCellText(row.getCell(staffCol(STAFF_COL_HEALTH_STATUS, hasLegacyCodeColumn)), formatter)));
+        request.setSocialInsuranceNo(normalizeNullable(
+                readCellText(row.getCell(staffCol(STAFF_COL_SOCIAL_INSURANCE_NO, hasLegacyCodeColumn)), formatter)));
+        request.setGradeId(parseOptionalLongCell(
+                readCellText(row.getCell(staffCol(STAFF_COL_GRADE_ID, hasLegacyCodeColumn)), formatter)));
+        request.setStatus(parseStaffStatusCell(
+                readCellText(row.getCell(staffCol(STAFF_COL_STATUS, hasLegacyCodeColumn)), formatter)));
+        request.setNote(
+                normalizeNullable(readCellText(row.getCell(staffCol(STAFF_COL_NOTE, hasLegacyCodeColumn)), formatter)));
+        request.setPermanentAddress(buildAddressFromFullAddressCell(
+                readCellText(row.getCell(staffCol(STAFF_COL_PERMANENT_ADDRESS, hasLegacyCodeColumn)), formatter)));
+        request.setTemporaryAddress(buildAddressFromFullAddressCell(
+                readCellText(row.getCell(staffCol(STAFF_COL_TEMPORARY_ADDRESS, hasLegacyCodeColumn)), formatter)));
+        request.setBirthPlaceAddress(buildAddressFromFullAddressCell(
+                readCellText(row.getCell(staffCol(STAFF_COL_BIRTH_PLACE_ADDRESS, hasLegacyCodeColumn)), formatter)));
+        request.setFatherInfo(buildFamilyMemberRequest(
+                readCellText(row.getCell(staffCol(STAFF_COL_FATHER_NAME, hasLegacyCodeColumn)), formatter),
+                readCellText(row.getCell(staffCol(STAFF_COL_FATHER_BIRTH_YEAR, hasLegacyCodeColumn)), formatter),
+                readCellText(row.getCell(staffCol(STAFF_COL_FATHER_HOMETOWN, hasLegacyCodeColumn)), formatter),
+                readCellText(row.getCell(staffCol(STAFF_COL_FATHER_OCCUPATION, hasLegacyCodeColumn)), formatter),
+                readCellText(row.getCell(staffCol(STAFF_COL_FATHER_PHONE, hasLegacyCodeColumn)), formatter)));
+        request.setMotherInfo(buildFamilyMemberRequest(
+                readCellText(row.getCell(staffCol(STAFF_COL_MOTHER_NAME, hasLegacyCodeColumn)), formatter),
+                readCellText(row.getCell(staffCol(STAFF_COL_MOTHER_BIRTH_YEAR, hasLegacyCodeColumn)), formatter),
+                readCellText(row.getCell(staffCol(STAFF_COL_MOTHER_HOMETOWN, hasLegacyCodeColumn)), formatter),
+                readCellText(row.getCell(staffCol(STAFF_COL_MOTHER_OCCUPATION, hasLegacyCodeColumn)), formatter),
+                readCellText(row.getCell(staffCol(STAFF_COL_MOTHER_PHONE, hasLegacyCodeColumn)), formatter)));
+        request.setSpouseInfo(buildFamilyMemberRequest(
+                readCellText(row.getCell(staffCol(STAFF_COL_SPOUSE_NAME, hasLegacyCodeColumn)), formatter),
+                readCellText(row.getCell(staffCol(STAFF_COL_SPOUSE_BIRTH_YEAR, hasLegacyCodeColumn)), formatter),
+                null,
+                readCellText(row.getCell(staffCol(STAFF_COL_SPOUSE_OCCUPATION, hasLegacyCodeColumn)), formatter),
+                readCellText(row.getCell(staffCol(STAFF_COL_SPOUSE_PHONE, hasLegacyCodeColumn)), formatter)));
+        request.setSpouseFatherInfo(buildFamilyMemberRequest(
+                readCellText(row.getCell(staffCol(STAFF_COL_SPOUSE_FATHER_NAME, hasLegacyCodeColumn)), formatter),
+                readCellText(row.getCell(staffCol(STAFF_COL_SPOUSE_FATHER_BIRTH_YEAR, hasLegacyCodeColumn)), formatter),
+                readCellText(row.getCell(staffCol(STAFF_COL_SPOUSE_FATHER_HOMETOWN, hasLegacyCodeColumn)), formatter),
+                readCellText(row.getCell(staffCol(STAFF_COL_SPOUSE_FATHER_OCCUPATION, hasLegacyCodeColumn)), formatter),
+                readCellText(row.getCell(staffCol(STAFF_COL_SPOUSE_FATHER_PHONE, hasLegacyCodeColumn)), formatter)));
+        request.setSpouseMotherInfo(buildFamilyMemberRequest(
+                readCellText(row.getCell(staffCol(STAFF_COL_SPOUSE_MOTHER_NAME, hasLegacyCodeColumn)), formatter),
+                readCellText(row.getCell(staffCol(STAFF_COL_SPOUSE_MOTHER_BIRTH_YEAR, hasLegacyCodeColumn)), formatter),
+                readCellText(row.getCell(staffCol(STAFF_COL_SPOUSE_MOTHER_HOMETOWN, hasLegacyCodeColumn)), formatter),
+                readCellText(row.getCell(staffCol(STAFF_COL_SPOUSE_MOTHER_OCCUPATION, hasLegacyCodeColumn)), formatter),
+                readCellText(row.getCell(staffCol(STAFF_COL_SPOUSE_MOTHER_PHONE, hasLegacyCodeColumn)), formatter)));
+        request.setChildrenDetail(normalizeNullable(
+                readCellText(row.getCell(staffCol(STAFF_COL_CHILDREN_DETAIL, hasLegacyCodeColumn)), formatter)));
+        request.setUnitId(unit.getId());
+        StaffDetailDto updated = update(existing.getId(), request);
+        syncImportedEducationSections(updated.getId(), row, formatter, hasLegacyCodeColumn);
+    }
+
+    private void syncImportedEducationSections(Long staffId, Row row, DataFormatter formatter,
+            boolean hasLegacyCodeColumn) {
+        Staff staff = findStaff(staffId);
+        replaceImportedEducationByType(staff, EDUCATION_TYPE_TRAINING,
+                normalizeNullable(
+                        readCellText(row.getCell(staffCol(STAFF_COL_TRAINING_SCHOOL, hasLegacyCodeColumn)), formatter)),
+                education -> {
+                    education.setSchoolName(normalizeNullable(readCellText(
+                            row.getCell(staffCol(STAFF_COL_TRAINING_SCHOOL, hasLegacyCodeColumn)), formatter)));
+                    education.setMajor(normalizeNullable(readCellText(
+                            row.getCell(staffCol(STAFF_COL_TRAINING_MAJOR, hasLegacyCodeColumn)), formatter)));
+                    education.setTrainingForm(normalizeNullable(readCellText(
+                            row.getCell(staffCol(STAFF_COL_TRAINING_FORM, hasLegacyCodeColumn)), formatter)));
+                    education.setCertificate(normalizeNullable(readCellText(
+                            row.getCell(staffCol(STAFF_COL_TRAINING_CERTIFICATE, hasLegacyCodeColumn)), formatter)));
+                    education.setFromDate(parseOptionalDateCell(readCellText(
+                            row.getCell(staffCol(STAFF_COL_TRAINING_FROM_DATE, hasLegacyCodeColumn)), formatter)));
+                    education.setToDate(parseOptionalDateCell(readCellText(
+                            row.getCell(staffCol(STAFF_COL_TRAINING_TO_DATE, hasLegacyCodeColumn)), formatter)));
+                    education.setNote(normalizeNullable(readCellText(
+                            row.getCell(staffCol(STAFF_COL_TRAINING_NOTE, hasLegacyCodeColumn)), formatter)));
+                    education.setFrameworkLevel(null);
+                    education.setScore(null);
+                });
+
+        replaceImportedEducationByType(staff, EDUCATION_TYPE_FOREIGN_LANGUAGE,
+                normalizeNullable(readCellText(
+                        row.getCell(staffCol(STAFF_COL_FOREIGN_LANGUAGE_NAME, hasLegacyCodeColumn)), formatter)),
+                education -> {
+                    education.setSchoolName(normalizeNullable(readCellText(
+                            row.getCell(staffCol(STAFF_COL_FOREIGN_LANGUAGE_NAME, hasLegacyCodeColumn)), formatter)));
+                    education.setFrameworkLevel(normalizeNullable(readCellText(
+                            row.getCell(staffCol(STAFF_COL_FOREIGN_LANGUAGE_LEVEL, hasLegacyCodeColumn)), formatter)));
+                    education.setFromDate(parseOptionalDateCell(readCellText(
+                            row.getCell(staffCol(STAFF_COL_FOREIGN_LANGUAGE_ISSUE_DATE, hasLegacyCodeColumn)),
+                            formatter)));
+                    education.setScore(normalizeNullable(readCellText(
+                            row.getCell(staffCol(STAFF_COL_FOREIGN_LANGUAGE_SCORE, hasLegacyCodeColumn)), formatter)));
+                    education.setNote(normalizeNullable(readCellText(
+                            row.getCell(staffCol(STAFF_COL_FOREIGN_LANGUAGE_NOTE, hasLegacyCodeColumn)), formatter)));
+                    education.setMajor(null);
+                    education.setTrainingForm(null);
+                    education.setCertificate(null);
+                    education.setToDate(null);
+                });
+    }
+
+    private void replaceImportedEducationByType(Staff staff, String educationType, String triggerValue,
+            java.util.function.Consumer<StaffEducation> applier) {
+        List<StaffEducation> sameTypeItems = staffEducationRepository.findByStaffId(staff.getId()).stream()
+                .filter(item -> educationType.equals(item.getEducationType()))
+                .toList();
+        if (!StringUtils.hasText(triggerValue)) {
+            if (!sameTypeItems.isEmpty()) {
+                staffEducationRepository.deleteAll(sameTypeItems);
+            }
+            return;
+        }
+        StaffEducation education = sameTypeItems.isEmpty() ? new StaffEducation() : sameTypeItems.get(0);
+        education.setStaff(staff);
+        education.setEducationType(educationType);
+        applier.accept(education);
+        staffEducationRepository.save(education);
+        if (sameTypeItems.size() > 1) {
+            staffEducationRepository.deleteAll(sameTypeItems.subList(1, sameTypeItems.size()));
+        }
+    }
+
+    private byte[] buildStaffImportErrorFile(Workbook workbook, Sheet sheet, Map<Integer, String> rowErrors,
+            int headerRowIndex) {
+        CellStyle headerStyle = createExcelHeaderStyle(workbook);
+        CellStyle bodyStyle = createExcelBodyStyle(workbook);
+        Row headerRow = sheet.getRow(headerRowIndex);
+        if (headerRow == null) {
+            headerRow = sheet.createRow(headerRowIndex);
+        }
+        int resultColumnIndex = headerRow == null || headerRow.getLastCellNum() < 0
+                ? STAFF_IMPORT_LAST_DATA_COLUMN + 1
+                : headerRow.getLastCellNum();
+        int reasonColumnIndex = resultColumnIndex + 1;
+        createCell(headerRow, resultColumnIndex, "Kết quả", headerStyle);
+        createCell(headerRow, reasonColumnIndex, "Lý do lỗi", headerStyle);
+        for (Map.Entry<Integer, String> entry : rowErrors.entrySet()) {
+            Row row = sheet.getRow(entry.getKey());
+            createCell(row, resultColumnIndex, "Thất bại", bodyStyle);
+            createCell(row, reasonColumnIndex, entry.getValue(), bodyStyle);
+        }
+        autosize(sheet, reasonColumnIndex + 1);
+        try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
+            workbook.write(outputStream);
+            return outputStream.toByteArray();
+        } catch (IOException ex) {
+            throw new UserMessageException("Không thể tạo file lỗi import cán bộ");
+        }
+    }
+
+    private void validateExcelFile(MultipartFile file) {
+        if (file == null || file.isEmpty()) {
+            throw new UserMessageException("File import không được để trống");
+        }
+    }
+
+    private boolean isExcelRowEmpty(Row row, int fromColumn, int toColumn, DataFormatter formatter) {
+        if (row == null) {
+            return true;
+        }
+        for (int i = fromColumn; i <= toColumn; i++) {
+            if (StringUtils.hasText(readCellText(row.getCell(i), formatter))) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private String readCellText(Cell cell, DataFormatter formatter) {
+        return cell == null ? "" : formatter.formatCellValue(cell).trim();
+    }
+
+    private int findStaffImportHeaderRow(Sheet sheet, DataFormatter formatter) {
+        int maxCheck = Math.min(sheet.getLastRowNum(), 12);
+        for (int rowIndex = 0; rowIndex <= maxCheck; rowIndex++) {
+            Row row = sheet.getRow(rowIndex);
+            if (row == null) {
+                continue;
+            }
+            String first = normalizeLookupKey(readCellText(row.getCell(0), formatter));
+            String second = normalizeLookupKey(readCellText(row.getCell(1), formatter));
+            if ("STT".equals(first) && ("HO TEN *".equals(second) || "MA CAN BO".equals(second)
+                    || "HO TEN".equals(second))) {
+                return rowIndex;
+            }
+        }
+        return STAFF_IMPORT_HEADER_ROW_INDEX;
+    }
+
+    private boolean isLegacyStaffCodeColumn(Row headerRow, DataFormatter formatter) {
+        if (headerRow == null) {
+            return false;
+        }
+        String second = normalizeLookupKey(readCellText(headerRow.getCell(1), formatter));
+        return "MA CAN BO".equals(second);
+    }
+
+    private int staffCol(int baseColumn, boolean hasLegacyCodeColumn) {
+        return hasLegacyCodeColumn ? baseColumn + 1 : baseColumn;
+    }
+
+    private void fillRowWithStyle(Row row, int fromColumn, int toColumn, CellStyle style) {
+        for (int i = fromColumn; i <= toColumn; i++) {
+            createCell(row, i, "", style);
+        }
+    }
+
+    private LocalDate parseOptionalDateCell(String value) {
+        String normalized = normalizeNullable(value);
+        if (normalized == null) {
+            return null;
+        }
+        try {
+            if (normalized.contains("/")) {
+                return LocalDate.parse(normalized, DATE_FORMATTER);
+            }
+            return LocalDate.parse(normalized);
+        } catch (Exception ex) {
+            throw new UserMessageException("Ngày tháng không hợp lệ: " + normalized);
+        }
+    }
+
+    private Long parseOptionalLongCell(String value) {
+        String normalized = normalizeNullable(value);
+        if (normalized == null) {
+            return null;
+        }
+        try {
+            return Long.valueOf(normalized);
+        } catch (NumberFormatException ex) {
+            throw new UserMessageException("Giá trị ID không hợp lệ: " + normalized);
+        }
+    }
+
+    private Integer parseOptionalIntegerCell(String value, String messagePrefix) {
+        String normalized = normalizeNullable(value);
+        if (normalized == null) {
+            return null;
+        }
+        try {
+            return Integer.valueOf(normalized);
+        } catch (NumberFormatException ex) {
+            throw new UserMessageException(messagePrefix + ": " + normalized);
+        }
+    }
+
+    private StaffAddressRequest buildAddressFromFullAddressCell(String fullAddressText) {
+        String fullAddress = normalizeNullable(fullAddressText);
+        if (fullAddress == null) {
+            return null;
+        }
+        StaffAddressRequest request = new StaffAddressRequest();
+        request.setFullAddress(fullAddress);
+        return request;
+    }
+
+    private StaffFamilyMemberRequest buildFamilyMemberRequest(String fullName, String birthYearText, String hometown,
+            String occupation, String phone) {
+        StaffFamilyMemberRequest request = new StaffFamilyMemberRequest();
+        request.setFullName(normalizeNullable(fullName));
+        request.setBirthYear(parseOptionalIntegerCell(birthYearText, "Năm sinh không hợp lệ"));
+        request.setHometown(normalizeNullable(hometown));
+        request.setOccupation(normalizeNullable(occupation));
+        request.setPhone(normalizeNullable(phone));
+        return isFamilyMemberEmpty(request) ? null : request;
+    }
+
+    private String parseStaffGenderCell(String value) {
+        String normalized = normalizeNullable(value);
+        if (normalized == null) {
+            return null;
+        }
+        String key = normalizeLookupKey(normalized);
+        return switch (key) {
+            case "NAM", "MALE", "M", "0" -> "MALE";
+            case "NU", "FEMALE", "F", "1" -> "FEMALE";
+            case "KHAC", "OTHER", "O", "2" -> "OTHER";
+            default -> normalized.toUpperCase(Locale.ROOT);
+        };
+    }
+
+    private String parseStaffStatusCell(String value) {
+        String normalized = normalizeNullable(value);
+        if (normalized == null) {
+            return null;
+        }
+        String key = normalizeLookupKey(normalized);
+        return switch (key) {
+            case "HOAT DONG", "ACTIVE", "1" -> "ACTIVE";
+            case "KHONG HOAT DONG", "INACTIVE", "0" -> "INACTIVE";
+            default -> normalized.toUpperCase(Locale.ROOT);
+        };
+    }
+
+    private String normalizeLookupKey(String value) {
+        String normalized = normalizeNullable(value);
+        if (normalized == null) {
+            return null;
+        }
+        String noAccent = Normalizer.normalize(normalized, Normalizer.Form.NFD)
+                .replaceAll("\\p{M}+", "");
+        return noAccent.trim().toUpperCase(Locale.ROOT).replaceAll("\\s+", " ");
+    }
+
+    private String resolveImportStaffCode(Unit unit, String inputCode) {
+        if (StringUtils.hasText(inputCode)) {
+            return inputCode;
+        }
+        try {
+            return staffCodeGeneratorService.generateStaffCode(unit.getId(), LocalDate.now().getYear());
+        } catch (RuntimeException ex) {
+            throw new UserMessageException("Không thể tự động sinh mã cán bộ: " + ex.getMessage());
+        }
+    }
+
+    private String formatDate(LocalDate value) {
+        return value == null ? null : value.format(DATE_FORMATTER);
+    }
+
+    private CellStyle createExcelHeaderStyle(Workbook workbook) {
+        CellStyle style = workbook.createCellStyle();
+        style.setFillForegroundColor((short) 41);
+        style.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+        style.setAlignment(HorizontalAlignment.CENTER);
+        style.setVerticalAlignment(VerticalAlignment.CENTER);
+        style.setBorderTop(BorderStyle.THIN);
+        style.setBorderBottom(BorderStyle.THIN);
+        style.setBorderLeft(BorderStyle.THIN);
+        style.setBorderRight(BorderStyle.THIN);
+        style.setWrapText(true);
+        Font font = workbook.createFont();
+        font.setBold(true);
+        font.setFontName(EXPORT_FONT_NAME);
+        style.setFont(font);
+        return style;
+    }
+
+    private CellStyle createExcelTitleStyle(Workbook workbook) {
+        CellStyle style = workbook.createCellStyle();
+        style.setAlignment(HorizontalAlignment.CENTER);
+        style.setVerticalAlignment(VerticalAlignment.CENTER);
+        Font font = workbook.createFont();
+        font.setBold(true);
+        font.setFontHeightInPoints((short) 16);
+        font.setFontName(EXPORT_FONT_NAME);
+        style.setFont(font);
+        return style;
+    }
+
+    private CellStyle createExcelGovHeaderStyle(Workbook workbook) {
+        CellStyle style = workbook.createCellStyle();
+        style.setAlignment(HorizontalAlignment.CENTER);
+        style.setVerticalAlignment(VerticalAlignment.CENTER);
+        Font font = workbook.createFont();
+        font.setBold(true);
+        font.setFontName(EXPORT_FONT_NAME);
+        style.setFont(font);
+        return style;
+    }
+
+    private CellStyle createExcelGovSubHeaderStyle(Workbook workbook) {
+        CellStyle style = workbook.createCellStyle();
+        style.setAlignment(HorizontalAlignment.CENTER);
+        style.setVerticalAlignment(VerticalAlignment.CENTER);
+        Font font = workbook.createFont();
+        font.setBold(true);
+        font.setUnderline(Font.U_SINGLE);
+        font.setFontName(EXPORT_FONT_NAME);
+        style.setFont(font);
+        return style;
+    }
+
+    private CellStyle createExcelBodyStyle(Workbook workbook) {
+        CellStyle style = workbook.createCellStyle();
+        style.setBorderTop(BorderStyle.THIN);
+        style.setBorderBottom(BorderStyle.THIN);
+        style.setBorderLeft(BorderStyle.THIN);
+        style.setBorderRight(BorderStyle.THIN);
+        style.setVerticalAlignment(VerticalAlignment.TOP);
+        style.setWrapText(true);
+        Font font = workbook.createFont();
+        font.setFontName(EXPORT_FONT_NAME);
+        style.setFont(font);
+        return style;
+    }
+
+    private CellStyle createExcelGuideStyle(Workbook workbook) {
+        CellStyle style = workbook.createCellStyle();
+        style.setWrapText(true);
+        style.setAlignment(HorizontalAlignment.LEFT);
+        style.setVerticalAlignment(VerticalAlignment.CENTER);
+        Font font = workbook.createFont();
+        font.setFontHeightInPoints((short) 10);
+        font.setItalic(true);
+        font.setFontName(EXPORT_FONT_NAME);
+        style.setFont(font);
+        return style;
+    }
+
+    private Cell createCell(Row row, int columnIndex, Object value, CellStyle style) {
+        Cell cell = row.createCell(columnIndex);
+        if (value instanceof Number number) {
+            cell.setCellValue(number.doubleValue());
+        } else if (value != null) {
+            cell.setCellValue(String.valueOf(value));
+        } else {
+            cell.setCellValue("");
+        }
+        if (style != null) {
+            cell.setCellStyle(style);
+        }
+        return cell;
+    }
+
+    private void autosize(Sheet sheet, int totalColumns) {
+        for (int i = 0; i < totalColumns; i++) {
+            sheet.autoSizeColumn(i);
+            sheet.setColumnWidth(i, Math.min(sheet.getColumnWidth(i) + 1024, 20000));
+        }
     }
 }

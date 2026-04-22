@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { CommonModule } from '@angular/common';
 import { Component, Injector } from '@angular/core';
 import { ReactiveFormsModule } from '@angular/forms';
@@ -12,11 +13,13 @@ import { TableQueryEvent } from '@model/table.model';
 import { ComponentBaseAbstract } from '@layout';
 import { FORM_CONTROL_MODULE, MATERIAL_MODULE } from '@modules';
 import { FormType, IOptions } from '@model/form-control.model';
+import { defaultExportFileName, saveBlobAsFile } from '@utils/file-util';
 
 import {
   HOC_SINH_DETAIL_FALLBACK,
   HOC_SINH_FILTER_FORM,
   HOC_SINH_KEY,
+  HocSinhExportRequest,
   HocSinhFilterRequest,
   HocSinhResponse,
 } from '@app/model/admin/hoc-sinh.model';
@@ -24,7 +27,8 @@ import { DonViService } from '@app/service/admin/don-vi.service';
 import { KhoiService } from '@app/service/admin/khoi.service';
 import { LopService } from '@app/service/admin/lop.service';
 import { HocSinhService } from '@app/service/admin/hoc-sinh.service';
-import { PermissionCheckService } from '@service';
+import { AuthService, PermissionCheckService } from '@service';
+import { DialogImportHocSinhComponent } from './dialog-import/dialog-import.component';
 
 @Component({
   selector: 'hoc-sinh',
@@ -74,6 +78,10 @@ export class HocSinhComponent extends ComponentBaseAbstract {
     return this.permissionCheckService.canDelete(this.menuCode);
   }
 
+  get canDownload(): boolean {
+    return this.permissionCheckService.canDownload(this.menuCode);
+  }
+
   constructor(
     protected override injector: Injector,
     private readonly hocSinhService: HocSinhService,
@@ -81,7 +89,8 @@ export class HocSinhComponent extends ComponentBaseAbstract {
     private readonly lopService: LopService,
     private readonly khoiService: KhoiService,
     private readonly routerService: Router,
-    private readonly permissionCheckService: PermissionCheckService
+    private readonly permissionCheckService: PermissionCheckService,
+    private readonly authService: AuthService
   ) {
     super(injector);
   }
@@ -238,6 +247,47 @@ export class HocSinhComponent extends ComponentBaseAbstract {
     ]);
   }
 
+  import(): void {
+    if (!this.canAdd) {
+      this.toastr.warning('Bạn không có quyền kết nạp dữ liệu', 'Cảnh báo');
+      return;
+    }
+
+    this.dialog.componentDialog(
+      DialogImportHocSinhComponent,
+      {
+        width: '900px',
+      },
+      (result) => {
+        if (result) {
+          this.pageIndex = 0;
+          this.filterData({
+            pageIndex: 0,
+            pageSize: this.pageSize,
+          });
+        }
+      }
+    );
+  }
+
+  exportExcel(): void {
+    if (!this.canDownload) {
+      this.toastr.warning('Bạn không có quyền tải xuống', 'Cảnh báo');
+      return;
+    }
+
+    this.exportFile('EXCEL');
+  }
+
+  exportPdf(): void {
+    if (!this.canDownload) {
+      this.toastr.warning('Bạn không có quyền tải xuống', 'Cảnh báo');
+      return;
+    }
+
+    this.exportFile('PDF');
+  }
+
   getStatusLabel(status?: number): string {
     return (
       this.statusOptions.find((item) => item.value === status)?.label ??
@@ -297,7 +347,7 @@ export class HocSinhComponent extends ComponentBaseAbstract {
       filter: {
         fullName: value[this.key.FULL_NAME] ?? undefined,
         firstName: value[this.key.FIRST_NAME] ?? undefined,
-        unitId: value[this.key.UNIT_ID] ?? undefined,
+        unitId: value[this.key.UNIT_ID] ?? this.getCurrentUnitId() ?? undefined,
         studentStatus: value[this.key.STUDENT_STATUS] ?? undefined,
         classId: value[this.key.CLASS_ID] ?? undefined,
         moeCode: value[this.key.MOE_CODE] ?? undefined,
@@ -313,6 +363,91 @@ export class HocSinhComponent extends ComponentBaseAbstract {
         permanentWardName: value[this.key.PERMANENT_WARD_NAME] ?? undefined,
       },
     };
+  }
+
+  private exportFile(exportType: 'PDF' | 'EXCEL'): void {
+    const payload: HocSinhExportRequest = {
+      ...this.buildFilterPayload({
+        pageIndex: this.pageIndex,
+        pageSize: this.pageSize,
+      }),
+      exportType,
+    };
+
+    this.hocSinhService.export(payload).subscribe({
+      next: (res: any) => {
+        this.toastr.removeToastr();
+
+        const blob = this.extractBlob(res);
+        if (!blob) {
+          this.toastr.error(
+            `Xuất ${exportType} thất bại: Dữ liệu không hợp lệ`,
+            'Lỗi'
+          );
+          return;
+        }
+
+        const ext = exportType === 'PDF' ? 'pdf' : 'xlsx';
+        const fallbackName = defaultExportFileName('hoc-sinh', ext);
+        const disposition = this.getHeader(res, 'content-disposition');
+        const fileName = this.getFileNameFromDisposition(
+          disposition,
+          fallbackName
+        );
+
+        saveBlobAsFile(blob, fileName);
+        this.toastr.success(
+          `Tải xuống ${exportType} thành công`,
+          `Xuất ${exportType}`
+        );
+      },
+      error: () => {
+        this.toastr.removeToastr();
+        this.toastr.error(`Xuất ${exportType} thất bại`, 'Lỗi');
+      },
+    });
+  }
+
+  private getCurrentUnitId(): string | number | undefined {
+    const unitId = this.authService.currentUser?.unit?.id;
+    return unitId == null || unitId === '' ? undefined : unitId;
+  }
+
+  private extractBlob(res: any): Blob | null {
+    if (res instanceof Blob) return res;
+    if (res?.body instanceof Blob) return res.body;
+    if (res?.data instanceof Blob) return res.data;
+    return null;
+  }
+
+  private getHeader(res: any, headerName: string): string | null {
+    if (res?.headers?.get) return res.headers.get(headerName);
+
+    const headers = res?.headers;
+    if (headers && typeof headers === 'object') {
+      const key = headerName.toLowerCase();
+      return headers[headerName] ?? headers[key] ?? null;
+    }
+
+    return null;
+  }
+
+  private getFileNameFromDisposition(
+    disposition: string | null,
+    fallbackName: string
+  ): string {
+    if (!disposition) return fallbackName;
+
+    const match = disposition.match(/filename\*?=(?:UTF-8'')?"?([^";]+)/i);
+    if (!match?.[1]) return fallbackName;
+
+    const rawFileName = match[1].trim();
+
+    try {
+      return decodeURIComponent(rawFileName);
+    } catch {
+      return rawFileName;
+    }
   }
 
   private normalizeDateValue(value: unknown): string | undefined {

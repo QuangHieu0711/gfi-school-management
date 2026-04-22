@@ -22,6 +22,46 @@
         Thêm mới
       </button>
       }
+      @if (canAdd) {
+      <button
+        type="button"
+        color="primary"
+        matButton="filled"
+        class="btn-tight"
+        (click)="import()">
+        <app-icon
+          icon="file_upload"
+          [size]="18"
+          class="btn-icon" />
+        Kết nạp
+      </button>
+      }
+      @if (canDownload) {
+      <button
+        type="button"
+        color="primary"
+        matButton="filled"
+        class="btn-tight"
+        (click)="exportExcel()">
+        <app-icon
+          icon="download"
+          [size]="18"
+          class="btn-icon" />
+        Xuất Excel
+      </button>
+      <button
+        type="button"
+        color="primary"
+        matButton="filled"
+        class="btn-tight"
+        (click)="exportPdf()">
+        <app-icon
+          icon="download"
+          [size]="18"
+          class="btn-icon" />
+        Xuất PDF
+      </button>
+      }
       <button
         type="button"
         color="primary"
@@ -43,17 +83,6 @@
           [size]="18"
           class="btn-icon" />
         Cấu hình
-      </button>
-      <button
-        type="button"
-        color="primary"
-        matButton="filled"
-        class="btn-tight">
-        <app-icon
-          icon="image"
-          [size]="18"
-          class="btn-icon" />
-        Cập nhật ảnh
       </button>
     </div>
   </div>

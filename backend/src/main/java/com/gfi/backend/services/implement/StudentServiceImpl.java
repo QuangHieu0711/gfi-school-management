@@ -1,10 +1,30 @@
 package com.gfi.backend.services.implement;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.text.Normalizer;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 
+import org.apache.poi.ss.usermodel.BorderStyle;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.CellStyle;
+import org.apache.poi.ss.usermodel.DataFormatter;
+import org.apache.poi.ss.usermodel.FillPatternType;
+import org.apache.poi.ss.usermodel.Font;
+import org.apache.poi.ss.usermodel.HorizontalAlignment;
+import org.apache.poi.ss.usermodel.IndexedColors;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.VerticalAlignment;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.ss.util.CellRangeAddress;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -12,12 +32,15 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.gfi.backend.controllers.exceptions.UserMessageException;
 import com.gfi.backend.models.dtos.common.LookupItemDto;
 import com.gfi.backend.models.dtos.common.PageRequestDto;
 import com.gfi.backend.models.dtos.common.PageResponseDto;
+import com.gfi.backend.models.dtos.common.TemporaryFileDto;
 import com.gfi.backend.models.dtos.student.StudentAddressCreateRequest;
 import com.gfi.backend.models.dtos.student.StudentAddressItemDto;
 import com.gfi.backend.models.dtos.student.StudentCreateRequest;
@@ -26,6 +49,7 @@ import com.gfi.backend.models.dtos.student.StudentEnrollmentItemDto;
 import com.gfi.backend.models.dtos.student.StudentFilterDto;
 import com.gfi.backend.models.dtos.student.StudentGuardianCreateRequest;
 import com.gfi.backend.models.dtos.student.StudentGuardianItemDto;
+import com.gfi.backend.models.dtos.student.StudentImportResultDto;
 import com.gfi.backend.models.dtos.student.StudentItemDto;
 import com.gfi.backend.models.dtos.student.StudentProfileCreateRequest;
 import com.gfi.backend.models.dtos.student.StudentProfileItemDto;
@@ -38,6 +62,7 @@ import com.gfi.backend.models.entities.StudentGuardian;
 import com.gfi.backend.models.entities.StudentProfile;
 import com.gfi.backend.models.entities.Unit;
 import com.gfi.backend.models.enums.ActionType;
+import com.gfi.backend.models.enums.ExportType;
 import com.gfi.backend.models.enums.ScopeType;
 import com.gfi.backend.models.global.CommonErrorCode;
 import com.gfi.backend.models.security.FeatureKey;
@@ -52,6 +77,7 @@ import com.gfi.backend.repositories.StudentRepository;
 import com.gfi.backend.repositories.UnitRepository;
 import com.gfi.backend.services.FileStorageService;
 import com.gfi.backend.services.interfaces.DataScopeFilterService;
+import com.gfi.backend.services.interfaces.ImportErrorFileStorageService;
 import com.gfi.backend.services.interfaces.StudentCodeGeneratorService;
 import com.gfi.backend.services.interfaces.StudentService;
 import com.gfi.backend.utils.PageableUtils;
@@ -72,6 +98,70 @@ public class StudentServiceImpl implements StudentService {
     private static final String GUARDIAN_TYPE_FATHER = "FATHER";
     private static final String GUARDIAN_TYPE_MOTHER = "MOTHER";
     private static final String FEATURE = FeatureKey.STUDENT_PROFILE.getCode();
+    private static final String EXPORT_FONT_NAME = "Times New Roman";
+    private static final String EXCEL_CONTENT_TYPE = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+    private static final int STUDENT_TEMPLATE_GROUP_HEADER_ROW_INDEX = 6;
+    private static final int STUDENT_IMPORT_HEADER_ROW_INDEX = 7;
+    private static final int STUDENT_IMPORT_DATA_START_ROW_INDEX = 8;
+    private static final int STUDENT_COL_FULL_NAME = 1;
+    private static final int STUDENT_COL_FIRST_NAME = 2;
+    private static final int STUDENT_COL_DOB = 3;
+    private static final int STUDENT_COL_GENDER = 4;
+    private static final int STUDENT_COL_PHONE = 5;
+    private static final int STUDENT_COL_EMAIL = 6;
+    private static final int STUDENT_COL_SCHOOL_YEAR_ID = 7;
+    private static final int STUDENT_COL_CLASS_ID = 8;
+    private static final int STUDENT_COL_ADMISSION_DATE = 9;
+    private static final int STUDENT_COL_STUDENT_STATUS = 10;
+    private static final int STUDENT_COL_MOE_CODE = 11;
+    private static final int STUDENT_COL_PLACE_OF_BIRTH = 12;
+    private static final int STUDENT_COL_ETHNICITY = 13;
+    private static final int STUDENT_COL_RELIGION = 14;
+    private static final int STUDENT_COL_NATIONALITY = 15;
+    private static final int STUDENT_COL_IDENTITY_NUMBER = 16;
+    private static final int STUDENT_COL_IDENTITY_ISSUE_DATE = 17;
+    private static final int STUDENT_COL_IDENTITY_ISSUE_PLACE = 18;
+    private static final int STUDENT_COL_HEALTH_INSURANCE_NO = 19;
+    private static final int STUDENT_COL_BLOOD_GROUP = 20;
+    private static final int STUDENT_COL_BOARDING_BOOK = 21;
+    private static final int STUDENT_COL_ADMISSION_TYPE = 22;
+    private static final int STUDENT_COL_ENROLLMENT_STATUS = 23;
+    private static final int STUDENT_COL_ENROLLMENT_IS_REPEATER = 24;
+    private static final int STUDENT_COL_ENROLLMENT_SESSIONS = 25;
+    private static final int STUDENT_COL_ENROLLMENT_STUDY_MODE = 26;
+    private static final int STUDENT_COL_ENROLLMENT_BOARDING = 27;
+    private static final int STUDENT_COL_ENROLLMENT_TWO_SESSIONS = 28;
+    private static final int STUDENT_COL_ADDR_PROVINCE = 29;
+    private static final int STUDENT_COL_ADDR_WARD = 30;
+    private static final int STUDENT_COL_ADDR_HAMLET = 31;
+    private static final int STUDENT_COL_ADDR_DETAIL = 32;
+    private static final int STUDENT_COL_FATHER_NAME = 33;
+    private static final int STUDENT_COL_FATHER_BIRTH_YEAR = 34;
+    private static final int STUDENT_COL_FATHER_OCCUPATION = 35;
+    private static final int STUDENT_COL_FATHER_PHONE = 36;
+    private static final int STUDENT_COL_FATHER_EMAIL = 37;
+    private static final int STUDENT_COL_FATHER_IDENTITY = 38;
+    private static final int STUDENT_COL_FATHER_IS_ETHNIC = 39;
+    private static final int STUDENT_COL_MOTHER_NAME = 40;
+    private static final int STUDENT_COL_MOTHER_BIRTH_YEAR = 41;
+    private static final int STUDENT_COL_MOTHER_OCCUPATION = 42;
+    private static final int STUDENT_COL_MOTHER_PHONE = 43;
+    private static final int STUDENT_COL_MOTHER_EMAIL = 44;
+    private static final int STUDENT_COL_MOTHER_IDENTITY = 45;
+    private static final int STUDENT_COL_MOTHER_IS_ETHNIC = 46;
+    private static final int STUDENT_COL_PROFILE_POLICY_OBJECT = 47;
+    private static final int STUDENT_COL_PROFILE_POLICY_BENEFIT = 48;
+    private static final int STUDENT_COL_PROFILE_PRIORITY_CATEGORY = 49;
+    private static final int STUDENT_COL_PROFILE_REGION_CATEGORY = 50;
+    private static final int STUDENT_COL_PROFILE_DISABILITY_TYPE = 51;
+    private static final int STUDENT_COL_PROFILE_DISABILITY_EXEMPT = 52;
+    private static final int STUDENT_COL_PROFILE_SUPPORT_TUITION = 53;
+    private static final int STUDENT_COL_PROFILE_PARENT_INTERNET = 54;
+    private static final int STUDENT_COL_PROFILE_PARENT_SMARTPHONE = 55;
+    private static final int STUDENT_COL_PROFILE_OTHER_SYSTEM_CODE = 56;
+    private static final int STUDENT_COL_PROFILE_SSO_CODE = 57;
+    private static final int STUDENT_IMPORT_LAST_DATA_COLUMN = STUDENT_COL_PROFILE_SSO_CODE;
 
     private final StudentRepository studentRepository;
     private final StudentEnrollmentRepository studentEnrollmentRepository;
@@ -84,6 +174,7 @@ public class StudentServiceImpl implements StudentService {
     private final FileStorageService fileStorageService;
     private final DataScopeFilterService dataScopeFilterService;
     private final StudentCodeGeneratorService studentCodeGeneratorService;
+    private final ImportErrorFileStorageService importErrorFileStorageService;
 
     @Override
     @Transactional(readOnly = true)
@@ -797,5 +888,648 @@ public class StudentServiceImpl implements StudentService {
             return "SYSTEM";
         }
         return authentication.getName();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public byte[] export(PageRequestDto<StudentFilterDto> request, Long unitId, ExportType exportType) {
+        if (exportType == ExportType.PDF) {
+            throw new UserMessageException("Chua ho tro export PDF cho hoc sinh");
+        }
+        StudentFilterDto filter = request.getFilter() == null ? new StudentFilterDto() : request.getFilter();
+        if (unitId != null) {
+            filter.setUnitId(unitId);
+        }
+        PageRequestDto<StudentFilterDto> exportRequest = new PageRequestDto<>();
+        exportRequest.setFilter(filter);
+        exportRequest.setPageNow(1);
+        exportRequest.setPageSize(Integer.MAX_VALUE);
+        List<StudentItemDto> items = search(exportRequest).getItems();
+        return buildStudentExportWorkbook(items, unitId);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public byte[] exportExcelTemplate(Long unitId) {
+        Unit unit = findUnit(unitId);
+        try (Workbook workbook = new XSSFWorkbook(); ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
+            Sheet sheet = workbook.createSheet("HocSinh");
+            CellStyle govHeaderStyle = createExcelGovHeaderStyle(workbook);
+            CellStyle govSubHeaderStyle = createExcelGovSubHeaderStyle(workbook);
+            CellStyle titleStyle = createExcelTitleStyle(workbook);
+            CellStyle headerStyle = createExcelHeaderStyle(workbook);
+            CellStyle bodyStyle = createExcelBodyStyle(workbook);
+            CellStyle guideStyle = createExcelGuideStyle(workbook);
+            int middleColumn = STUDENT_IMPORT_LAST_DATA_COLUMN / 2;
+
+            createCell(sheet.createRow(0), 0, "Mẫu import học sinh - Đơn vị: " + unit.getName(), titleStyle);
+            sheet.addMergedRegion(new CellRangeAddress(0, 0, 0, STUDENT_IMPORT_LAST_DATA_COLUMN));
+            createCell(sheet.createRow(1), 0,
+                "Cột bắt buộc: Họ tên, Ngày sinh, Năm học ID, Lớp ID. Mã học sinh để trống sẽ tự sinh.",
+                    guideStyle);
+            sheet.addMergedRegion(new CellRangeAddress(1, 1, 0, STUDENT_IMPORT_LAST_DATA_COLUMN));
+            createCell(sheet.createRow(2), 0,
+                "Giới tính: Nam/Nữ. Trạng thái học sinh: Hoạt động/Không hoạt động (hoặc 1/0). Các cột còn lại là tùy chọn.",
+                guideStyle);
+            sheet.addMergedRegion(new CellRangeAddress(2, 2, 0, STUDENT_IMPORT_LAST_DATA_COLUMN));
+
+            Row headerRow = sheet.createRow(STUDENT_IMPORT_HEADER_ROW_INDEX);
+            String[] headers = {
+                "STT", "Mã học sinh", "Họ tên *", "Tên", "Ngày sinh *", "Giới tính",
+                "Điện thoại", "Email", "Năm học ID *", "Lớp ID *", "Ngày nhập học", "Trạng thái học sinh",
+                "Mã MOET", "Nơi sinh", "Dân tộc", "Tôn giáo", "Quốc tịch", "CCCD/CMND", "Ngày cấp CCCD",
+                "Nơi cấp CCCD", "Số BHYT", "Nhóm máu", "Sổ đăng bộ", "Loại nhập học", "Trạng thái nhập học",
+                "Lưu ban", "Số buổi/tuần", "Hình thức học", "Bán trú", "Học 2 buổi/ngày",
+                "Địa chỉ TT - Tỉnh/Thành", "Địa chỉ TT - Xã/Phường", "Địa chỉ TT - Thôn/Xóm", "Địa chỉ TT - Chi tiết",
+                "Cha - Họ tên", "Cha - Năm sinh", "Cha - Nghề nghiệp", "Cha - Điện thoại", "Cha - Email", "Cha - CCCD",
+                "Cha - Dân tộc", "Mẹ - Họ tên", "Mẹ - Năm sinh", "Mẹ - Nghề nghiệp", "Mẹ - Điện thoại", "Mẹ - Email",
+                "Mẹ - CCCD", "Mẹ - Dân tộc", "Đối tượng chính sách", "Chế độ chính sách", "Diện ưu tiên", "Khu vực",
+                "Loại khuyết tật", "Miễn đánh giá KT", "Hỗ trợ chi phí", "Có Internet tại nhà", "Có smartphone cha/mẹ",
+                "Mã hệ thống khác", "Mã SSO"
+            };
+            headers = new String[] {
+                "STT", "Ho ten *", "Ten", "Ngay sinh *", "Gioi tinh",
+                "Dien thoai", "Email", "Nam hoc ID *", "Lop ID *", "Ngay nhap hoc", "Trang thai hoc sinh",
+                "Ma MOET", "Noi sinh", "Dan toc", "Ton giao", "Quoc tich", "CCCD/CMND", "Ngay cap CCCD",
+                "Noi cap CCCD", "So BHYT", "Nhom mau", "So dang bo", "Loai nhap hoc", "Trang thai nhap hoc",
+                "Luu ban", "So buoi/tuan", "Hinh thuc hoc", "Ban tru", "Hoc 2 buoi/ngay",
+                "Dia chi TT - Tinh/Thanh", "Dia chi TT - Xa/Phuong", "Dia chi TT - Thon/Xom", "Dia chi TT - Chi tiet",
+                "Cha - Ho ten", "Cha - Nam sinh", "Cha - Nghe nghiep", "Cha - Dien thoai", "Cha - Email", "Cha - CCCD",
+                "Cha - Dan toc", "Me - Ho ten", "Me - Nam sinh", "Me - Nghe nghiep", "Me - Dien thoai", "Me - Email",
+                "Me - CCCD", "Me - Dan toc", "Doi tuong chinh sach", "Che do chinh sach", "Dien uu tien", "Khu vuc",
+                "Loai khuyet tat", "Mien danh gia KT", "Ho tro chi phi", "Co Internet tai nha", "Co smartphone cha/me",
+                "Ma he thong khac", "Ma SSO"
+            };
+            for (int i = 0; i < headers.length; i++) {
+                createCell(headerRow, i, headers[i], titleStyle);
+            }
+
+            Row sampleRow = sheet.createRow(STUDENT_IMPORT_DATA_START_ROW_INDEX);
+            Object[] sampleValues = {
+                1, "", "Nguyễn Văn A", "Văn A", "01/09/2015", "Nam", "0912345678",
+                "a@example.com", "1", "11", "05/09/2021", "Hoạt động",
+                "MOET001", "Đắk Lắk", "Kinh", "Không", "Việt Nam", "079205001234", "10/10/2022",
+                "Cục CSQLHC", "BHYT0001", "O", "SD001", "1", "1",
+                "0", "9", "1", "0", "1",
+                "Đắk Lắk", "Phường 1", "Thôn 3", "Số 10 Đường A",
+                "Nguyễn Văn B", 1980, "Nông dân", "0900000001", "b@example.com", "079205009999",
+                "0", "Trần Thị C", 1982, "Nội trợ", "0900000002", "c@example.com",
+                "079205008888", "0", "Hộ nghèo", "Miễn học phí", "Ưu tiên 1", "KV1",
+                "Không", "0", "1", "1", "1",
+                "HS-EXT-001", "SSO-001"
+            };
+            sampleValues = new Object[] {
+                1, "Nguyen Van A", "Van A", "01/09/2015", "Nam", "0912345678",
+                "a@example.com", "1", "11", "05/09/2021", "Hoat dong",
+                "MOET001", "Dak Lak", "Kinh", "Khong", "Viet Nam", "079205001234", "10/10/2022",
+                "Cuc CSQLHC", "BHYT0001", "O", "SD001", "1", "1",
+                "0", "9", "1", "0", "1",
+                "Dak Lak", "Phuong 1", "Thon 3", "So 10 Duong A",
+                "Nguyen Van B", 1980, "Nong dan", "0900000001", "b@example.com", "079205009999",
+                "0", "Tran Thi C", 1982, "Noi tro", "0900000002", "c@example.com",
+                "079205008888", "0", "Ho ngheo", "Mien hoc phi", "Uu tien 1", "KV1",
+                "Khong", "0", "1", "1", "1",
+                "HS-EXT-001", "SSO-001"
+            };
+            for (int i = 0; i < sampleValues.length; i++) {
+                createCell(sampleRow, i, sampleValues[i], bodyStyle);
+            }
+
+            sheet.createFreezePane(0, STUDENT_IMPORT_DATA_START_ROW_INDEX);
+            autosize(sheet, headers.length);
+            workbook.write(outputStream);
+            return outputStream.toByteArray();
+        } catch (IOException ex) {
+            throw new UserMessageException("Khong the tao file mau hoc sinh");
+        }
+    }
+
+    @Override
+    @Transactional
+    public StudentImportResultDto importExcel(Long unitId, MultipartFile file) {
+        findUnit(unitId);
+        validateExcelFile(file);
+        int successCount = 0;
+        Map<Integer, String> rowErrors = new java.util.LinkedHashMap<>();
+
+        try (Workbook workbook = new XSSFWorkbook(file.getInputStream())) {
+            Sheet sheet = workbook.getSheetAt(0);
+            DataFormatter formatter = new DataFormatter();
+            for (int rowIndex = STUDENT_IMPORT_DATA_START_ROW_INDEX; rowIndex <= sheet.getLastRowNum(); rowIndex++) {
+                Row row = sheet.getRow(rowIndex);
+                if (isExcelRowEmpty(row, STUDENT_COL_FULL_NAME, STUDENT_IMPORT_LAST_DATA_COLUMN, formatter)) {
+                    continue;
+                }
+                try {
+                    upsertStudentFromExcelRow(unitId, row, formatter);
+                    successCount++;
+                } catch (Exception ex) {
+                    rowErrors.put(rowIndex, ex.getMessage());
+                }
+            }
+
+            String token = null;
+            String fileName = null;
+            if (!rowErrors.isEmpty()) {
+                byte[] errorFile = buildStudentImportErrorFile(workbook, sheet, rowErrors);
+                fileName = "student-import-errors.xlsx";
+                token = importErrorFileStorageService.store(fileName, EXCEL_CONTENT_TYPE, errorFile);
+            }
+
+            return StudentImportResultDto.builder()
+                    .successCount(successCount)
+                    .failedCount(rowErrors.size())
+                    .hasErrorFile(token != null)
+                    .errorFileToken(token)
+                    .errorFileName(fileName)
+                    .build();
+        } catch (IOException ex) {
+            throw new UserMessageException("Khong doc duoc file Excel hoc sinh");
+        }
+    }
+
+    @Override
+    public TemporaryFileDto getImportErrorFile(String token) {
+        return importErrorFileStorageService.get(token);
+    }
+
+    private byte[] buildStudentExportWorkbook(List<StudentItemDto> items, Long unitId) {
+        try (Workbook workbook = new XSSFWorkbook(); ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
+            Sheet sheet = workbook.createSheet("HocSinh");
+            CellStyle titleStyle = createExcelHeaderStyle(workbook);
+            CellStyle bodyStyle = createExcelBodyStyle(workbook);
+            createCell(sheet.createRow(0), 0,
+                    "Danh sach hoc sinh" + (unitId == null ? "" : " - UnitId: " + unitId), titleStyle);
+            sheet.addMergedRegion(new CellRangeAddress(0, 0, 0, 11));
+            Row headerRow = sheet.createRow(2);
+            String[] headers = { "STT", "Ma hoc sinh", "Ho ten", "Ngay sinh", "Gioi tinh", "Dien thoai", "Email",
+                    "Don vi", "Nam hoc", "Lop", "Ngay nhap hoc", "Trang thai" };
+            for (int i = 0; i < headers.length; i++) {
+                createCell(headerRow, i, headers[i], titleStyle);
+            }
+            int rowIndex = 3;
+            int stt = 1;
+            for (StudentItemDto item : items) {
+                Row row = sheet.createRow(rowIndex++);
+                createCell(row, 0, stt++, bodyStyle);
+                createCell(row, 1, item.getStudentCode(), bodyStyle);
+                createCell(row, 2, item.getFullName(), bodyStyle);
+                createCell(row, 3, formatDate(item.getDateOfBirth()), bodyStyle);
+                createCell(row, 4, studentGenderLabel(item.getGender()), bodyStyle);
+                createCell(row, 5, item.getMobilePhone(), bodyStyle);
+                createCell(row, 6, item.getEmail(), bodyStyle);
+                createCell(row, 7, item.getUnitName(), bodyStyle);
+                createCell(row, 8, item.getEnrollment() == null ? null : item.getEnrollment().getSchoolYearName(), bodyStyle);
+                createCell(row, 9, item.getEnrollment() == null ? null : item.getEnrollment().getClassName(), bodyStyle);
+                createCell(row, 10, item.getEnrollment() == null ? null : formatDate(item.getEnrollment().getEnrolledAt()), bodyStyle);
+                createCell(row, 11, studentStatusLabel(item.getStudentStatus()), bodyStyle);
+            }
+            autosize(sheet, headers.length);
+            workbook.write(outputStream);
+            return outputStream.toByteArray();
+        } catch (IOException ex) {
+            throw new UserMessageException("Khong the export hoc sinh");
+        }
+    }
+
+    private void upsertStudentFromExcelRow(Long unitId, Row row, DataFormatter formatter) {
+        String fullName = normalizeNullable(readCellText(row.getCell(STUDENT_COL_FULL_NAME), formatter));
+        if (!StringUtils.hasText(fullName)) {
+            throw new UserMessageException("Ho ten hoc sinh khong duoc de trong");
+        }
+
+        StudentCreateRequest request = new StudentCreateRequest();
+        request.setStudentCode(null);
+        request.setFullName(fullName);
+        request.setFirstName(normalizeNullable(readCellText(row.getCell(STUDENT_COL_FIRST_NAME), formatter)));
+        request.setDateOfBirth(parseDateCell(readCellText(row.getCell(STUDENT_COL_DOB), formatter), "Ngay sinh khong hop le"));
+        request.setGender(parseStudentGenderCell(readCellText(row.getCell(STUDENT_COL_GENDER), formatter)));
+        request.setMobilePhone(normalizeNullable(readCellText(row.getCell(STUDENT_COL_PHONE), formatter)));
+        request.setEmail(normalizeNullable(readCellText(row.getCell(STUDENT_COL_EMAIL), formatter)));
+        request.setMoeCode(normalizeNullable(readCellText(row.getCell(STUDENT_COL_MOE_CODE), formatter)));
+        request.setPlaceOfBirth(normalizeNullable(readCellText(row.getCell(STUDENT_COL_PLACE_OF_BIRTH), formatter)));
+        request.setEthnicity(normalizeNullable(readCellText(row.getCell(STUDENT_COL_ETHNICITY), formatter)));
+        request.setReligion(normalizeNullable(readCellText(row.getCell(STUDENT_COL_RELIGION), formatter)));
+        request.setNationality(normalizeNullable(readCellText(row.getCell(STUDENT_COL_NATIONALITY), formatter)));
+        request.setIdentityNumber(normalizeNullable(readCellText(row.getCell(STUDENT_COL_IDENTITY_NUMBER), formatter)));
+        request.setIdentityIssueDate(parseOptionalDateCell(readCellText(row.getCell(STUDENT_COL_IDENTITY_ISSUE_DATE), formatter)));
+        request.setIdentityIssuePlace(normalizeNullable(readCellText(row.getCell(STUDENT_COL_IDENTITY_ISSUE_PLACE), formatter)));
+        request.setHealthInsuranceNumber(normalizeNullable(readCellText(row.getCell(STUDENT_COL_HEALTH_INSURANCE_NO), formatter)));
+        request.setBloodGroup(normalizeNullable(readCellText(row.getCell(STUDENT_COL_BLOOD_GROUP), formatter)));
+        request.setBoardingBook(normalizeNullable(readCellText(row.getCell(STUDENT_COL_BOARDING_BOOK), formatter)));
+        request.setAdmissionType(parseIntegerCell(readCellText(row.getCell(STUDENT_COL_ADMISSION_TYPE), formatter), "Loai nhap hoc khong hop le"));
+        request.setUnitId(unitId);
+        request.setAdmissionDate(parseOptionalDateCell(readCellText(row.getCell(STUDENT_COL_ADMISSION_DATE), formatter)));
+        request.setStudentStatus(parseStudentStatusCell(readCellText(row.getCell(STUDENT_COL_STUDENT_STATUS), formatter)));
+
+        StudentEnrollmentCreateRequest enrollment = new StudentEnrollmentCreateRequest();
+        enrollment.setSchoolYearId(parseLongCell(readCellText(row.getCell(STUDENT_COL_SCHOOL_YEAR_ID), formatter), "Nam hoc ID khong hop le"));
+        enrollment.setClassId(parseLongCell(readCellText(row.getCell(STUDENT_COL_CLASS_ID), formatter), "Lop ID khong hop le"));
+        enrollment.setEnrolledAt(parseOptionalDateCell(readCellText(row.getCell(STUDENT_COL_ADMISSION_DATE), formatter)));
+        enrollment.setStatus(parseIntegerCell(readCellText(row.getCell(STUDENT_COL_ENROLLMENT_STATUS), formatter), "Trang thai nhap hoc khong hop le"));
+        enrollment.setIsRepeater(parseOptionalBooleanCell(readCellText(row.getCell(STUDENT_COL_ENROLLMENT_IS_REPEATER), formatter), "Luu ban khong hop le"));
+        enrollment.setSessionsPerWeek(parseIntegerCell(readCellText(row.getCell(STUDENT_COL_ENROLLMENT_SESSIONS), formatter), "So buoi tuan khong hop le"));
+        enrollment.setStudyMode(parseIntegerCell(readCellText(row.getCell(STUDENT_COL_ENROLLMENT_STUDY_MODE), formatter), "Hinh thuc hoc khong hop le"));
+        enrollment.setIsBoarding(parseOptionalBooleanCell(readCellText(row.getCell(STUDENT_COL_ENROLLMENT_BOARDING), formatter), "Ban tru khong hop le"));
+        enrollment.setIsTwoSessionsPerDay(parseOptionalBooleanCell(readCellText(row.getCell(STUDENT_COL_ENROLLMENT_TWO_SESSIONS), formatter), "Hoc 2 buoi/ngay khong hop le"));
+        request.setEnrollment(enrollment);
+
+        StudentAddressCreateRequest permanentAddress = buildPermanentAddressRequest(row, formatter);
+        if (permanentAddress != null) {
+            request.setAddresses(List.of(permanentAddress));
+        }
+
+        List<StudentGuardianCreateRequest> guardians = new ArrayList<>();
+        StudentGuardianCreateRequest father = buildGuardianRequest(
+                GUARDIAN_TYPE_FATHER,
+                readCellText(row.getCell(STUDENT_COL_FATHER_NAME), formatter),
+                readCellText(row.getCell(STUDENT_COL_FATHER_BIRTH_YEAR), formatter),
+                readCellText(row.getCell(STUDENT_COL_FATHER_OCCUPATION), formatter),
+                readCellText(row.getCell(STUDENT_COL_FATHER_PHONE), formatter),
+                readCellText(row.getCell(STUDENT_COL_FATHER_EMAIL), formatter),
+                readCellText(row.getCell(STUDENT_COL_FATHER_IDENTITY), formatter),
+                readCellText(row.getCell(STUDENT_COL_FATHER_IS_ETHNIC), formatter));
+        if (father != null) {
+            guardians.add(father);
+        }
+        StudentGuardianCreateRequest mother = buildGuardianRequest(
+                GUARDIAN_TYPE_MOTHER,
+                readCellText(row.getCell(STUDENT_COL_MOTHER_NAME), formatter),
+                readCellText(row.getCell(STUDENT_COL_MOTHER_BIRTH_YEAR), formatter),
+                readCellText(row.getCell(STUDENT_COL_MOTHER_OCCUPATION), formatter),
+                readCellText(row.getCell(STUDENT_COL_MOTHER_PHONE), formatter),
+                readCellText(row.getCell(STUDENT_COL_MOTHER_EMAIL), formatter),
+                readCellText(row.getCell(STUDENT_COL_MOTHER_IDENTITY), formatter),
+                readCellText(row.getCell(STUDENT_COL_MOTHER_IS_ETHNIC), formatter));
+        if (mother != null) {
+            guardians.add(mother);
+        }
+        if (!guardians.isEmpty()) {
+            request.setGuardians(guardians);
+        }
+
+        StudentProfileCreateRequest profile = buildProfileRequest(row, formatter);
+        if (profile != null) {
+            request.setProfile(profile);
+        }
+
+        create(request);
+    }
+
+    private byte[] buildStudentImportErrorFile(Workbook workbook, Sheet sheet, Map<Integer, String> rowErrors) {
+        CellStyle headerStyle = createExcelHeaderStyle(workbook);
+        CellStyle errorStyle = createExcelBodyStyle(workbook);
+        Row headerRow = sheet.getRow(STUDENT_IMPORT_HEADER_ROW_INDEX);
+        int resultColumnIndex = headerRow == null || headerRow.getLastCellNum() < 0
+                ? STUDENT_IMPORT_LAST_DATA_COLUMN + 1
+                : headerRow.getLastCellNum();
+        int reasonColumnIndex = resultColumnIndex + 1;
+        createCell(headerRow, resultColumnIndex, "Ket qua", headerStyle);
+        createCell(headerRow, reasonColumnIndex, "Ly do loi", headerStyle);
+        for (Map.Entry<Integer, String> entry : rowErrors.entrySet()) {
+            Row row = sheet.getRow(entry.getKey());
+            createCell(row, resultColumnIndex, "That bai", errorStyle);
+            createCell(row, reasonColumnIndex, entry.getValue(), errorStyle);
+        }
+        autosize(sheet, reasonColumnIndex + 1);
+        try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
+            workbook.write(outputStream);
+            return outputStream.toByteArray();
+        } catch (IOException ex) {
+            throw new UserMessageException("Khong the tao file loi import hoc sinh");
+        }
+    }
+
+    private void validateExcelFile(MultipartFile file) {
+        if (file == null || file.isEmpty()) {
+            throw new UserMessageException("File import khong duoc de trong");
+        }
+    }
+
+    private boolean isExcelRowEmpty(Row row, int fromColumn, int toColumn, DataFormatter formatter) {
+        if (row == null) {
+            return true;
+        }
+        for (int i = fromColumn; i <= toColumn; i++) {
+            if (StringUtils.hasText(readCellText(row.getCell(i), formatter))) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private String readCellText(Cell cell, DataFormatter formatter) {
+        return cell == null ? "" : formatter.formatCellValue(cell).trim();
+    }
+
+    private java.time.LocalDate parseDateCell(String value, String message) {
+        java.time.LocalDate parsed = parseOptionalDateCell(value);
+        if (parsed == null) {
+            throw new UserMessageException(message);
+        }
+        return parsed;
+    }
+
+    private java.time.LocalDate parseOptionalDateCell(String value) {
+        String normalized = normalizeNullable(value);
+        if (normalized == null) {
+            return null;
+        }
+        try {
+            if (normalized.contains("/")) {
+                return java.time.LocalDate.parse(normalized, DATE_FORMATTER);
+            }
+            return java.time.LocalDate.parse(normalized);
+        } catch (Exception ex) {
+            throw new UserMessageException("Ngay thang khong hop le: " + normalized);
+        }
+    }
+
+    private Integer parseIntegerCell(String value, String message) {
+        String normalized = normalizeNullable(value);
+        if (normalized == null) {
+            return null;
+        }
+        try {
+            return Integer.valueOf(normalized);
+        } catch (NumberFormatException ex) {
+            throw new UserMessageException(message);
+        }
+    }
+
+    private Integer parseStudentGenderCell(String value) {
+        String normalized = normalizeNullable(value);
+        if (normalized == null) {
+            return null;
+        }
+        String key = normalizeLookupKey(normalized);
+        return switch (key) {
+            case "NAM", "MALE", "M", "0" -> 0;
+            case "NU", "FEMALE", "F", "1" -> 1;
+            default -> parseIntegerCell(normalized, "Gioi tinh khong hop le");
+        };
+    }
+
+    private Integer parseStudentStatusCell(String value) {
+        String normalized = normalizeNullable(value);
+        if (normalized == null) {
+            return null;
+        }
+        String key = normalizeLookupKey(normalized);
+        return switch (key) {
+            case "HOAT DONG", "DANG HOC", "ACTIVE", "1" -> 1;
+            case "KHONG HOAT DONG", "NGHI HOC", "INACTIVE", "0" -> 0;
+            default -> parseIntegerCell(normalized, "Trang thai hoc sinh khong hop le");
+        };
+    }
+
+    private String studentGenderLabel(Integer gender) {
+        if (gender == null) {
+            return null;
+        }
+        return switch (gender) {
+            case 0 -> "Nam";
+            case 1 -> "Nu";
+            default -> String.valueOf(gender);
+        };
+    }
+
+    private String studentStatusLabel(Integer status) {
+        if (status == null) {
+            return null;
+        }
+        return switch (status) {
+            case 1 -> "Hoat dong";
+            case 0 -> "Khong hoat dong";
+            default -> String.valueOf(status);
+        };
+    }
+
+    private Boolean parseOptionalBooleanCell(String value, String message) {
+        String normalized = normalizeNullable(value);
+        if (normalized == null) {
+            return null;
+        }
+        String key = normalizeLookupKey(normalized);
+        return switch (key) {
+            case "1", "TRUE", "YES", "Y", "CO", "X" -> Boolean.TRUE;
+            case "0", "FALSE", "NO", "N", "KHONG" -> Boolean.FALSE;
+            default -> throw new UserMessageException(message);
+        };
+    }
+
+    private String normalizeLookupKey(String value) {
+        String normalized = normalizeNullable(value);
+        if (normalized == null) {
+            return null;
+        }
+        String noAccent = Normalizer.normalize(normalized, Normalizer.Form.NFD)
+                .replaceAll("\\p{M}+", "");
+        return noAccent.trim().toUpperCase(Locale.ROOT).replaceAll("\\s+", " ");
+    }
+
+    private StudentAddressCreateRequest buildPermanentAddressRequest(Row row, DataFormatter formatter) {
+        String province = normalizeNullable(readCellText(row.getCell(STUDENT_COL_ADDR_PROVINCE), formatter));
+        String ward = normalizeNullable(readCellText(row.getCell(STUDENT_COL_ADDR_WARD), formatter));
+        String hamlet = normalizeNullable(readCellText(row.getCell(STUDENT_COL_ADDR_HAMLET), formatter));
+        String detail = normalizeNullable(readCellText(row.getCell(STUDENT_COL_ADDR_DETAIL), formatter));
+        if (province == null && ward == null && hamlet == null && detail == null) {
+            return null;
+        }
+        StudentAddressCreateRequest address = new StudentAddressCreateRequest();
+        address.setAddressType(ADDRESS_TYPE_PERMANENT);
+        address.setProvinceName(province);
+        address.setWardName(ward);
+        address.setHamletName(hamlet);
+        address.setDetailAddress(detail);
+        return address;
+    }
+
+    private StudentGuardianCreateRequest buildGuardianRequest(String guardianType, String fullName, String birthYear,
+            String occupation, String phone, String email, String identityNumber, String isEthnicText) {
+        StudentGuardianCreateRequest guardian = new StudentGuardianCreateRequest();
+        guardian.setGuardianType(guardianType);
+        guardian.setFullName(normalizeNullable(fullName));
+        guardian.setBirthYear(parseIntegerCell(birthYear, "Nam sinh nguoi giam ho khong hop le"));
+        guardian.setOccupation(normalizeNullable(occupation));
+        guardian.setPhone(normalizeNullable(phone));
+        guardian.setEmail(normalizeNullable(email));
+        guardian.setIdentityNumber(normalizeNullable(identityNumber));
+        guardian.setIsEthnic(parseOptionalBooleanCell(isEthnicText, "Gia tri dan toc cua nguoi giam ho khong hop le"));
+
+        boolean hasData = guardian.getFullName() != null
+                || guardian.getBirthYear() != null
+                || guardian.getOccupation() != null
+                || guardian.getPhone() != null
+                || guardian.getEmail() != null
+                || guardian.getIdentityNumber() != null
+                || guardian.getIsEthnic() != null;
+        if (!hasData) {
+            return null;
+        }
+        if (guardian.getIsEthnic() == null) {
+            guardian.setIsEthnic(Boolean.FALSE);
+        }
+        return guardian;
+    }
+
+    private StudentProfileCreateRequest buildProfileRequest(Row row, DataFormatter formatter) {
+        StudentProfileCreateRequest profile = new StudentProfileCreateRequest();
+        profile.setPolicyObject(normalizeNullable(readCellText(row.getCell(STUDENT_COL_PROFILE_POLICY_OBJECT), formatter)));
+        profile.setPolicyBenefit(normalizeNullable(readCellText(row.getCell(STUDENT_COL_PROFILE_POLICY_BENEFIT), formatter)));
+        profile.setPriorityCategory(normalizeNullable(readCellText(row.getCell(STUDENT_COL_PROFILE_PRIORITY_CATEGORY), formatter)));
+        profile.setRegionCategory(normalizeNullable(readCellText(row.getCell(STUDENT_COL_PROFILE_REGION_CATEGORY), formatter)));
+        profile.setDisabilityType(normalizeNullable(readCellText(row.getCell(STUDENT_COL_PROFILE_DISABILITY_TYPE), formatter)));
+        profile.setDisabilityExemptEval(parseOptionalBooleanCell(
+                readCellText(row.getCell(STUDENT_COL_PROFILE_DISABILITY_EXEMPT), formatter),
+                "Mien danh gia KT khong hop le"));
+        profile.setSupportTuitionCost(parseOptionalBooleanCell(
+                readCellText(row.getCell(STUDENT_COL_PROFILE_SUPPORT_TUITION), formatter),
+                "Ho tro chi phi khong hop le"));
+        profile.setHasParentInternet(parseOptionalBooleanCell(
+                readCellText(row.getCell(STUDENT_COL_PROFILE_PARENT_INTERNET), formatter),
+                "Thong tin internet tai nha khong hop le"));
+        profile.setHasParentSmartphone(parseOptionalBooleanCell(
+                readCellText(row.getCell(STUDENT_COL_PROFILE_PARENT_SMARTPHONE), formatter),
+                "Thong tin smartphone cha/me khong hop le"));
+        profile.setOtherSystemCode(normalizeNullable(readCellText(row.getCell(STUDENT_COL_PROFILE_OTHER_SYSTEM_CODE), formatter)));
+        profile.setSsoCode(normalizeNullable(readCellText(row.getCell(STUDENT_COL_PROFILE_SSO_CODE), formatter)));
+
+        boolean hasData = profile.getPolicyObject() != null
+                || profile.getPolicyBenefit() != null
+                || profile.getPriorityCategory() != null
+                || profile.getRegionCategory() != null
+                || profile.getDisabilityType() != null
+                || profile.getDisabilityExemptEval() != null
+                || profile.getSupportTuitionCost() != null
+                || profile.getHasParentInternet() != null
+                || profile.getHasParentSmartphone() != null
+                || profile.getOtherSystemCode() != null
+                || profile.getSsoCode() != null;
+        return hasData ? profile : null;
+    }
+
+    private Long parseLongCell(String value, String message) {
+        String normalized = normalizeNullable(value);
+        if (normalized == null) {
+            throw new UserMessageException(message);
+        }
+        try {
+            return Long.valueOf(normalized);
+        } catch (NumberFormatException ex) {
+            throw new UserMessageException(message);
+        }
+    }
+
+    private String formatDate(java.time.LocalDate value) {
+        return value == null ? null : value.format(DATE_FORMATTER);
+    }
+
+    private void fillRowWithStyle(Row row, int fromColumn, int toColumn, CellStyle style) {
+        for (int i = fromColumn; i <= toColumn; i++) {
+            createCell(row, i, "", style);
+        }
+    }
+
+    private CellStyle createExcelHeaderStyle(Workbook workbook) {
+        CellStyle style = workbook.createCellStyle();
+        style.setFillForegroundColor((short) 41);
+        style.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+        style.setAlignment(HorizontalAlignment.CENTER);
+        style.setVerticalAlignment(VerticalAlignment.CENTER);
+        style.setBorderTop(BorderStyle.THIN);
+        style.setBorderBottom(BorderStyle.THIN);
+        style.setBorderLeft(BorderStyle.THIN);
+        style.setBorderRight(BorderStyle.THIN);
+        style.setWrapText(true);
+        Font font = workbook.createFont();
+        font.setBold(true);
+        font.setFontName(EXPORT_FONT_NAME);
+        style.setFont(font);
+        return style;
+    }
+
+    private CellStyle createExcelTitleStyle(Workbook workbook) {
+        CellStyle style = workbook.createCellStyle();
+        style.setAlignment(HorizontalAlignment.CENTER);
+        style.setVerticalAlignment(VerticalAlignment.CENTER);
+        Font font = workbook.createFont();
+        font.setBold(true);
+        font.setFontHeightInPoints((short) 16);
+        font.setFontName(EXPORT_FONT_NAME);
+        style.setFont(font);
+        return style;
+    }
+
+    private CellStyle createExcelGovHeaderStyle(Workbook workbook) {
+        CellStyle style = workbook.createCellStyle();
+        style.setAlignment(HorizontalAlignment.CENTER);
+        style.setVerticalAlignment(VerticalAlignment.CENTER);
+        Font font = workbook.createFont();
+        font.setBold(true);
+        font.setFontName(EXPORT_FONT_NAME);
+        style.setFont(font);
+        return style;
+    }
+
+    private CellStyle createExcelGovSubHeaderStyle(Workbook workbook) {
+        CellStyle style = workbook.createCellStyle();
+        style.setAlignment(HorizontalAlignment.CENTER);
+        style.setVerticalAlignment(VerticalAlignment.CENTER);
+        Font font = workbook.createFont();
+        font.setBold(true);
+        font.setUnderline(Font.U_SINGLE);
+        font.setFontName(EXPORT_FONT_NAME);
+        style.setFont(font);
+        return style;
+    }
+
+    private CellStyle createExcelBodyStyle(Workbook workbook) {
+        CellStyle style = workbook.createCellStyle();
+        style.setBorderTop(BorderStyle.THIN);
+        style.setBorderBottom(BorderStyle.THIN);
+        style.setBorderLeft(BorderStyle.THIN);
+        style.setBorderRight(BorderStyle.THIN);
+        style.setVerticalAlignment(VerticalAlignment.TOP);
+        style.setWrapText(true);
+        Font font = workbook.createFont();
+        font.setFontName(EXPORT_FONT_NAME);
+        style.setFont(font);
+        return style;
+    }
+
+    private CellStyle createExcelGuideStyle(Workbook workbook) {
+        CellStyle style = workbook.createCellStyle();
+        style.setAlignment(HorizontalAlignment.LEFT);
+        style.setVerticalAlignment(VerticalAlignment.CENTER);
+        Font font = workbook.createFont();
+        font.setFontHeightInPoints((short) 10);
+        font.setItalic(true);
+        font.setFontName(EXPORT_FONT_NAME);
+        style.setFont(font);
+        style.setWrapText(true);
+        return style;
+    }
+
+    private Cell createCell(Row row, int columnIndex, Object value, CellStyle style) {
+        Cell cell = row.createCell(columnIndex);
+        if (value instanceof Number number) {
+            cell.setCellValue(number.doubleValue());
+        } else if (value != null) {
+            cell.setCellValue(String.valueOf(value));
+        } else {
+            cell.setCellValue("");
+        }
+        if (style != null) {
+            cell.setCellStyle(style);
+        }
+        return cell;
+    }
+
+    private void autosize(Sheet sheet, int totalColumns) {
+        for (int i = 0; i < totalColumns; i++) {
+            sheet.autoSizeColumn(i);
+            sheet.setColumnWidth(i, Math.min(sheet.getColumnWidth(i) + 1024, 20000));
+        }
     }
 }

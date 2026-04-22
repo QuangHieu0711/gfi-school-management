@@ -25,6 +25,9 @@ export const CAN_BO_API_ENDPOINT = {
   BASE_PATH: 'staffs',
   FILTER: 'search',
   BY_GRADE: 'grade',
+  EXPORT: 'export',
+  IMPORT_EXCEL: 'import-excel',
+  EXCEL_TEMPLATE: 'excel-template',
 };
 
 export interface CanBoFilter {
@@ -41,6 +44,18 @@ export interface CanBoFilter {
 export interface CanBoFilterRequest extends TableRequest {
   pageNow?: number;
   filter?: CanBoFilter;
+}
+
+export interface CanBoExportRequest extends CanBoFilterRequest {
+  exportType?: 'EXCEL' | 'PDF';
+}
+
+export interface CanBoImportResponseData {
+  successCount?: number;
+  failedCount?: number;
+  hasErrorFile?: boolean;
+  errorFileToken?: string;
+  errorFileName?: string;
 }
 
 export interface CanBoResponse extends TableDataSource {

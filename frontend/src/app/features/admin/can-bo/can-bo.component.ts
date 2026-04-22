@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { CommonModule } from '@angular/common';
 import { Component, Injector } from '@angular/core';
 import { ReactiveFormsModule } from '@angular/forms';
@@ -12,10 +13,12 @@ import { ComponentBaseAbstract } from '@layout';
 import { FormType, IOptions } from '@model/form-control.model';
 import { TableQueryEvent } from '@model/table.model';
 import { FORM_CONTROL_MODULE, MATERIAL_MODULE } from '@modules';
-import { PermissionCheckService } from '@service';
+import { defaultExportFileName, saveBlobAsFile } from '@utils/file-util';
+import { AuthService, PermissionCheckService } from '@service';
 
 import {
   CAN_BO_DETAIL_FALLBACK,
+  CanBoExportRequest,
   CAN_BO_FILTER_FORM,
   CAN_BO_GENDER_OPTIONS,
   CAN_BO_KEY,
@@ -25,6 +28,7 @@ import {
 } from '@app/model/admin/can-bo.model';
 import { DonViService } from '@app/service/admin/don-vi.service';
 import { CanBoService } from '@app/service/admin/can-bo.service';
+import { DialogImportCanBoComponent } from './dialog-import/dialog-import.component';
 
 @Component({
   selector: 'can-bo',
@@ -71,12 +75,18 @@ export class CanBoComponent extends ComponentBaseAbstract {
   get canAdd(): boolean {
     return this.permissionCheckService.canAdd(this.menuCode);
   }
+
+  get canDownload(): boolean {
+    return this.permissionCheckService.canDownload(this.menuCode);
+  }
+
   constructor(
     protected override injector: Injector,
     private readonly canBoService: CanBoService,
     private readonly donViService: DonViService,
     private readonly routerService: Router,
-    private readonly permissionCheckService: PermissionCheckService
+    private readonly permissionCheckService: PermissionCheckService,
+    private readonly authService: AuthService
   ) {
     super(injector);
   }
@@ -138,6 +148,47 @@ export class CanBoComponent extends ComponentBaseAbstract {
       ...NAVIGATOR_ENDPOINT.ADMIN.CAN_BO.BASE_PATH.split('/'),
       PATH.TAO_MOI,
     ]);
+  }
+
+  import(): void {
+    if (!this.canAdd) {
+      this.toastr.warning('Bạn không có quyền kết nạp dữ liệu', 'Cảnh báo');
+      return;
+    }
+
+    this.dialog.componentDialog(
+      DialogImportCanBoComponent,
+      {
+        width: '900px',
+      },
+      (result) => {
+        if (result) {
+          this.pageIndex = 0;
+          this.filterData({
+            pageIndex: 0,
+            pageSize: this.pageSize,
+          });
+        }
+      }
+    );
+  }
+
+  exportExcel(): void {
+    if (!this.canDownload) {
+      this.toastr.warning('Bạn không có quyền tải xuống', 'Cảnh báo');
+      return;
+    }
+
+    this.exportFile('EXCEL');
+  }
+
+  exportPdf(): void {
+    if (!this.canDownload) {
+      this.toastr.warning('Bạn không có quyền tải xuống', 'Cảnh báo');
+      return;
+    }
+
+    this.exportFile('PDF');
   }
 
   openDetail(staff: CanBoResponse): void {
@@ -265,7 +316,7 @@ export class CanBoComponent extends ComponentBaseAbstract {
       filter: {
         staffCode: value[this.key.STAFF_CODE] ?? undefined,
         fullName: value[this.key.FULL_NAME] ?? undefined,
-        unitId: value[this.key.UNIT_ID] ?? undefined,
+        unitId: value[this.key.UNIT_ID] ?? this.getCurrentUnitId() ?? undefined,
         status: value[this.key.STATUS] ?? undefined,
         gender: value[this.key.GENDER] ?? undefined,
         phone: value[this.key.PHONE] ?? undefined,
@@ -273,6 +324,91 @@ export class CanBoComponent extends ComponentBaseAbstract {
         dateOfBirth: this.normalizeDateValue(value[this.key.DATE_OF_BIRTH]),
       },
     };
+  }
+
+  private exportFile(exportType: 'PDF' | 'EXCEL'): void {
+    const payload: CanBoExportRequest = {
+      ...this.buildFilterPayload({
+        pageIndex: this.pageIndex,
+        pageSize: this.pageSize,
+      }),
+      exportType,
+    };
+
+    this.canBoService.export(payload).subscribe({
+      next: (res: any) => {
+        this.toastr.removeToastr();
+
+        const blob = this.extractBlob(res);
+        if (!blob) {
+          this.toastr.error(
+            `Xuất ${exportType} thất bại: Dữ liệu không hợp lệ`,
+            'Lỗi'
+          );
+          return;
+        }
+
+        const ext = exportType === 'PDF' ? 'pdf' : 'xlsx';
+        const fallbackName = defaultExportFileName('can-bo', ext);
+        const disposition = this.getHeader(res, 'content-disposition');
+        const fileName = this.getFileNameFromDisposition(
+          disposition,
+          fallbackName
+        );
+
+        saveBlobAsFile(blob, fileName);
+        this.toastr.success(
+          `Tải xuống ${exportType} thành công`,
+          `Xuất ${exportType}`
+        );
+      },
+      error: () => {
+        this.toastr.removeToastr();
+        this.toastr.error(`Xuất ${exportType} thất bại`, 'Lỗi');
+      },
+    });
+  }
+
+  private getCurrentUnitId(): string | number | undefined {
+    const unitId = this.authService.currentUser?.unit?.id;
+    return unitId == null || unitId === '' ? undefined : unitId;
+  }
+
+  private extractBlob(res: any): Blob | null {
+    if (res instanceof Blob) return res;
+    if (res?.body instanceof Blob) return res.body;
+    if (res?.data instanceof Blob) return res.data;
+    return null;
+  }
+
+  private getHeader(res: any, headerName: string): string | null {
+    if (res?.headers?.get) return res.headers.get(headerName);
+
+    const headers = res?.headers;
+    if (headers && typeof headers === 'object') {
+      const key = headerName.toLowerCase();
+      return headers[headerName] ?? headers[key] ?? null;
+    }
+
+    return null;
+  }
+
+  private getFileNameFromDisposition(
+    disposition: string | null,
+    fallbackName: string
+  ): string {
+    if (!disposition) return fallbackName;
+
+    const match = disposition.match(/filename\*?=(?:UTF-8'')?"?([^";]+)/i);
+    if (!match?.[1]) return fallbackName;
+
+    const rawFileName = match[1].trim();
+
+    try {
+      return decodeURIComponent(rawFileName);
+    } catch {
+      return rawFileName;
+    }
   }
 
   private normalizeDateValue(value: unknown): string | undefined {

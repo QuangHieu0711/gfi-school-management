@@ -1,14 +1,22 @@
-import { HttpClient, HttpContext } from '@angular/common/http';
+import {
+  HttpClient,
+  HttpContext,
+  HttpParams,
+  HttpResponse,
+} from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { ERROR_CONTEXT } from '@constant/error.registry';
 import { environment } from '@env/environment';
 import { IResponse, ITableResponse } from '@model/response.model';
+import { Observable } from 'rxjs';
 
 import {
   HOC_SINH_API_ENDPOINT,
   HocSinhDetailResponse,
+  HocSinhExportRequest,
   HocSinhFilterRequest,
   HocSinhFormRequest,
+  HocSinhImportResponseData,
   HocSinhResponse,
 } from '@app/model/admin/hoc-sinh.model';
 
@@ -54,6 +62,50 @@ export class HocSinhService {
     return this.http.delete<IResponse<null>>(`${this.baseUrl}/${id}`, {
       context: this.silentContext,
     });
+  }
+
+  export(payload: HocSinhExportRequest): Observable<HttpResponse<Blob>> {
+    const params = new HttpParams({
+      fromObject: {
+        exportType: payload.exportType ?? 'EXCEL',
+      },
+    });
+    const { exportType: _exportType, ...body } = payload;
+
+    return this.http.post(
+      `${this.baseUrl}/${HOC_SINH_API_ENDPOINT.EXPORT}`,
+      body,
+      {
+        params,
+        observe: 'response',
+        responseType: 'blob',
+      }
+    );
+  }
+
+  import(
+    unitId: string | number,
+    payload: FormData
+  ): Observable<IResponse<HocSinhImportResponseData>> {
+    return this.http.post<IResponse<HocSinhImportResponseData>>(
+      `${this.baseUrl}/${HOC_SINH_API_ENDPOINT.IMPORT_EXCEL}`,
+      payload,
+      {
+        params: { unitId },
+      }
+    );
+  }
+
+  downloadTemplate(unitId: string | number): Observable<HttpResponse<Blob>> {
+    return this.http.post(
+      `${this.baseUrl}/${HOC_SINH_API_ENDPOINT.EXCEL_TEMPLATE}`,
+      {},
+      {
+        params: { unitId },
+        observe: 'response',
+        responseType: 'blob',
+      }
+    );
   }
 
   generateCode(unitId: string | number) {

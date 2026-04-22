@@ -39,6 +39,9 @@ export enum HOC_SINH_GUARDIAN_TYPE {
 export const HOC_SINH_API_ENDPOINT = {
   BASE_PATH: 'students',
   FILTER: 'search',
+  EXPORT: 'export',
+  IMPORT_EXCEL: 'import-excel',
+  EXCEL_TEMPLATE: 'excel-template',
 };
 
 export interface HocSinhFilter {
@@ -62,6 +65,18 @@ export interface HocSinhFilter {
 export interface HocSinhFilterRequest extends TableRequest {
   pageNow?: number;
   filter?: HocSinhFilter;
+}
+
+export interface HocSinhExportRequest extends HocSinhFilterRequest {
+  exportType?: 'EXCEL' | 'PDF';
+}
+
+export interface HocSinhImportResponseData {
+  successCount?: number;
+  failedCount?: number;
+  hasErrorFile?: boolean;
+  errorFileToken?: string;
+  errorFileName?: string;
 }
 
 export interface HocSinhEnrollment {

@@ -1,4 +1,4 @@
-﻿package com.gfi.backend.services.implement;
+package com.gfi.backend.services.implement;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -6,13 +6,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
 import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Set;
 
 import org.apache.poi.ss.usermodel.BorderStyle;
 import org.apache.poi.ss.usermodel.Cell;
@@ -77,9 +74,9 @@ import com.lowagie.text.pdf.PdfPTable;
 import com.lowagie.text.pdf.PdfWriter;
 
 /**
- * Service xá»­ lÃ½ logic quáº£n lÃ½ Ä‘Æ¡n vá»‹.
+ * Service xử lý logic nghiệp vụ liên quan đến đơn vị (Unit)
  * 
- * TrÃ¡ch nhiá»‡m tÃ¡ch biá»‡t:
+ * Trách nhiệm tách biệt:
  * - Logic query: UnitSpecification
  * - Logic mapping: UnitMapper
  * - Validate & load relations: private helpers
@@ -251,7 +248,7 @@ public class UnitServiceImpl implements UnitService {
         return importErrorFileStorageService.get(token);
     }
 
-    // Láº¥y danh sÃ¡ch Ä‘Æ¡n vá»‹ cho dropdown/combobox
+    // Lấy danh sách đơn vị cho dropdown/combobox
     @Override
     @Transactional(readOnly = true)
     public List<LookupItemDto> getOptions() {
@@ -269,7 +266,7 @@ public class UnitServiceImpl implements UnitService {
                 .toList();
     }
 
-    // Chi tiáº¿t Ä‘Æ¡n vá»‹ theo ID
+    // Chi tiết đơn vị theo ID
     @Override
     @Transactional(readOnly = true)
     public UnitDetailDto getById(Long id) {
@@ -379,11 +376,11 @@ public class UnitServiceImpl implements UnitService {
             sheet.addMergedRegion(new CellRangeAddress(0, 0, 0, 6));
 
             Row titleRow = sheet.createRow(1);
-            createCell(titleRow, 0, "DANH SÃCH ÄÆ N Vá»Š", titleStyle);
+            createCell(titleRow, 0, "DANH SÁCH ĐƠN VỊ", titleStyle);
             sheet.addMergedRegion(new CellRangeAddress(1, 1, 0, 6));
 
             Row headerRow = sheet.createRow(3);
-            String[] headers = { "STT", "MÃ£ Ä‘Æ¡n vá»‹", "TÃªn Ä‘Æ¡n vá»‹", "Äá»‹a chá»‰", "Äiá»‡n thoáº¡i", "Email", "Tráº¡ng thÃ¡i" };
+            String[] headers = { "STT", "Mã đơn vị", "Tên đơn vị", "Địa chỉ", "Điện thoại", "Email", "Trạng thái" };
             for (int i = 0; i < headers.length; i++) {
                 createCell(headerRow, i, headers[i], headerStyle);
             }
@@ -412,7 +409,7 @@ public class UnitServiceImpl implements UnitService {
             workbook.write(outputStream);
             return outputStream.toByteArray();
         } catch (IOException ex) {
-            throw new UserMessageException("KhÃ´ng thá»ƒ táº¡o file Excel danh sÃ¡ch Ä‘Æ¡n vá»‹");
+            throw new UserMessageException("Khôngh thể tạo file Excel danh sách đơn vị");
         }
     }
 
