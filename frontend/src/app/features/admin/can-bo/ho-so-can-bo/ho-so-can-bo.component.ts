@@ -61,7 +61,6 @@ import { DialogPhanCongGiangDayComponent } from '../phan-cong-giang-day/dialog-p
 import { PhanCongGiangDayService } from '@app/service/admin/phan-cong-giang-day.service';
 import { PhanCongGiangDayResponse } from '@app/model/admin/phan-cong-giang-day.model';
 import {
-  NguoiDungFilterRequest,
   NguoiDungFormRequest,
   NguoiDungResponse,
 } from '@app/model/admin/nguoi-dung.model';
@@ -77,8 +76,8 @@ type TabKey =
   | 'phan-cong-giang-day';
 
 const USER_ACCOUNT_STATUS_OPTIONS: IOptions[] = [
-  { value: 1, label: 'Hoạt động' },
-  { value: 0, label: 'Không hoạt động' },
+  { value: 1, label: 'Ho\u1ea1t \u0111\u1ed9ng' },
+  { value: 0, label: 'Kh\u00f4ng ho\u1ea1t \u0111\u1ed9ng' },
 ];
 
 @Component({
@@ -109,7 +108,6 @@ export class HoSoCanBoComponent extends ComponentBaseAbstract {
     { key: 'thong-tin-dao-tao', label: 'THÔNG TIN ĐÀO TẠO' },
     { key: 'thong-tin-luong', label: 'THÔNG TIN LƯƠNG' },
     { key: 'thong-tin-ngoai-ngu', label: 'THÔNG TIN NGOẠI NGỮ' },
-    { key: 'phan-cong-giang-day', label: 'PHÂN CÔNG GIẢNG DẠY' },
   ];
   readonly genderOptions = CAN_BO_GENDER_OPTIONS;
   readonly statusOptions = CAN_BO_STATUS_OPTIONS;
@@ -273,43 +271,13 @@ export class HoSoCanBoComponent extends ComponentBaseAbstract {
 
   private loadUserAccountInfo(userId?: string | number): void {
     if (!userId) {
-      this.loadUserAccountInfoByStaffId();
+      this.patchAccountFormFromUser();
       return;
     }
 
     this.nguoiDungService.getById(userId).subscribe({
       next: ({ data }) => {
         this.patchAccountFormFromUser(data);
-      },
-      error: () => {
-        this.loadUserAccountInfoByStaffId();
-      },
-    });
-  }
-
-  private loadUserAccountInfoByStaffId(): void {
-    const normalizedStaffId = Number(this.staffId ?? 0);
-    if (!normalizedStaffId) {
-      this.patchAccountFormFromUser();
-      return;
-    }
-
-    const payload = {
-      pageNow: 1,
-      pageSize: 1,
-      filter: {
-        staffId: normalizedStaffId,
-      },
-    } as unknown as NguoiDungFilterRequest;
-
-    this.nguoiDungService.filter(payload).subscribe({
-      next: ({ data }) => {
-        const users = Array.isArray(data)
-          ? data
-          : Array.isArray(data?.items)
-            ? data.items
-            : [];
-        this.patchAccountFormFromUser(users[0]);
       },
       error: () => {
         this.patchAccountFormFromUser();
@@ -1653,13 +1621,6 @@ export class HoSoCanBoComponent extends ComponentBaseAbstract {
         accountStatusControl?.setValidators([Validators.required]);
         accountStatusControl?.updateValueAndValidity({ emitEvent: false });
         accountStatusControl?.enable({ emitEvent: false });
-        if (
-          accountStatusControl?.value === null ||
-          accountStatusControl?.value === undefined ||
-          accountStatusControl?.value === ''
-        ) {
-          accountStatusControl?.setValue(1, { emitEvent: false });
-        }
         return;
       }
 

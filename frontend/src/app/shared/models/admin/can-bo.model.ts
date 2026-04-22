@@ -27,6 +27,7 @@ export const CAN_BO_API_ENDPOINT = {
   BY_GRADE: 'grade',
   EXPORT: 'export',
   IMPORT_EXCEL: 'import-excel',
+  IMPORT_ERROR_FILE: 'import-error-file',
   EXCEL_TEMPLATE: 'excel-template',
 };
 
@@ -190,8 +191,8 @@ export interface CanBoFormRequest {
 }
 
 export const CAN_BO_STATUS_OPTIONS = [
-  { value: 'ACTIVE', label: 'Đang làm việc' },
-  { value: 'INACTIVE', label: 'Ngừng hoạt động' },
+  { value: 'ACTIVE', label: '\u0110ang l\u00e0m vi\u1ec7c' },
+  { value: 'INACTIVE', label: 'Ng\u1eebng ho\u1ea1t \u0111\u1ed9ng' },
 ];
 
 export const CAN_BO_GENDER_OPTIONS = [
@@ -297,3 +298,4 @@ export const CAN_BO_PROFILE_FALLBACK: CanBoDetailResponse = {
   spouseMotherInfo: {},
   childrenDetail: '',
 };
+

@@ -347,9 +347,6 @@ export class TaoMoiHocSinhComponent extends ComponentBaseAbstract {
           '/',
           NAVIGATOR_ENDPOINT.ADMIN.BASE_PATH,
           NAVIGATOR_ENDPOINT.ADMIN.HOC_SINH.BASE_PATH,
-          ...(isUpdate && this.studentId
-            ? [PATH.CHI_TIET, this.studentId]
-            : []),
         ]);
       },
       error: (err) =>

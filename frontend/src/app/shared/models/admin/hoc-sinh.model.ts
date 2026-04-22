@@ -41,6 +41,7 @@ export const HOC_SINH_API_ENDPOINT = {
   FILTER: 'search',
   EXPORT: 'export',
   IMPORT_EXCEL: 'import-excel',
+  IMPORT_ERROR_FILE: 'import-error-file',
   EXCEL_TEMPLATE: 'excel-template',
 };
 

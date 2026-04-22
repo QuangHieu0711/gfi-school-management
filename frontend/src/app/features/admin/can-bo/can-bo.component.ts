@@ -399,15 +399,47 @@ export class CanBoComponent extends ComponentBaseAbstract {
   ): string {
     if (!disposition) return fallbackName;
 
-    const match = disposition.match(/filename\*?=(?:UTF-8'')?"?([^";]+)/i);
-    if (!match?.[1]) return fallbackName;
+    const utf8StarMatch = disposition.match(/filename\*\s*=\s*UTF-8''([^;]+)/i);
+    if (utf8StarMatch?.[1]) {
+      try {
+        return decodeURIComponent(utf8StarMatch[1].trim());
+      } catch {
+        return utf8StarMatch[1].trim();
+      }
+    }
 
-    const rawFileName = match[1].trim();
+    const filenameMatch = disposition.match(/filename\s*=\s*"?([^";]+)"?/i);
+    if (!filenameMatch?.[1]) return fallbackName;
 
+    return this.decodeMimeFileName(filenameMatch[1].trim()) || fallbackName;
+  }
+
+  private decodeMimeFileName(value: string): string {
+    if (!value) return value;
+
+    const mimeMatch = value.match(/^=\?([^?]+)\?([BQ])\?([^?]+)\?=$/i);
+    if (!mimeMatch) return value;
+
+    const [, charset, encoding, encodedText] = mimeMatch;
+    if (!/^utf-8$/i.test(charset)) return value;
+
+    if (encoding.toUpperCase() === 'B') {
+      try {
+        return decodeURIComponent(
+          Array.from(atob(encodedText))
+            .map((char) => `%${char.charCodeAt(0).toString(16).padStart(2, '0')}`)
+            .join('')
+        );
+      } catch {
+        return value;
+      }
+    }
+
+    const normalized = encodedText.replace(/_/g, ' ').replace(/=([0-9A-F]{2})/gi, '%$1');
     try {
-      return decodeURIComponent(rawFileName);
+      return decodeURIComponent(normalized);
     } catch {
-      return rawFileName;
+      return value;
     }
   }
 

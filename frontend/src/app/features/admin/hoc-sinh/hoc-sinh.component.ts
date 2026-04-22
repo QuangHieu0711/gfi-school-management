@@ -438,15 +438,43 @@ export class HocSinhComponent extends ComponentBaseAbstract {
   ): string {
     if (!disposition) return fallbackName;
 
-    const match = disposition.match(/filename\*?=(?:UTF-8'')?"?([^";]+)/i);
-    if (!match?.[1]) return fallbackName;
+    const utf8StarMatch = disposition.match(/filename\*\s*=\s*UTF-8''([^;]+)/i);
+    if (utf8StarMatch?.[1]) {
+      try {
+        return decodeURIComponent(utf8StarMatch[1].trim());
+      } catch {
+        return utf8StarMatch[1].trim();
+      }
+    }
 
-    const rawFileName = match[1].trim();
+    const filenameMatch = disposition.match(/filename\s*=\s*"?([^";]+)"?/i);
+    if (!filenameMatch?.[1]) return fallbackName;
+
+    return this.decodeMimeFileName(filenameMatch[1].trim()) || fallbackName;
+  }
+
+  private decodeMimeFileName(value: string): string {
+    if (!value) return value;
+
+    const match = value.match(/^=\?([^?]+)\?([BQ])\?([^?]+)\?=$/i);
+    if (!match) return value;
+
+    const [, charset, encoding, encodedText] = match;
+    if (!/^utf-8$/i.test(charset)) return value;
 
     try {
-      return decodeURIComponent(rawFileName);
+      if (encoding.toUpperCase() === 'B') {
+        const percentEncoded = Array.from(atob(encodedText))
+          .map((char) => `%${char.charCodeAt(0).toString(16).padStart(2, '0')}`)
+          .join('');
+        return decodeURIComponent(percentEncoded);
+      }
+
+      return decodeURIComponent(
+        encodedText.replace(/_/g, ' ').replace(/=([0-9A-F]{2})/gi, '%$1')
+      );
     } catch {
-      return rawFileName;
+      return value;
     }
   }
 

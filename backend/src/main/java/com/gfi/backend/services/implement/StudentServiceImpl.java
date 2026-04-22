@@ -3,12 +3,14 @@ package com.gfi.backend.services.implement;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.text.Normalizer;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.nio.file.Files;
 import java.util.Set;
 
 import org.apache.poi.ss.usermodel.BorderStyle;
@@ -81,6 +83,17 @@ import com.gfi.backend.services.interfaces.ImportErrorFileStorageService;
 import com.gfi.backend.services.interfaces.StudentCodeGeneratorService;
 import com.gfi.backend.services.interfaces.StudentService;
 import com.gfi.backend.utils.PageableUtils;
+import com.gfi.backend.utils.SecurityUtils;
+import com.lowagie.text.Document;
+import com.lowagie.text.DocumentException;
+import com.lowagie.text.Element;
+import com.lowagie.text.PageSize;
+import com.lowagie.text.Paragraph;
+import com.lowagie.text.Phrase;
+import com.lowagie.text.pdf.BaseFont;
+import com.lowagie.text.pdf.PdfPCell;
+import com.lowagie.text.pdf.PdfPTable;
+import com.lowagie.text.pdf.PdfWriter;
 
 import jakarta.persistence.criteria.Join;
 import jakarta.persistence.criteria.JoinType;
@@ -101,9 +114,13 @@ public class StudentServiceImpl implements StudentService {
     private static final String EXPORT_FONT_NAME = "Times New Roman";
     private static final String EXCEL_CONTENT_TYPE = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd/MM/yyyy");
-    private static final int STUDENT_TEMPLATE_GROUP_HEADER_ROW_INDEX = 6;
-    private static final int STUDENT_IMPORT_HEADER_ROW_INDEX = 7;
-    private static final int STUDENT_IMPORT_DATA_START_ROW_INDEX = 8;
+    private static final DateTimeFormatter EXPORT_TIME_FORMATTER = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
+    private static final String TIMES_FONT_REGULAR_PATH = "C:/Windows/Fonts/times.ttf";
+    private static final String TIMES_FONT_BOLD_PATH = "C:/Windows/Fonts/timesbd.ttf";
+    private static final String TIMES_FONT_ITALIC_PATH = "C:/Windows/Fonts/timesi.ttf";
+    private static final int STUDENT_TEMPLATE_GROUP_HEADER_ROW_INDEX = 7;
+    private static final int STUDENT_IMPORT_HEADER_ROW_INDEX = 8;
+    private static final int STUDENT_IMPORT_DATA_START_ROW_INDEX = 9;
     private static final int STUDENT_COL_FULL_NAME = 1;
     private static final int STUDENT_COL_FIRST_NAME = 2;
     private static final int STUDENT_COL_DOB = 3;
@@ -243,7 +260,7 @@ public class StudentServiceImpl implements StudentService {
         Student student = new Student();
         applyStudentFields(student, request, unit);
         student.setStudentCode(studentCode);
-        
+
         // Xử lý avatarUrl nếu có
         if (request.getAvatarUrl() != null && !request.getAvatarUrl().isBlank()) {
             String avatarUrl = fileStorageService.storeStudentAvatarFromDataUrl(
@@ -252,7 +269,7 @@ public class StudentServiceImpl implements StudentService {
                     schoolYear.getName());
             student.setAvatarUrl(avatarUrl);
         }
-        
+
         student.setCreatedBy(getCurrentUsername());
         Student savedStudent = studentRepository.save(student);
 
@@ -278,7 +295,7 @@ public class StudentServiceImpl implements StudentService {
     public StudentItemDto update(Long id, StudentCreateRequest request) {
         Student student = findStudent(id);
         validateStudentScope(ActionType.EDIT, student);
-        
+
         // Khi update: giữ nguyên mã cũ, không cho phép thay đổi
         // Kiểm tra nếu request cố gắng thay đổi mã thì báo lỗi
         String providedCode = normalize(request.getStudentCode());
@@ -296,7 +313,7 @@ public class StudentServiceImpl implements StudentService {
         validateGuardianTypes(request.getGuardians());
 
         applyStudentFields(student, request, unit);
-        
+
         // Xử lý avatarUrl nếu có
         if (request.getAvatarUrl() != null && !request.getAvatarUrl().isBlank()) {
             String avatarUrl = fileStorageService.storeStudentAvatarFromDataUrl(
@@ -305,7 +322,7 @@ public class StudentServiceImpl implements StudentService {
                     schoolYear.getName());
             student.setAvatarUrl(avatarUrl);
         }
-        
+
         student.setUpdatedBy(getCurrentUsername());
         Student savedStudent = studentRepository.save(student);
 
@@ -564,9 +581,27 @@ public class StudentServiceImpl implements StudentService {
                 .orElseThrow(() -> new UserMessageException(CommonErrorCode.SCHOOL_YEAR_NOT_FOUND));
     }
 
+    private SchoolYear findSchoolYearByName(String name) {
+        String normalizedName = normalizeNullable(name);
+        if (normalizedName == null) {
+            throw new UserMessageException("Năm học không hợp lệ");
+        }
+        return schoolYearRepository.findByName(normalizedName)
+                .orElseThrow(() -> new UserMessageException("Năm học không hợp lệ: " + normalizedName));
+    }
+
     private Classroom findClassroom(Long id) {
         return classroomRepository.findById(id)
                 .orElseThrow(() -> new UserMessageException(CommonErrorCode.CLASS_NOT_FOUND));
+    }
+
+    private Classroom findClassroomByName(Long unitId, Long schoolYearId, String name) {
+        String normalizedName = normalizeNullable(name);
+        if (normalizedName == null) {
+            throw new UserMessageException("Lớp không hợp lệ");
+        }
+        return classroomRepository.findByUnitIdAndSchoolYearIdAndName(unitId, schoolYearId, normalizedName)
+                .orElseThrow(() -> new UserMessageException("Lớp không hợp lệ: " + normalizedName));
     }
 
     private void validateEnrollment(Unit unit, SchoolYear schoolYear, Classroom classroom) {
@@ -774,8 +809,12 @@ public class StudentServiceImpl implements StudentService {
                 .schoolYearName(enrollment.getSchoolYear() == null ? null : enrollment.getSchoolYear().getName())
                 .classId(enrollment.getClassroom() == null ? null : enrollment.getClassroom().getId())
                 .className(enrollment.getClassroom() == null ? null : enrollment.getClassroom().getName())
-                .gradeLevelId(enrollment.getClassroom() == null || enrollment.getClassroom().getGradeLevel() == null ? null : enrollment.getClassroom().getGradeLevel().getId())
-                .gradeLevelName(enrollment.getClassroom() == null || enrollment.getClassroom().getGradeLevel() == null ? null : enrollment.getClassroom().getGradeLevel().getName())
+                .gradeLevelId(
+                        enrollment.getClassroom() == null || enrollment.getClassroom().getGradeLevel() == null ? null
+                                : enrollment.getClassroom().getGradeLevel().getId())
+                .gradeLevelName(
+                        enrollment.getClassroom() == null || enrollment.getClassroom().getGradeLevel() == null ? null
+                                : enrollment.getClassroom().getGradeLevel().getName())
                 .enrolledAt(enrollment.getEnrolledAt())
                 .status(enrollment.getStatus())
                 .isRepeater(enrollment.getIsRepeater())
@@ -893,9 +932,6 @@ public class StudentServiceImpl implements StudentService {
     @Override
     @Transactional(readOnly = true)
     public byte[] export(PageRequestDto<StudentFilterDto> request, Long unitId, ExportType exportType) {
-        if (exportType == ExportType.PDF) {
-            throw new UserMessageException("Chua ho tro export PDF cho hoc sinh");
-        }
         StudentFilterDto filter = request.getFilter() == null ? new StudentFilterDto() : request.getFilter();
         if (unitId != null) {
             filter.setUnitId(unitId);
@@ -905,6 +941,9 @@ public class StudentServiceImpl implements StudentService {
         exportRequest.setPageNow(1);
         exportRequest.setPageSize(Integer.MAX_VALUE);
         List<StudentItemDto> items = search(exportRequest).getItems();
+        if (exportType == ExportType.PDF) {
+            return buildStudentExportPdf(items, unitId);
+        }
         return buildStudentExportWorkbook(items, unitId);
     }
 
@@ -912,95 +951,222 @@ public class StudentServiceImpl implements StudentService {
     @Transactional(readOnly = true)
     public byte[] exportExcelTemplate(Long unitId) {
         Unit unit = findUnit(unitId);
-        try (Workbook workbook = new XSSFWorkbook(); ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
+        try (Workbook workbook = new XSSFWorkbook();
+                ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
+
             Sheet sheet = workbook.createSheet("HocSinh");
+
             CellStyle govHeaderStyle = createExcelGovHeaderStyle(workbook);
             CellStyle govSubHeaderStyle = createExcelGovSubHeaderStyle(workbook);
             CellStyle titleStyle = createExcelTitleStyle(workbook);
             CellStyle headerStyle = createExcelHeaderStyle(workbook);
             CellStyle bodyStyle = createExcelBodyStyle(workbook);
             CellStyle guideStyle = createExcelGuideStyle(workbook);
+
             int middleColumn = STUDENT_IMPORT_LAST_DATA_COLUMN / 2;
 
-            createCell(sheet.createRow(0), 0, "Mẫu import học sinh - Đơn vị: " + unit.getName(), titleStyle);
-            sheet.addMergedRegion(new CellRangeAddress(0, 0, 0, STUDENT_IMPORT_LAST_DATA_COLUMN));
-            createCell(sheet.createRow(1), 0,
-                "Cột bắt buộc: Họ tên, Ngày sinh, Năm học ID, Lớp ID. Mã học sinh để trống sẽ tự sinh.",
-                    guideStyle);
-            sheet.addMergedRegion(new CellRangeAddress(1, 1, 0, STUDENT_IMPORT_LAST_DATA_COLUMN));
-            createCell(sheet.createRow(2), 0,
-                "Giới tính: Nam/Nữ. Trạng thái học sinh: Hoạt động/Không hoạt động (hoặc 1/0). Các cột còn lại là tùy chọn.",
-                guideStyle);
-            sheet.addMergedRegion(new CellRangeAddress(2, 2, 0, STUDENT_IMPORT_LAST_DATA_COLUMN));
+            // ===== Dòng 0,1: Quốc hiệu =====
+            Row govHeaderRow = sheet.createRow(0);
+            createCell(govHeaderRow, 0, "BỘ GIÁO DỤC VÀ ĐÀO TẠO", govHeaderStyle);
+            sheet.addMergedRegion(new CellRangeAddress(0, 0, 0, middleColumn));
 
+            createCell(govHeaderRow, middleColumn + 1, "CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM", govHeaderStyle);
+            sheet.addMergedRegion(new CellRangeAddress(0, 0, middleColumn + 1, STUDENT_IMPORT_LAST_DATA_COLUMN));
+
+            Row govSubHeaderRow = sheet.createRow(1);
+            createCell(govSubHeaderRow, 0, unit.getName(), govSubHeaderStyle);
+            sheet.addMergedRegion(new CellRangeAddress(1, 1, 0, middleColumn));
+
+            createCell(govSubHeaderRow, middleColumn + 1, "Độc lập - Tự do - Hạnh phúc", govSubHeaderStyle);
+            sheet.addMergedRegion(new CellRangeAddress(1, 1, middleColumn + 1, STUDENT_IMPORT_LAST_DATA_COLUMN));
+
+            // ===== Tiêu đề =====
+            createCell(sheet.createRow(3), 0, "MẪU IMPORT HỌC SINH", titleStyle);
+            sheet.addMergedRegion(new CellRangeAddress(3, 3, 0, STUDENT_IMPORT_LAST_DATA_COLUMN));
+
+            createCell(sheet.createRow(4), 0,
+                    "Cột bắt buộc: Họ tên, Ngày sinh, Năm học, Lớp. Mã học sinh để trống sẽ được tự sinh.",
+                    guideStyle);
+            sheet.addMergedRegion(new CellRangeAddress(4, 4, 0, STUDENT_IMPORT_LAST_DATA_COLUMN));
+
+            createCell(sheet.createRow(5), 0,
+                    "Giới tính: Nam/Nữ. Trạng thái học sinh: Đang học/Đã chuyển trường/Tạm nghỉ/Thôi học. Dân tộc cha/mẹ: nhập tên dân tộc, Kinh sẽ được hiểu là không phải DTTS.",
+                    guideStyle);
+            sheet.addMergedRegion(new CellRangeAddress(5, 5, 0, STUDENT_IMPORT_LAST_DATA_COLUMN));
+
+            createCell(sheet.createRow(6), 0,
+                    "Các cột dạng đánh dấu chỉ nhập X nếu có/đúng, để trống nếu không.",
+                    guideStyle);
+            sheet.addMergedRegion(new CellRangeAddress(6, 6, 0, STUDENT_IMPORT_LAST_DATA_COLUMN));
+            // ===== Group header =====
+            Row groupHeaderRow = sheet.createRow(STUDENT_TEMPLATE_GROUP_HEADER_ROW_INDEX);
+            fillRowWithStyle(groupHeaderRow, 0, STUDENT_IMPORT_LAST_DATA_COLUMN, headerStyle);
+
+            createCell(groupHeaderRow, 0, "THÔNG TIN HỌC SINH", headerStyle);
+            sheet.addMergedRegion(new CellRangeAddress(
+                    STUDENT_TEMPLATE_GROUP_HEADER_ROW_INDEX,
+                    STUDENT_TEMPLATE_GROUP_HEADER_ROW_INDEX,
+                    0, STUDENT_COL_ADDR_DETAIL));
+
+            createCell(groupHeaderRow, STUDENT_COL_FATHER_NAME, "Cha", headerStyle);
+            sheet.addMergedRegion(new CellRangeAddress(
+                    STUDENT_TEMPLATE_GROUP_HEADER_ROW_INDEX,
+                    STUDENT_TEMPLATE_GROUP_HEADER_ROW_INDEX,
+                    STUDENT_COL_FATHER_NAME, STUDENT_COL_FATHER_IS_ETHNIC));
+
+            createCell(groupHeaderRow, STUDENT_COL_MOTHER_NAME, "Mẹ", headerStyle);
+            sheet.addMergedRegion(new CellRangeAddress(
+                    STUDENT_TEMPLATE_GROUP_HEADER_ROW_INDEX,
+                    STUDENT_TEMPLATE_GROUP_HEADER_ROW_INDEX,
+                    STUDENT_COL_MOTHER_NAME, STUDENT_COL_MOTHER_IS_ETHNIC));
+
+            createCell(groupHeaderRow, STUDENT_COL_PROFILE_POLICY_OBJECT, "Thông tin hỗ trợ", headerStyle);
+            sheet.addMergedRegion(new CellRangeAddress(
+                    STUDENT_TEMPLATE_GROUP_HEADER_ROW_INDEX,
+                    STUDENT_TEMPLATE_GROUP_HEADER_ROW_INDEX,
+                    STUDENT_COL_PROFILE_POLICY_OBJECT, STUDENT_COL_PROFILE_SSO_CODE));
+
+            // ===== Header chi tiết =====
             Row headerRow = sheet.createRow(STUDENT_IMPORT_HEADER_ROW_INDEX);
             String[] headers = {
-                "STT", "Mã học sinh", "Họ tên *", "Tên", "Ngày sinh *", "Giới tính",
-                "Điện thoại", "Email", "Năm học ID *", "Lớp ID *", "Ngày nhập học", "Trạng thái học sinh",
-                "Mã MOET", "Nơi sinh", "Dân tộc", "Tôn giáo", "Quốc tịch", "CCCD/CMND", "Ngày cấp CCCD",
-                "Nơi cấp CCCD", "Số BHYT", "Nhóm máu", "Sổ đăng bộ", "Loại nhập học", "Trạng thái nhập học",
-                "Lưu ban", "Số buổi/tuần", "Hình thức học", "Bán trú", "Học 2 buổi/ngày",
-                "Địa chỉ TT - Tỉnh/Thành", "Địa chỉ TT - Xã/Phường", "Địa chỉ TT - Thôn/Xóm", "Địa chỉ TT - Chi tiết",
-                "Cha - Họ tên", "Cha - Năm sinh", "Cha - Nghề nghiệp", "Cha - Điện thoại", "Cha - Email", "Cha - CCCD",
-                "Cha - Dân tộc", "Mẹ - Họ tên", "Mẹ - Năm sinh", "Mẹ - Nghề nghiệp", "Mẹ - Điện thoại", "Mẹ - Email",
-                "Mẹ - CCCD", "Mẹ - Dân tộc", "Đối tượng chính sách", "Chế độ chính sách", "Diện ưu tiên", "Khu vực",
-                "Loại khuyết tật", "Miễn đánh giá KT", "Hỗ trợ chi phí", "Có Internet tại nhà", "Có smartphone cha/mẹ",
-                "Mã hệ thống khác", "Mã SSO"
+                    "STT",
+                    "Họ tên *",
+                    "Tên",
+                    "Ngày sinh *",
+                    "Giới tính",
+                    "Điện thoại",
+                    "Email",
+                    "Năm học *",
+                    "Lớp *",
+                    "Ngày nhập học",
+                    "Trạng thái học sinh",
+                    "Mã MOET",
+                    "Nơi sinh",
+                    "Dân tộc",
+                    "Tôn giáo",
+                    "Quốc tịch",
+                    "CCCD/CMND",
+                    "Ngày cấp CCCD",
+                    "Nơi cấp CCCD",
+                    "Số BHYT",
+                    "Nhóm máu",
+                    "Sổ đăng bộ",
+                    "Loại nhập học",
+                    "Trạng thái nhập học",
+                    "Lưu ban",
+                    "Số buổi/tuần",
+                    "Hình thức học",
+                    "Bán trú",
+                    "Học 2 buổi/ngày",
+                    "Địa chỉ TT - Tỉnh/Thành",
+                    "Địa chỉ TT - Xã/Phường",
+                    "Địa chỉ TT - Thôn/Xóm",
+                    "Địa chỉ TT - Chi tiết",
+                    "Cha - Họ tên",
+                    "Cha - Năm sinh",
+                    "Cha - Nghề nghiệp",
+                    "Cha - Điện thoại",
+                    "Cha - Email",
+                    "Cha - CCCD",
+                    "Cha - Dân tộc",
+                    "Mẹ - Họ tên",
+                    "Mẹ - Năm sinh",
+                    "Mẹ - Nghề nghiệp",
+                    "Mẹ - Điện thoại",
+                    "Mẹ - Email",
+                    "Mẹ - CCCD",
+                    "Mẹ - Dân tộc",
+                    "Đối tượng chính sách",
+                    "Chế độ chính sách",
+                    "Diện ưu tiên",
+                    "Khu vực",
+                    "Loại khuyết tật",
+                    "Miễn đánh giá KT",
+                    "Hỗ trợ chi phí",
+                    "Có Internet tại nhà",
+                    "Có smartphone cha/mẹ",
+                    "Mã hệ thống khác",
+                    "Mã SSO"
             };
-            headers = new String[] {
-                "STT", "Ho ten *", "Ten", "Ngay sinh *", "Gioi tinh",
-                "Dien thoai", "Email", "Nam hoc ID *", "Lop ID *", "Ngay nhap hoc", "Trang thai hoc sinh",
-                "Ma MOET", "Noi sinh", "Dan toc", "Ton giao", "Quoc tich", "CCCD/CMND", "Ngay cap CCCD",
-                "Noi cap CCCD", "So BHYT", "Nhom mau", "So dang bo", "Loai nhap hoc", "Trang thai nhap hoc",
-                "Luu ban", "So buoi/tuan", "Hinh thuc hoc", "Ban tru", "Hoc 2 buoi/ngay",
-                "Dia chi TT - Tinh/Thanh", "Dia chi TT - Xa/Phuong", "Dia chi TT - Thon/Xom", "Dia chi TT - Chi tiet",
-                "Cha - Ho ten", "Cha - Nam sinh", "Cha - Nghe nghiep", "Cha - Dien thoai", "Cha - Email", "Cha - CCCD",
-                "Cha - Dan toc", "Me - Ho ten", "Me - Nam sinh", "Me - Nghe nghiep", "Me - Dien thoai", "Me - Email",
-                "Me - CCCD", "Me - Dan toc", "Doi tuong chinh sach", "Che do chinh sach", "Dien uu tien", "Khu vuc",
-                "Loai khuyet tat", "Mien danh gia KT", "Ho tro chi phi", "Co Internet tai nha", "Co smartphone cha/me",
-                "Ma he thong khac", "Ma SSO"
-            };
+
             for (int i = 0; i < headers.length; i++) {
-                createCell(headerRow, i, headers[i], titleStyle);
+                createCell(headerRow, i, headers[i], headerStyle);
             }
 
+            // ===== Dòng mẫu =====
             Row sampleRow = sheet.createRow(STUDENT_IMPORT_DATA_START_ROW_INDEX);
             Object[] sampleValues = {
-                1, "", "Nguyễn Văn A", "Văn A", "01/09/2015", "Nam", "0912345678",
-                "a@example.com", "1", "11", "05/09/2021", "Hoạt động",
-                "MOET001", "Đắk Lắk", "Kinh", "Không", "Việt Nam", "079205001234", "10/10/2022",
-                "Cục CSQLHC", "BHYT0001", "O", "SD001", "1", "1",
-                "0", "9", "1", "0", "1",
-                "Đắk Lắk", "Phường 1", "Thôn 3", "Số 10 Đường A",
-                "Nguyễn Văn B", 1980, "Nông dân", "0900000001", "b@example.com", "079205009999",
-                "0", "Trần Thị C", 1982, "Nội trợ", "0900000002", "c@example.com",
-                "079205008888", "0", "Hộ nghèo", "Miễn học phí", "Ưu tiên 1", "KV1",
-                "Không", "0", "1", "1", "1",
-                "HS-EXT-001", "SSO-001"
+                    1,
+                    "Nguyễn Văn A",
+                    "Văn A",
+                    "01/09/2015",
+                    "Nam",
+                    "0912345678",
+                    "a@example.com",
+                    "2025 - 2026",
+                    "1A1",
+                    "05/09/2021",
+                    "Đang học",
+                    "MOET001",
+                    "Đắk Lắk",
+                    "Kinh",
+                    "Không",
+                    "Việt Nam",
+                    "079205001234",
+                    "10/10/2022",
+                    "Cục CSQLHC",
+                    "BHYT0001",
+                    "O",
+                    "SD001",
+                    "1",
+                    "1",
+                    booleanMark(false), // Lưu ban
+                    "9",
+                    "1",
+                    booleanMark(true), // Bán trú
+                    booleanMark(true), // Học 2 buổi/ngày
+                    "Đắk Lắk",
+                    "Phường 1",
+                    "Thôn 3",
+                    "Số 10 Đường A",
+                    "Nguyễn Văn B",
+                    1980,
+                    "Nông dân",
+                    "0900000001",
+                    "b@example.com",
+                    "079205009999",
+                    "Kinh", // Cha - Dân tộc
+                    "Trần Thị C",
+                    1982,
+                    "Nội trợ",
+                    "0900000002",
+                    "c@example.com",
+                    "079205008888",
+                    "Kinh", // Mẹ - Dân tộc
+                    "Hộ nghèo",
+                    "Miễn học phí",
+                    "Ưu tiên 1",
+                    "KV1",
+                    "Không",
+                    booleanMark(false), // Miễn đánh giá KT
+                    booleanMark(true), // Hỗ trợ chi phí
+                    booleanMark(true), // Có Internet tại nhà
+                    booleanMark(true), // Có smartphone cha/mẹ
+                    "HS-EXT-001",
+                    "SSO-001"
             };
-            sampleValues = new Object[] {
-                1, "Nguyen Van A", "Van A", "01/09/2015", "Nam", "0912345678",
-                "a@example.com", "1", "11", "05/09/2021", "Hoat dong",
-                "MOET001", "Dak Lak", "Kinh", "Khong", "Viet Nam", "079205001234", "10/10/2022",
-                "Cuc CSQLHC", "BHYT0001", "O", "SD001", "1", "1",
-                "0", "9", "1", "0", "1",
-                "Dak Lak", "Phuong 1", "Thon 3", "So 10 Duong A",
-                "Nguyen Van B", 1980, "Nong dan", "0900000001", "b@example.com", "079205009999",
-                "0", "Tran Thi C", 1982, "Noi tro", "0900000002", "c@example.com",
-                "079205008888", "0", "Ho ngheo", "Mien hoc phi", "Uu tien 1", "KV1",
-                "Khong", "0", "1", "1", "1",
-                "HS-EXT-001", "SSO-001"
-            };
+
             for (int i = 0; i < sampleValues.length; i++) {
                 createCell(sampleRow, i, sampleValues[i], bodyStyle);
             }
 
             sheet.createFreezePane(0, STUDENT_IMPORT_DATA_START_ROW_INDEX);
             autosize(sheet, headers.length);
+
             workbook.write(outputStream);
             return outputStream.toByteArray();
         } catch (IOException ex) {
-            throw new UserMessageException("Khong the tao file mau hoc sinh");
+            throw new UserMessageException("Không thể tạo file Excel mẫu import học sinh");
         }
     }
 
@@ -1054,55 +1220,268 @@ public class StudentServiceImpl implements StudentService {
     }
 
     private byte[] buildStudentExportWorkbook(List<StudentItemDto> items, Long unitId) {
-        try (Workbook workbook = new XSSFWorkbook(); ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
+        Unit unit = unitId == null ? null : findUnit(unitId);
+
+        try (Workbook workbook = new XSSFWorkbook();
+                ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
+
             Sheet sheet = workbook.createSheet("HocSinh");
-            CellStyle titleStyle = createExcelHeaderStyle(workbook);
+
+            CellStyle infoStyle = createExcelInfoStyle(workbook);
+            CellStyle govHeaderStyle = createExcelGovHeaderStyle(workbook);
+            CellStyle govSubHeaderStyle = createExcelGovSubHeaderStyle(workbook);
+            CellStyle titleStyle = createExcelTitleStyle(workbook);
+            CellStyle headerStyle = createExcelHeaderStyle(workbook);
             CellStyle bodyStyle = createExcelBodyStyle(workbook);
-            createCell(sheet.createRow(0), 0,
-                    "Danh sach hoc sinh" + (unitId == null ? "" : " - UnitId: " + unitId), titleStyle);
-            sheet.addMergedRegion(new CellRangeAddress(0, 0, 0, 11));
-            Row headerRow = sheet.createRow(2);
-            String[] headers = { "STT", "Ma hoc sinh", "Ho ten", "Ngay sinh", "Gioi tinh", "Dien thoai", "Email",
-                    "Don vi", "Nam hoc", "Lop", "Ngay nhap hoc", "Trang thai" };
+
+            int lastColumn = STUDENT_IMPORT_LAST_DATA_COLUMN;
+            int middleColumn = lastColumn / 2;
+
+            Row infoRow = sheet.createRow(0);
+            createCell(infoRow, 0, buildExportInfoLine(), infoStyle);
+            sheet.addMergedRegion(new CellRangeAddress(0, 0, 0, lastColumn));
+
+            Row govHeaderRow = sheet.createRow(1);
+            createCell(govHeaderRow, 0, "BỘ GIÁO DỤC VÀ ĐÀO TẠO", govHeaderStyle);
+            sheet.addMergedRegion(new CellRangeAddress(1, 1, 0, middleColumn));
+            createCell(govHeaderRow, middleColumn + 1, "CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM", govHeaderStyle);
+            sheet.addMergedRegion(new CellRangeAddress(1, 1, middleColumn + 1, lastColumn));
+
+            Row govSubHeaderRow = sheet.createRow(2);
+            createCell(govSubHeaderRow, 0, unit == null ? "" : unit.getName(), govSubHeaderStyle);
+            sheet.addMergedRegion(new CellRangeAddress(2, 2, 0, middleColumn));
+            createCell(govSubHeaderRow, middleColumn + 1, "Độc lập - Tự do - Hạnh phúc", govSubHeaderStyle);
+            sheet.addMergedRegion(new CellRangeAddress(2, 2, middleColumn + 1, lastColumn));
+
+            createCell(sheet.createRow(4), 0, "DANH SÁCH HỌC SINH", titleStyle);
+            sheet.addMergedRegion(new CellRangeAddress(4, 4, 0, lastColumn));
+
+            Row groupHeaderRow = sheet.createRow(6);
+            fillRowWithStyle(groupHeaderRow, 0, lastColumn, headerStyle);
+            createCell(groupHeaderRow, 0, "THÔNG TIN HỌC SINH", headerStyle);
+            sheet.addMergedRegion(new CellRangeAddress(6, 6, 0, STUDENT_COL_ADDR_DETAIL));
+            createCell(groupHeaderRow, STUDENT_COL_FATHER_NAME, "Cha", headerStyle);
+            sheet.addMergedRegion(new CellRangeAddress(6, 6, STUDENT_COL_FATHER_NAME, STUDENT_COL_FATHER_IS_ETHNIC));
+            createCell(groupHeaderRow, STUDENT_COL_MOTHER_NAME, "Mẹ", headerStyle);
+            sheet.addMergedRegion(new CellRangeAddress(6, 6, STUDENT_COL_MOTHER_NAME, STUDENT_COL_MOTHER_IS_ETHNIC));
+            createCell(groupHeaderRow, STUDENT_COL_PROFILE_POLICY_OBJECT, "Thông tin hỗ trợ", headerStyle);
+            sheet.addMergedRegion(new CellRangeAddress(6, 6, STUDENT_COL_PROFILE_POLICY_OBJECT, STUDENT_COL_PROFILE_SSO_CODE));
+
+            Row headerRow = sheet.createRow(7);
+            String[] headers = buildStudentExportHeaders();
             for (int i = 0; i < headers.length; i++) {
-                createCell(headerRow, i, headers[i], titleStyle);
+                createCell(headerRow, i, headers[i], headerStyle);
             }
-            int rowIndex = 3;
+
+            int rowIndex = 8;
             int stt = 1;
             for (StudentItemDto item : items) {
                 Row row = sheet.createRow(rowIndex++);
-                createCell(row, 0, stt++, bodyStyle);
-                createCell(row, 1, item.getStudentCode(), bodyStyle);
-                createCell(row, 2, item.getFullName(), bodyStyle);
-                createCell(row, 3, formatDate(item.getDateOfBirth()), bodyStyle);
-                createCell(row, 4, studentGenderLabel(item.getGender()), bodyStyle);
-                createCell(row, 5, item.getMobilePhone(), bodyStyle);
-                createCell(row, 6, item.getEmail(), bodyStyle);
-                createCell(row, 7, item.getUnitName(), bodyStyle);
-                createCell(row, 8, item.getEnrollment() == null ? null : item.getEnrollment().getSchoolYearName(), bodyStyle);
-                createCell(row, 9, item.getEnrollment() == null ? null : item.getEnrollment().getClassName(), bodyStyle);
-                createCell(row, 10, item.getEnrollment() == null ? null : formatDate(item.getEnrollment().getEnrolledAt()), bodyStyle);
-                createCell(row, 11, studentStatusLabel(item.getStudentStatus()), bodyStyle);
+                Object[] values = buildStudentExportRow(item, stt++);
+                for (int i = 0; i < values.length; i++) {
+                    createCell(row, i, values[i], bodyStyle);
+                }
             }
+
             autosize(sheet, headers.length);
             workbook.write(outputStream);
             return outputStream.toByteArray();
         } catch (IOException ex) {
-            throw new UserMessageException("Khong the export hoc sinh");
+            throw new UserMessageException("Không thể export học sinh");
+        }
+    }
+
+    private String[] buildStudentExportHeaders() {
+        return new String[] {
+                "STT", "Họ tên", "Tên", "Ngày sinh", "Giới tính", "Điện thoại", "Email", "Năm học", "Lớp",
+                "Ngày nhập học", "Trạng thái học sinh", "Mã MOET", "Nơi sinh", "Dân tộc", "Tôn giáo", "Quốc tịch",
+                "CCCD/CMND", "Ngày cấp CCCD", "Nơi cấp CCCD", "Số BHYT", "Nhóm máu", "Sổ đăng bộ", "Loại nhập học",
+                "Trạng thái nhập học", "Lưu ban", "Số buổi/tuần", "Hình thức học", "Bán trú", "Học 2 buổi/ngày",
+                "Địa chỉ TT - Tỉnh/Thành", "Địa chỉ TT - Xã/Phường", "Địa chỉ TT - Thôn/Xóm", "Địa chỉ TT - Chi tiết",
+                "Cha - Họ tên", "Cha - Năm sinh", "Cha - Nghề nghiệp", "Cha - Điện thoại", "Cha - Email", "Cha - CCCD",
+                "Cha - Dân tộc", "Mẹ - Họ tên", "Mẹ - Năm sinh", "Mẹ - Nghề nghiệp", "Mẹ - Điện thoại", "Mẹ - Email",
+                "Mẹ - CCCD", "Mẹ - Dân tộc", "Đối tượng chính sách", "Chế độ chính sách", "Diện ưu tiên", "Khu vực",
+                "Loại khuyết tật", "Miễn đánh giá KT", "Hỗ trợ chi phí", "Có Internet tại nhà", "Có smartphone cha/mẹ",
+                "Mã hệ thống khác", "Mã SSO"
+        };
+    }
+
+    private Object[] buildStudentExportRow(StudentItemDto item, int stt) {
+        StudentEnrollmentItemDto enrollment = item.getEnrollment();
+        StudentAddressItemDto permanentAddress = findStudentAddress(item.getAddresses(), ADDRESS_TYPE_PERMANENT);
+        StudentGuardianItemDto father = findStudentGuardian(item.getGuardians(), GUARDIAN_TYPE_FATHER);
+        StudentGuardianItemDto mother = findStudentGuardian(item.getGuardians(), GUARDIAN_TYPE_MOTHER);
+        StudentProfileItemDto profile = item.getProfile();
+
+        Object[] values = new Object[STUDENT_IMPORT_LAST_DATA_COLUMN + 1];
+        values[0] = stt;
+        values[1] = item.getFullName();
+        values[2] = item.getFirstName();
+        values[3] = formatDate(item.getDateOfBirth());
+        values[4] = studentGenderLabel(item.getGender());
+        values[5] = item.getMobilePhone();
+        values[6] = item.getEmail();
+        values[7] = enrollment == null ? null : enrollment.getSchoolYearName();
+        values[8] = enrollment == null ? null : enrollment.getClassName();
+        values[9] = enrollment == null ? null : formatDate(enrollment.getEnrolledAt());
+        values[10] = studentStatusLabel(item.getStudentStatus());
+        values[11] = item.getMoeCode();
+        values[12] = item.getPlaceOfBirth();
+        values[13] = item.getEthnicity();
+        values[14] = item.getReligion();
+        values[15] = item.getNationality();
+        values[16] = item.getIdentityNumber();
+        values[17] = formatDate(item.getIdentityIssueDate());
+        values[18] = item.getIdentityIssuePlace();
+        values[19] = item.getHealthInsuranceNumber();
+        values[20] = item.getBloodGroup();
+        values[21] = item.getBoardingBook();
+        values[22] = item.getAdmissionType();
+        values[23] = enrollment == null ? null : enrollment.getStatus();
+        values[24] = booleanMark(enrollment != null && Boolean.TRUE.equals(enrollment.getIsRepeater()));
+        values[25] = enrollment == null ? null : enrollment.getSessionsPerWeek();
+        values[26] = enrollment == null ? null : enrollment.getStudyMode();
+        values[27] = booleanMark(enrollment != null && Boolean.TRUE.equals(enrollment.getIsBoarding()));
+        values[28] = booleanMark(enrollment != null && Boolean.TRUE.equals(enrollment.getIsTwoSessionsPerDay()));
+        values[29] = permanentAddress == null ? null : permanentAddress.getProvinceName();
+        values[30] = permanentAddress == null ? null : permanentAddress.getWardName();
+        values[31] = permanentAddress == null ? null : permanentAddress.getHamletName();
+        values[32] = permanentAddress == null ? null : permanentAddress.getDetailAddress();
+        values[33] = father == null ? null : father.getFullName();
+        values[34] = father == null ? null : father.getBirthYear();
+        values[35] = father == null ? null : father.getOccupation();
+        values[36] = father == null ? null : father.getPhone();
+        values[37] = father == null ? null : father.getEmail();
+        values[38] = father == null ? null : father.getIdentityNumber();
+        values[39] = father == null ? null : guardianEthnicLabel(father.getIsEthnic());
+        values[40] = mother == null ? null : mother.getFullName();
+        values[41] = mother == null ? null : mother.getBirthYear();
+        values[42] = mother == null ? null : mother.getOccupation();
+        values[43] = mother == null ? null : mother.getPhone();
+        values[44] = mother == null ? null : mother.getEmail();
+        values[45] = mother == null ? null : mother.getIdentityNumber();
+        values[46] = mother == null ? null : guardianEthnicLabel(mother.getIsEthnic());
+        values[47] = profile == null ? null : profile.getPolicyObject();
+        values[48] = profile == null ? null : profile.getPolicyBenefit();
+        values[49] = profile == null ? null : profile.getPriorityCategory();
+        values[50] = profile == null ? null : profile.getRegionCategory();
+        values[51] = profile == null ? null : profile.getDisabilityType();
+        values[52] = booleanMark(profile != null && Boolean.TRUE.equals(profile.getDisabilityExemptEval()));
+        values[53] = booleanMark(profile != null && Boolean.TRUE.equals(profile.getSupportTuitionCost()));
+        values[54] = booleanMark(profile != null && Boolean.TRUE.equals(profile.getHasParentInternet()));
+        values[55] = booleanMark(profile != null && Boolean.TRUE.equals(profile.getHasParentSmartphone()));
+        values[56] = profile == null ? null : profile.getOtherSystemCode();
+        values[57] = profile == null ? null : profile.getSsoCode();
+        return values;
+    }
+
+    private StudentAddressItemDto findStudentAddress(List<StudentAddressItemDto> addresses, String addressType) {
+        if (addresses == null) {
+            return null;
+        }
+        return addresses.stream()
+                .filter(item -> addressType.equals(item.getAddressType()))
+                .findFirst()
+                .orElse(null);
+    }
+
+    private StudentGuardianItemDto findStudentGuardian(List<StudentGuardianItemDto> guardians, String guardianType) {
+        if (guardians == null) {
+            return null;
+        }
+        return guardians.stream()
+                .filter(item -> guardianType.equals(item.getGuardianType()))
+                .findFirst()
+                .orElse(null);
+    }
+
+    private String guardianEthnicLabel(Boolean isEthnic) {
+        if (isEthnic == null) {
+            return null;
+        }
+        return Boolean.TRUE.equals(isEthnic) ? "Khác Kinh" : "Kinh";
+    }
+
+    private byte[] buildStudentExportPdf(List<StudentItemDto> items, Long unitId) {
+        Unit unit = unitId == null ? null : findUnit(unitId);
+        try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
+            Document document = new Document(PageSize.A4.rotate(), 24, 24, 20, 20);
+            PdfWriter.getInstance(document, outputStream);
+            document.open();
+
+            com.lowagie.text.Font titleFont = createPdfFont(16, com.lowagie.text.Font.BOLD);
+            com.lowagie.text.Font headerFont = createPdfFont(9, com.lowagie.text.Font.BOLD);
+            com.lowagie.text.Font bodyFont = createPdfFont(9, com.lowagie.text.Font.NORMAL);
+            com.lowagie.text.Font infoFont = createPdfFont(10, com.lowagie.text.Font.ITALIC);
+
+            Paragraph gov1 = new Paragraph("BỘ GIÁO DỤC VÀ ĐÀO TẠO", headerFont);
+            gov1.setAlignment(Element.ALIGN_CENTER);
+            document.add(gov1);
+
+            Paragraph gov2 = new Paragraph(unit == null ? "" : unit.getName(), bodyFont);
+            gov2.setAlignment(Element.ALIGN_CENTER);
+            gov2.setSpacingAfter(6f);
+            document.add(gov2);
+
+            Paragraph info = new Paragraph(buildExportInfoLine(), infoFont);
+            info.setAlignment(Element.ALIGN_RIGHT);
+            info.setSpacingAfter(6f);
+            document.add(info);
+
+            Paragraph title = new Paragraph("DANH SÁCH HỌC SINH", titleFont);
+            title.setAlignment(Element.ALIGN_CENTER);
+            title.setSpacingAfter(12f);
+            document.add(title);
+
+            PdfPTable table = new PdfPTable(
+                    new float[] { 0.7f, 1.3f, 2.5f, 1.3f, 1.1f, 1.5f, 2.0f, 2.0f, 1.4f, 1.4f, 1.6f, 1.4f });
+            table.setWidthPercentage(100);
+            String[] headers = { "STT", "Mã HS", "Họ tên", "Ngày sinh", "Giới tính", "Điện thoại", "Email", "Đơn vị",
+                    "Năm học", "Lớp", "Ngày nhập học", "Trạng thái" };
+            for (String header : headers) {
+                addPdfHeaderCell(table, header, headerFont);
+            }
+
+            int stt = 1;
+            for (StudentItemDto item : items) {
+                addPdfBodyCell(table, String.valueOf(stt++), bodyFont, Element.ALIGN_CENTER);
+                addPdfBodyCell(table, item.getStudentCode(), bodyFont, Element.ALIGN_LEFT);
+                addPdfBodyCell(table, item.getFullName(), bodyFont, Element.ALIGN_LEFT);
+                addPdfBodyCell(table, formatDate(item.getDateOfBirth()), bodyFont, Element.ALIGN_CENTER);
+                addPdfBodyCell(table, studentGenderLabel(item.getGender()), bodyFont, Element.ALIGN_CENTER);
+                addPdfBodyCell(table, item.getMobilePhone(), bodyFont, Element.ALIGN_LEFT);
+                addPdfBodyCell(table, item.getEmail(), bodyFont, Element.ALIGN_LEFT);
+                addPdfBodyCell(table, item.getUnitName(), bodyFont, Element.ALIGN_LEFT);
+                addPdfBodyCell(table, item.getEnrollment() == null ? null : item.getEnrollment().getSchoolYearName(),
+                        bodyFont, Element.ALIGN_LEFT);
+                addPdfBodyCell(table, item.getEnrollment() == null ? null : item.getEnrollment().getClassName(),
+                        bodyFont, Element.ALIGN_LEFT);
+                addPdfBodyCell(table,
+                        item.getEnrollment() == null ? null : formatDate(item.getEnrollment().getEnrolledAt()),
+                        bodyFont, Element.ALIGN_CENTER);
+                addPdfBodyCell(table, studentStatusLabel(item.getStudentStatus()), bodyFont, Element.ALIGN_CENTER);
+            }
+
+            document.add(table);
+            document.close();
+            return outputStream.toByteArray();
+        } catch (DocumentException | IOException ex) {
+            throw new UserMessageException("Không thể export PDF học sinh");
         }
     }
 
     private void upsertStudentFromExcelRow(Long unitId, Row row, DataFormatter formatter) {
         String fullName = normalizeNullable(readCellText(row.getCell(STUDENT_COL_FULL_NAME), formatter));
         if (!StringUtils.hasText(fullName)) {
-            throw new UserMessageException("Ho ten hoc sinh khong duoc de trong");
+            throw new UserMessageException("Họ tên học sinh không được để trống");
         }
 
         StudentCreateRequest request = new StudentCreateRequest();
         request.setStudentCode(null);
         request.setFullName(fullName);
         request.setFirstName(normalizeNullable(readCellText(row.getCell(STUDENT_COL_FIRST_NAME), formatter)));
-        request.setDateOfBirth(parseDateCell(readCellText(row.getCell(STUDENT_COL_DOB), formatter), "Ngay sinh khong hop le"));
+        request.setDateOfBirth(
+                parseDateCell(readCellText(row.getCell(STUDENT_COL_DOB), formatter), "Ngày sinh không hợp lệ"));
         request.setGender(parseStudentGenderCell(readCellText(row.getCell(STUDENT_COL_GENDER), formatter)));
         request.setMobilePhone(normalizeNullable(readCellText(row.getCell(STUDENT_COL_PHONE), formatter)));
         request.setEmail(normalizeNullable(readCellText(row.getCell(STUDENT_COL_EMAIL), formatter)));
@@ -1112,26 +1491,45 @@ public class StudentServiceImpl implements StudentService {
         request.setReligion(normalizeNullable(readCellText(row.getCell(STUDENT_COL_RELIGION), formatter)));
         request.setNationality(normalizeNullable(readCellText(row.getCell(STUDENT_COL_NATIONALITY), formatter)));
         request.setIdentityNumber(normalizeNullable(readCellText(row.getCell(STUDENT_COL_IDENTITY_NUMBER), formatter)));
-        request.setIdentityIssueDate(parseOptionalDateCell(readCellText(row.getCell(STUDENT_COL_IDENTITY_ISSUE_DATE), formatter)));
-        request.setIdentityIssuePlace(normalizeNullable(readCellText(row.getCell(STUDENT_COL_IDENTITY_ISSUE_PLACE), formatter)));
-        request.setHealthInsuranceNumber(normalizeNullable(readCellText(row.getCell(STUDENT_COL_HEALTH_INSURANCE_NO), formatter)));
+        request.setIdentityIssueDate(
+                parseOptionalDateCell(readCellText(row.getCell(STUDENT_COL_IDENTITY_ISSUE_DATE), formatter)));
+        request.setIdentityIssuePlace(
+                normalizeNullable(readCellText(row.getCell(STUDENT_COL_IDENTITY_ISSUE_PLACE), formatter)));
+        request.setHealthInsuranceNumber(
+                normalizeNullable(readCellText(row.getCell(STUDENT_COL_HEALTH_INSURANCE_NO), formatter)));
         request.setBloodGroup(normalizeNullable(readCellText(row.getCell(STUDENT_COL_BLOOD_GROUP), formatter)));
         request.setBoardingBook(normalizeNullable(readCellText(row.getCell(STUDENT_COL_BOARDING_BOOK), formatter)));
-        request.setAdmissionType(parseIntegerCell(readCellText(row.getCell(STUDENT_COL_ADMISSION_TYPE), formatter), "Loai nhap hoc khong hop le"));
+        request.setAdmissionType(parseIntegerCell(readCellText(row.getCell(STUDENT_COL_ADMISSION_TYPE), formatter),
+                "Loại nhập học không hợp lệ"));
         request.setUnitId(unitId);
-        request.setAdmissionDate(parseOptionalDateCell(readCellText(row.getCell(STUDENT_COL_ADMISSION_DATE), formatter)));
-        request.setStudentStatus(parseStudentStatusCell(readCellText(row.getCell(STUDENT_COL_STUDENT_STATUS), formatter)));
+        request.setAdmissionDate(
+                parseOptionalDateCell(readCellText(row.getCell(STUDENT_COL_ADMISSION_DATE), formatter)));
+        request.setStudentStatus(
+                parseStudentStatusCell(readCellText(row.getCell(STUDENT_COL_STUDENT_STATUS), formatter)));
+
+        String schoolYearName = readCellText(row.getCell(STUDENT_COL_SCHOOL_YEAR_ID), formatter);
+        SchoolYear schoolYear = findSchoolYearByName(schoolYearName);
+        String className = readCellText(row.getCell(STUDENT_COL_CLASS_ID), formatter);
+        Classroom classroom = findClassroomByName(unitId, schoolYear.getId(), className);
 
         StudentEnrollmentCreateRequest enrollment = new StudentEnrollmentCreateRequest();
-        enrollment.setSchoolYearId(parseLongCell(readCellText(row.getCell(STUDENT_COL_SCHOOL_YEAR_ID), formatter), "Nam hoc ID khong hop le"));
-        enrollment.setClassId(parseLongCell(readCellText(row.getCell(STUDENT_COL_CLASS_ID), formatter), "Lop ID khong hop le"));
-        enrollment.setEnrolledAt(parseOptionalDateCell(readCellText(row.getCell(STUDENT_COL_ADMISSION_DATE), formatter)));
-        enrollment.setStatus(parseIntegerCell(readCellText(row.getCell(STUDENT_COL_ENROLLMENT_STATUS), formatter), "Trang thai nhap hoc khong hop le"));
-        enrollment.setIsRepeater(parseOptionalBooleanCell(readCellText(row.getCell(STUDENT_COL_ENROLLMENT_IS_REPEATER), formatter), "Luu ban khong hop le"));
-        enrollment.setSessionsPerWeek(parseIntegerCell(readCellText(row.getCell(STUDENT_COL_ENROLLMENT_SESSIONS), formatter), "So buoi tuan khong hop le"));
-        enrollment.setStudyMode(parseIntegerCell(readCellText(row.getCell(STUDENT_COL_ENROLLMENT_STUDY_MODE), formatter), "Hinh thuc hoc khong hop le"));
-        enrollment.setIsBoarding(parseOptionalBooleanCell(readCellText(row.getCell(STUDENT_COL_ENROLLMENT_BOARDING), formatter), "Ban tru khong hop le"));
-        enrollment.setIsTwoSessionsPerDay(parseOptionalBooleanCell(readCellText(row.getCell(STUDENT_COL_ENROLLMENT_TWO_SESSIONS), formatter), "Hoc 2 buoi/ngay khong hop le"));
+        enrollment.setSchoolYearId(schoolYear.getId());
+        enrollment.setClassId(classroom.getId());
+        enrollment
+                .setEnrolledAt(parseOptionalDateCell(readCellText(row.getCell(STUDENT_COL_ADMISSION_DATE), formatter)));
+        enrollment.setStatus(parseIntegerCell(readCellText(row.getCell(STUDENT_COL_ENROLLMENT_STATUS), formatter),
+                "Trạng thái nhập học không hợp lệ"));
+        enrollment.setIsRepeater(parseOptionalBooleanCell(
+                readCellText(row.getCell(STUDENT_COL_ENROLLMENT_IS_REPEATER), formatter), "Ưu tiên không hợp lệ"));
+        enrollment.setSessionsPerWeek(parseIntegerCell(
+                readCellText(row.getCell(STUDENT_COL_ENROLLMENT_SESSIONS), formatter), "Số buổi tuần không hợp lệ"));
+        enrollment.setStudyMode(parseIntegerCell(
+                readCellText(row.getCell(STUDENT_COL_ENROLLMENT_STUDY_MODE), formatter), "Hình thức học không hợp lệ"));
+        enrollment.setIsBoarding(parseOptionalBooleanCell(
+                readCellText(row.getCell(STUDENT_COL_ENROLLMENT_BOARDING), formatter), "Bán trú không hợp lệ"));
+        enrollment.setIsTwoSessionsPerDay(
+                parseOptionalBooleanCell(readCellText(row.getCell(STUDENT_COL_ENROLLMENT_TWO_SESSIONS), formatter),
+                        "Học 2 buổi/ngày không hợp lệ"));
         request.setEnrollment(enrollment);
 
         StudentAddressCreateRequest permanentAddress = buildPermanentAddressRequest(row, formatter);
@@ -1178,25 +1576,38 @@ public class StudentServiceImpl implements StudentService {
 
     private byte[] buildStudentImportErrorFile(Workbook workbook, Sheet sheet, Map<Integer, String> rowErrors) {
         CellStyle headerStyle = createExcelHeaderStyle(workbook);
-        CellStyle errorStyle = createExcelBodyStyle(workbook);
+        CellStyle errorStyle = createExcelErrorBodyStyle(workbook);
+
         Row headerRow = sheet.getRow(STUDENT_IMPORT_HEADER_ROW_INDEX);
-        int resultColumnIndex = headerRow == null || headerRow.getLastCellNum() < 0
+        if (headerRow == null) {
+            headerRow = sheet.createRow(STUDENT_IMPORT_HEADER_ROW_INDEX);
+        }
+
+        int resultColumnIndex = headerRow.getLastCellNum() < 0
                 ? STUDENT_IMPORT_LAST_DATA_COLUMN + 1
                 : headerRow.getLastCellNum();
         int reasonColumnIndex = resultColumnIndex + 1;
-        createCell(headerRow, resultColumnIndex, "Ket qua", headerStyle);
-        createCell(headerRow, reasonColumnIndex, "Ly do loi", headerStyle);
+
+        createCell(headerRow, resultColumnIndex, "Kết quả", headerStyle);
+        createCell(headerRow, reasonColumnIndex, "Lý do lỗi", headerStyle);
+
         for (Map.Entry<Integer, String> entry : rowErrors.entrySet()) {
             Row row = sheet.getRow(entry.getKey());
-            createCell(row, resultColumnIndex, "That bai", errorStyle);
+            if (row == null) {
+                row = sheet.createRow(entry.getKey());
+            }
+            applyRowStyle(row, 0, reasonColumnIndex, errorStyle);
+            createCell(row, resultColumnIndex, "Thất bại", errorStyle);
             createCell(row, reasonColumnIndex, entry.getValue(), errorStyle);
         }
+
         autosize(sheet, reasonColumnIndex + 1);
+
         try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
             workbook.write(outputStream);
             return outputStream.toByteArray();
         } catch (IOException ex) {
-            throw new UserMessageException("Khong the tao file loi import hoc sinh");
+            throw new UserMessageException("Không thể tạo file lỗi import học sinh");
         }
     }
 
@@ -1266,7 +1677,7 @@ public class StudentServiceImpl implements StudentService {
         return switch (key) {
             case "NAM", "MALE", "M", "0" -> 0;
             case "NU", "FEMALE", "F", "1" -> 1;
-            default -> parseIntegerCell(normalized, "Gioi tinh khong hop le");
+            default -> parseIntegerCell(normalized, "Giới tính không hợp lệ");
         };
     }
 
@@ -1277,9 +1688,11 @@ public class StudentServiceImpl implements StudentService {
         }
         String key = normalizeLookupKey(normalized);
         return switch (key) {
-            case "HOAT DONG", "DANG HOC", "ACTIVE", "1" -> 1;
-            case "KHONG HOAT DONG", "NGHI HOC", "INACTIVE", "0" -> 0;
-            default -> parseIntegerCell(normalized, "Trang thai hoc sinh khong hop le");
+            case "DANG HOC", "DANGHOC", "STUDYING", "0" -> 0;
+            case "DA CHUYEN TRUONG", "DA CHUYEN", "CHUYEN TRUONG", "TRANSFERRED", "1" -> 1;
+            case "TAM NGHI", "TAMNGHI", "ON LEAVE", "LEAVE", "2" -> 2;
+            case "THOI HOC", "THOIHOC", "DROPPED OUT", "DROPOUT", "3" -> 3;
+            default -> parseIntegerCell(normalized, "Trạng thái học sinh không hợp lệ");
         };
     }
 
@@ -1289,7 +1702,7 @@ public class StudentServiceImpl implements StudentService {
         }
         return switch (gender) {
             case 0 -> "Nam";
-            case 1 -> "Nu";
+            case 1 -> "Nữ";
             default -> String.valueOf(gender);
         };
     }
@@ -1299,21 +1712,23 @@ public class StudentServiceImpl implements StudentService {
             return null;
         }
         return switch (status) {
-            case 1 -> "Hoat dong";
-            case 0 -> "Khong hoat dong";
+            case 0 -> "Đang học";
+            case 1 -> "Đã chuyển trường";
+            case 2 -> "Tạm nghỉ";
+            case 3 -> "Thôi học";
             default -> String.valueOf(status);
         };
     }
 
     private Boolean parseOptionalBooleanCell(String value, String message) {
-        String normalized = normalizeNullable(value);
-        if (normalized == null) {
+        if (value == null || value.trim().isEmpty()) {
             return null;
         }
-        String key = normalizeLookupKey(normalized);
+
+        String key = normalizeLookupKey(value);
         return switch (key) {
-            case "1", "TRUE", "YES", "Y", "CO", "X" -> Boolean.TRUE;
-            case "0", "FALSE", "NO", "N", "KHONG" -> Boolean.FALSE;
+            case "X", "TRUE", "YES", "Y", "CO", "1" -> Boolean.TRUE;
+            case "FALSE", "NO", "N", "KHONG", "0" -> Boolean.FALSE;
             default -> throw new UserMessageException(message);
         };
     }
@@ -1324,7 +1739,9 @@ public class StudentServiceImpl implements StudentService {
             return null;
         }
         String noAccent = Normalizer.normalize(normalized, Normalizer.Form.NFD)
-                .replaceAll("\\p{M}+", "");
+                .replaceAll("\\p{M}+", "")
+                .replace('đ', 'd')
+                .replace('Đ', 'D');
         return noAccent.trim().toUpperCase(Locale.ROOT).replaceAll("\\s+", " ");
     }
 
@@ -1350,12 +1767,12 @@ public class StudentServiceImpl implements StudentService {
         StudentGuardianCreateRequest guardian = new StudentGuardianCreateRequest();
         guardian.setGuardianType(guardianType);
         guardian.setFullName(normalizeNullable(fullName));
-        guardian.setBirthYear(parseIntegerCell(birthYear, "Nam sinh nguoi giam ho khong hop le"));
+        guardian.setBirthYear(parseIntegerCell(birthYear, "Năm sinh của người giám hộ không hợp lệ"));
         guardian.setOccupation(normalizeNullable(occupation));
         guardian.setPhone(normalizeNullable(phone));
         guardian.setEmail(normalizeNullable(email));
         guardian.setIdentityNumber(normalizeNullable(identityNumber));
-        guardian.setIsEthnic(parseOptionalBooleanCell(isEthnicText, "Gia tri dan toc cua nguoi giam ho khong hop le"));
+        guardian.setIsEthnic(parseGuardianEthnicCell(isEthnicText));
 
         boolean hasData = guardian.getFullName() != null
                 || guardian.getBirthYear() != null
@@ -1373,26 +1790,41 @@ public class StudentServiceImpl implements StudentService {
         return guardian;
     }
 
+    private Boolean parseGuardianEthnicCell(String value) {
+        String normalized = normalizeNullable(value);
+        if (normalized == null) {
+            return null;
+        }
+        String key = normalizeLookupKey(normalized);
+        return !"KINH".equals(key);
+    }
+
     private StudentProfileCreateRequest buildProfileRequest(Row row, DataFormatter formatter) {
         StudentProfileCreateRequest profile = new StudentProfileCreateRequest();
-        profile.setPolicyObject(normalizeNullable(readCellText(row.getCell(STUDENT_COL_PROFILE_POLICY_OBJECT), formatter)));
-        profile.setPolicyBenefit(normalizeNullable(readCellText(row.getCell(STUDENT_COL_PROFILE_POLICY_BENEFIT), formatter)));
-        profile.setPriorityCategory(normalizeNullable(readCellText(row.getCell(STUDENT_COL_PROFILE_PRIORITY_CATEGORY), formatter)));
-        profile.setRegionCategory(normalizeNullable(readCellText(row.getCell(STUDENT_COL_PROFILE_REGION_CATEGORY), formatter)));
-        profile.setDisabilityType(normalizeNullable(readCellText(row.getCell(STUDENT_COL_PROFILE_DISABILITY_TYPE), formatter)));
+        profile.setPolicyObject(
+                normalizeNullable(readCellText(row.getCell(STUDENT_COL_PROFILE_POLICY_OBJECT), formatter)));
+        profile.setPolicyBenefit(
+                normalizeNullable(readCellText(row.getCell(STUDENT_COL_PROFILE_POLICY_BENEFIT), formatter)));
+        profile.setPriorityCategory(
+                normalizeNullable(readCellText(row.getCell(STUDENT_COL_PROFILE_PRIORITY_CATEGORY), formatter)));
+        profile.setRegionCategory(
+                normalizeNullable(readCellText(row.getCell(STUDENT_COL_PROFILE_REGION_CATEGORY), formatter)));
+        profile.setDisabilityType(
+                normalizeNullable(readCellText(row.getCell(STUDENT_COL_PROFILE_DISABILITY_TYPE), formatter)));
         profile.setDisabilityExemptEval(parseOptionalBooleanCell(
                 readCellText(row.getCell(STUDENT_COL_PROFILE_DISABILITY_EXEMPT), formatter),
-                "Mien danh gia KT khong hop le"));
+                "Miễn đánh giá khuyết tật không hợp lệ"));
         profile.setSupportTuitionCost(parseOptionalBooleanCell(
                 readCellText(row.getCell(STUDENT_COL_PROFILE_SUPPORT_TUITION), formatter),
-                "Ho tro chi phi khong hop le"));
+                "Hỗ trợ chi phí không hợp lệ"));
         profile.setHasParentInternet(parseOptionalBooleanCell(
                 readCellText(row.getCell(STUDENT_COL_PROFILE_PARENT_INTERNET), formatter),
-                "Thong tin internet tai nha khong hop le"));
+                "Thông tin internet tại nhà không hợp lệ"));
         profile.setHasParentSmartphone(parseOptionalBooleanCell(
                 readCellText(row.getCell(STUDENT_COL_PROFILE_PARENT_SMARTPHONE), formatter),
-                "Thong tin smartphone cha/me khong hop le"));
-        profile.setOtherSystemCode(normalizeNullable(readCellText(row.getCell(STUDENT_COL_PROFILE_OTHER_SYSTEM_CODE), formatter)));
+                "Thông tin smartphone cha/me không hợp lệ"));
+        profile.setOtherSystemCode(
+                normalizeNullable(readCellText(row.getCell(STUDENT_COL_PROFILE_OTHER_SYSTEM_CODE), formatter)));
         profile.setSsoCode(normalizeNullable(readCellText(row.getCell(STUDENT_COL_PROFILE_SSO_CODE), formatter)));
 
         boolean hasData = profile.getPolicyObject() != null
@@ -1425,9 +1857,26 @@ public class StudentServiceImpl implements StudentService {
         return value == null ? null : value.format(DATE_FORMATTER);
     }
 
+    private String buildExportInfoLine() {
+        String exportTime = LocalDateTime.now().format(EXPORT_TIME_FORMATTER);
+        String username = SecurityUtils.getCurrentUsername();
+        return "Thời gian tải: " + exportTime + " | Người tải: " + username;
+    }
+
     private void fillRowWithStyle(Row row, int fromColumn, int toColumn, CellStyle style) {
         for (int i = fromColumn; i <= toColumn; i++) {
             createCell(row, i, "", style);
+        }
+    }
+
+    private void applyRowStyle(Row row, int fromColumn, int toColumn, CellStyle style) {
+        for (int i = fromColumn; i <= toColumn; i++) {
+            Cell cell = row.getCell(i);
+            if (cell == null) {
+                cell = row.createCell(i);
+                cell.setCellValue("");
+            }
+            cell.setCellStyle(style);
         }
     }
 
@@ -1498,6 +1947,48 @@ public class StudentServiceImpl implements StudentService {
         return style;
     }
 
+    private CellStyle createExcelErrorBodyStyle(Workbook workbook) {
+        CellStyle style = createExcelBodyStyle(workbook);
+        Font font = workbook.createFont();
+        font.setFontName(EXPORT_FONT_NAME);
+        font.setColor(IndexedColors.RED.getIndex());
+        style.setFont(font);
+        return style;
+    }
+
+    private void addPdfHeaderCell(PdfPTable table, String text, com.lowagie.text.Font font) {
+        PdfPCell cell = new PdfPCell(new Phrase(text == null ? "" : text, font));
+        cell.setHorizontalAlignment(Element.ALIGN_CENTER);
+        cell.setVerticalAlignment(Element.ALIGN_MIDDLE);
+        cell.setPadding(6f);
+        cell.setBackgroundColor(new java.awt.Color(224, 242, 241));
+        table.addCell(cell);
+    }
+
+    private void addPdfBodyCell(PdfPTable table, String text, com.lowagie.text.Font font, int align) {
+        PdfPCell cell = new PdfPCell(new Phrase(text == null ? "" : text, font));
+        cell.setHorizontalAlignment(align);
+        cell.setVerticalAlignment(Element.ALIGN_MIDDLE);
+        cell.setPadding(5f);
+        table.addCell(cell);
+    }
+
+    private com.lowagie.text.Font createPdfFont(float size, int style) {
+        String fontPath = switch (style) {
+            case com.lowagie.text.Font.BOLD -> TIMES_FONT_BOLD_PATH;
+            case com.lowagie.text.Font.ITALIC -> TIMES_FONT_ITALIC_PATH;
+            default -> TIMES_FONT_REGULAR_PATH;
+        };
+        try {
+            if (Files.exists(java.nio.file.Path.of(fontPath))) {
+                BaseFont baseFont = BaseFont.createFont(fontPath, BaseFont.IDENTITY_H, BaseFont.EMBEDDED);
+                return new com.lowagie.text.Font(baseFont, size, com.lowagie.text.Font.NORMAL);
+            }
+        } catch (Exception ignored) {
+        }
+        return com.lowagie.text.FontFactory.getFont(EXPORT_FONT_NAME, BaseFont.IDENTITY_H, true, size, style);
+    }
+
     private CellStyle createExcelGuideStyle(Workbook workbook) {
         CellStyle style = workbook.createCellStyle();
         style.setAlignment(HorizontalAlignment.LEFT);
@@ -1508,6 +1999,18 @@ public class StudentServiceImpl implements StudentService {
         font.setFontName(EXPORT_FONT_NAME);
         style.setFont(font);
         style.setWrapText(true);
+        return style;
+    }
+
+    private CellStyle createExcelInfoStyle(Workbook workbook) {
+        CellStyle style = workbook.createCellStyle();
+        style.setAlignment(HorizontalAlignment.RIGHT);
+        style.setVerticalAlignment(VerticalAlignment.CENTER);
+        Font font = workbook.createFont();
+        font.setFontHeightInPoints((short) 10);
+        font.setItalic(true);
+        font.setFontName(EXPORT_FONT_NAME);
+        style.setFont(font);
         return style;
     }
 
@@ -1531,5 +2034,9 @@ public class StudentServiceImpl implements StudentService {
             sheet.autoSizeColumn(i);
             sheet.setColumnWidth(i, Math.min(sheet.getColumnWidth(i) + 1024, 20000));
         }
+    }
+
+    private String booleanMark(Boolean value) {
+        return Boolean.TRUE.equals(value) ? "X" : "";
     }
 }

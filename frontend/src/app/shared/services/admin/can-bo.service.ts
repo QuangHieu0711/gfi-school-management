@@ -105,6 +105,16 @@ export class CanBoService {
     );
   }
 
+  downloadImportErrorFile(errorFileToken: string): Observable<HttpResponse<Blob>> {
+    return this.http.get(
+      `${this.baseUrl}/${CAN_BO_API_ENDPOINT.IMPORT_ERROR_FILE}/${encodeURIComponent(errorFileToken)}`,
+      {
+        observe: 'response',
+        responseType: 'blob',
+      }
+    );
+  }
+
   create(payload: CanBoFormRequest) {
     return this.http.post<IResponse<CanBoDetailResponse>>(
       `${this.baseUrl}`,

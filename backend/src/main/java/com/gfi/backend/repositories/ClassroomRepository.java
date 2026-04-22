@@ -18,6 +18,7 @@ public interface ClassroomRepository extends JpaRepository<Classroom, Long>, Jpa
     long countBySchoolYearId(Long schoolYearId);
     Optional<Classroom> findByUnitIdAndGradeLevelIdAndSchoolYearIdAndCode(Long unitId, Long gradeLevelId, Long schoolYearId, String code);
     Optional<Classroom> findByUnitIdAndGradeLevelIdAndSchoolYearIdAndName(Long unitId, Long gradeLevelId, Long schoolYearId, String name);
+    Optional<Classroom> findByUnitIdAndSchoolYearIdAndName(Long unitId, Long schoolYearId, String name);
     
     /**
      * Find classrooms by unit IDs (for data scope filtering)

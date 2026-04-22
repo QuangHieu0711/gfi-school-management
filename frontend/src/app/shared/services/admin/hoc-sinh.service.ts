@@ -108,6 +108,16 @@ export class HocSinhService {
     );
   }
 
+  downloadImportErrorFile(errorFileToken: string): Observable<HttpResponse<Blob>> {
+    return this.http.get(
+      `${this.baseUrl}/${HOC_SINH_API_ENDPOINT.IMPORT_ERROR_FILE}/${encodeURIComponent(errorFileToken)}`,
+      {
+        observe: 'response',
+        responseType: 'blob',
+      }
+    );
+  }
+
   generateCode(unitId: string | number) {
     return this.http.get<IResponse<string>>(`${this.baseUrl}/generate-code`, {
       params: { unitId },

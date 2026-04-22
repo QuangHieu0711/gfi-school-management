@@ -4,7 +4,10 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.text.Normalizer;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -67,6 +70,16 @@ import com.gfi.backend.utils.SecurityUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import jakarta.persistence.criteria.Predicate;
+import com.lowagie.text.Document;
+import com.lowagie.text.DocumentException;
+import com.lowagie.text.Element;
+import com.lowagie.text.PageSize;
+import com.lowagie.text.Paragraph;
+import com.lowagie.text.Phrase;
+import com.lowagie.text.pdf.BaseFont;
+import com.lowagie.text.pdf.PdfPCell;
+import com.lowagie.text.pdf.PdfPTable;
+import com.lowagie.text.pdf.PdfWriter;
 
 @Service
 @RequiredArgsConstructor
@@ -83,6 +96,13 @@ public class StaffServiceImpl implements StaffService {
     private static final String RELATION_CHILDREN = "CHILDREN";
     private static final String EDUCATION_TYPE_TRAINING = "TRAINING";
     private static final String EDUCATION_TYPE_FOREIGN_LANGUAGE = "FOREIGN_LANGUAGE";
+    private static final List<String> STAFF_ETHNICITY_OPTIONS = List.of(
+            "Kinh", "Tày", "Thái", "Hoa", "Khơ-me", "Mường", "Nùng", "HMông", "Dao", "Gia-rai",
+            "Ngái", "Ê-đê", "Ba na", "Xơ-Đăng", "Sán Chay", "Cơ-ho", "Chăm", "Sán Dìu", "Hrê", "Mnông",
+            "Ra-glai", "Xtiêng", "Bru-Vân Kiều", "Thổ", "Giáy", "Cơ-tu", "Gié Triêng", "Mạ", "Khơ-mú", "Co",
+            "Tà-ôi", "Chơ-ro", "Kháng", "Xinh-mun", "Hà Nhì", "Chu ru", "Lào", "La Chí", "La Ha", "Phù Lá",
+            "La Hủ", "Lự", "Lô Lô", "Chứt", "Mảng", "Pà Thẻn", "Co Lao", "Cống", "Bố Y", "Si La",
+            "Pu Péo", "Brâu", "Ơ Đu", "Rơ măm", "Người nước ngoài", "Không rõ");
 
     private final StaffRepository staffRepository;
     private final UnitRepository unitRepository;
@@ -99,6 +119,10 @@ public class StaffServiceImpl implements StaffService {
     private static final String EXCEL_CONTENT_TYPE = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
     private static final String EXPORT_FONT_NAME = "Times New Roman";
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+    private static final DateTimeFormatter EXPORT_TIME_FORMATTER = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
+    private static final String TIMES_FONT_REGULAR_PATH = "C:/Windows/Fonts/times.ttf";
+    private static final String TIMES_FONT_BOLD_PATH = "C:/Windows/Fonts/timesbd.ttf";
+    private static final String TIMES_FONT_ITALIC_PATH = "C:/Windows/Fonts/timesi.ttf";
     private static final int STAFF_TEMPLATE_GROUP_HEADER_ROW_INDEX = 6;
     private static final int STAFF_IMPORT_HEADER_ROW_INDEX = 7;
     private static final int STAFF_TEMPLATE_SAMPLE_ROW_INDEX = 8;
@@ -953,9 +977,6 @@ public class StaffServiceImpl implements StaffService {
     @Override
     @Transactional(readOnly = true)
     public byte[] export(PageRequestDto<StaffFilterDto> request, Long unitId, ExportType exportType) {
-        if (exportType == ExportType.PDF) {
-            throw new UserMessageException("Chưa hỗ trợ export PDF cho cán bộ");
-        }
         StaffFilterDto filter = request.getFilter() == null ? new StaffFilterDto() : request.getFilter();
         if (unitId != null) {
             filter.setUnitId(unitId);
@@ -965,6 +986,9 @@ public class StaffServiceImpl implements StaffService {
         exportRequest.setPageNow(1);
         exportRequest.setPageSize(Integer.MAX_VALUE);
         List<StaffItemDto> items = search(exportRequest).getItems();
+        if (exportType == ExportType.PDF) {
+            return buildStaffExportPdf(items, unitId);
+        }
         return buildStaffExportWorkbook(items, unitId);
     }
 
@@ -1002,7 +1026,7 @@ public class StaffServiceImpl implements StaffService {
                     guideStyle);
             sheet.addMergedRegion(new CellRangeAddress(4, 4, 0, STAFF_IMPORT_LAST_DATA_COLUMN));
             createCell(sheet.createRow(5), 0,
-                    "Giới tính: Nam/Nữ/Khác. Trạng thái: Hoạt động/Không hoạt động. Các cột còn lại là tùy chọn.",
+                    "Giới tính: Nam/Nữ/Khác. Trạng thái: Đang làm việc/Ngừng hoạt động. Dân tộc chỉ được nhập theo sheet DanToc. Các cột còn lại là tùy chọn.",
                     guideStyle);
             sheet.addMergedRegion(new CellRangeAddress(5, 5, 0, STAFF_IMPORT_LAST_DATA_COLUMN));
 
@@ -1071,8 +1095,8 @@ public class StaffServiceImpl implements StaffService {
             Row sampleRow = sheet.createRow(STAFF_TEMPLATE_SAMPLE_ROW_INDEX);
             Object[] sampleValues = {
                     1, "Trần Thị B", "Thị B", "Nữ", "01/01/1990", "0912345678",
-                    "b@example.com", "", "Hoạt động", "Dữ liệu mẫu", "ID-CB-001",
-                    "KINH", "KHONG", "VN", "079090012345", "10/03/2018", "Cục CSQLHC",
+                    "b@example.com", "", "Đang làm việc", "Dữ liệu mẫu", "ID-CB-001",
+                    "Kinh", "Không", "Việt Nam", "079090012345", "10/03/2018", "Cục CSQLHC",
                     "Tốt", "BHXH001", "Số 1 Đường A", "Số 2 Đường B", "Buôn C",
                     "Trần Văn C", 1960, "Đắk Lắk", "Nông dân", "0900000001",
                     "Nguyễn Thị D", 1965, "Đắk Lắk", "Nội trợ", "0900000002",
@@ -1097,6 +1121,8 @@ public class StaffServiceImpl implements StaffService {
             for (int i = 0; i < sampleValues.length; i++) {
                 createCell(sampleRow, i, sampleValues[i], bodyStyle);
             }
+
+            createStaffEthnicitySheet(workbook);
 
             sheet.createFreezePane(0, STAFF_TEMPLATE_SAMPLE_ROW_INDEX);
             autosize(sheet, headers.length);
@@ -1162,38 +1188,206 @@ public class StaffServiceImpl implements StaffService {
     }
 
     private byte[] buildStaffExportWorkbook(List<StaffItemDto> items, Long unitId) {
+        Unit unit = unitId == null ? null : unitRepository.findById(unitId).orElse(null);
         try (Workbook workbook = new XSSFWorkbook(); ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
             Sheet sheet = workbook.createSheet("CanBo");
+            CellStyle infoStyle = createExcelInfoStyle(workbook);
+            CellStyle govHeaderStyle = createExcelGovHeaderStyle(workbook);
+            CellStyle govSubHeaderStyle = createExcelGovSubHeaderStyle(workbook);
+            CellStyle titleStyle = createExcelTitleStyle(workbook);
             CellStyle headerStyle = createExcelHeaderStyle(workbook);
             CellStyle bodyStyle = createExcelBodyStyle(workbook);
-            createCell(sheet.createRow(0), 0,
-                    "Danh sach can bo" + (unitId == null ? "" : " - UnitId: " + unitId), headerStyle);
-            sheet.addMergedRegion(new CellRangeAddress(0, 0, 0, 8));
-            Row headerRow = sheet.createRow(2);
-            String[] headers = { "STT", "Ma can bo", "Ho ten", "Gioi tinh", "Ngay sinh", "Dien thoai", "Email",
-                    "Trang thai", "Grade ID" };
+            int lastColumn = STAFF_IMPORT_LAST_DATA_COLUMN;
+            int middleColumn = lastColumn / 2;
+
+            Row infoRow = sheet.createRow(0);
+            createCell(infoRow, 0, buildExportInfoLine(), infoStyle);
+            sheet.addMergedRegion(new CellRangeAddress(0, 0, 0, lastColumn));
+
+            Row govHeaderRow = sheet.createRow(1);
+            createCell(govHeaderRow, 0, "BỘ GIÁO DỤC VÀ ĐÀO TẠO", govHeaderStyle);
+            sheet.addMergedRegion(new CellRangeAddress(1, 1, 0, middleColumn));
+            createCell(govHeaderRow, middleColumn + 1, "CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM", govHeaderStyle);
+            sheet.addMergedRegion(new CellRangeAddress(1, 1, middleColumn + 1, lastColumn));
+
+            Row govSubHeaderRow = sheet.createRow(2);
+            createCell(govSubHeaderRow, 0, unit == null ? "" : unit.getName(), govSubHeaderStyle);
+            sheet.addMergedRegion(new CellRangeAddress(2, 2, 0, middleColumn));
+            createCell(govSubHeaderRow, middleColumn + 1, "Độc lập - Tự do - Hạnh phúc", govSubHeaderStyle);
+            sheet.addMergedRegion(new CellRangeAddress(2, 2, middleColumn + 1, lastColumn));
+
+            createCell(sheet.createRow(4), 0, "DANH SÁCH CÁN BỘ", titleStyle);
+            sheet.addMergedRegion(new CellRangeAddress(4, 4, 0, lastColumn));
+
+            Row groupHeaderRow = sheet.createRow(6);
+            fillRowWithStyle(groupHeaderRow, 0, lastColumn, headerStyle);
+            createCell(groupHeaderRow, 0, "THÔNG TIN CÁN BỘ", headerStyle);
+            sheet.addMergedRegion(new CellRangeAddress(6, 6, 0, STAFF_COL_BIRTH_PLACE_ADDRESS));
+            createCell(groupHeaderRow, STAFF_COL_FATHER_NAME, "Cha", headerStyle);
+            sheet.addMergedRegion(new CellRangeAddress(6, 6, STAFF_COL_FATHER_NAME, STAFF_COL_FATHER_PHONE));
+            createCell(groupHeaderRow, STAFF_COL_MOTHER_NAME, "Mẹ", headerStyle);
+            sheet.addMergedRegion(new CellRangeAddress(6, 6, STAFF_COL_MOTHER_NAME, STAFF_COL_MOTHER_PHONE));
+            createCell(groupHeaderRow, STAFF_COL_SPOUSE_NAME, "Vợ/Chồng", headerStyle);
+            sheet.addMergedRegion(new CellRangeAddress(6, 6, STAFF_COL_SPOUSE_NAME, STAFF_COL_SPOUSE_PHONE));
+            createCell(groupHeaderRow, STAFF_COL_SPOUSE_FATHER_NAME, "Bố vợ/chồng", headerStyle);
+            sheet.addMergedRegion(new CellRangeAddress(6, 6, STAFF_COL_SPOUSE_FATHER_NAME, STAFF_COL_SPOUSE_FATHER_PHONE));
+            createCell(groupHeaderRow, STAFF_COL_SPOUSE_MOTHER_NAME, "Mẹ vợ/chồng", headerStyle);
+            sheet.addMergedRegion(new CellRangeAddress(6, 6, STAFF_COL_SPOUSE_MOTHER_NAME, STAFF_COL_SPOUSE_MOTHER_PHONE));
+            createCell(groupHeaderRow, STAFF_COL_CHILDREN_DETAIL, "Con", headerStyle);
+            createCell(groupHeaderRow, STAFF_COL_TRAINING_SCHOOL, "Đào tạo", headerStyle);
+            sheet.addMergedRegion(new CellRangeAddress(6, 6, STAFF_COL_TRAINING_SCHOOL, STAFF_COL_TRAINING_NOTE));
+            createCell(groupHeaderRow, STAFF_COL_FOREIGN_LANGUAGE_NAME, "Ngoại ngữ", headerStyle);
+            sheet.addMergedRegion(new CellRangeAddress(6, 6, STAFF_COL_FOREIGN_LANGUAGE_NAME, STAFF_COL_FOREIGN_LANGUAGE_NOTE));
+
+            Row headerRow = sheet.createRow(7);
+            String[] headers = buildStaffExportHeaders();
             for (int i = 0; i < headers.length; i++) {
                 createCell(headerRow, i, headers[i], headerStyle);
             }
-            int rowIndex = 3;
+            int rowIndex = 8;
             int stt = 1;
             for (StaffItemDto item : items) {
+                StaffDetailDto detail = getById(item.getId());
                 Row row = sheet.createRow(rowIndex++);
-                createCell(row, 0, stt++, bodyStyle);
-                createCell(row, 1, item.getStaffCode(), bodyStyle);
-                createCell(row, 2, item.getFullName(), bodyStyle);
-                createCell(row, 3, item.getGender(), bodyStyle);
-                createCell(row, 4, formatDate(item.getDateOfBirth()), bodyStyle);
-                createCell(row, 5, item.getPhone(), bodyStyle);
-                createCell(row, 6, item.getEmail(), bodyStyle);
-                createCell(row, 7, item.getStatus(), bodyStyle);
-                createCell(row, 8, item.getGradeId(), bodyStyle);
+                Object[] values = buildStaffExportRow(item, detail, stt++);
+                for (int i = 0; i < values.length; i++) {
+                    createCell(row, i, values[i], bodyStyle);
+                }
             }
             autosize(sheet, headers.length);
             workbook.write(outputStream);
             return outputStream.toByteArray();
         } catch (IOException ex) {
             throw new UserMessageException("Không thể xuất cán bộ");
+        }
+    }
+
+    private String[] buildStaffExportHeaders() {
+        String[] headers = {
+                "STT", "Họ tên", "Tên gọi khác", "Giới tính", "Ngày sinh",
+                "Điện thoại", "Email", "Khối", "Trạng thái", "Ghi chú", "Mã định danh",
+                "Dân tộc", "Tôn giáo", "Quốc tịch", "CCCD/CMND", "Ngày cấp CCCD", "Nơi cấp CCCD",
+                "Tình trạng sức khỏe", "Số BHXH", "Địa chỉ thường trú", "Địa chỉ tạm trú", "Địa chỉ nơi sinh",
+                "Cha - Họ tên", "Cha - Năm sinh", "Cha - Quê quán", "Cha - Nghề nghiệp", "Cha - Điện thoại",
+                "Mẹ - Họ tên", "Mẹ - Năm sinh", "Mẹ - Quê quán", "Mẹ - Nghề nghiệp", "Mẹ - Điện thoại",
+                "Vợ/Chồng - Họ tên", "Vợ/Chồng - Năm sinh", "Vợ/Chồng - Nghề nghiệp", "Vợ/Chồng - Điện thoại",
+                "Bố vợ/chồng - Họ tên", "Bố vợ/chồng - Năm sinh", "Bố vợ/chồng - Quê quán", "Bố vợ/chồng - Nghề nghiệp",
+                "Bố vợ/chồng - Điện thoại", "Mẹ vợ/chồng - Họ tên", "Mẹ vợ/chồng - Năm sinh", "Mẹ vợ/chồng - Quê quán",
+                "Mẹ vợ/chồng - Nghề nghiệp", "Mẹ vợ/chồng - Điện thoại", "Thông tin con", "Trường đào tạo",
+                "Chuyên ngành", "Hình thức đào tạo", "Chứng chỉ", "Từ ngày", "Đến ngày", "Ghi chú đào tạo",
+                "Tên ngoại ngữ", "Trình độ", "Ngày cấp", "Điểm/kết quả", "Ghi chú ngoại ngữ"
+        };
+        return java.util.Arrays.copyOf(headers, STAFF_IMPORT_LAST_DATA_COLUMN + 1);
+    }
+
+    private Object[] buildStaffExportRow(StaffItemDto item, StaffDetailDto detail, int stt) {
+        Object[] values = new Object[STAFF_IMPORT_LAST_DATA_COLUMN + 1];
+        values[0] = stt;
+        values[1] = item.getFullName();
+        values[2] = item.getAliasName();
+        values[3] = staffGenderLabel(item.getGender());
+        values[4] = formatDate(item.getDateOfBirth());
+        values[5] = item.getPhone();
+        values[6] = item.getEmail();
+        values[7] = item.getGradeId();
+        values[8] = staffStatusLabel(item.getStatus());
+        values[9] = detail.getNote();
+        values[10] = detail.getIdentityCode();
+        values[11] = detail.getEthnicityId();
+        values[12] = detail.getReligionId();
+        values[13] = detail.getNationalityId();
+        values[14] = detail.getCccdNo();
+        values[15] = formatDate(detail.getCccdIssueDate());
+        values[16] = detail.getCccdIssuePlace();
+        values[17] = detail.getHealthStatus();
+        values[18] = detail.getSocialInsuranceNo();
+        values[19] = detail.getPermanentAddress() == null ? null : detail.getPermanentAddress().getFullAddress();
+        values[20] = detail.getTemporaryAddress() == null ? null : detail.getTemporaryAddress().getFullAddress();
+        values[21] = detail.getBirthPlaceAddress() == null ? null : detail.getBirthPlaceAddress().getFullAddress();
+        values[22] = detail.getFatherInfo() == null ? null : detail.getFatherInfo().getFullName();
+        values[23] = detail.getFatherInfo() == null ? null : detail.getFatherInfo().getBirthYear();
+        values[24] = detail.getFatherInfo() == null ? null : detail.getFatherInfo().getHometown();
+        values[25] = detail.getFatherInfo() == null ? null : detail.getFatherInfo().getOccupation();
+        values[26] = detail.getFatherInfo() == null ? null : detail.getFatherInfo().getPhone();
+        values[27] = detail.getMotherInfo() == null ? null : detail.getMotherInfo().getFullName();
+        values[28] = detail.getMotherInfo() == null ? null : detail.getMotherInfo().getBirthYear();
+        values[29] = detail.getMotherInfo() == null ? null : detail.getMotherInfo().getHometown();
+        values[30] = detail.getMotherInfo() == null ? null : detail.getMotherInfo().getOccupation();
+        values[31] = detail.getMotherInfo() == null ? null : detail.getMotherInfo().getPhone();
+        values[32] = detail.getSpouseInfo() == null ? null : detail.getSpouseInfo().getFullName();
+        values[33] = detail.getSpouseInfo() == null ? null : detail.getSpouseInfo().getBirthYear();
+        values[34] = detail.getSpouseInfo() == null ? null : detail.getSpouseInfo().getOccupation();
+        values[35] = detail.getSpouseInfo() == null ? null : detail.getSpouseInfo().getPhone();
+        values[36] = detail.getSpouseFatherInfo() == null ? null : detail.getSpouseFatherInfo().getFullName();
+        values[37] = detail.getSpouseFatherInfo() == null ? null : detail.getSpouseFatherInfo().getBirthYear();
+        values[38] = detail.getSpouseFatherInfo() == null ? null : detail.getSpouseFatherInfo().getHometown();
+        values[39] = detail.getSpouseFatherInfo() == null ? null : detail.getSpouseFatherInfo().getOccupation();
+        values[40] = detail.getSpouseFatherInfo() == null ? null : detail.getSpouseFatherInfo().getPhone();
+        values[41] = detail.getSpouseMotherInfo() == null ? null : detail.getSpouseMotherInfo().getFullName();
+        values[42] = detail.getSpouseMotherInfo() == null ? null : detail.getSpouseMotherInfo().getBirthYear();
+        values[43] = detail.getSpouseMotherInfo() == null ? null : detail.getSpouseMotherInfo().getHometown();
+        values[44] = detail.getSpouseMotherInfo() == null ? null : detail.getSpouseMotherInfo().getOccupation();
+        values[45] = detail.getSpouseMotherInfo() == null ? null : detail.getSpouseMotherInfo().getPhone();
+        values[46] = detail.getChildrenDetail();
+        return values;
+    }
+
+    private byte[] buildStaffExportPdf(List<StaffItemDto> items, Long unitId) {
+        Unit unit = unitId == null ? null : unitRepository.findById(unitId).orElse(null);
+        try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
+            Document document = new Document(PageSize.A4.rotate(), 24, 24, 20, 20);
+            PdfWriter.getInstance(document, outputStream);
+            document.open();
+
+            com.lowagie.text.Font titleFont = createPdfFont(16, com.lowagie.text.Font.BOLD);
+            com.lowagie.text.Font headerFont = createPdfFont(10, com.lowagie.text.Font.BOLD);
+            com.lowagie.text.Font bodyFont = createPdfFont(10, com.lowagie.text.Font.NORMAL);
+            com.lowagie.text.Font infoFont = createPdfFont(10, com.lowagie.text.Font.ITALIC);
+
+            Paragraph gov1 = new Paragraph("BỘ GIÁO DỤC VÀ ĐÀO TẠO", headerFont);
+            gov1.setAlignment(Element.ALIGN_CENTER);
+            document.add(gov1);
+
+            Paragraph gov2 = new Paragraph(unit == null ? "" : unit.getName(), bodyFont);
+            gov2.setAlignment(Element.ALIGN_CENTER);
+            gov2.setSpacingAfter(6f);
+            document.add(gov2);
+
+            Paragraph info = new Paragraph(buildExportInfoLine(), infoFont);
+            info.setAlignment(Element.ALIGN_RIGHT);
+            info.setSpacingAfter(6f);
+            document.add(info);
+
+            Paragraph title = new Paragraph("DANH SÁCH CÁN BỘ", titleFont);
+            title.setAlignment(Element.ALIGN_CENTER);
+            title.setSpacingAfter(12f);
+            document.add(title);
+
+            PdfPTable table = new PdfPTable(new float[] { 0.7f, 1.4f, 2.5f, 1.2f, 1.3f, 1.5f, 2.0f, 1.5f, 1.0f });
+            table.setWidthPercentage(100);
+            String[] headers = { "STT", "Mã cán bộ", "Họ tên", "Giới tính", "Ngày sinh", "Điện thoại", "Email", "Trạng thái", "Khối" };
+            for (String header : headers) {
+                addPdfHeaderCell(table, header, headerFont);
+            }
+
+            int stt = 1;
+            for (StaffItemDto item : items) {
+                addPdfBodyCell(table, String.valueOf(stt++), bodyFont, Element.ALIGN_CENTER);
+                addPdfBodyCell(table, item.getStaffCode(), bodyFont, Element.ALIGN_LEFT);
+                addPdfBodyCell(table, item.getFullName(), bodyFont, Element.ALIGN_LEFT);
+                addPdfBodyCell(table, staffGenderLabel(item.getGender()), bodyFont, Element.ALIGN_CENTER);
+                addPdfBodyCell(table, formatDate(item.getDateOfBirth()), bodyFont, Element.ALIGN_CENTER);
+                addPdfBodyCell(table, item.getPhone(), bodyFont, Element.ALIGN_LEFT);
+                addPdfBodyCell(table, item.getEmail(), bodyFont, Element.ALIGN_LEFT);
+                addPdfBodyCell(table, staffStatusLabel(item.getStatus()), bodyFont, Element.ALIGN_CENTER);
+                addPdfBodyCell(table, item.getGradeId() == null ? null : String.valueOf(item.getGradeId()), bodyFont, Element.ALIGN_CENTER);
+            }
+
+            document.add(table);
+            document.close();
+            return outputStream.toByteArray();
+        } catch (DocumentException | IOException ex) {
+            throw new UserMessageException("Không thể xuất PDF cán bộ");
         }
     }
 
@@ -1223,7 +1417,7 @@ public class StaffServiceImpl implements StaffService {
                     readCellText(row.getCell(staffCol(STAFF_COL_GENDER, hasLegacyCodeColumn)), formatter)));
             request.setDateOfBirth(parseOptionalDateCell(
                     readCellText(row.getCell(staffCol(STAFF_COL_DOB, hasLegacyCodeColumn)), formatter)));
-            request.setEthnicityId(normalizeNullable(
+            request.setEthnicityId(parseStaffEthnicityCell(
                     readCellText(row.getCell(staffCol(STAFF_COL_ETHNICITY, hasLegacyCodeColumn)), formatter)));
             request.setReligionId(normalizeNullable(
                     readCellText(row.getCell(staffCol(STAFF_COL_RELIGION, hasLegacyCodeColumn)), formatter)));
@@ -1311,7 +1505,7 @@ public class StaffServiceImpl implements StaffService {
                 readCellText(row.getCell(staffCol(STAFF_COL_GENDER, hasLegacyCodeColumn)), formatter)));
         request.setDateOfBirth(parseOptionalDateCell(
                 readCellText(row.getCell(staffCol(STAFF_COL_DOB, hasLegacyCodeColumn)), formatter)));
-        request.setEthnicityId(normalizeNullable(
+        request.setEthnicityId(parseStaffEthnicityCell(
                 readCellText(row.getCell(staffCol(STAFF_COL_ETHNICITY, hasLegacyCodeColumn)), formatter)));
         request.setReligionId(normalizeNullable(
                 readCellText(row.getCell(staffCol(STAFF_COL_RELIGION, hasLegacyCodeColumn)), formatter)));
@@ -1614,10 +1808,42 @@ public class StaffServiceImpl implements StaffService {
         }
         String key = normalizeLookupKey(normalized);
         return switch (key) {
-            case "HOAT DONG", "ACTIVE", "1" -> "ACTIVE";
-            case "KHONG HOAT DONG", "INACTIVE", "0" -> "INACTIVE";
-            default -> normalized.toUpperCase(Locale.ROOT);
+            case "DANG LAM VIEC", "ACTIVE", "1" -> "ACTIVE";
+            case "NGUNG HOAT DONG", "INACTIVE", "0" -> "INACTIVE";
+            default -> throw new UserMessageException("Trạng thái cán bộ không hợp lệ");
         };
+    }
+
+    private String staffGenderLabel(String gender) {
+        if (!StringUtils.hasText(gender)) {
+            return null;
+        }
+        return switch (gender.toUpperCase(Locale.ROOT)) {
+            case "MALE" -> "Nam";
+            case "FEMALE" -> "Nữ";
+            case "OTHER" -> "Khác";
+            default -> gender;
+        };
+    }
+
+    private String staffStatusLabel(String status) {
+        if (!StringUtils.hasText(status)) {
+            return null;
+        }
+        return "ACTIVE".equalsIgnoreCase(status) ? "Đang làm việc"
+                : "INACTIVE".equalsIgnoreCase(status) ? "Ngừng hoạt động" : status;
+    }
+
+    private String parseStaffEthnicityCell(String value) {
+        String normalized = normalizeNullable(value);
+        if (normalized == null) {
+            return null;
+        }
+        String key = normalizeLookupKey(normalized);
+        return STAFF_ETHNICITY_OPTIONS.stream()
+                .filter(item -> normalizeLookupKey(item).equals(key))
+                .findFirst()
+                .orElseThrow(() -> new UserMessageException("Dân tộc không hợp lệ"));
     }
 
     private String normalizeLookupKey(String value) {
@@ -1626,7 +1852,9 @@ public class StaffServiceImpl implements StaffService {
             return null;
         }
         String noAccent = Normalizer.normalize(normalized, Normalizer.Form.NFD)
-                .replaceAll("\\p{M}+", "");
+                .replaceAll("\\p{M}+", "")
+                .replace('đ', 'd')
+                .replace('Đ', 'D');
         return noAccent.trim().toUpperCase(Locale.ROOT).replaceAll("\\s+", " ");
     }
 
@@ -1643,6 +1871,69 @@ public class StaffServiceImpl implements StaffService {
 
     private String formatDate(LocalDate value) {
         return value == null ? null : value.format(DATE_FORMATTER);
+    }
+
+    private String buildExportInfoLine() {
+        String exportTime = LocalDateTime.now().format(EXPORT_TIME_FORMATTER);
+        String username = SecurityUtils.getCurrentUsername();
+        return "Thời gian tải: " + exportTime + " | Người tải: " + username;
+    }
+
+    private void createStaffEthnicitySheet(Workbook workbook) {
+        Sheet sheet = workbook.createSheet("DanToc");
+        CellStyle headerStyle = createExcelHeaderStyle(workbook);
+        CellStyle bodyStyle = createExcelBodyStyle(workbook);
+
+        createCell(sheet.createRow(0), 0, "Danh sách dân tộc hợp lệ", headerStyle);
+        createCell(sheet.createRow(1), 0,
+                "Cột Dân tộc trong sheet CanBo chỉ được nhập đúng một trong các giá trị dưới đây.",
+                bodyStyle);
+
+        Row headerRow = sheet.createRow(3);
+        createCell(headerRow, 0, "STT", headerStyle);
+        createCell(headerRow, 1, "Tên dân tộc", headerStyle);
+
+        int rowIndex = 4;
+        for (int i = 0; i < STAFF_ETHNICITY_OPTIONS.size(); i++) {
+            Row row = sheet.createRow(rowIndex++);
+            createCell(row, 0, i + 1, bodyStyle);
+            createCell(row, 1, STAFF_ETHNICITY_OPTIONS.get(i), bodyStyle);
+        }
+
+        autosize(sheet, 2);
+    }
+
+    private void addPdfHeaderCell(PdfPTable table, String text, com.lowagie.text.Font font) {
+        PdfPCell cell = new PdfPCell(new Phrase(text == null ? "" : text, font));
+        cell.setHorizontalAlignment(Element.ALIGN_CENTER);
+        cell.setVerticalAlignment(Element.ALIGN_MIDDLE);
+        cell.setPadding(6f);
+        cell.setBackgroundColor(new java.awt.Color(224, 242, 241));
+        table.addCell(cell);
+    }
+
+    private void addPdfBodyCell(PdfPTable table, String text, com.lowagie.text.Font font, int align) {
+        PdfPCell cell = new PdfPCell(new Phrase(text == null ? "" : text, font));
+        cell.setHorizontalAlignment(align);
+        cell.setVerticalAlignment(Element.ALIGN_MIDDLE);
+        cell.setPadding(5f);
+        table.addCell(cell);
+    }
+
+    private com.lowagie.text.Font createPdfFont(float size, int style) {
+        String fontPath = switch (style) {
+            case com.lowagie.text.Font.BOLD -> TIMES_FONT_BOLD_PATH;
+            case com.lowagie.text.Font.ITALIC -> TIMES_FONT_ITALIC_PATH;
+            default -> TIMES_FONT_REGULAR_PATH;
+        };
+        try {
+            if (Files.exists(Path.of(fontPath))) {
+                BaseFont baseFont = BaseFont.createFont(fontPath, BaseFont.IDENTITY_H, BaseFont.EMBEDDED);
+                return new com.lowagie.text.Font(baseFont, size, com.lowagie.text.Font.NORMAL);
+            }
+        } catch (Exception ignored) {
+        }
+        return com.lowagie.text.FontFactory.getFont(EXPORT_FONT_NAME, BaseFont.IDENTITY_H, true, size, style);
     }
 
     private CellStyle createExcelHeaderStyle(Workbook workbook) {
@@ -1716,6 +2007,18 @@ public class StaffServiceImpl implements StaffService {
         CellStyle style = workbook.createCellStyle();
         style.setWrapText(true);
         style.setAlignment(HorizontalAlignment.LEFT);
+        style.setVerticalAlignment(VerticalAlignment.CENTER);
+        Font font = workbook.createFont();
+        font.setFontHeightInPoints((short) 10);
+        font.setItalic(true);
+        font.setFontName(EXPORT_FONT_NAME);
+        style.setFont(font);
+        return style;
+    }
+
+    private CellStyle createExcelInfoStyle(Workbook workbook) {
+        CellStyle style = workbook.createCellStyle();
+        style.setAlignment(HorizontalAlignment.RIGHT);
         style.setVerticalAlignment(VerticalAlignment.CENTER);
         Font font = workbook.createFont();
         font.setFontHeightInPoints((short) 10);
