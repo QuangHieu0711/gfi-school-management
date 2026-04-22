@@ -1,0 +1,133 @@
+<section class="attendance-page">
+  <aside class="attendance-sidebar">
+    <div class="sidebar-header">
+      <h3>Khối lớp</h3>
+      @if (currentSchoolYear?.name) {
+        <span>{{ currentSchoolYear?.name }}</span>
+      }
+    </div>
+
+    <div class="grade-list">
+      @for (group of gradeClassGroups; track group.gradeLevelId) {
+        <div class="grade-card">
+          <div class="grade-title">{{ group.gradeLevelName }}</div>
+          <div class="class-list">
+            @for (classroom of group.classes; track classroom.id) {
+              <button
+                type="button"
+                class="class-chip"
+                [class.active]="selectedClassId === `${classroom.id}`"
+                (click)="selectClass(group, classroom)">
+                {{ classroom.name }}
+              </button>
+            }
+          </div>
+        </div>
+      }
+    </div>
+  </aside>
+
+  <div class="attendance-content">
+    <div class="filter-panel">
+      <div class="filter-grid">
+        <app-select-control
+          [item]="findFormControl($formItem, 'sessionType')"
+          [form]="form" />
+        <app-date-control
+          [item]="findFormControl($formItem, 'month')"
+          [form]="form" />
+        <app-date-control
+          [item]="findFormControl($formItem, 'attendanceDate')"
+          [form]="form" />
+      </div>
+
+      <div class="attendance-note">
+        Lưu ý: P - Nghỉ có phép; K - Nghỉ không phép; C - Có mặt; X - Trường hợp khác.
+      </div>
+    </div>
+
+    <div class="table-panel">
+      <div class="table-header">
+        <div>
+          <h2>Bảng điểm danh @if (selectedClassName) { - {{ selectedClassName }} }</h2>
+          <span>@if (monthlySheetLoaded) { Đã tải dữ liệu tháng } @else { Đang dùng dữ liệu ngày } </span>
+        </div>
+
+        <button
+          type="button"
+          class="save-all-btn"
+          matButton="filled"
+          (click)="saveAll()">
+          <app-icon icon="save" />
+          Lưu tất cả
+        </button>
+      </div>
+
+      <div class="attendance-table-wrap">
+        <table class="attendance-table">
+          <thead>
+            <tr>
+              <th class="stt-col">STT</th>
+              <th>Mã học sinh</th>
+              <th>Họ và tên</th>
+              <th>Trạng thái</th>
+              <th>Ghi chú</th>
+              <th class="action-col">Thao tác</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            @for (row of rows; track row.studentId; let index = $index) {
+              <tr>
+                <td class="stt-col">{{ index + 1 }}</td>
+                <td>{{ row.studentCode || '' }}</td>
+                <td class="name-col">{{ row.fullName }}</td>
+                <td class="status-cell">
+                  <mat-form-field
+                    appearance="outline"
+                    subscriptSizing="dynamic">
+                    <mat-select
+                      [value]="row.attendanceStatus"
+                      (valueChange)="updateRowStatus(row.studentId, $event)">
+                      <mat-option value="">Chọn trạng thái</mat-option>
+                      @for (option of attendanceStatusOptions; track option.value) {
+                        <mat-option [value]="option.value">{{ option.label }}</mat-option>
+                      }
+                    </mat-select>
+                  </mat-form-field>
+                </td>
+                <td class="note-cell">
+                  <mat-form-field
+                    appearance="outline"
+                    subscriptSizing="dynamic">
+                    <input
+                      matInput
+                      [value]="row.note"
+                      placeholder="Ghi chú"
+                      (input)="updateRowNote(row.studentId, $any($event.target).value)" />
+                  </mat-form-field>
+                </td>
+                <td class="action-col">
+                  <button
+                    type="button"
+                    matButton="outlined"
+                    (click)="saveRow(row)">
+                    Lưu
+                  </button>
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td
+                  class="empty-row"
+                  colspan="6">
+                  Chưa có dữ liệu học sinh của lớp đã chọn
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</section>
