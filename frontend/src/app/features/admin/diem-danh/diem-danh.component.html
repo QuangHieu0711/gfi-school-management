@@ -1,5 +1,4 @@
 <section class="attendance-page">
-  <!-- ── Sidebar ── -->
   <aside class="attendance-sidebar">
     <div class="sidebar-header">
       <h3>Khối lớp</h3>
@@ -39,49 +38,83 @@
     </div>
   </aside>
 
-  <!-- ── Nội dung chính ── -->
   <div class="attendance-content">
-    
-    <!-- ── Panel Nhóm Lọc & Chú Thích ── -->
     <div class="filter-panel">
-      <div class="filter-controls">
-        <app-select-control
-          [item]="findFormControl($formItem, 'sessionType')"
-          [form]="form" />
-        <app-date-control
-          class="capitalize-input"
-          [item]="findFormControl($formItem, 'month')"
-          [form]="form" />
+      <div class="filter-toolbar">
+        <div class="filter-controls">
+          <app-select-control
+            [item]="findFormControl($formItem, 'sessionType')"
+            [form]="form" />
+          <app-date-control
+            class="capitalize-input"
+            [item]="findFormControl($formItem, 'month')"
+            [form]="form" />
+        </div>
+
+        <div class="toolbar-actions">
+          <button
+            type="button"
+            color="primary"
+            matButton="filled"
+            class="btn-tight"
+            (click)="importAttendance()">
+            <mat-icon>file_upload</mat-icon>
+            Kết nạp
+          </button>
+          <button
+            type="button"
+            color="primary"
+            matButton="filled"
+            class="btn-tight"
+            (click)="exportExcel()">
+            <mat-icon>download</mat-icon>
+            Xuất Excel
+          </button>
+          <button
+            type="button"
+            color="primary"
+            matButton="filled"
+            class="btn-tight"
+            (click)="exportPdf()">
+            <mat-icon>download</mat-icon>
+            Xuất PDF
+          </button>
+        </div>
       </div>
 
-      <!-- Chú thích -->
       <div class="legend-bar">
         <span class="legend-item legend-p">
-          <span class="legend-dot"></span>P – Nghỉ có phép
+          <span class="legend-dot"></span>P - Nghỉ có phép
         </span>
         <span class="legend-item legend-k">
-          <span class="legend-dot"></span>K – Nghỉ không phép
+          <span class="legend-dot"></span>K - Nghỉ không phép
         </span>
         <span class="legend-item legend-x">
-          <span class="legend-dot"></span>X – Trường hợp khác(Đi muộn, về sớm, bỏ tiết)
+          <span class="legend-dot"></span>X - Trường hợp khác (Đi muộn, về sớm, bỏ tiết)
         </span>
         <span class="legend-item legend-c">
-          <span class="legend-dot"></span>C – Có mặt
+          <span class="legend-dot"></span>C - Có mặt
         </span>
       </div>
     </div>
 
-    <!-- ── Panel Bảng Điểm Danh ── -->
     <div class="table-panel">
-      <!-- ── Tiêu đề và nút bấm bảng ── -->
       <div class="table-header">
-        <h2>Bảng Điểm Danh@if (selectedClassName) { – {{ selectedClassName }} }</h2>
+        <h2>Bảng Điểm Danh@if (selectedClassName) { - {{ selectedClassName }} }</h2>
         <div class="header-actions">
-          <button type="button" class="btn-excel" (click)="exportExcel()">
-            <mat-icon>download</mat-icon>Xuất Excel
+          <button
+            type="button"
+            color="primary"
+            matButton="outlined"
+            (click)="cancelChanges()">
+            Hủy
           </button>
-          <button type="button" class="save-all-btn" matButton="filled" (click)="saveAll()">
-            <mat-icon>save</mat-icon>Lưu
+          <button
+            type="button"
+            color="primary"
+            matButton="filled"
+            (click)="saveAll()">
+            Lưu
           </button>
         </div>
       </div>
@@ -89,7 +122,6 @@
       <div class="attendance-table-wrap">
         <table class="attendance-table">
           <thead>
-            <!-- Hàng số ngày -->
             <tr class="head-row-days">
               <th class="col-stt sticky-stt" rowspan="2">STT</th>
               <th class="col-name sticky-name" rowspan="2">Họ và tên</th>
@@ -106,7 +138,6 @@
               <th class="col-summary" rowspan="2">P</th>
               <th class="col-summary" rowspan="2">X</th>
             </tr>
-            <!-- Hàng thứ -->
             <tr class="head-row-dow">
               @for (day of calendarDays; track day.date) {
                 <th
@@ -131,6 +162,7 @@
                     [class.cell-sat]="day.dayOfWeek === 'T7'"
                     [class.cell-sun]="day.dayOfWeek === 'CN'"
                     [class.cell-today]="day.date === todayStr"
+                    [class.cell-future]="isFutureDate(day.date)"
                     [class.status-p]="row.statusMap[day.date] === 'P'"
                     [class.status-k]="row.statusMap[day.date] === 'K'"
                     [class.status-x]="row.statusMap[day.date] === 'X'"
@@ -139,6 +171,7 @@
                       class="cell-input"
                       maxlength="1"
                       autocomplete="off"
+                      [readonly]="isFutureDate(day.date)"
                       [value]="getCellValue(row, day.date)"
                       (keydown)="onCellKeydown($event, row.studentId, day.date)"
                       (input)="onCellInput(row.studentId, day.date, $event)" />

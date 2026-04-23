@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Component, Injector, TemplateRef, ViewChild } from '@angular/core';
 import { MtxGridColumn } from '@ng-matero/extensions/grid';
 import { AppTableComponent } from '@components/app-table/app-table.component';

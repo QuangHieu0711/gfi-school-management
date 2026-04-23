@@ -16,24 +16,24 @@
   background: #fff;
   border-right: 1px solid #d8e4e8;
   min-height: 100%;
-  padding: 14px 8px;
+  padding: 18px 12px 18px 18px;
 }
 
 .sidebar-header {
   display: flex;
   flex-direction: column;
-  gap: 3px;
-  margin-bottom: 10px;
-  padding: 0 12px;
+  gap: 4px;
+  margin-bottom: 12px;
+  padding: 0 14px;
 
-  h3 { margin: 0; color: #104f5b; font-size: 13.5px; font-weight: 800; }
-  span { color: #6a7e86; font-size: 12.5px; }
+  h3 { margin: 0; color: #104f5b; font-size: 16px; font-weight: 800; }
+  span { color: #6a7e86; font-size: 14px; }
 }
 
 .grade-list {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 6px;
   height: calc(100vh - 230px);
   overflow: auto;
 }
@@ -45,23 +45,23 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 7px 12px;
+  padding: 8px 14px;
   border: 0;
   background: transparent;
   cursor: pointer;
   text-align: left;
-  border-radius: 6px;
+  border-radius: 10px;
   transition: background 0.12s;
   &:hover { background: #f0f6f7; }
 }
-.grade-arrow { width: 16px; height: 16px; font-size: 16px; line-height: 16px; color: #4e7280; flex-shrink: 0; }
-.grade-title { color: #153947; font-weight: 700; font-size: 13.5px; }
+.grade-arrow { width: 16px; height: 16px; font-size: 17px; line-height: 16px; color: #4e7280; flex-shrink: 0; }
+.grade-title { color: #153947; font-weight: 700; font-size: 16px; }
 
 .class-list {
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  padding: 2px 0 6px 28px;
+  gap: 6px;
+  padding: 4px 0 10px 30px;
 }
 
 .class-chip {
@@ -70,14 +70,14 @@
   background: transparent;
   color: #1d3942;
   font-weight: 500;
-  font-size: 13.5px;
+  font-size: 16px;
   text-align: left;
-  padding: 8px 14px;
+  padding: 10px 16px;
   cursor: pointer;
   transition: background 0.12s, color 0.12s;
-  width: 100%;
+  width: calc(100% - 10px);
   &:hover { background: #f1f7f8; }
-  &.active { background: #68a7b0; color: #1c3942; font-weight: 700; }
+  &.active { background: #68a7b0; color: #fff; font-weight: 700; }
 }
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -110,6 +110,14 @@
   gap: 16px;
 }
 
+.filter-toolbar {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
 .filter-controls {
   display: flex;
   align-items: flex-end;
@@ -118,6 +126,27 @@
   app-select-control,
   app-date-control {
     min-width: 220px;
+  }
+}
+
+.toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.btn-tight {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 40px;
+  white-space: nowrap;
+
+  mat-icon {
+    width: 18px;
+    height: 18px;
+    font-size: 18px;
   }
 }
 
@@ -178,44 +207,19 @@
   align-items: center;
 }
 
-.btn-excel {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  padding: 6px 14px;
-  border: 1px solid #d0e4e8;
-  border-radius: 6px;
-  background: #fff;
-  color: #3b7681;
-  font-weight: 500;
-  font-size: 13px;
-  cursor: pointer;
-  transition: background 0.13s;
-  mat-icon { font-size: 18px; width: 18px; height: 18px; }
-  &:hover { background: #f0f6f7; }
-}
-
-.save-all-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  border-radius: 6px;
-  min-width: 90px;
-  mat-icon { font-size: 18px; width: 18px; height: 18px; }
-}
-
 // ────────────────────────────────────────────────────────────────────────────
 // Bảng
 // ────────────────────────────────────────────────────────────────────────────
 .attendance-table-wrap {
   overflow: auto;
   border: 1px solid #e1ebed;
-  border-radius: 8px;
+  border-radius: 14px;
   max-height: calc(100vh - 350px);
 }
 
 .attendance-table {
-  border-collapse: collapse;
+  border-collapse: separate;
+  border-spacing: 0;
   font-size: 13px;
   min-width: max-content;
   width: 100%;
@@ -227,22 +231,24 @@
     z-index: 2;
     background: #dcecf1; // xanh xám cực kỳ nhạt, gần như trắng
     color: #0f1720;      // font màu xanh đậm
-    font-weight: 500;
-    padding: 6px 3px;
+    font-weight: 600;
+    padding: 0 8px;
     white-space: nowrap;
     border-right: 1px solid #d7d7d7;
     border-bottom: 1px solid #d7d7d7;
     text-align: center;
     font-size: 13px;
+    height: 42px;
   }
 
   // ── Hàng thứ (T2, T3...) ──
   thead tr.head-row-dow th {
     background: #dcecf1;
     font-weight: 500;
-    font-size: 13px;
-    padding: 6px 3px;
-    top: 29px;
+    font-size: 12px;
+    padding: 0 6px;
+    top: 42px;
+    height: 34px;
   }
 
   // ── T7/CN header (màu nhạt hơn) ──
@@ -252,12 +258,13 @@
 
   // ── Body ──
   tbody td {
-    border: 1px solid #e1ebed;
+    border-top: 1px solid #e8eef1;
+    border-right: 1px solid #e8eef1;
     padding: 0;
     vertical-align: middle;
     text-align: center;
     background: #fff;
-    height: 36px;
+    height: 42px;
   }
 
   tbody tr:hover td { background: #f1f6f8 !important; }
@@ -288,19 +295,28 @@ thead th.sticky-name {
   background: #dcecf1 !important;
 }
 
+thead tr.head-row-days th:first-child {
+  border-top-left-radius: 14px;
+}
+
+thead tr.head-row-days th:last-child {
+  border-top-right-radius: 14px;
+}
+
 // ────────────────────────────────────────────────────────────────────────────
 // Kích thước cột
 // ────────────────────────────────────────────────────────────────────────────
-.col-stt { width: 44px; min-width: 44px; font-weight: 500; font-size: 12.5px; color: #1c3942; }
+.col-stt { width: 52px; min-width: 52px; font-weight: 500; font-size: 12.5px; color: #1c3942; }
 .col-name {
-  min-width: 190px;
+  min-width: 170px;
+  width: 170px;
   text-align: left !important;
-  padding: 0 12px !important;
+  padding: 0 14px !important;
   font-weight: 500;
   color: #1c3942;
   white-space: nowrap;
 }
-.col-day { min-width: 28px; width: 28px; }
+.col-day { min-width: 34px; width: 34px; }
 
 // ────────────────────────────────────────────────────────────────────────────
 // Màu cuối tuần (ô body)
@@ -308,6 +324,7 @@ thead th.sticky-name {
 .day-cell.cell-sat { background: #ecfdf5 !important; } // xanh lá cực nhạt
 .day-cell.cell-sun { background: #fffbeb !important; } // vàng cực nhạt
 .day-cell.cell-today { background: #e0f2fe !important; }
+.day-cell.cell-future { background: #f8fafc !important; }
 
 // ────────────────────────────────────────────────────────────────────────────
 // Cell Input và màu nền Trạng thái
@@ -323,7 +340,7 @@ thead th.sticky-name {
 .cell-input {
   display: block;
   width: 100%;
-  height: 36px;
+  height: 42px;
   border: none;
   background: transparent;
   text-align: center;
@@ -338,18 +355,27 @@ thead th.sticky-name {
   &:focus { box-shadow: inset 0 0 0 2px rgba(0, 0, 0, 0.1); }
 }
 
+.cell-input[readonly] {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
 // Ô trống thì chữ màu tối để hiển thị khi nhập
 .day-cell:not(.status-p):not(.status-k):not(.status-x):not(.status-c) .cell-input {
   color: #1c3942;
 }
-.day-cell.status-p .cell-input { color: #15803d; }.day-cell.status-k .cell-input { color: #dc2626; }.day-cell.status-x .cell-input { color: #d97706; }.day-cell.status-c .cell-input { color: #2563eb; }
+
+.day-cell.status-p .cell-input { color: #15803d; }
+.day-cell.status-k .cell-input { color: #dc2626; }
+.day-cell.status-x .cell-input { color: #d97706; }
+.day-cell.status-c .cell-input { color: #2563eb; }
 
 // ────────────────────────────────────────────────────────────────────────────
 // Summary columns
 // ────────────────────────────────────────────────────────────────────────────
 .col-summary {
-  min-width: 40px;
-  width: 40px;
+  min-width: 46px;
+  width: 46px;
   font-weight: 700;
   font-size: 13px;
   background: #f8fafb !important;
@@ -374,10 +400,7 @@ thead th.sticky-name {
 // ────────────────────────────────────────────────────────────────────────────
 @media (max-width: 960px) {
   .attendance-page { grid-template-columns: 1fr; }
+  .filter-toolbar,
   .filter-controls { flex-direction: column; align-items: flex-start; }
   .table-header { flex-direction: column; align-items: flex-start; }
 }
-
-
-
-

@@ -1,12 +1,16 @@
-import { HttpClient, HttpContext } from '@angular/common/http';
+import { HttpClient, HttpContext, HttpResponse } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { ERROR_CONTEXT } from '@constant/error.registry';
 import { environment } from '@env/environment';
 import { IResponse } from '@model/response.model';
+import { Observable } from 'rxjs';
 
 import {
   DiemDanhBulkSaveRequest,
+  DiemDanhExportRequest,
   DiemDanhHocSinhOption,
+  DiemDanhImportRequest,
+  DiemDanhImportResponseData,
   DiemDanhItemSaveRequest,
   DiemDanhKhoiNhomItem,
   DiemDanhNgayResponse,
@@ -90,6 +94,71 @@ export class DiemDanhService {
       payload,
       {
         context: this.silentContext,
+      }
+    );
+  }
+
+  export(payload: DiemDanhExportRequest): Observable<HttpResponse<Blob>> {
+    const { classroomId, year, month, sessionType, exportType } = payload;
+
+    return this.http.get(
+      `${this.attendanceBaseUrl}/${DIEM_DANH_API_ENDPOINT.EXPORT}`,
+      {
+        params: {
+          classroomId,
+          year,
+          month,
+          sessionType,
+          exportType,
+        },
+        observe: 'response',
+        responseType: 'blob',
+      }
+    );
+  }
+
+  importExcel(params: DiemDanhImportRequest, file: File) {
+    const formData = new FormData();
+    formData.append('file', file, file.name);
+
+    return this.http.post<IResponse<DiemDanhImportResponseData>>(
+      `${this.attendanceBaseUrl}/${DIEM_DANH_API_ENDPOINT.IMPORT_EXCEL}`,
+      formData,
+      {
+        params: {
+          classroomId: String(params.classroomId),
+          year: String(params.year),
+          month: String(params.month),
+          sessionType: params.sessionType,
+        },
+        context: this.silentContext,
+      }
+    );
+  }
+
+  downloadTemplate(params: DiemDanhImportRequest): Observable<HttpResponse<Blob>> {
+    return this.http.post(
+      `${this.attendanceBaseUrl}/${DIEM_DANH_API_ENDPOINT.EXCEL_TEMPLATE}`,
+      null,
+      {
+        params: {
+          classroomId: String(params.classroomId),
+          year: String(params.year),
+          month: String(params.month),
+          sessionType: params.sessionType,
+        },
+        observe: 'response',
+        responseType: 'blob',
+      }
+    );
+  }
+
+  downloadImportErrorFile(token: string): Observable<HttpResponse<Blob>> {
+    return this.http.get(
+      `${this.attendanceBaseUrl}/${DIEM_DANH_API_ENDPOINT.IMPORT_ERROR_FILE}/${encodeURIComponent(token)}`,
+      {
+        observe: 'response',
+        responseType: 'blob',
       }
     );
   }

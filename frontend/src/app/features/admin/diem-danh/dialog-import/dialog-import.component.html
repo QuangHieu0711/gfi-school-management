@@ -1,0 +1,62 @@
+<app-dialog-container [dialogActionTemplate]="Actions">
+  <ng-container header-template>
+    <div class="flex justify-between items-center gap-2 w-full">
+      <h6
+        mat-dialog-title
+        class="!p-0 !text-lg !font-semibold !text-night-500 max-w-full">
+        <span class="block max-w-full truncate">Kết nạp dữ liệu điểm danh</span>
+      </h6>
+      <button
+        color="primary"
+        matButton="text"
+        (click)="downloadTemplate()"
+        [disabled]="isDownloading || isSubmitting">
+        <app-icon icon="svg:download" />
+        {{ isDownloading ? 'Đang tải mẫu...' : 'Tải mẫu kết nạp' }}
+      </button>
+    </div>
+  </ng-container>
+
+  <app-form-control
+    #formTpl
+    [form]="form"
+    (submitEvent)="onSubmit()">
+    <div class="grid grid-cols-1 gap-3">
+      <app-select-control
+        [item]="findFormControl($formItem, 'sessionType')"
+        [form]="form"></app-select-control>
+      <app-date-control
+        [item]="findFormControl($formItem, 'month')"
+        [form]="form"></app-date-control>
+    </div>
+
+    <div class="mt-3">
+      <app-file-control
+        [item]="findFormControl($formItem, 'file')"
+        [form]="form"></app-file-control>
+    </div>
+  </app-form-control>
+</app-dialog-container>
+
+<ng-template #Actions>
+  <button
+    color="primary"
+    matButton="outlined"
+    mat-dialog-close
+    [disabled]="isSubmitting || isDownloading">
+    Hủy
+  </button>
+  <button
+    type="button"
+    color="primary"
+    matButton="filled"
+    (click)="formTpl.submit()"
+    [disabled]="isSubmitting || isDownloading"
+    cdkFocusInitial>
+    <app-icon
+      *ngIf="isSubmitting"
+      icon="svg:loading"
+      class="animate-spin" />
+    {{ isSubmitting ? 'Đang kết nạp...' : 'Nhập dữ liệu' }}
+  </button>
+</ng-template>

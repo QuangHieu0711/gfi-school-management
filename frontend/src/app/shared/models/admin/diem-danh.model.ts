@@ -4,6 +4,10 @@ export const DIEM_DANH_API_ENDPOINT = {
   BASE_PATH: 'attendances',
   DAILY_SHEET: 'daily-sheet',
   MONTHLY_SHEET: 'monthly-table',
+  EXPORT: 'export',
+  IMPORT_EXCEL: 'import-excel',
+  EXCEL_TEMPLATE: 'excel-template',
+  IMPORT_ERROR_FILE: 'import-error-file',
 };
 
 export const LOP_KHOI_NHOM_API_ENDPOINT = {
@@ -114,6 +118,29 @@ export interface DiemDanhBulkSaveRequest {
   classroomId: number;
   sessionType: string;
   items: DiemDanhBulkItemSaveRequest[];
+}
+
+export interface DiemDanhExportRequest {
+  classroomId: number;
+  year: number;
+  month: number;
+  sessionType: string;
+  exportType: 'EXCEL' | 'PDF';
+}
+
+export interface DiemDanhImportRequest {
+  classroomId: number;
+  year: number;
+  month: number;
+  sessionType: string;
+}
+
+export interface DiemDanhImportResponseData {
+  successCount?: number;
+  failedCount?: number;
+  hasErrorFile?: boolean;
+  errorFileToken?: string;
+  errorFileName?: string;
 }
 
 /** ViewModel cũ (ngày đơn) – giữ lại cho tương thích ngược */

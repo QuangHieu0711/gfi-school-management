@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { CommonModule } from '@angular/common';
 import { Component, Injector } from '@angular/core';
 import { ReactiveFormsModule } from '@angular/forms';
@@ -11,9 +12,12 @@ import {
 } from '@model/form-control.model';
 import { FORM_CONTROL_MODULE, MATERIAL_MODULE } from '@modules';
 import { AuthService } from '@service';
+import { defaultExportFileName, saveBlobAsFile } from '@utils/file-util';
 
 import {
   DiemDanhBulkItemSaveRequest,
+  DiemDanhExportRequest,
+  DiemDanhImportRequest,
   DiemDanhHocSinhOption,
   DiemDanhKhoiNhomItem,
   DiemDanhLopItem,
@@ -23,12 +27,12 @@ import {
 import { NamHocOptionResponse } from '@app/model/admin/nam-hoc.model';
 import { DiemDanhService } from '@app/service/admin/diem-danh.service';
 import { NamHocService } from '@app/service/admin/nam-hoc.service';
+import { DialogImportDiemDanhComponent } from './dialog-import/dialog-import.component';
 
-/** Ngày trong tháng để hiển thị cột */
 export interface CalendarDay {
-  date: string; // 'YYYY-MM-DD'
-  dayNum: number; // 1-31
-  dayOfWeek: string; // T2, T3, ... CN
+  date: string;
+  dayNum: number;
+  dayOfWeek: string;
   isWeekend: boolean;
 }
 
@@ -79,20 +83,14 @@ export class DiemDanhComponent extends ComponentBaseAbstract {
   selectedClassId?: string;
   selectedClassName = '';
   currentSchoolYear?: NamHocOptionResponse;
-
-  /** Các ngày trong tháng hiện tại */
   calendarDays: CalendarDay[] = [];
-
-  /** Rows học sinh – mỗi row có statusMap[date] = 'P'|'K'|'X'|'' */
   monthRows: DiemDanhThangRowViewModel[] = [];
 
-  /** Ngày hôm nay dạng 'YYYY-MM-DD' để highlight cột */
   readonly todayStr: string = (() => {
     const d = new Date();
     return `${d.getFullYear()}-${`${d.getMonth() + 1}`.padStart(2, '0')}-${`${d.getDate()}`.padStart(2, '0')}`;
   })();
 
-  /** Danh sách trạng thái hợp lệ */
   readonly validStatuses = new Set(['P', 'K', 'X', 'C', '']);
 
   get currentUnitId(): string | number | undefined {
@@ -132,7 +130,6 @@ export class DiemDanhComponent extends ComponentBaseAbstract {
     this.bindFilters();
   }
 
-  // ─── Sidebar ─────────────────────────────────────────────────────────────
   selectClass(group: DiemDanhKhoiNhomItem, classroom: DiemDanhLopItem): void {
     this.selectedGradeId = `${group.gradeLevelId}`;
     this.selectedClassId = `${classroom.id}`;
@@ -154,12 +151,16 @@ export class DiemDanhComponent extends ComponentBaseAbstract {
     return this.expandedGradeIds.has(`${groupId}`);
   }
 
-  // ─── Cell editing ────────────────────────────────────────────────────────
   onCellInput(studentId: string | number, date: string, event: Event): void {
+    if (this.isFutureDate(date)) {
+      (event.target as HTMLInputElement).value = this.getRowStatus(studentId, date);
+      return;
+    }
+
     const input = event.target as HTMLInputElement;
     const raw = input.value.toUpperCase().trim();
     const status = this.validStatuses.has(raw) ? raw : '';
-    input.value = status; // normalize immediately in DOM
+    input.value = status;
     this.setCellStatus(studentId, date, status);
   }
 
@@ -168,6 +169,11 @@ export class DiemDanhComponent extends ComponentBaseAbstract {
     studentId: string | number,
     date: string
   ): void {
+    if (this.isFutureDate(date)) {
+      event.preventDefault();
+      return;
+    }
+
     const key = event.key.toUpperCase();
     if (['P', 'K', 'X', 'C'].includes(key)) {
       event.preventDefault();
@@ -180,19 +186,6 @@ export class DiemDanhComponent extends ComponentBaseAbstract {
     }
   }
 
-  private setCellStatus(
-    studentId: string | number,
-    date: string,
-    status: string
-  ): void {
-    this.monthRows = this.monthRows.map((row) => {
-      if (`${row.studentId}` !== `${studentId}`) return row;
-      const newMap = { ...row.statusMap, [date]: status };
-      return { ...row, statusMap: newMap, ...this.calcSummary(newMap) };
-    });
-  }
-
-  // ─── Save ────────────────────────────────────────────────────────────────
   saveAll(): void {
     const sessionType = `${this.form.get('sessionType')?.value ?? ''}`;
     const classroomId = Number(this.selectedClassId ?? 0);
@@ -205,6 +198,8 @@ export class DiemDanhComponent extends ComponentBaseAbstract {
     const items: DiemDanhBulkItemSaveRequest[] = [];
 
     for (const day of this.calendarDays) {
+      if (this.isFutureDate(day.date)) continue;
+
       const students = this.monthRows
         .map((row) => {
           const status = (row.statusMap[day.date] ?? '').trim();
@@ -253,10 +248,68 @@ export class DiemDanhComponent extends ComponentBaseAbstract {
   }
 
   exportExcel(): void {
-    this.toastr.info('Tính năng xuất Excel đang được phát triển', 'Thông báo');
+    this.exportFile('EXCEL');
   }
 
-  // ─── Helper: calendar ─────────────────────────────────────────────────────
+  exportPdf(): void {
+    this.exportFile('PDF');
+  }
+
+  importAttendance(): void {
+    const classroomId = Number(this.selectedClassId ?? 0);
+    const sessionType = `${this.form.get('sessionType')?.value ?? ''}`;
+    const [yearStr, monthStr] = this.currentMonth.split('-');
+    const year = Number(yearStr);
+    const month = Number(monthStr);
+
+    if (!classroomId || !sessionType || !year || !month) {
+      this.toastr.warning('Chưa chọn đủ lớp, buổi hoặc tháng', 'Cảnh báo');
+      return;
+    }
+
+    const data: DiemDanhImportRequest = {
+      classroomId,
+      year,
+      month,
+      sessionType,
+    };
+
+    this.dialog.componentDialog(
+      DialogImportDiemDanhComponent,
+      {
+        width: '900px',
+        data,
+      },
+      (result?: {
+        refresh?: boolean;
+        month?: string;
+        sessionType?: string;
+      }) => {
+        if (result?.sessionType || result?.month) {
+          this.form.patchValue(
+            {
+              sessionType: result.sessionType ?? sessionType,
+              month: result.month ?? this.currentMonth,
+            },
+            { emitEvent: false }
+          );
+        }
+
+        if (result?.month) {
+          this.buildCalendarDays(result.month);
+        }
+
+        if (result?.refresh) {
+          this.loadMonthlySheet();
+        }
+      }
+    );
+  }
+
+  cancelChanges(): void {
+    this.loadMonthlySheet();
+  }
+
   buildCalendarDays(month: string): void {
     if (!month) return;
     const [yearStr, monthStr] = month.split('-');
@@ -266,7 +319,7 @@ export class DiemDanhComponent extends ComponentBaseAbstract {
 
     this.calendarDays = Array.from({ length: daysInMonth }, (_, i) => {
       const d = new Date(year, monthIndex, i + 1);
-      const dow = d.getDay(); // 0=Sun
+      const dow = d.getDay();
       return {
         date: `${year}-${`${monthIndex + 1}`.padStart(2, '0')}-${`${i + 1}`.padStart(2, '0')}`,
         dayNum: i + 1,
@@ -276,15 +329,70 @@ export class DiemDanhComponent extends ComponentBaseAbstract {
     });
   }
 
+  loadMonthlySheet(): void {
+    if (!this.selectedClassId) return;
+    const month = this.currentMonth;
+    const sessionType = `${this.form.get('sessionType')?.value ?? ''}`;
+    if (!month || !sessionType) return;
+
+    this.diemDanhService
+      .getMonthlySheet(this.selectedClassId, month, sessionType)
+      .subscribe({
+        next: ({ data }) => {
+          this.selectedClassName =
+            data?.classroomName?.trim() || this.selectedClassName;
+
+          const apiStudents: DiemDanhThangHocSinhApi[] =
+            (data?.students as DiemDanhThangHocSinhApi[]) ?? [];
+          if (apiStudents.length) {
+            this.monthRows = apiStudents.map((s) => this.mapMonthRow(s));
+            return;
+          }
+          this.loadStudentsFallback();
+        },
+        error: () => {
+          this.loadStudentsFallback();
+        },
+      });
+  }
+
+  getCellValue(row: DiemDanhThangRowViewModel, date: string): string {
+    return row.statusMap[date] ?? '';
+  }
+
+  isFutureDate(date: string): boolean {
+    return date > this.todayStr;
+  }
+
+  trackByDate(_: number, day: CalendarDay): string {
+    return day.date;
+  }
+
+  trackByStudent(_: number, row: DiemDanhThangRowViewModel): string {
+    return `${row.studentId}`;
+  }
+
+  private setCellStatus(
+    studentId: string | number,
+    date: string,
+    status: string
+  ): void {
+    this.monthRows = this.monthRows.map((row) => {
+      if (`${row.studentId}` !== `${studentId}`) return row;
+      const newMap = { ...row.statusMap, [date]: status };
+      return { ...row, statusMap: newMap, ...this.calcSummary(newMap) };
+    });
+  }
+
   private calcSummary(statusMap: Record<string, string>): {
     countP: number;
     countK: number;
     countX: number;
     totalAbsent: number;
   } {
-    let p = 0,
-      k = 0,
-      x = 0;
+    let p = 0;
+    let k = 0;
+    let x = 0;
     for (const s of Object.values(statusMap)) {
       if (s === 'P') p++;
       else if (s === 'K') k++;
@@ -293,7 +401,6 @@ export class DiemDanhComponent extends ComponentBaseAbstract {
     return { countP: p, countK: k, countX: x, totalAbsent: p + k + x };
   }
 
-  // ─── Data loading ─────────────────────────────────────────────────────────
   private loadInitialData(): void {
     if (!this.currentUnitId) {
       this.toastr.error('Không xác định được đơn vị đăng nhập', 'Thất bại');
@@ -359,33 +466,6 @@ export class DiemDanhComponent extends ComponentBaseAbstract {
       });
   }
 
-  loadMonthlySheet(): void {
-    if (!this.selectedClassId) return;
-    const month = this.currentMonth;
-    const sessionType = `${this.form.get('sessionType')?.value ?? ''}`;
-    if (!month || !sessionType) return;
-
-    this.diemDanhService
-      .getMonthlySheet(this.selectedClassId, month, sessionType)
-      .subscribe({
-        next: ({ data }) => {
-          this.selectedClassName =
-            data?.classroomName?.trim() || this.selectedClassName;
-
-          const apiStudents: DiemDanhThangHocSinhApi[] =
-            (data?.students as DiemDanhThangHocSinhApi[]) ?? [];
-          if (apiStudents.length) {
-            this.monthRows = apiStudents.map((s) => this.mapMonthRow(s));
-            return;
-          }
-          this.loadStudentsFallback();
-        },
-        error: () => {
-          this.loadStudentsFallback();
-        },
-      });
-  }
-
   private loadStudentsFallback(): void {
     if (!this.selectedClassId) return;
     this.diemDanhService
@@ -428,22 +508,124 @@ export class DiemDanhComponent extends ComponentBaseAbstract {
     };
   }
 
-  // ─── Utils ────────────────────────────────────────────────────────────────
   private toMonthInput(value: string | Date): string {
     const date = value instanceof Date ? value : new Date(value);
     if (Number.isNaN(date.getTime())) return '';
     return `${date.getFullYear()}-${`${date.getMonth() + 1}`.padStart(2, '0')}`;
   }
 
-  getCellValue(row: DiemDanhThangRowViewModel, date: string): string {
-    return row.statusMap[date] ?? '';
+  private exportFile(exportType: 'PDF' | 'EXCEL'): void {
+    const classroomId = Number(this.selectedClassId ?? 0);
+    const sessionType = `${this.form.get('sessionType')?.value ?? ''}`;
+    const [yearStr, monthStr] = this.currentMonth.split('-');
+    const year = Number(yearStr);
+    const month = Number(monthStr);
+
+    if (!classroomId || !sessionType || !year || !month) {
+      this.toastr.warning('Chưa chọn đủ lớp, buổi hoặc tháng', 'Cảnh báo');
+      return;
+    }
+
+    const payload: DiemDanhExportRequest = {
+      classroomId,
+      year,
+      month,
+      sessionType,
+      exportType,
+    };
+
+    this.diemDanhService.export(payload).subscribe({
+      next: (res: any) => {
+        const blob = this.extractBlob(res);
+        if (!blob) {
+          this.toastr.error(
+            `Xuất ${exportType} thất bại: Dữ liệu không hợp lệ`,
+            'Lỗi'
+          );
+          return;
+        }
+
+        const ext = exportType === 'PDF' ? 'pdf' : 'xlsx';
+        const fallbackName = defaultExportFileName('diem-danh', ext);
+        const disposition = this.getHeader(res, 'content-disposition');
+        const fileName = this.getFileNameFromDisposition(
+          disposition,
+          fallbackName
+        );
+
+        saveBlobAsFile(blob, fileName);
+        this.toastr.success(
+          `Tải xuống ${exportType} thành công`,
+          `Xuất ${exportType}`
+        );
+      },
+      error: (error) => {
+        this.toastr.error(
+          error?.error?.userMessage ??
+            error?.error?.message ??
+            `Xuất ${exportType} thất bại`,
+          'Lỗi'
+        );
+      },
+    });
   }
 
-  trackByDate(_: number, day: CalendarDay): string {
-    return day.date;
+  private extractBlob(res: any): Blob | null {
+    if (res instanceof Blob) return res;
+    if (res?.body instanceof Blob) return res.body;
+    if (res?.data instanceof Blob) return res.data;
+    return null;
   }
 
-  trackByStudent(_: number, row: DiemDanhThangRowViewModel): string {
-    return `${row.studentId}`;
+  private getHeader(res: any, headerName: string): string | null {
+    if (res?.headers?.get) return res.headers.get(headerName);
+
+    const headers = res?.headers;
+    if (headers && typeof headers === 'object') {
+      const key = headerName.toLowerCase();
+      return headers[headerName] ?? headers[key] ?? null;
+    }
+
+    return null;
+  }
+
+  private getFileNameFromDisposition(
+    disposition: string | null,
+    fallbackName: string
+  ): string {
+    if (!disposition) return fallbackName;
+
+    const match = disposition.match(/filename\*?=(?:UTF-8'')?"?([^";]+)/i);
+    if (!match?.[1]) return fallbackName;
+
+    const rawFileName = match[1].trim();
+
+    try {
+      return this.decodeMimeFileName(decodeURIComponent(rawFileName));
+    } catch {
+      return this.decodeMimeFileName(rawFileName);
+    }
+  }
+
+  private decodeMimeFileName(fileName: string): string {
+    const mimeMatch = fileName.match(/^=\?UTF-8\?Q\?(.+)\?=$/i);
+    if (!mimeMatch?.[1]) return fileName;
+
+    const normalized = mimeMatch[1].replace(/_/g, ' ');
+    const decoded = normalized.replace(/=([0-9A-F]{2})/gi, '%$1');
+
+    try {
+      return decodeURIComponent(decoded);
+    } catch {
+      return fileName;
+    }
+  }
+
+  private getRowStatus(studentId: string | number, date: string): string {
+    return (
+      this.monthRows.find((row) => `${row.studentId}` === `${studentId}`)?.statusMap[
+        date
+      ] ?? ''
+    );
   }
 }
