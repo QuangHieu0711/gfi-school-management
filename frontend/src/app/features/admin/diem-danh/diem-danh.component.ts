@@ -153,7 +153,10 @@ export class DiemDanhComponent extends ComponentBaseAbstract {
 
   onCellInput(studentId: string | number, date: string, event: Event): void {
     if (this.isFutureDate(date)) {
-      (event.target as HTMLInputElement).value = this.getRowStatus(studentId, date);
+      (event.target as HTMLInputElement).value = this.getRowStatus(
+        studentId,
+        date
+      );
       return;
     }
 

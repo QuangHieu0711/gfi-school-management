@@ -136,7 +136,9 @@ export class DiemDanhService {
     );
   }
 
-  downloadTemplate(params: DiemDanhImportRequest): Observable<HttpResponse<Blob>> {
+  downloadTemplate(
+    params: DiemDanhImportRequest
+  ): Observable<HttpResponse<Blob>> {
     return this.http.post(
       `${this.attendanceBaseUrl}/${DIEM_DANH_API_ENDPOINT.EXCEL_TEMPLATE}`,
       null,

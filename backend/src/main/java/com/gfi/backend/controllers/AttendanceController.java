@@ -73,7 +73,7 @@ public class AttendanceController extends ApiBaseController {
     }
 
     @org.springframework.web.bind.annotation.PostMapping(value = "/excel-template", produces = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-    @Operation(summary = "Tải mẫu import điểm danh", description = "ải file Excel mẫu import điểm danh theo tháng.")
+    @Operation(summary = "Tải mẫu import điểm danh", description = "Tải file Excel mẫu import điểm danh theo tháng.")
     public ResponseEntity<byte[]> exportExcelTemplate(
             @RequestParam Long classroomId,
             @RequestParam Integer year,
@@ -121,7 +121,7 @@ public class AttendanceController extends ApiBaseController {
     }
 
     @PutMapping("/bulk")
-    @Operation(summary = "Điểm danh học sinh", description = "ập nhật điểm danh cho học sinh trong một lớp học.")
+    @Operation(summary = "Điểm danh học sinh", description = "Cập nhật điểm danh cho học sinh trong một lớp học.")
     public ResponseEntity<ApiResult<String>> bulkUpsert(@Valid @RequestBody AttendanceBulkUpsertRequest request) {
         return executeApiResult(() -> {
             attendanceService.bulkUpsert(request);
