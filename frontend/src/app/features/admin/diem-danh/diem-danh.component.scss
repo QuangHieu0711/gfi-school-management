@@ -1,110 +1,167 @@
+// ────────────────────────────────────────────────────────────────────────────
+// Layout
+// ────────────────────────────────────────────────────────────────────────────
 .attendance-page {
   display: grid;
-  grid-template-columns: 280px minmax(0, 1fr);
-  gap: 16px;
+  grid-template-columns: 268px minmax(0, 1fr);
+  gap: 0;
   min-height: calc(100vh - 140px);
+  align-items: stretch;
 }
 
-.attendance-sidebar,
-.filter-panel,
-.table-panel {
-  background: #fff;
-  border: 1px solid #d8e4e8;
-  border-radius: 16px;
-  box-shadow: 0 8px 24px rgba(16, 79, 91, 0.06);
-}
-
+// ────────────────────────────────────────────────────────────────────────────
+// Sidebar
+// ────────────────────────────────────────────────────────────────────────────
 .attendance-sidebar {
-  padding: 18px 14px;
+  background: #fff;
+  border-right: 1px solid #d8e4e8;
+  min-height: 100%;
+  padding: 14px 8px;
 }
 
 .sidebar-header {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  margin-bottom: 14px;
+  gap: 3px;
+  margin-bottom: 10px;
+  padding: 0 12px;
 
-  h3 {
-    margin: 0;
-    color: #104f5b;
-    font-size: 18px;
-    font-weight: 800;
-  }
-
-  span {
-    color: #6a7e86;
-    font-size: 13px;
-  }
+  h3 { margin: 0; color: #104f5b; font-size: 13.5px; font-weight: 800; }
+  span { color: #6a7e86; font-size: 12.5px; }
 }
 
 .grade-list {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 2px;
+  height: calc(100vh - 230px);
+  overflow: auto;
 }
 
-.grade-card {
-  border: 1px solid #e2ecef;
-  border-radius: 14px;
-  padding: 12px;
-}
+.grade-card { padding: 0; }
 
-.grade-title {
-  margin-bottom: 10px;
-  color: #23424b;
-  font-weight: 700;
+.grade-toggle {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 12px;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  border-radius: 6px;
+  transition: background 0.12s;
+  &:hover { background: #f0f6f7; }
 }
+.grade-arrow { width: 16px; height: 16px; font-size: 16px; line-height: 16px; color: #4e7280; flex-shrink: 0; }
+.grade-title { color: #153947; font-weight: 700; font-size: 13.5px; }
 
 .class-list {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 2px;
+  padding: 2px 0 6px 28px;
 }
 
 .class-chip {
-  border: 1px solid #cfe0e5;
-  border-radius: 10px;
-  background: #f7fbfc;
-  color: #24505b;
-  font-weight: 700;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #1d3942;
+  font-weight: 500;
+  font-size: 13.5px;
   text-align: left;
-  padding: 10px 12px;
+  padding: 8px 14px;
   cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+  width: 100%;
+  &:hover { background: #f1f7f8; }
+  &.active { background: #68a7b0; color: #1c3942; font-weight: 700; }
 }
 
-.class-chip.active {
-  background: #68a7b0;
-  border-color: #68a7b0;
-  color: #fff;
-}
-
+// ────────────────────────────────────────────────────────────────────────────
+// Nội dung bên phải (2 Panel độc lập)
+// ────────────────────────────────────────────────────────────────────────────
 .attendance-content {
+  background: #fff;
+  padding: 16px 16px 0;
+  min-height: 100%;
   display: flex;
   flex-direction: column;
   gap: 16px;
 }
 
-.filter-panel {
-  padding: 18px 18px 12px;
-}
-
-.filter-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 14px;
-}
-
-.attendance-note {
-  margin-top: 10px;
-  color: #a05a3b;
-  font-size: 13px;
-  font-style: italic;
-}
-
+.filter-panel,
 .table-panel {
-  padding: 16px;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
 }
 
+// ────────────────────────────────────────────────────────────────────────────
+// Phần đầu (Bộ lọc & Chú thích)
+// ────────────────────────────────────────────────────────────────────────────
+.filter-panel {
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.filter-controls {
+  display: flex;
+  align-items: flex-end;
+  gap: 16px;
+
+  app-select-control,
+  app-date-control {
+    min-width: 220px;
+  }
+}
+
+// In hoa chữ 'T' của "Tháng 04/2026"
+::ng-deep .capitalize-input input {
+  text-transform: capitalize !important;
+}
+
+// ── Chú thích màu ──
+.legend-bar {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+
+.legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #6a7e86;
+}
+
+.legend-dot {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+// Bảng màu chú thích giống hình 2
+.legend-p .legend-dot { background: #7ddf89; }   // xanh lá
+.legend-k .legend-dot { background: #f79aa0; }   // đỏ nhạt
+.legend-x .legend-dot { background: #ffd76a; }   // vàng
+.legend-c .legend-dot { background: #8bbcfb; }   // xanh dương
+
+// ────────────────────────────────────────────────────────────────────────────
+// Table header
+// ────────────────────────────────────────────────────────────────────────────
+.table-panel {
+  padding: 0;
+}
 .table-header {
   display: flex;
   align-items: center;
@@ -112,93 +169,215 @@
   gap: 12px;
   margin-bottom: 12px;
 
-  h2 {
-    margin: 0 0 4px;
-    color: #104f5b;
-    font-size: 24px;
-    font-weight: 800;
-  }
+  h2 { margin: 0; color: #0f1720; font-size: 18px; font-weight: 600; line-height: 1.4; }
+}
 
-  span {
-    color: #6f8188;
-    font-size: 13px;
-  }
+.header-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.btn-excel {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 14px;
+  border: 1px solid #d0e4e8;
+  border-radius: 6px;
+  background: #fff;
+  color: #3b7681;
+  font-weight: 500;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 0.13s;
+  mat-icon { font-size: 18px; width: 18px; height: 18px; }
+  &:hover { background: #f0f6f7; }
 }
 
 .save-all-btn {
-  min-width: 140px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border-radius: 6px;
+  min-width: 90px;
+  mat-icon { font-size: 18px; width: 18px; height: 18px; }
 }
 
+// ────────────────────────────────────────────────────────────────────────────
+// Bảng
+// ────────────────────────────────────────────────────────────────────────────
 .attendance-table-wrap {
   overflow: auto;
-  border: 1px solid #d8e4e8;
-  border-radius: 12px;
+  border: 1px solid #e1ebed;
+  border-radius: 8px;
+  max-height: calc(100vh - 350px);
 }
 
 .attendance-table {
-  width: 100%;
   border-collapse: collapse;
+  font-size: 13px;
+  min-width: max-content;
+  width: 100%;
 
-  th {
-    background: #6aa8b1;
-    color: #fff;
-    font-weight: 700;
-    padding: 12px 10px;
-    border-right: 1px solid rgba(255, 255, 255, 0.35);
+  // ── Header chung ──
+  thead th {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: #dcecf1; // xanh xám cực kỳ nhạt, gần như trắng
+    color: #0f1720;      // font màu xanh đậm
+    font-weight: 500;
+    padding: 6px 3px;
     white-space: nowrap;
+    border-right: 1px solid #d7d7d7;
+    border-bottom: 1px solid #d7d7d7;
+    text-align: center;
+    font-size: 13px;
   }
 
-  td {
-    padding: 10px;
-    border: 1px solid #e4ecef;
+  // ── Hàng thứ (T2, T3...) ──
+  thead tr.head-row-dow th {
+    background: #dcecf1;
+    font-weight: 500;
+    font-size: 13px;
+    padding: 6px 3px;
+    top: 29px;
+  }
+
+  // ── T7/CN header (màu nhạt hơn) ──
+  thead th.head-sat { background: #ebfbee !important; color: #2e7d32; } // xanh lá siêu nhạt
+  thead th.head-sun { background: #fff8e1 !important; color: #e65100; } // vàng/cam siêu nhạt
+  thead th.head-today { background: #e3f2fd !important; color: #1565c0; } // xanh dương nhạt
+
+  // ── Body ──
+  tbody td {
+    border: 1px solid #e1ebed;
+    padding: 0;
     vertical-align: middle;
+    text-align: center;
     background: #fff;
+    height: 36px;
   }
 
-  tbody tr:nth-child(even) td {
-    background: #fafcfd;
-  }
+  tbody tr:hover td { background: #f1f6f8 !important; }
+  tbody tr:hover td.sticky-stt,
+  tbody tr:hover td.sticky-name { background: #eaf1f3 !important; }
 }
 
-.stt-col,
-.action-col {
-  width: 92px;
+// ────────────────────────────────────────────────────────────────────────────
+// Sticky columns – STT + Họ và tên
+// ────────────────────────────────────────────────────────────────────────────
+.sticky-stt {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  background: inherit;
+}
+
+.sticky-name {
+  position: sticky;
+  left: 44px;
+  z-index: 1;
+  background: inherit;
+}
+
+thead th.sticky-stt,
+thead th.sticky-name {
+  z-index: 4 !important;
+  background: #dcecf1 !important;
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// Kích thước cột
+// ────────────────────────────────────────────────────────────────────────────
+.col-stt { width: 44px; min-width: 44px; font-weight: 500; font-size: 12.5px; color: #1c3942; }
+.col-name {
+  min-width: 190px;
+  text-align: left !important;
+  padding: 0 12px !important;
+  font-weight: 500;
+  color: #1c3942;
+  white-space: nowrap;
+}
+.col-day { min-width: 28px; width: 28px; }
+
+// ────────────────────────────────────────────────────────────────────────────
+// Màu cuối tuần (ô body)
+// ────────────────────────────────────────────────────────────────────────────
+.day-cell.cell-sat { background: #ecfdf5 !important; } // xanh lá cực nhạt
+.day-cell.cell-sun { background: #fffbeb !important; } // vàng cực nhạt
+.day-cell.cell-today { background: #e0f2fe !important; }
+
+// ────────────────────────────────────────────────────────────────────────────
+// Cell Input và màu nền Trạng thái
+// ────────────────────────────────────────────────────────────────────────────
+.day-cell { padding: 0 !important; }
+
+// Đổ màu NHẠT như hình 2
+.day-cell.status-p { background: #dcfce7 !important; }
+.day-cell.status-k { background: #fee2e2 !important; }
+.day-cell.status-x { background: #fef3c7 !important; }
+.day-cell.status-c { background: #dbeafe !important; }
+
+.cell-input {
+  display: block;
+  width: 100%;
+  height: 36px;
+  border: none;
+  background: transparent;
   text-align: center;
+  font-size: 13px;
+  font-weight: 700;
+  color: #1c3942;       // Chữ màu trắng trên nền màu nhạt
+  cursor: pointer;
+  outline: none;
+  padding: 0;
+  text-transform: uppercase;
+  
+  &:focus { box-shadow: inset 0 0 0 2px rgba(0, 0, 0, 0.1); }
 }
 
-.name-col {
-  min-width: 260px;
-  font-weight: 600;
+// Ô trống thì chữ màu tối để hiển thị khi nhập
+.day-cell:not(.status-p):not(.status-k):not(.status-x):not(.status-c) .cell-input {
   color: #1c3942;
 }
+.day-cell.status-p .cell-input { color: #15803d; }.day-cell.status-k .cell-input { color: #dc2626; }.day-cell.status-x .cell-input { color: #d97706; }.day-cell.status-c .cell-input { color: #2563eb; }
 
-.status-cell,
-.note-cell {
-  min-width: 220px;
+// ────────────────────────────────────────────────────────────────────────────
+// Summary columns
+// ────────────────────────────────────────────────────────────────────────────
+.col-summary {
+  min-width: 40px;
+  width: 40px;
+  font-weight: 700;
+  font-size: 13px;
+  background: #f8fafb !important;
 }
 
-.status-cell mat-form-field,
-.note-cell mat-form-field {
-  width: 100%;
-}
+.summary-k { color: #dc2626; }
+.summary-p { color: #16a34a; }
+.summary-x { color: #d97706; }
 
+// ────────────────────────────────────────────────────────────────────────────
+// Empty row
+// ────────────────────────────────────────────────────────────────────────────
 .empty-row {
   text-align: center;
   padding: 28px 12px !important;
   color: #6f8188;
+  font-style: italic;
 }
 
-@media (max-width: 1080px) {
-  .attendance-page {
-    grid-template-columns: 1fr;
-  }
-
-  .filter-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .table-header {
-    flex-direction: column;
-    align-items: flex-start;
-  }
+// ────────────────────────────────────────────────────────────────────────────
+// Responsive
+// ────────────────────────────────────────────────────────────────────────────
+@media (max-width: 960px) {
+  .attendance-page { grid-template-columns: 1fr; }
+  .filter-controls { flex-direction: column; align-items: flex-start; }
+  .table-header { flex-direction: column; align-items: flex-start; }
 }
+
+
+
+

@@ -40,6 +40,9 @@ export const NAVIGATOR_ENDPOINT = {
     HOC_SINH: {
       BASE_PATH: 'hoc-sinh',
     },
+    DIEM_DANH: {
+      BASE_PATH: 'diem-danh',
+    },
     CAN_BO: {
       BASE_PATH: 'staff/profile',
       ASSIGNMENT_LIST: 'staff/assignment-list',

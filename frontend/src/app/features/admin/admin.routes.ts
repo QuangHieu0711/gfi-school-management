@@ -243,6 +243,23 @@ export const AdminRoutes: Routes = [
     ],
   },
   {
+    path: NAVIGATOR_ENDPOINT.ADMIN.DIEM_DANH.BASE_PATH,
+    component: AdminComponent,
+    children: [
+      {
+        path: '',
+        providers: [
+          provideState({ name: 'style', reducer: StyleReducer }),
+          provideEffects(StyleEffect),
+        ],
+        loadComponent: () =>
+          import('./diem-danh/diem-danh.component').then(
+            (m) => m.DiemDanhComponent
+          ),
+      },
+    ],
+  },
+  {
     path: NAVIGATOR_ENDPOINT.ADMIN.CURRICULUM_DISTRIBUTION.BASE_PATH,
     component: AdminComponent,
     children: [

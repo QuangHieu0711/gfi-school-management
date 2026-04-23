@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.gfi.backend.models.dtos.classroom.ClassroomCreateRequest;
 import com.gfi.backend.models.dtos.classroom.ClassroomFilterDto;
 import com.gfi.backend.models.dtos.classroom.ClassroomDetailDto;
+import com.gfi.backend.models.dtos.classroom.GradeLevelClassroomGroupDto;
 import com.gfi.backend.models.dtos.classroom.ClassroomListItemDto;
 import com.gfi.backend.models.dtos.classroom.ClassroomUpdateRequest;
 import com.gfi.backend.models.dtos.common.LookupItemDto;
@@ -71,6 +72,16 @@ public class ClassroomController extends ApiBaseController {
             @RequestParam(required = false) Long schoolYearId) {
         return executeApiResult(() -> ApiResult.success(classroomService.getOptions(unitId, gradeLevelId, schoolYearId),
                 "Hiển thị danh sách lớp thành công"));
+    }
+
+    @GetMapping("/grade-class-groups")
+    @DataScoped(feature = "CURRICULUM_DISTRIBUTION", action = ActionType.VIEW)
+    @Operation(summary = "Danh sách khối và lớp", description = "Lấy danh sách khối, trong mỗi khối có mảng lớp theo đơn vị và năm học.")
+    public ResponseEntity<ApiResult<List<GradeLevelClassroomGroupDto>>> getGradeClassGroups(
+            @RequestParam Long unitId,
+            @RequestParam Long schoolYearId) {
+        return executeApiResult(() -> ApiResult.success(classroomService.getGradeClassGroups(unitId, schoolYearId),
+                "Hiển thị danh sách khối và lớp thành công"));
     }
 
     /**

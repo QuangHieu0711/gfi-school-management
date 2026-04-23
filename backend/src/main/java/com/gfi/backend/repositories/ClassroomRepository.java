@@ -39,4 +39,9 @@ public interface ClassroomRepository extends JpaRepository<Classroom, Long>, Jpa
      * Find classrooms by unit, grade level, and school year (for options/dropdown)
      */
     List<Classroom> findByUnitIdAndGradeLevelIdAndSchoolYearId(Long unitId, Long gradeLevelId, Long schoolYearId);
+
+    List<Classroom> findByUnitIdAndSchoolYearIdAndDeletedFlagOrderByGradeLevelGradeNumberAscNameAsc(
+            Long unitId,
+            Long schoolYearId,
+            Integer deletedFlag);
 }

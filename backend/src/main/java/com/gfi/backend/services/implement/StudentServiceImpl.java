@@ -224,7 +224,8 @@ public class StudentServiceImpl implements StudentService {
                 .map(StudentEnrollment::getStudent)
                 .map(student -> LookupItemDto.builder()
                         .id(student.getId())
-                        .name(student.getStudentCode() + " - " + student.getFullName())
+                        .code(student.getStudentCode())
+                        .name(student.getFullName())
                         .build())
                 .toList();
     }

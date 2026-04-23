@@ -1,4 +1,5 @@
 <section class="attendance-page">
+  <!-- ── Sidebar ── -->
   <aside class="attendance-sidebar">
     <div class="sidebar-header">
       <h3>Khối lớp</h3>
@@ -9,118 +10,147 @@
 
     <div class="grade-list">
       @for (group of gradeClassGroups; track group.gradeLevelId) {
-        <div class="grade-card">
-          <div class="grade-title">{{ group.gradeLevelName }}</div>
-          <div class="class-list">
-            @for (classroom of group.classes; track classroom.id) {
-              <button
-                type="button"
-                class="class-chip"
-                [class.active]="selectedClassId === `${classroom.id}`"
-                (click)="selectClass(group, classroom)">
-                {{ classroom.name }}
-              </button>
-            }
-          </div>
+        <div class="grade-card" [class.expanded]="isGradeExpanded(group.gradeLevelId)">
+          <button
+            type="button"
+            class="grade-toggle"
+            (click)="toggleGrade(group.gradeLevelId)">
+            <mat-icon class="grade-arrow">
+              {{ isGradeExpanded(group.gradeLevelId) ? 'expand_more' : 'chevron_right' }}
+            </mat-icon>
+            <span class="grade-title">{{ group.gradeLevelName }}</span>
+          </button>
+
+          @if (isGradeExpanded(group.gradeLevelId)) {
+            <div class="class-list">
+              @for (classroom of group.classes; track classroom.id) {
+                <button
+                  type="button"
+                  class="class-chip"
+                  [class.active]="selectedClassId === `${classroom.id}`"
+                  (click)="selectClass(group, classroom)">
+                  {{ classroom.name }}
+                </button>
+              }
+            </div>
+          }
         </div>
       }
     </div>
   </aside>
 
+  <!-- ── Nội dung chính ── -->
   <div class="attendance-content">
+    
+    <!-- ── Panel Nhóm Lọc & Chú Thích ── -->
     <div class="filter-panel">
-      <div class="filter-grid">
+      <div class="filter-controls">
         <app-select-control
           [item]="findFormControl($formItem, 'sessionType')"
           [form]="form" />
         <app-date-control
+          class="capitalize-input"
           [item]="findFormControl($formItem, 'month')"
-          [form]="form" />
-        <app-date-control
-          [item]="findFormControl($formItem, 'attendanceDate')"
           [form]="form" />
       </div>
 
-      <div class="attendance-note">
-        Lưu ý: P - Nghỉ có phép; K - Nghỉ không phép; C - Có mặt; X - Trường hợp khác.
+      <!-- Chú thích -->
+      <div class="legend-bar">
+        <span class="legend-item legend-p">
+          <span class="legend-dot"></span>P – Nghỉ có phép
+        </span>
+        <span class="legend-item legend-k">
+          <span class="legend-dot"></span>K – Nghỉ không phép
+        </span>
+        <span class="legend-item legend-x">
+          <span class="legend-dot"></span>X – Trường hợp khác(Đi muộn, về sớm, bỏ tiết)
+        </span>
+        <span class="legend-item legend-c">
+          <span class="legend-dot"></span>C – Có mặt
+        </span>
       </div>
     </div>
 
+    <!-- ── Panel Bảng Điểm Danh ── -->
     <div class="table-panel">
+      <!-- ── Tiêu đề và nút bấm bảng ── -->
       <div class="table-header">
-        <div>
-          <h2>Bảng điểm danh @if (selectedClassName) { - {{ selectedClassName }} }</h2>
-          <span>@if (monthlySheetLoaded) { Đã tải dữ liệu tháng } @else { Đang dùng dữ liệu ngày } </span>
+        <h2>Bảng Điểm Danh@if (selectedClassName) { – {{ selectedClassName }} }</h2>
+        <div class="header-actions">
+          <button type="button" class="btn-excel" (click)="exportExcel()">
+            <mat-icon>download</mat-icon>Xuất Excel
+          </button>
+          <button type="button" class="save-all-btn" matButton="filled" (click)="saveAll()">
+            <mat-icon>save</mat-icon>Lưu
+          </button>
         </div>
-
-        <button
-          type="button"
-          class="save-all-btn"
-          matButton="filled"
-          (click)="saveAll()">
-          <app-icon icon="save" />
-          Lưu tất cả
-        </button>
       </div>
 
       <div class="attendance-table-wrap">
         <table class="attendance-table">
           <thead>
-            <tr>
-              <th class="stt-col">STT</th>
-              <th>Mã học sinh</th>
-              <th>Họ và tên</th>
-              <th>Trạng thái</th>
-              <th>Ghi chú</th>
-              <th class="action-col">Thao tác</th>
+            <!-- Hàng số ngày -->
+            <tr class="head-row-days">
+              <th class="col-stt sticky-stt" rowspan="2">STT</th>
+              <th class="col-name sticky-name" rowspan="2">Họ và tên</th>
+              @for (day of calendarDays; track day.date) {
+                <th
+                  class="col-day"
+                  [class.head-sat]="day.dayOfWeek === 'T7'"
+                  [class.head-sun]="day.dayOfWeek === 'CN'"
+                  [class.head-today]="day.date === todayStr">
+                  {{ day.dayNum }}
+                </th>
+              }
+              <th class="col-summary" rowspan="2">K</th>
+              <th class="col-summary" rowspan="2">P</th>
+              <th class="col-summary" rowspan="2">X</th>
+            </tr>
+            <!-- Hàng thứ -->
+            <tr class="head-row-dow">
+              @for (day of calendarDays; track day.date) {
+                <th
+                  class="col-day"
+                  [class.head-sat]="day.dayOfWeek === 'T7'"
+                  [class.head-sun]="day.dayOfWeek === 'CN'"
+                  [class.head-today]="day.date === todayStr">
+                  {{ day.dayOfWeek }}
+                </th>
+              }
             </tr>
           </thead>
 
           <tbody>
-            @for (row of rows; track row.studentId; let index = $index) {
+            @for (row of monthRows; track row.studentId; let i = $index) {
               <tr>
-                <td class="stt-col">{{ index + 1 }}</td>
-                <td>{{ row.studentCode || '' }}</td>
-                <td class="name-col">{{ row.fullName }}</td>
-                <td class="status-cell">
-                  <mat-form-field
-                    appearance="outline"
-                    subscriptSizing="dynamic">
-                    <mat-select
-                      [value]="row.attendanceStatus"
-                      (valueChange)="updateRowStatus(row.studentId, $event)">
-                      <mat-option value="">Chọn trạng thái</mat-option>
-                      @for (option of attendanceStatusOptions; track option.value) {
-                        <mat-option [value]="option.value">{{ option.label }}</mat-option>
-                      }
-                    </mat-select>
-                  </mat-form-field>
-                </td>
-                <td class="note-cell">
-                  <mat-form-field
-                    appearance="outline"
-                    subscriptSizing="dynamic">
+                <td class="col-stt sticky-stt">{{ i + 1 }}</td>
+                <td class="col-name sticky-name">{{ row.fullName }}</td>
+                @for (day of calendarDays; track day.date) {
+                  <td
+                    class="col-day day-cell"
+                    [class.cell-sat]="day.dayOfWeek === 'T7'"
+                    [class.cell-sun]="day.dayOfWeek === 'CN'"
+                    [class.cell-today]="day.date === todayStr"
+                    [class.status-p]="row.statusMap[day.date] === 'P'"
+                    [class.status-k]="row.statusMap[day.date] === 'K'"
+                    [class.status-x]="row.statusMap[day.date] === 'X'"
+                    [class.status-c]="row.statusMap[day.date] === 'C'">
                     <input
-                      matInput
-                      [value]="row.note"
-                      placeholder="Ghi chú"
-                      (input)="updateRowNote(row.studentId, $any($event.target).value)" />
-                  </mat-form-field>
-                </td>
-                <td class="action-col">
-                  <button
-                    type="button"
-                    matButton="outlined"
-                    (click)="saveRow(row)">
-                    Lưu
-                  </button>
-                </td>
+                      class="cell-input"
+                      maxlength="1"
+                      autocomplete="off"
+                      [value]="getCellValue(row, day.date)"
+                      (keydown)="onCellKeydown($event, row.studentId, day.date)"
+                      (input)="onCellInput(row.studentId, day.date, $event)" />
+                  </td>
+                }
+                <td class="col-summary summary-k">{{ row.countK }}</td>
+                <td class="col-summary summary-p">{{ row.countP }}</td>
+                <td class="col-summary summary-x">{{ row.countX }}</td>
               </tr>
             } @empty {
               <tr>
-                <td
-                  class="empty-row"
-                  colspan="6">
+                <td class="empty-row" [attr.colspan]="calendarDays.length + 5">
                   Chưa có dữ liệu học sinh của lớp đã chọn
                 </td>
               </tr>

@@ -2,6 +2,7 @@ package com.gfi.backend.services.implement;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -12,6 +13,8 @@ import com.gfi.backend.controllers.exceptions.UserMessageException;
 import com.gfi.backend.models.dtos.classroom.ClassroomCreateRequest;
 import com.gfi.backend.models.dtos.classroom.ClassroomDetailDto;
 import com.gfi.backend.models.dtos.classroom.ClassroomFilterDto;
+import com.gfi.backend.models.dtos.classroom.ClassroomGroupItemDto;
+import com.gfi.backend.models.dtos.classroom.GradeLevelClassroomGroupDto;
 import com.gfi.backend.models.dtos.classroom.ClassroomListItemDto;
 import com.gfi.backend.models.dtos.classroom.ClassroomUpdateRequest;
 import com.gfi.backend.models.dtos.common.LookupItemDto;
@@ -86,6 +89,41 @@ public class ClassroomServiceImpl implements ClassroomService {
                 classroomSpecification.buildSpecificationForOptions(unitId, gradeLevelId, schoolYearId, resolvedScopes))
                 .stream()
                 .map(item -> LookupItemDto.builder().id(item.getId()).name(item.getName()).build())
+                .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<GradeLevelClassroomGroupDto> getGradeClassGroups(Long unitId, Long schoolYearId) {
+        findUnit(unitId);
+        findSchoolYear(schoolYearId);
+        List<ResolvedScope> resolvedScopes = dataScopeFilterService.getResolvedScopes(FEATURE, ActionType.VIEW);
+
+        return classroomRepository.findByUnitIdAndSchoolYearIdAndDeletedFlagOrderByGradeLevelGradeNumberAscNameAsc(
+                unitId, schoolYearId, 0)
+                .stream()
+                .filter(classroom -> hasClassroomAccess(resolvedScopes, classroom))
+                .filter(classroom -> classroom.getGradeLevel() != null)
+                .collect(Collectors.groupingBy(
+                        classroom -> classroom.getGradeLevel().getId(),
+                        java.util.LinkedHashMap::new,
+                        Collectors.toList()))
+                .values()
+                .stream()
+                .map(group -> {
+                    GradeLevel gradeLevel = group.get(0).getGradeLevel();
+                    return GradeLevelClassroomGroupDto.builder()
+                            .gradeLevelId(gradeLevel.getId())
+                            .gradeLevelName(gradeLevel.getName())
+                            .gradeNumber(gradeLevel.getGradeNumber())
+                            .classes(group.stream()
+                                    .map(item -> ClassroomGroupItemDto.builder()
+                                            .id(item.getId())
+                                            .name(item.getName())
+                                            .build())
+                                    .toList())
+                            .build();
+                })
                 .toList();
     }
 

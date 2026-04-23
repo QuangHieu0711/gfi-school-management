@@ -1,12 +1,11 @@
-package com.gfi.backend.models.dtos.common;
+package com.gfi.backend.models.dtos.classroom;
 
 import lombok.Builder;
 import lombok.Data;
 
 @Data
 @Builder
-public class LookupItemDto {
+public class ClassroomGroupItemDto {
     private Long id;
-    private String code;
     private String name;
 }
