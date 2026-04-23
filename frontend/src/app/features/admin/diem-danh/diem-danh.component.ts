@@ -13,8 +13,8 @@ import { FORM_CONTROL_MODULE, MATERIAL_MODULE } from '@modules';
 import { AuthService } from '@service';
 
 import {
+  DiemDanhBulkItemSaveRequest,
   DiemDanhHocSinhOption,
-  DiemDanhItemSaveRequest,
   DiemDanhKhoiNhomItem,
   DiemDanhLopItem,
   DiemDanhThangHocSinhApi,
@@ -202,40 +202,54 @@ export class DiemDanhComponent extends ComponentBaseAbstract {
       return;
     }
 
-    const payload: DiemDanhItemSaveRequest[] = [];
+    const items: DiemDanhBulkItemSaveRequest[] = [];
 
-    for (const row of this.monthRows) {
-      for (const day of this.calendarDays) {
-        const status = (row.statusMap[day.date] ?? '').trim();
-        if (!status) continue;
-        payload.push({
-          classroomId,
-          studentId: Number(row.studentId),
-          attendanceDate: day.date,
-          sessionType,
-          status,
-        });
-      }
+    for (const day of this.calendarDays) {
+      const students = this.monthRows
+        .map((row) => {
+          const status = (row.statusMap[day.date] ?? '').trim();
+          if (!status) return null;
+
+          return {
+            studentId: Number(row.studentId),
+            studentName: row.fullName,
+            status,
+          };
+        })
+        .filter((student): student is NonNullable<typeof student> => !!student);
+
+      if (!students.length) continue;
+
+      items.push({
+        attendanceDate: day.date,
+        students,
+      });
     }
 
-    if (!payload.length) {
+    if (!items.length) {
       this.toastr.warning('Chưa nhập trạng thái điểm danh nào', 'Cảnh báo');
       return;
     }
 
-    this.diemDanhService.saveAttendanceBulk(payload).subscribe({
-      next: () => {
-        this.toastr.success('Đã lưu điểm danh cả tháng', 'Thành công');
-      },
-      error: (error) => {
-        this.toastr.error(
-          error?.error?.userMessage ??
-            error?.error?.message ??
-            'Lưu điểm danh thất bại',
-          'Thất bại'
-        );
-      },
-    });
+    this.diemDanhService
+      .saveAttendanceBulk({
+        classroomId,
+        sessionType,
+        items,
+      })
+      .subscribe({
+        next: () => {
+          this.toastr.success('Lưu điểm danh thành công', 'Thành công');
+        },
+        error: (error) => {
+          this.toastr.error(
+            error?.error?.userMessage ??
+              error?.error?.message ??
+              'Lưu điểm danh thất bại',
+            'Thất bại'
+          );
+        },
+      });
   }
 
   exportExcel(): void {
@@ -282,7 +296,7 @@ export class DiemDanhComponent extends ComponentBaseAbstract {
   // ─── Data loading ─────────────────────────────────────────────────────────
   private loadInitialData(): void {
     if (!this.currentUnitId) {
-      this.toastr.warning('Không xác định được đơn vị đăng nhập', 'Cảnh báo');
+      this.toastr.error('Không xác định được đơn vị đăng nhập', 'Thất bại');
       return;
     }
 
@@ -355,6 +369,9 @@ export class DiemDanhComponent extends ComponentBaseAbstract {
       .getMonthlySheet(this.selectedClassId, month, sessionType)
       .subscribe({
         next: ({ data }) => {
+          this.selectedClassName =
+            data?.classroomName?.trim() || this.selectedClassName;
+
           const apiStudents: DiemDanhThangHocSinhApi[] =
             (data?.students as DiemDanhThangHocSinhApi[]) ?? [];
           if (apiStudents.length) {
@@ -401,14 +418,11 @@ export class DiemDanhComponent extends ComponentBaseAbstract {
   private mapMonthRow(
     student: DiemDanhThangHocSinhApi
   ): DiemDanhThangRowViewModel {
-    const statusMap: Record<string, string> = {};
-    for (const att of student.attendances ?? []) {
-      statusMap[att.date] = att.status ?? '';
-    }
+    const statusMap = { ...(student.attendance ?? {}) };
     return {
       studentId: student.studentId ?? 0,
       studentCode: student.studentCode ?? '',
-      fullName: student.fullName ?? '',
+      fullName: student.studentName ?? '',
       statusMap,
       ...this.calcSummary(statusMap),
     };

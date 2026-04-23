@@ -1,9 +1,9 @@
 import { ID_TYPE } from '@model/response.model';
 
 export const DIEM_DANH_API_ENDPOINT = {
-  BASE_PATH: 'attendance',
+  BASE_PATH: 'attendances',
   DAILY_SHEET: 'daily-sheet',
-  MONTHLY_SHEET: 'monthly-sheet',
+  MONTHLY_SHEET: 'monthly-table',
 };
 
 export const LOP_KHOI_NHOM_API_ENDPOINT = {
@@ -54,8 +54,8 @@ export interface DiemDanhNgayResponse {
 
 /** Một ô điểm danh trong tháng: ngày + trạng thái */
 export interface DiemDanhThangOHocSinh {
-  date: string;        // 'YYYY-MM-DD'
-  status: string;      // 'P','K','X','C' hoặc ''
+  date: string; // 'YYYY-MM-DD'
+  status: string; // 'P','K','X','C' hoặc ''
   note?: string;
 }
 
@@ -76,15 +76,16 @@ export interface DiemDanhThangRowViewModel {
 export interface DiemDanhThangHocSinhApi {
   studentId?: ID_TYPE;
   studentCode?: string;
-  fullName?: string;
-  attendances?: Array<{ date: string; status: string; note?: string }>;
+  studentName?: string;
+  attendance?: Record<string, string>;
 }
 
 export interface DiemDanhThangResponse {
-  classroom?: { id?: ID_TYPE; name?: string };
-  month?: string;
+  classroomId?: ID_TYPE;
+  classroomName?: string;
+  year?: number;
+  month?: number;
   sessionType?: string;
-  days?: unknown[];
   students?: DiemDanhThangHocSinhApi[];
 }
 
@@ -95,6 +96,24 @@ export interface DiemDanhItemSaveRequest {
   sessionType: string;
   status: string;
   note?: string;
+}
+
+export interface DiemDanhBulkStudentSaveRequest {
+  studentId: number;
+  studentName?: string;
+  status: string;
+  note?: string;
+}
+
+export interface DiemDanhBulkItemSaveRequest {
+  attendanceDate: string;
+  students: DiemDanhBulkStudentSaveRequest[];
+}
+
+export interface DiemDanhBulkSaveRequest {
+  classroomId: number;
+  sessionType: string;
+  items: DiemDanhBulkItemSaveRequest[];
 }
 
 /** ViewModel cũ (ngày đơn) – giữ lại cho tương thích ngược */

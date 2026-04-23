@@ -1266,7 +1266,8 @@ public class StudentServiceImpl implements StudentService {
             createCell(groupHeaderRow, STUDENT_COL_MOTHER_NAME, "Mẹ", headerStyle);
             sheet.addMergedRegion(new CellRangeAddress(6, 6, STUDENT_COL_MOTHER_NAME, STUDENT_COL_MOTHER_IS_ETHNIC));
             createCell(groupHeaderRow, STUDENT_COL_PROFILE_POLICY_OBJECT, "Thông tin hỗ trợ", headerStyle);
-            sheet.addMergedRegion(new CellRangeAddress(6, 6, STUDENT_COL_PROFILE_POLICY_OBJECT, STUDENT_COL_PROFILE_SSO_CODE));
+            sheet.addMergedRegion(
+                    new CellRangeAddress(6, 6, STUDENT_COL_PROFILE_POLICY_OBJECT, STUDENT_COL_PROFILE_SSO_CODE));
 
             Row headerRow = sheet.createRow(7);
             String[] headers = buildStudentExportHeaders();
@@ -1840,18 +1841,6 @@ public class StudentServiceImpl implements StudentService {
                 || profile.getOtherSystemCode() != null
                 || profile.getSsoCode() != null;
         return hasData ? profile : null;
-    }
-
-    private Long parseLongCell(String value, String message) {
-        String normalized = normalizeNullable(value);
-        if (normalized == null) {
-            throw new UserMessageException(message);
-        }
-        try {
-            return Long.valueOf(normalized);
-        } catch (NumberFormatException ex) {
-            throw new UserMessageException(message);
-        }
     }
 
     private String formatDate(java.time.LocalDate value) {

@@ -5,6 +5,7 @@ import { environment } from '@env/environment';
 import { IResponse } from '@model/response.model';
 
 import {
+  DiemDanhBulkSaveRequest,
   DiemDanhHocSinhOption,
   DiemDanhItemSaveRequest,
   DiemDanhKhoiNhomItem,
@@ -62,10 +63,17 @@ export class DiemDanhService {
     month: string,
     sessionType: string
   ) {
+    const [year, monthValue] = `${month}`.split('-');
+
     return this.http.get<IResponse<DiemDanhThangResponse>>(
       `${this.attendanceBaseUrl}/${DIEM_DANH_API_ENDPOINT.MONTHLY_SHEET}`,
       {
-        params: { classroomId, month, sessionType },
+        params: {
+          classroomId,
+          year: Number(year),
+          month: Number(monthValue),
+          sessionType,
+        },
       }
     );
   }
@@ -76,7 +84,7 @@ export class DiemDanhService {
     });
   }
 
-  saveAttendanceBulk(payload: DiemDanhItemSaveRequest[]) {
+  saveAttendanceBulk(payload: DiemDanhBulkSaveRequest) {
     return this.http.put<IResponse<unknown>>(
       `${this.attendanceBaseUrl}/bulk`,
       payload,
