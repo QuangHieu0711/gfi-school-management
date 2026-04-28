@@ -1,0 +1,10 @@
+{"current_steps": 10, "total_steps": 2469, "loss": 3.042733383178711, "lr": 1.4516129032258066e-05, "epoch": 0.0121580547112462, "percentage": 0.41, "elapsed_time": "0:00:57", "remaining_time": "3:55:57"}
+{"current_steps": 10, "total_steps": 2469, "loss": 3.042709159851074, "lr": 1.4516129032258066e-05, "epoch": 0.0121580547112462, "percentage": 0.41, "elapsed_time": "0:00:57", "remaining_time": "3:56:42"}
+{"current_steps": 20, "total_steps": 2469, "loss": 2.788570022583008, "lr": 3.0645161290322585e-05, "epoch": 0.0243161094224924, "percentage": 0.81, "elapsed_time": "0:01:54", "remaining_time": "3:53:52"}
+{"current_steps": 20, "total_steps": 2469, "loss": 2.788739776611328, "lr": 3.0645161290322585e-05, "epoch": 0.0243161094224924, "percentage": 0.81, "elapsed_time": "0:01:54", "remaining_time": "3:54:09"}
+{"current_steps": 30, "total_steps": 2469, "loss": 2.3158435821533203, "lr": 4.67741935483871e-05, "epoch": 0.0364741641337386, "percentage": 1.22, "elapsed_time": "0:02:51", "remaining_time": "3:52:13"}
+{"current_steps": 30, "total_steps": 2469, "loss": 2.3157722473144533, "lr": 4.67741935483871e-05, "epoch": 0.0364741641337386, "percentage": 1.22, "elapsed_time": "0:02:51", "remaining_time": "3:52:30"}
+{"current_steps": 40, "total_steps": 2469, "loss": 1.9893661499023438, "lr": 6.290322580645161e-05, "epoch": 0.0486322188449848, "percentage": 1.62, "elapsed_time": "0:03:47", "remaining_time": "3:50:39"}
+{"current_steps": 40, "total_steps": 2469, "loss": 1.9892707824707032, "lr": 6.290322580645161e-05, "epoch": 0.0486322188449848, "percentage": 1.62, "elapsed_time": "0:03:48", "remaining_time": "3:50:53"}
+{"current_steps": 50, "total_steps": 2469, "loss": 1.7373577117919923, "lr": 7.903225806451613e-05, "epoch": 0.060790273556231005, "percentage": 2.03, "elapsed_time": "0:04:44", "remaining_time": "3:49:46"}
+{"current_steps": 50, "total_steps": 2469, "loss": 1.7372671127319337, "lr": 7.903225806451613e-05, "epoch": 0.060790273556231005, "percentage": 2.03, "elapsed_time": "0:04:44", "remaining_time": "3:49:48"}

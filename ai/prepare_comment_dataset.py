@@ -7,40 +7,137 @@ import unicodedata
 from pathlib import Path
 from typing import Iterable
 
+import matplotlib.font_manager as font_manager
 import matplotlib.pyplot as plt
 import pandas as pd
 
 
-SUBJECT_FILE_MAP = {
+RAW_DATA_DIR = Path("data/raw")
+OUTPUT_DATA_DIR = Path("data/processed")
+
+SUBJECT_NAME_MAP = {
+    # Đạo đức
     "DD": "Đạo đức",
+    "ĐĐ": "Đạo đức",
+    "DAO DUC": "Đạo đức",
+    "DAODUC": "Đạo đức",
+
+    # Khoa học
     "KH": "Khoa học",
-    "KHOC": "Khoa học",
-    "LSDL": "Lịch sử và Địa lý",
-    "T": "Toán",
-    "TNXH": "Tự nhiên xã hội",
+    "KHOA HOC": "Khoa học",
+    "KHOAHOC": "Khoa học",
+
+    # Tiếng Việt
     "TV": "Tiếng Việt",
+    "TIENG VIET": "Tiếng Việt",
+    "TIENGVIET": "Tiếng Việt",
+
+    # Toán
+    "T": "Toán",
+    "TOAN": "Toán",
+
+    # Tự nhiên và Xã hội
+    "TNXH": "Tự nhiên và Xã hội",
+    "TU NHIEN VA XA HOI": "Tự nhiên và Xã hội",
+    "TUNHIENVAXAHOI": "Tự nhiên và Xã hội",
+
+    # Lịch sử và Địa lí
+    "LSDL": "Lịch sử và Địa lí",
+    "LSĐL": "Lịch sử và Địa lí",
+    "LICH SU VA DIA LI": "Lịch sử và Địa lí",
+    "LICHSUVADIALI": "Lịch sử và Địa lí",
+
+    # Công nghệ
+    "CN": "Công nghệ",
+    "CONG NGHE": "Công nghệ",
+    "CONGNGHE": "Công nghệ",
+
+    # Hoạt động trải nghiệm
+    "HDTN": "Hoạt động trải nghiệm",
+    "HOAT DONG TRAI NGHIEM": "Hoạt động trải nghiệm",
+    "HOATDONGTRAINGHIEM": "Hoạt động trải nghiệm",
+
+    # Mĩ thuật
+    "MT": "Mĩ thuật",
+    "MI THUAT": "Mĩ thuật",
+    "MITHUAT": "Mĩ thuật",
+    "MY THUAT": "Mĩ thuật",
+    "MYTHUAT": "Mĩ thuật",
+
+    # Giáo dục thể chất
+    "GDTC": "Giáo dục thể chất",
+    "GIAO DUC THE CHAT": "Giáo dục thể chất",
+    "GIAODUCTHECHAT": "Giáo dục thể chất",
+
+    # Âm nhạc
+    "AN": "Âm nhạc",
+    "AM NHAC": "Âm nhạc",
+    "AMNHAC": "Âm nhạc",
+
+    # Tin học
+    "TH": "Tin học",
+    "TIN HOC": "Tin học",
+    "TINHOC": "Tin học",
+
+    # Tiếng Anh
+    "TA": "Tiếng Anh",
+    "TIENG ANH": "Tiếng Anh",
+    "TIENGANH": "Tiếng Anh",
 }
 
+EXPECTED_SUBJECTS = [
+    "Tiếng Việt",
+    "Toán",
+    "Đạo đức",
+    "Khoa học",
+    "Tự nhiên và Xã hội",
+    "Lịch sử và Địa lí",
+    "Công nghệ",
+    "Hoạt động trải nghiệm",
+    "Mĩ thuật",
+    "Giáo dục thể chất",
+    "Âm nhạc",
+    "Tin học",
+    "Tiếng Anh",
+]
+
 STANDARD_COLUMNS = [
+    "student_id",
+    "student_name",
     "class_name",
     "grade",
     "subject",
     "stage",
     "week",
     "lesson",
-    "level",
+    "lesson_title",
     "content",
+    "level",
+    "attendance_absent",
+    "attendance_full",
+    "participation_level",
+    "behavior_tag",
+    "textbook_series",
     "comment",
 ]
 
-DEFAULT_COLUMNS_NO_HEADER = [
+TONG_HOP_COLUMNS = [
+    "student_id",
+    "student_name",
     "class_name",
     "grade",
     "subject",
     "stage",
     "week",
     "lesson",
+    "lesson_title",
     "content",
+    "level",
+    "attendance_absent",
+    "attendance_full",
+    "participation_level",
+    "behavior_tag",
+    "textbook_series",
     "comment",
 ]
 
@@ -54,236 +151,169 @@ STAGE_MAP = {
 }
 
 LEVEL_MAP = {
+    "T": "Hoàn thành tốt",
     "HTT": "Hoàn thành tốt",
+    "H": "Hoàn thành",
     "HT": "Hoàn thành",
+    "C": "Chưa hoàn thành",
     "CHT": "Chưa hoàn thành",
 }
 
 INSTRUCTION_TEXT = (
     "Sinh nhận xét học bạ cho học sinh tiểu học dựa trên khối lớp, môn học, "
-    "giai đoạn đánh giá, mức độ học tập và nội dung kiến thức."
+    "giai đoạn đánh giá, tuần, tiết, mức độ học tập và nội dung kiến thức."
 )
 
 CANONICAL_ALIASES = {
-    "class_name": {
-        "class_name",
-        "class",
-        "lop",
-        "lớp",
-        "ten_lop",
-        "tên_lớp",
-    },
-    "grade": {
-        "grade",
-        "khoi",
-        "khối",
-        "khoi_lop",
-        "khối_lớp",
-        "grade_level",
-    },
-    "subject": {
-        "subject",
-        "mon",
-        "môn",
-        "mon_hoc",
-        "môn_học",
-        "ten_mon",
-        "tên_môn",
-        "subject_name",
-    },
-    "stage": {
-        "stage",
-        "giai_doan",
-        "giai_đoạn",
-        "dot",
-        "đợt",
-        "hoc_ky",
-        "học_kỳ",
-        "ky_danh_gia",
-        "kỳ_đánh_giá",
-        "term",
-    },
-    "week": {
-        "week",
-        "tuan",
-        "tuần",
-        "week_no",
-    },
-    "lesson": {
-        "lesson",
-        "tiet",
-        "tiết",
-        "period",
-        "lesson_no",
-    },
-    "level": {
-        "level",
-        "muc_do",
-        "mức_độ",
-        "xep_loai",
-        "xếp_loại",
-        "evaluation",
-    },
+    "student_id": {"student_id", "ma_hoc_sinh", "mã_học_sinh", "ma_hs", "id"},
+    "student_name": {"student_name", "ten_hoc_sinh", "tên_học_sinh", "ho_ten", "họ_tên"},
+    "class_name": {"class_name", "class", "lop", "lớp", "ten_lop", "tên_lớp"},
+    "grade": {"grade", "grade_level", "khoi", "khối", "khoi_lop", "khối_lớp"},
+    "subject": {"subject", "subject_name", "mon", "môn", "mon_hoc", "môn_học", "ten_mon", "tên_môn"},
+    "stage": {"stage", "term", "giai_doan", "giai_đoạn", "dot", "đợt", "hoc_ky", "học_kỳ"},
+    "week": {"week", "week_no", "tuan", "tuần"},
+    "lesson": {"lesson", "lesson_no", "tiet", "tiết", "period"},
+    "lesson_title": {"lesson_title", "ten_bai", "tên_bài", "bai_hoc", "bài_học"},
     "content": {
         "content",
+        "learning_objective",
         "noi_dung",
         "nội_dung",
         "kien_thuc",
         "kiến_thức",
         "yeu_cau_can_dat",
         "yêu_cầu_cần_đạt",
-        "learning_objective",
-        "lesson_title",
     },
-    "comment": {
-        "comment",
-        "nhan_xet",
-        "nhận_xét",
-        "remark",
-        "output",
-        "comment_text",
-    },
+    "level": {"level", "evaluation", "muc_do", "mức_độ", "xep_loai", "xếp_loại"},
+    "attendance_absent": {"attendance_absent", "vang", "vắng", "so_buoi_vang", "số_buổi_vắng"},
+    "attendance_full": {"attendance_full", "du", "đủ", "di_hoc_day_du", "đi_học_đầy_đủ"},
+    "participation_level": {"participation_level", "tham_gia", "muc_do_tham_gia", "mức_độ_tham_gia"},
+    "behavior_tag": {"behavior_tag", "hanh_vi", "hành_vi", "pham_chat", "phẩm_chất"},
+    "textbook_series": {"textbook_series", "bo_sach", "bộ_sách", "sach", "sách"},
+    "comment": {"comment", "comment_text", "nhan_xet", "nhận_xét", "remark", "output"},
 }
 
-COLUMN_PRIORITY = {
-    "content": [
-        "learning_objective",
-        "content",
-        "noi_dung",
-        "nội_dung",
-        "kien_thuc",
-        "kiến_thức",
-        "yeu_cau_can_dat",
-        "yêu_cầu_cần_đạt",
-        "lesson_title",
-    ],
-}
+CONTENT_PRIORITY = ["learning_objective", "content", "noi_dung", "nội_dung", "lesson_title"]
 
 
 def setup_logging() -> None:
     logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 
 
+def setup_matplotlib_font() -> None:
+    preferred_fonts = ["Segoe UI", "Arial", "Tahoma", "DejaVu Sans"]
+    available_fonts = {font.name for font in font_manager.fontManager.ttflist}
+    for font_name in preferred_fonts:
+        if font_name in available_fonts:
+            plt.rcParams["font.family"] = font_name
+            break
+    plt.rcParams["axes.unicode_minus"] = False
+
+
 def normalize_text(value: object) -> str | None:
     if pd.isna(value):
         return None
-    text = str(value).strip()
+    text = unicodedata.normalize("NFC", str(value)).strip()
+    text = re.sub(r"\s+", " ", text)
+    return text or None
+
+
+def strip_diacritics(text: str) -> str:
+    normalized = unicodedata.normalize("NFD", text)
+    return "".join(char for char in normalized if unicodedata.category(char) != "Mn")
+
+
+def slugify_header(value: object) -> str:
+    text = normalize_text(value)
+    if not text:
+        return ""
+    text = text.lower()
+    text = re.sub(r"[^\w\s]", " ", text, flags=re.UNICODE)
+    return re.sub(r"\s+", "_", text).strip("_")
+
+
+def subject_key(value: object) -> str | None:
+    text = normalize_text(value)
     if not text:
         return None
-    text = unicodedata.normalize("NFC", text)
-    text = re.sub(r"\s+", " ", text)
-    return text.strip()
+    plain = strip_diacritics(text).upper()
+    plain = re.sub(r"[^A-Z0-9]+", " ", plain).strip()
+    compact = plain.replace(" ", "")
+    return compact if compact in SUBJECT_NAME_MAP else plain
 
 
-def slugify_header(text: object) -> str:
-    normalized = normalize_text(text)
-    if not normalized:
-        return ""
-    lowered = normalized.lower()
-    lowered = re.sub(r"[^\w\s]", " ", lowered, flags=re.UNICODE)
-    lowered = re.sub(r"\s+", "_", lowered).strip("_")
-    return lowered
-
-
-def detect_subject_from_filename(file_path: Path) -> str | None:
-    return SUBJECT_FILE_MAP.get(file_path.stem.upper())
-
-
-def detect_subject_from_name(name: str) -> str | None:
-    return SUBJECT_FILE_MAP.get(normalize_text(name).upper()) if normalize_text(name) else None
+def canonical_subject(value: object) -> str | None:
+    text = normalize_text(value)
+    if not text:
+        return None
+    key = subject_key(text)
+    return SUBJECT_NAME_MAP.get(key or "", text)
 
 
 def discover_excel_files(base_dir: Path) -> list[Path]:
-    raw_dir = base_dir / "data" / "raw"
-    files = sorted(
-        [
-            path
-            for path in raw_dir.glob("*.xlsx")
-            if not path.name.startswith("~$")
-        ]
-    )
+    raw_dir = base_dir / RAW_DATA_DIR
+    files = sorted(path for path in raw_dir.glob("*.xlsx") if not path.name.startswith("~$"))
     if files:
         logging.info("Tìm thấy %s file Excel trong %s", len(files), raw_dir)
         return files
 
-    fallback_files = sorted(
-        [
-            path
-            for path in base_dir.glob("*.xlsx")
-            if not path.name.startswith("~$")
-        ]
-    )
+    fallback_files = sorted(path for path in base_dir.glob("*.xlsx") if not path.name.startswith("~$"))
     if fallback_files:
-        logging.warning(
-            "Không tìm thấy file trong %s. Sử dụng tạm %s file Excel ở thư mục gốc project.",
-            raw_dir,
-            len(fallback_files),
-        )
+        logging.warning("Không thấy file trong %s, dùng %s file Excel ở thư mục gốc.", raw_dir, len(fallback_files))
     return fallback_files
 
 
 def list_excel_sheets(file_path: Path) -> list[str]:
-    xls = pd.ExcelFile(file_path, engine="openpyxl")
-    return xls.sheet_names
+    return pd.ExcelFile(file_path, engine="openpyxl").sheet_names
 
 
-def has_header_row(df_preview: pd.DataFrame) -> bool:
-    if df_preview.empty:
+def has_header_row(preview_df: pd.DataFrame) -> bool:
+    if preview_df.empty:
         return False
-    first_row = df_preview.iloc[0].tolist()
-    normalized = {slugify_header(value) for value in first_row if slugify_header(value)}
-    if not normalized:
-        return False
-    all_aliases = set().union(*CANONICAL_ALIASES.values())
-    return len(normalized & all_aliases) >= 2
+    first_row_slugs = {slugify_header(value) for value in preview_df.iloc[0].tolist()}
+    first_row_slugs.discard("")
+    aliases = set().union(*CANONICAL_ALIASES.values())
+    return len(first_row_slugs & aliases) >= 2
 
 
-def read_excel_flexible(file_path: Path, sheet_name: str | int | None = 0) -> pd.DataFrame:
-    preview = pd.read_excel(file_path, sheet_name=sheet_name, header=None, nrows=3, engine="openpyxl")
-    if preview.empty:
+def read_excel_flexible(file_path: Path, sheet_name: str | int) -> pd.DataFrame:
+    preview_df = pd.read_excel(file_path, sheet_name=sheet_name, header=None, nrows=3, engine="openpyxl")
+    if preview_df.empty:
         return pd.DataFrame()
 
-    if has_header_row(preview):
+    if has_header_row(preview_df):
         df = pd.read_excel(file_path, sheet_name=sheet_name, engine="openpyxl")
     else:
         df = pd.read_excel(file_path, sheet_name=sheet_name, header=None, engine="openpyxl")
-        column_count = df.shape[1]
-        default_columns = DEFAULT_COLUMNS_NO_HEADER[:]
-        if column_count > len(default_columns):
-            extra_columns = [f"extra_{idx}" for idx in range(1, column_count - len(default_columns) + 1)]
-            default_columns.extend(extra_columns)
-        df.columns = default_columns[:column_count]
-    df = df.dropna(how="all").copy()
-    df = df.dropna(axis=1, how="all").copy()
+        columns = TONG_HOP_COLUMNS[: df.shape[1]]
+        if df.shape[1] > len(columns):
+            columns.extend(f"extra_{idx}" for idx in range(1, df.shape[1] - len(columns) + 1))
+        df.columns = columns
+
+    df = df.dropna(how="all").dropna(axis=1, how="all").copy()
     return df
 
 
 def standardize_columns(df: pd.DataFrame) -> pd.DataFrame:
-    column_groups: dict[str, list[str]] = {column: [] for column in STANDARD_COLUMNS}
-    slug_to_columns: dict[str, list[str]] = {}
+    source_by_slug: dict[str, list[object]] = {}
+    grouped_sources: dict[str, list[object]] = {column: [] for column in STANDARD_COLUMNS}
 
     for column in df.columns:
         slug = slugify_header(column)
-        slug_to_columns.setdefault(slug, []).append(column)
-        mapped = False
+        source_by_slug.setdefault(slug, []).append(column)
         for canonical_name, aliases in CANONICAL_ALIASES.items():
             if slug in aliases:
-                column_groups[canonical_name].append(column)
-                mapped = True
+                grouped_sources[canonical_name].append(column)
                 break
-        if not mapped and column in STANDARD_COLUMNS:
-            column_groups[column].append(column)
 
     standardized = pd.DataFrame(index=df.index)
     for canonical_name in STANDARD_COLUMNS:
-        source_columns = column_groups[canonical_name][:]
-        priority_slugs = COLUMN_PRIORITY.get(canonical_name, [])
-        if priority_slugs:
-            prioritized_columns: list[str] = []
-            for slug in priority_slugs:
-                prioritized_columns.extend(slug_to_columns.get(slug, []))
-            prioritized_columns.extend([col for col in source_columns if col not in prioritized_columns])
-            source_columns = prioritized_columns
+        source_columns = grouped_sources[canonical_name][:]
+        if canonical_name == "content":
+            prioritized: list[object] = []
+            for slug in CONTENT_PRIORITY:
+                prioritized.extend(source_by_slug.get(slug, []))
+            source_columns = prioritized + [column for column in source_columns if column not in prioritized]
 
         if not source_columns:
             standardized[canonical_name] = pd.NA
@@ -297,59 +327,25 @@ def standardize_columns(df: pd.DataFrame) -> pd.DataFrame:
     return standardized
 
 
-def fill_subject_column(df: pd.DataFrame, file_path: Path) -> pd.DataFrame:
-    detected_subject = detect_subject_from_filename(file_path)
-    if detected_subject is None and df["subject"].isna().all():
-        raise ValueError(
-            f"Không xác định được môn học từ tên file {file_path.name}. "
-            "Hãy dùng tên file đúng quy ước hoặc thêm cột subject."
-        )
+def fill_subject(df: pd.DataFrame, file_path: Path, sheet_name: str) -> pd.DataFrame:
+    df = df.copy()
+    df["subject"] = df["subject"].apply(canonical_subject)
+    fallback_subject = canonical_subject(sheet_name) or canonical_subject(file_path.stem)
 
-    df["subject"] = df["subject"].apply(normalize_text)
-    if detected_subject is not None:
-        df["subject"] = df["subject"].fillna(detected_subject)
-        df["subject"] = detected_subject
+    if df["subject"].isna().all() and fallback_subject is None:
+        raise ValueError(f"Không xác định được môn học từ file {file_path.name}, sheet {sheet_name}.")
+
+    if fallback_subject:
+        df["subject"] = df["subject"].fillna(fallback_subject)
     return df
 
 
-def fill_subject_column_with_fallback(
-    df: pd.DataFrame,
-    file_path: Path,
-    sheet_name: str | None = None,
-) -> pd.DataFrame:
-    detected_subject = None
-    if sheet_name:
-        detected_subject = detect_subject_from_name(sheet_name)
-    if detected_subject is None:
-        detected_subject = detect_subject_from_filename(file_path)
-
-    if detected_subject is None and df["subject"].isna().all():
-        raise ValueError(
-            f"Không xác định được môn học từ file {file_path.name}"
-            + (f", sheet {sheet_name}" if sheet_name else "")
-            + ". Hãy dùng tên file/sheet đúng quy ước hoặc thêm cột subject."
-        )
-
-    df["subject"] = df["subject"].apply(normalize_text)
-    if detected_subject is not None:
-        df["subject"] = detected_subject
-    return df
-
-
-def extract_grade_value(value: object) -> str | None:
+def extract_grade(value: object) -> str | None:
     text = normalize_text(value)
     if not text:
         return None
-
     match = re.search(r"[1-5]", text)
-    if match:
-        return match.group(0)
-
-    return None
-
-
-def extract_grade_from_class_name(class_name: object) -> str | None:
-    return extract_grade_value(class_name)
+    return match.group(0) if match else None
 
 
 def normalize_stage(value: object) -> str | None:
@@ -364,33 +360,28 @@ def normalize_level(value: object) -> str | None:
     text = normalize_text(value)
     if not text:
         return None
-    compact = re.sub(r"\s+", "", text.upper())
-    compact_no_diacritics = compact
-    if compact_no_diacritics == "T":
-        return "Hoàn thành tốt"
-    if compact_no_diacritics == "H":
-        return "Hoàn thành"
-    if compact_no_diacritics == "C":
-        return "Chưa hoàn thành"
+    compact = re.sub(r"\s+", "", strip_diacritics(text).upper())
     return LEVEL_MAP.get(compact, text)
 
 
 def normalize_scalar_columns(df: pd.DataFrame) -> pd.DataFrame:
+    df = df.copy()
     for column in STANDARD_COLUMNS:
         df[column] = df[column].apply(normalize_text)
 
-    df["grade"] = df["grade"].apply(extract_grade_value)
-    missing_grade_mask = df["grade"].isna() & df["class_name"].notna()
-    df.loc[missing_grade_mask, "grade"] = df.loc[missing_grade_mask, "class_name"].apply(extract_grade_from_class_name)
+    df["subject"] = df["subject"].apply(canonical_subject)
+    df["grade"] = df["grade"].apply(extract_grade)
+    missing_grade = df["grade"].isna() & df["class_name"].notna()
+    df.loc[missing_grade, "grade"] = df.loc[missing_grade, "class_name"].apply(extract_grade)
     df["stage"] = df["stage"].apply(normalize_stage)
     df["level"] = df["level"].apply(normalize_level)
     return df
 
 
-def validate_required_columns(df: pd.DataFrame, file_path: Path) -> None:
+def validate_required_columns(df: pd.DataFrame, file_path: Path, sheet_name: str) -> None:
     missing = [column for column in REQUIRED_COLUMNS if column not in df.columns or df[column].isna().all()]
     if missing:
-        raise ValueError(f"File {file_path.name} thiếu cột bắt buộc: {', '.join(missing)}")
+        raise ValueError(f"{file_path.name} / {sheet_name} thiếu cột bắt buộc: {', '.join(missing)}")
 
 
 def clean_dataframe(df: pd.DataFrame) -> pd.DataFrame:
@@ -406,16 +397,21 @@ def clean_dataframe(df: pd.DataFrame) -> pd.DataFrame:
 
 def build_model_input(row: pd.Series) -> str:
     mapping = [
+        ("Học sinh", row.get("student_name")),
+        ("Lớp", row.get("class_name")),
         ("Khối", row.get("grade")),
         ("Môn", row.get("subject")),
         ("Giai đoạn", row.get("stage")),
         ("Tuần", row.get("week")),
         ("Tiết", row.get("lesson")),
+        ("Bài học", row.get("lesson_title")),
+        ("Yêu cầu cần đạt", row.get("content")),
         ("Mức độ", row.get("level")),
-        ("Nội dung", row.get("content")),
+        ("Mức tham gia", row.get("participation_level")),
+        ("Phẩm chất/Hành vi", row.get("behavior_tag")),
+        ("Bộ sách", row.get("textbook_series")),
     ]
-    lines = [f"{label}: {value}" for label, value in mapping if normalize_text(value)]
-    return "\n".join(lines)
+    return "\n".join(f"{label}: {value}" for label, value in mapping if normalize_text(value))
 
 
 def add_model_columns(df: pd.DataFrame) -> pd.DataFrame:
@@ -427,14 +423,21 @@ def add_model_columns(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def create_subject_stats(df: pd.DataFrame) -> pd.DataFrame:
-    stats = (
-        df.groupby("subject", dropna=False)
-        .size()
-        .reset_index(name="count")
-        .sort_values(["count", "subject"], ascending=[False, True])
-        .reset_index(drop=True)
-    )
-    return stats
+    actual_stats = df.groupby("subject", dropna=False).size().reset_index(name="count")
+    expected_stats = pd.DataFrame({"subject": EXPECTED_SUBJECTS})
+    stats = expected_stats.merge(actual_stats, on="subject", how="left")
+    stats["count"] = stats["count"].fillna(0).astype(int)
+
+    extra_stats = actual_stats[~actual_stats["subject"].isin(EXPECTED_SUBJECTS)].copy()
+    if not extra_stats.empty:
+        stats = pd.concat([stats, extra_stats], ignore_index=True)
+
+    return stats.reset_index(drop=True)
+
+
+def get_missing_expected_subjects(stats_df: pd.DataFrame) -> list[str]:
+    missing_df = stats_df[stats_df["subject"].isin(EXPECTED_SUBJECTS) & (stats_df["count"] == 0)]
+    return missing_df["subject"].tolist()
 
 
 def split_group_indices(group_size: int) -> tuple[int, int, int]:
@@ -473,30 +476,29 @@ def stratified_split_by_subject(df: pd.DataFrame, seed: int = 42) -> tuple[pd.Da
         train_count, valid_count, test_count = split_group_indices(len(shuffled))
 
         train_parts.append(shuffled.iloc[:train_count])
-        valid_parts.append(shuffled.iloc[train_count:train_count + valid_count])
-        test_parts.append(shuffled.iloc[train_count + valid_count:train_count + valid_count + test_count])
+        valid_parts.append(shuffled.iloc[train_count : train_count + valid_count])
+        test_parts.append(shuffled.iloc[train_count + valid_count : train_count + valid_count + test_count])
 
     train_df = pd.concat(train_parts, ignore_index=True) if train_parts else pd.DataFrame(columns=df.columns)
     valid_df = pd.concat(valid_parts, ignore_index=True) if valid_parts else pd.DataFrame(columns=df.columns)
     test_df = pd.concat(test_parts, ignore_index=True) if test_parts else pd.DataFrame(columns=df.columns)
 
-    train_df = train_df.sample(frac=1, random_state=seed).reset_index(drop=True)
-    valid_df = valid_df.sample(frac=1, random_state=seed).reset_index(drop=True)
-    test_df = test_df.sample(frac=1, random_state=seed).reset_index(drop=True)
-    return train_df, valid_df, test_df
+    return (
+        train_df.sample(frac=1, random_state=seed).reset_index(drop=True),
+        valid_df.sample(frac=1, random_state=seed).reset_index(drop=True),
+        test_df.sample(frac=1, random_state=seed).reset_index(drop=True),
+    )
 
 
 def to_jsonl_records(df: pd.DataFrame) -> list[dict[str, str]]:
-    records: list[dict[str, str]] = []
-    for _, row in df.iterrows():
-        records.append(
-            {
-                "instruction": row["instruction"],
-                "input": row["model_input"],
-                "output": row["model_output"],
-            }
-        )
-    return records
+    return [
+        {
+            "instruction": row["instruction"],
+            "input": row["model_input"],
+            "output": row["model_output"],
+        }
+        for _, row in df.iterrows()
+    ]
 
 
 def write_jsonl(records: Iterable[dict[str, str]], output_path: Path) -> None:
@@ -505,16 +507,28 @@ def write_jsonl(records: Iterable[dict[str, str]], output_path: Path) -> None:
             file.write(json.dumps(record, ensure_ascii=False) + "\n")
 
 
+def write_missing_subjects(missing_subjects: list[str], output_path: Path) -> None:
+    with output_path.open("w", encoding="utf-8") as file:
+        if not missing_subjects:
+            file.write("Không thiếu môn nào trong danh sách môn dự kiến.\n")
+            return
+
+        file.write("Các môn chưa có dữ liệu trong file nguồn hiện tại:\n")
+        for subject in missing_subjects:
+            file.write(f"- {subject}\n")
+
+
 def export_subject_chart(stats_df: pd.DataFrame, output_path: Path) -> None:
     if stats_df.empty:
         return
 
-    plt.figure(figsize=(10, 6))
-    bars = plt.bar(stats_df["subject"], stats_df["count"], color="#2a6f97")
-    plt.title("So luong du lieu theo mon hoc")
-    plt.xlabel("Mon hoc")
-    plt.ylabel("So mau")
-    plt.xticks(rotation=20, ha="right")
+    plt.figure(figsize=(14, 7))
+    colors = ["#2a6f97" if count > 0 else "#c9d3dc" for count in stats_df["count"]]
+    bars = plt.bar(stats_df["subject"], stats_df["count"], color=colors)
+    plt.title("Số lượng dữ liệu theo môn học")
+    plt.xlabel("Môn học")
+    plt.ylabel("Số mẫu")
+    plt.xticks(rotation=30, ha="right")
 
     for bar, count in zip(bars, stats_df["count"]):
         plt.text(
@@ -540,9 +554,11 @@ def export_outputs(
     output_dir: Path,
 ) -> None:
     output_dir.mkdir(parents=True, exist_ok=True)
+    missing_subjects = get_missing_expected_subjects(stats_df)
 
     df.to_excel(output_dir / "dataset_clean.xlsx", index=False)
     stats_df.to_excel(output_dir / "stats_by_subject.xlsx", index=False)
+    write_missing_subjects(missing_subjects, output_dir / "missing_subjects.txt")
     export_subject_chart(stats_df, output_dir / "stats_by_subject.png")
     train_df.to_excel(output_dir / "train.xlsx", index=False)
     valid_df.to_excel(output_dir / "valid.xlsx", index=False)
@@ -554,34 +570,28 @@ def export_outputs(
     write_jsonl(to_jsonl_records(df), output_dir / "all.jsonl")
 
 
-def load_and_standardize_sheet(file_path: Path, sheet_name: str | int | None = 0) -> pd.DataFrame:
-    sheet_label = f"{file_path.name} | sheet={sheet_name}" if sheet_name is not None else file_path.name
-    logging.info("Đang đọc file: %s", sheet_label)
+def load_and_standardize_sheet(file_path: Path, sheet_name: str) -> pd.DataFrame:
+    logging.info("Đang đọc: %s | sheet=%s", file_path.name, sheet_name)
     raw_df = read_excel_flexible(file_path, sheet_name=sheet_name)
     if raw_df.empty:
-        logging.warning("Bỏ qua sheet rỗng: %s", sheet_label)
+        logging.warning("Bỏ qua sheet rỗng: %s | %s", file_path.name, sheet_name)
         return pd.DataFrame(columns=STANDARD_COLUMNS)
 
     standardized_df = standardize_columns(raw_df)
-    validate_required_columns(standardized_df, file_path)
-    standardized_df = fill_subject_column_with_fallback(
-        standardized_df,
-        file_path,
-        str(sheet_name) if sheet_name is not None else None,
-    )
+    validate_required_columns(standardized_df, file_path, sheet_name)
+    standardized_df = fill_subject(standardized_df, file_path, sheet_name)
     standardized_df = normalize_scalar_columns(standardized_df)
+    standardized_df = standardized_df[
+        standardized_df["content"].notna() | standardized_df["comment"].notna()
+    ].reset_index(drop=True)
     return standardized_df
 
 
 def load_and_standardize_file(file_path: Path) -> pd.DataFrame:
-    sheet_names = list_excel_sheets(file_path)
-    if len(sheet_names) <= 1:
-        return load_and_standardize_sheet(file_path, sheet_name=sheet_names[0] if sheet_names else 0)
-
     sheet_frames: list[pd.DataFrame] = []
-    for sheet_name in sheet_names:
+    for sheet_name in list_excel_sheets(file_path):
         try:
-            sheet_df = load_and_standardize_sheet(file_path, sheet_name=sheet_name)
+            sheet_df = load_and_standardize_sheet(file_path, sheet_name)
         except ValueError as exc:
             logging.warning("Bỏ qua sheet %s của %s: %s", sheet_name, file_path.name, exc)
             continue
@@ -595,18 +605,16 @@ def load_and_standardize_file(file_path: Path) -> pd.DataFrame:
 
 def main() -> None:
     setup_logging()
+    setup_matplotlib_font()
     base_dir = Path(__file__).resolve().parent
-    output_dir = base_dir / "data" / "processed"
+    output_dir = base_dir / OUTPUT_DATA_DIR
 
     excel_files = discover_excel_files(base_dir)
     if not excel_files:
-        raise FileNotFoundError(
-            "Không tìm thấy file Excel nào. Hãy đặt dữ liệu vào thư mục data/raw/."
-        )
+        raise FileNotFoundError("Không tìm thấy file Excel nào. Hãy đặt dữ liệu vào thư mục data/raw/.")
 
     dataframes = [load_and_standardize_file(file_path) for file_path in excel_files]
     combined_df = pd.concat(dataframes, ignore_index=True)
-
     if combined_df.empty:
         raise ValueError("Không có dữ liệu hợp lệ sau khi đọc các file Excel.")
 
@@ -625,6 +633,10 @@ def main() -> None:
     logging.info("Thống kê số lượng theo môn học:")
     for _, row in stats_df.iterrows():
         logging.info("- %s: %s", row["subject"], row["count"])
+
+    missing_subjects = get_missing_expected_subjects(stats_df)
+    if missing_subjects:
+        logging.warning("Các môn chưa có dữ liệu trong file nguồn: %s", ", ".join(missing_subjects))
 
 
 if __name__ == "__main__":
