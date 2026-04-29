@@ -26,8 +26,17 @@
   margin-bottom: 12px;
   padding: 0 14px;
 
-  h3 { margin: 0; color: #104f5b; font-size: 16px; font-weight: 800; }
-  span { color: #6a7e86; font-size: 14px; }
+  h3 {
+    margin: 0;
+    color: #104f5b;
+    font-size: 16px;
+    font-weight: 800;
+  }
+
+  span {
+    color: #6a7e86;
+    font-size: 14px;
+  }
 }
 
 .grade-list {
@@ -38,7 +47,9 @@
   overflow: auto;
 }
 
-.grade-card { padding: 0; }
+.grade-card {
+  padding: 0;
+}
 
 .grade-toggle {
   width: 100%;
@@ -52,10 +63,26 @@
   text-align: left;
   border-radius: 10px;
   transition: background 0.12s;
-  &:hover { background: #f0f6f7; }
+
+  &:hover {
+    background: #f0f6f7;
+  }
 }
-.grade-arrow { width: 16px; height: 16px; font-size: 17px; line-height: 16px; color: #4e7280; flex-shrink: 0; }
-.grade-title { color: #153947; font-weight: 700; font-size: 16px; }
+
+.grade-arrow {
+  width: 16px;
+  height: 16px;
+  font-size: 17px;
+  line-height: 16px;
+  color: #4e7280;
+  flex-shrink: 0;
+}
+
+.grade-title {
+  color: #153947;
+  font-weight: 700;
+  font-size: 16px;
+}
 
 .class-list {
   display: flex;
@@ -76,8 +103,16 @@
   cursor: pointer;
   transition: background 0.12s, color 0.12s;
   width: calc(100% - 10px);
-  &:hover { background: #f1f7f8; }
-  &.active { background: #68a7b0; color: #fff; font-weight: 700; }
+
+  &:hover {
+    background: #f1f7f8;
+  }
+
+  &.active {
+    background: #68a7b0;
+    color: #fff;
+    font-weight: 700;
+  }
 }
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -96,6 +131,7 @@
   .name {
     font-weight: 600;
   }
+
   .meta {
     font-size: 12px;
     color: #9aa6a6;
@@ -105,4 +141,128 @@
 .btn-group {
   display: flex;
   gap: 8px;
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// Subject display – simple text in a bordered box
+// ────────────────────────────────────────────────────────────────────────────
+.subject-display {
+  margin-top: 6px;
+  padding: 10px 16px;
+  border: 1px solid #d4e3e8;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.subject-display-text {
+  font-size: 14px;
+  font-weight: 600;
+  color: #2a8a6c;
+  line-height: 1.4;
+}
+
+.cell-mtx-select {
+  width: 100%;
+  display: block;
+}
+
+// Override the arrow to match global select-control arrow
+::ng-deep .cell-mtx-select {
+  .ng-arrow-wrapper {
+    width: 24px !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    .ng-arrow {
+      border: none !important;
+      width: 24px !important;
+      height: 24px !important;
+      transition: transform 0.2s ease;
+      &::after {
+        content: 'keyboard_arrow_down';
+        font-family: 'Material Symbols Outlined', sans-serif;
+        font-weight: normal;
+        font-style: normal;
+        font-size: 24px;
+        line-height: 1;
+        color: #64748b; /* equivalent to var(--color-neutral-500) */
+      }
+    }
+  }
+  &.ng-select-opened .ng-arrow-wrapper .ng-arrow {
+    transform: rotate(180deg);
+  }
+}
+
+::ng-deep mat-form-field.w-full.mt-2 {
+  margin-top: 0 !important;
+}
+
+::ng-deep .mat-mdc-form-field-subscript-wrapper {
+  display: none !important;
+}
+
+.cell-textarea-wrapper {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.cell-textarea {
+  width: 100%;
+  border: 1px solid transparent;
+  background: transparent;
+  padding: 8px;
+  border-radius: 4px;
+  outline: none;
+  resize: vertical;
+  transition: border-color 0.15s, box-shadow 0.15s;
+
+  &:focus {
+    border-color: #68a7b0;
+    box-shadow: 0 0 0 2px rgba(104, 167, 176, 0.2);
+  }
+
+  &::placeholder {
+    color: #b0c4ca;
+    font-style: italic;
+  }
+}
+
+.char-counter {
+  font-size: 11px;
+  color: #6a7e86;
+  text-align: left;
+  margin-top: 2px;
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// Subject section with rating and hint
+// ────────────────────────────────────────────────────────────────────────────
+.evaluation-subject-section {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.rating-control-wrapper {
+  width: 100%;
+  max-width: 300px;
+}
+
+.evaluation-hint {
+  color: #dc2626;
+  font-style: italic;
+  font-size: 12px;
+  line-height: 1.4;
+  margin-top: 6px;
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// Responsive
+// ────────────────────────────────────────────────────────────────────────────
+@media (max-width: 960px) {
+  .evaluation-page {
+    grid-template-columns: 1fr;
+  }
 }

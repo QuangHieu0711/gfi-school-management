@@ -284,6 +284,7 @@ public class WeekConfigServiceImpl implements WeekConfigService {
                 .toList();
     }
 
+    @SuppressWarnings("unused")
     private void validateBulkData(List<WeekConfig> updatingTargets,
             Map<Long, WeekConfigBulkUpdateItemRequest> requestById) {
         Set<Long> semesterIds = updatingTargets.stream().map(w -> w.getSemester().getId()).collect(Collectors.toSet());

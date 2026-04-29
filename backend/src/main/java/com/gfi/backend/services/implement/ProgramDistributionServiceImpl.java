@@ -731,9 +731,8 @@ public class ProgramDistributionServiceImpl implements ProgramDistributionServic
         }
 
         // Validate week exists
-        WeekConfig weekConfig = weekConfigRepository.findBySchoolYearIdAndWeekNumber(
-                schoolYear.getId(), request.getWeekNumber())
-                .orElseThrow(() -> new UserMessageException(CommonErrorCode.PROGRAM_DISTRIBUTION_WEEK_NOT_FOUND));
+        weekConfigRepository.findBySchoolYearIdAndWeekNumber(schoolYear.getId(), request.getWeekNumber())
+            .orElseThrow(() -> new UserMessageException(CommonErrorCode.PROGRAM_DISTRIBUTION_WEEK_NOT_FOUND));
 
         ProgramDistribution entity = new ProgramDistribution();
         entity.setSchoolYear(schoolYear);
@@ -765,10 +764,8 @@ public class ProgramDistributionServiceImpl implements ProgramDistributionServic
                 .orElseThrow(() -> new UserMessageException(CommonErrorCode.RECORD_NOT_FOUND));
 
         // Validate weekNumber exists
-        WeekConfig weekConfig = weekConfigRepository.findBySchoolYearIdAndWeekNumber(
-                entity.getSchoolYear().getId(), request.getWeekNumber())
-                .orElseThrow(
-                        () -> new UserMessageException(CommonErrorCode.INVALID_REQUEST));
+        weekConfigRepository.findBySchoolYearIdAndWeekNumber(entity.getSchoolYear().getId(), request.getWeekNumber())
+            .orElseThrow(() -> new UserMessageException(CommonErrorCode.INVALID_REQUEST));
 
         entity.setWeekNumber(request.getWeekNumber());
         if (request.getOrderNumber() != null) {

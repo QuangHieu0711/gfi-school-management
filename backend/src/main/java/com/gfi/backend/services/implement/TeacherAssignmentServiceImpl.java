@@ -318,9 +318,24 @@ public class TeacherAssignmentServiceImpl implements TeacherAssignmentService {
 
     private TeacherAssignmentSearchStaffItemDto toSearchStaffItemDto(List<TeacherAssignment> assignments) {
         TeacherAssignment assignment = assignments.get(0);
-        Classroom classroom = assignment.getClassroom();
         Staff staff = assignment.getStaff();
         Semester semester = assignment.getSemester();
+
+        // Validate all classrooms have same unit as staff
+        Set<Long> classroomUnitIds = assignments.stream()
+                .map(a -> a.getClassroom())
+                .filter(Objects::nonNull)
+                .map(c -> c.getUnit())
+                .filter(Objects::nonNull)
+                .map(Unit::getId)
+                .collect(Collectors.toSet());
+
+        Long staffUnitId = staff.getUnit() != null ? staff.getUnit().getId() : null;
+
+        // Ensure all classrooms belong to the same unit as the staff
+        if (staffUnitId != null && !classroomUnitIds.isEmpty() && !classroomUnitIds.equals(Set.of(staffUnitId))) {
+            throw new UserMessageException("Lỗi dữ liệu: Các lớp của giáo viên thuộc nhiều đơn vị khác nhau trong cùng học kỳ");
+        }
 
         List<TeacherAssignmentAssignmentDto> assignmentItems = assignments.stream()
                 .collect(Collectors.groupingBy(
@@ -333,9 +348,7 @@ public class TeacherAssignmentServiceImpl implements TeacherAssignmentService {
                 .toList();
 
         return TeacherAssignmentSearchStaffItemDto.builder()
-                .unitId(classroom != null && classroom.getUnit() != null
-                        ? classroom.getUnit().getId()
-                        : (staff.getUnit() != null ? staff.getUnit().getId() : null))
+                .unitId(staffUnitId)
                 .schoolYearId(assignment.getSchoolYear().getId())
                 .semesterId(semester != null ? semester.getId() : null)
                 .semesterName(semester != null ? semester.getName() : null)
@@ -411,11 +424,8 @@ public class TeacherAssignmentServiceImpl implements TeacherAssignmentService {
 
     private String buildStaffSearchKey(TeacherAssignment assignment) {
         Staff staff = assignment.getStaff();
-        Classroom classroom = assignment.getClassroom();
         return String.join("|",
-                String.valueOf(classroom != null && classroom.getUnit() != null
-                        ? classroom.getUnit().getId()
-                        : (staff != null && staff.getUnit() != null ? staff.getUnit().getId() : null)),
+                String.valueOf(staff != null && staff.getUnit() != null ? staff.getUnit().getId() : null),
                 String.valueOf(staff != null ? staff.getId() : null),
                 String.valueOf(assignment.getSchoolYear() != null ? assignment.getSchoolYear().getId() : null),
                 String.valueOf(assignment.getSemester() != null ? assignment.getSemester().getId() : null));
@@ -463,6 +473,52 @@ public class TeacherAssignmentServiceImpl implements TeacherAssignmentService {
         return teacherAssignmentRepository.saveAll(assignments).stream()
                 .map(this::toItemDto)
                 .toList();
+    }
+
+    private void validateClassroomSubjectConflicts(Staff staff, SchoolYear schoolYear, Semester semester,
+            List<AssignmentSeed> seeds) {
+        if (seeds.isEmpty()) {
+            return;
+        }
+
+        // Find existing assignments for this staff in the same semester
+        List<TeacherAssignment> existingAssignments = teacherAssignmentRepository.findAll((root, query, cb) -> {
+            List<Predicate> predicates = new ArrayList<>();
+            predicates.add(cb.equal(root.get("staff").get("id"), staff.getId()));
+            predicates.add(cb.equal(root.get("schoolYear").get("id"), schoolYear.getId()));
+            predicates.add(cb.equal(root.get("semester").get("id"), semester.getId()));
+            return cb.and(predicates.toArray(new Predicate[0]));
+        });
+
+        // Check for conflicts: same classroom but different subject
+        Map<Long, Set<Long>> existingClassroomSubjects = new HashMap<>();
+        for (TeacherAssignment assignment : existingAssignments) {
+            if (assignment.getClassroom() != null && assignment.getSubject() != null) {
+                Long classId = assignment.getClassroom().getId();
+                Long subjectId = assignment.getSubject().getId();
+                existingClassroomSubjects.computeIfAbsent(classId, k -> new LinkedHashSet<>()).add(subjectId);
+            }
+        }
+
+        // Validate: a classroom can only have one subject for this staff in the same semester
+        Map<String, String> conflicts = new LinkedHashMap<>();
+        for (AssignmentSeed seed : seeds) {
+            Long classId = seed.classroom().getId();
+            Long subjectId = seed.subject().getId();
+            
+            if (existingClassroomSubjects.containsKey(classId)) {
+                Set<Long> existingSubjectIds = existingClassroomSubjects.get(classId);
+                if (!existingSubjectIds.contains(subjectId)) {
+                    String conflictMsg = "Lớp " + seed.classroom().getName() + " đã được phân công môn khác";
+                    conflicts.put(classId.toString(), conflictMsg);
+                }
+            }
+        }
+
+        if (!conflicts.isEmpty()) {
+            throw new UserMessageException("Một lớp chỉ được phân công một môn cho cùng giáo viên trong cùng học kỳ: "
+                    + String.join("; ", conflicts.values()));
+        }
     }
 
     private void validateAssignmentConflicts(Staff staff, SchoolYear schoolYear, Semester semester,
@@ -554,6 +610,7 @@ public class TeacherAssignmentServiceImpl implements TeacherAssignmentService {
                             + String.join(", ", duplicateClassNames.values()));
         }
 
+        validateClassroomSubjectConflicts(staff, schoolYear, semester, seeds);
         validateAssignmentConflicts(staff, schoolYear, semester, seeds, request.getUnitId());
 
         return new AssignmentBuildContext(staff, schoolYear, semester, seeds, new ArrayList<>(classroomIds));

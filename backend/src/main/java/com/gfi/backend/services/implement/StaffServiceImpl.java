@@ -91,11 +91,11 @@ public class StaffServiceImpl implements StaffService {
     private static final String RELATION_MOTHER = "MOTHER";
     private static final String RELATION_SPOUSE = "SPOUSE";
     private static final String RELATION_SPOUSE_FATHER = "SPOUSE_FATHER";
-    private static final String RELATION_SPOUSE_MOTHER = "SPOUSE_MOTHER";
-    private static final String RELATION_CHILDREN = "CHILDREN";
-    private static final String EDUCATION_TYPE_TRAINING = "TRAINING";
-    private static final String EDUCATION_TYPE_FOREIGN_LANGUAGE = "FOREIGN_LANGUAGE";
-    private static final List<String> STAFF_ETHNICITY_OPTIONS = List.of(
+        private static final String RELATION_SPOUSE_MOTHER = "SPOUSE_MOTHER";
+        private static final String RELATION_CHILDREN = "CHILDREN";
+        private static final String EDUCATION_TYPE_TRAINING = "TRAINING";
+        private static final String EDUCATION_TYPE_FOREIGN_LANGUAGE = "FOREIGN_LANGUAGE";
+        private static final List<String> STAFF_ETHNICITY_OPTIONS = List.of(
             "Kinh", "Tày", "Thái", "Hoa", "Khơ-me", "Mường", "Nùng", "HMông", "Dao", "Gia-rai",
             "Ngái", "Ê-đê", "Ba na", "Xơ-Đăng", "Sán Chay", "Cơ-ho", "Chăm", "Sán Dìu", "Hrê", "Mnông",
             "Ra-glai", "Xtiêng", "Bru-Vân Kiều", "Thổ", "Giáy", "Cơ-tu", "Gié Triêng", "Mạ", "Khơ-mú", "Co",
@@ -106,7 +106,7 @@ public class StaffServiceImpl implements StaffService {
     private final StaffRepository staffRepository;
     private final UnitRepository unitRepository;
     private final com.gfi.backend.repositories.GradeLevelRepository gradeLevelRepository;
-    private final StaffAddressRepository staffAddressRepository;
+        private final StaffAddressRepository staffAddressRepository;
     private final StaffEducationRepository staffEducationRepository;
     private final StaffFamilyMemberRepository staffFamilyMemberRepository;
     private final FileStorageService fileStorageService;
@@ -186,14 +186,14 @@ public class StaffServiceImpl implements StaffService {
     private static final int STAFF_COL_FOREIGN_LANGUAGE_NOTE = 58;
     private static final int STAFF_IMPORT_LAST_DATA_COLUMN = STAFF_COL_FOREIGN_LANGUAGE_NOTE;
 
-    /*
-     * Tìm kiếm cán bộ
-     * Gồm các thông tin cơ bản để hiển thị trong danh sách, không bao gồm thông tin
-     * chi tiết như địa chỉ, thành viên gia đình
-     */
-    @Override
-    @Transactional(readOnly = true)
-    public PageResponseDto<StaffItemDto, StaffFilterDto> search(PageRequestDto<StaffFilterDto> request) {
+        /*
+         * Tìm kiếm cán bộ
+         * Gồm các thông tin cơ bản để hiển thị trong danh sách, không bao gồm thông tin
+         * chi tiết như địa chỉ, thành viên gia đình
+         */
+        @Override
+        @Transactional(readOnly = true)
+        public PageResponseDto<StaffItemDto, StaffFilterDto> search(PageRequestDto<StaffFilterDto> request) {
         StaffFilterDto filter = request.getFilter() == null ? new StaffFilterDto() : request.getFilter();
         Long currentStaffId = resolveCurrentStaffIdForSelfScope(ActionType.VIEW);
         List<ResolvedScope> resolvedScopes = ScopeFilterUtils.getScopesForQuery(FEATURE, ActionType.VIEW);
@@ -202,31 +202,31 @@ public class StaffServiceImpl implements StaffService {
         Pageable pageable = PageableUtils.newestFirst(pageNow, pageSize);
 
         Page<Staff> page = staffRepository.findAll(buildSpecification(filter, currentStaffId, resolvedScopes),
-                pageable);
+            pageable);
         List<StaffItemDto> items = page.getContent().stream()
-                .map(this::toItemDto)
-                .toList();
+            .map(this::toItemDto)
+            .toList();
 
         return PageResponseDto.<StaffItemDto, StaffFilterDto>builder()
-                .pageSize(pageSize)
-                .pageNow(pageNow)
-                .filter(filter)
-                .pageTotal(page.getTotalPages())
-                .recordTotal(page.getTotalElements())
-                .items(items)
-                .build();
-    }
+            .pageSize(pageSize)
+            .pageNow(pageNow)
+            .filter(filter)
+            .pageTotal(page.getTotalPages())
+            .recordTotal(page.getTotalElements())
+            .items(items)
+            .build();
+        }
 
-    /*
-     * Lấy thông tin chi tiết cán bộ theo ID
-     */
-    @Override
-    @Transactional(readOnly = true)
-    public StaffDetailDto getById(Long id) {
+        /*
+         * Lấy thông tin chi tiết cán bộ theo ID
+         */
+        @Override
+        @Transactional(readOnly = true)
+        public StaffDetailDto getById(Long id) {
         Staff staff = findStaff(id);
         validateStaffAccess(staff, ActionType.VIEW);
         return toDetailDto(staff);
-    }
+        }
 
     /*
      * Tạo mới cán bộ
@@ -1229,14 +1229,17 @@ public class StaffServiceImpl implements StaffService {
             createCell(groupHeaderRow, STAFF_COL_SPOUSE_NAME, "Vợ/Chồng", headerStyle);
             sheet.addMergedRegion(new CellRangeAddress(6, 6, STAFF_COL_SPOUSE_NAME, STAFF_COL_SPOUSE_PHONE));
             createCell(groupHeaderRow, STAFF_COL_SPOUSE_FATHER_NAME, "Bố vợ/chồng", headerStyle);
-            sheet.addMergedRegion(new CellRangeAddress(6, 6, STAFF_COL_SPOUSE_FATHER_NAME, STAFF_COL_SPOUSE_FATHER_PHONE));
+            sheet.addMergedRegion(
+                    new CellRangeAddress(6, 6, STAFF_COL_SPOUSE_FATHER_NAME, STAFF_COL_SPOUSE_FATHER_PHONE));
             createCell(groupHeaderRow, STAFF_COL_SPOUSE_MOTHER_NAME, "Mẹ vợ/chồng", headerStyle);
-            sheet.addMergedRegion(new CellRangeAddress(6, 6, STAFF_COL_SPOUSE_MOTHER_NAME, STAFF_COL_SPOUSE_MOTHER_PHONE));
+            sheet.addMergedRegion(
+                    new CellRangeAddress(6, 6, STAFF_COL_SPOUSE_MOTHER_NAME, STAFF_COL_SPOUSE_MOTHER_PHONE));
             createCell(groupHeaderRow, STAFF_COL_CHILDREN_DETAIL, "Con", headerStyle);
             createCell(groupHeaderRow, STAFF_COL_TRAINING_SCHOOL, "Đào tạo", headerStyle);
             sheet.addMergedRegion(new CellRangeAddress(6, 6, STAFF_COL_TRAINING_SCHOOL, STAFF_COL_TRAINING_NOTE));
             createCell(groupHeaderRow, STAFF_COL_FOREIGN_LANGUAGE_NAME, "Ngoại ngữ", headerStyle);
-            sheet.addMergedRegion(new CellRangeAddress(6, 6, STAFF_COL_FOREIGN_LANGUAGE_NAME, STAFF_COL_FOREIGN_LANGUAGE_NOTE));
+            sheet.addMergedRegion(
+                    new CellRangeAddress(6, 6, STAFF_COL_FOREIGN_LANGUAGE_NAME, STAFF_COL_FOREIGN_LANGUAGE_NOTE));
 
             Row headerRow = sheet.createRow(7);
             String[] headers = buildStaffExportHeaders();
@@ -1364,7 +1367,8 @@ public class StaffServiceImpl implements StaffService {
 
             PdfPTable table = new PdfPTable(new float[] { 0.7f, 1.4f, 2.5f, 1.2f, 1.3f, 1.5f, 2.0f, 1.5f, 1.0f });
             table.setWidthPercentage(100);
-            String[] headers = { "STT", "Mã cán bộ", "Họ tên", "Giới tính", "Ngày sinh", "Điện thoại", "Email", "Trạng thái", "Khối" };
+            String[] headers = { "STT", "Mã cán bộ", "Họ tên", "Giới tính", "Ngày sinh", "Điện thoại", "Email",
+                    "Trạng thái", "Khối" };
             for (String header : headers) {
                 addPdfHeaderCell(table, header, headerFont);
             }
@@ -1379,7 +1383,8 @@ public class StaffServiceImpl implements StaffService {
                 addPdfBodyCell(table, item.getPhone(), bodyFont, Element.ALIGN_LEFT);
                 addPdfBodyCell(table, item.getEmail(), bodyFont, Element.ALIGN_LEFT);
                 addPdfBodyCell(table, staffStatusLabel(item.getStatus()), bodyFont, Element.ALIGN_CENTER);
-                addPdfBodyCell(table, item.getGradeId() == null ? null : String.valueOf(item.getGradeId()), bodyFont, Element.ALIGN_CENTER);
+                addPdfBodyCell(table, item.getGradeId() == null ? null : String.valueOf(item.getGradeId()), bodyFont,
+                        Element.ALIGN_CENTER);
             }
 
             document.add(table);

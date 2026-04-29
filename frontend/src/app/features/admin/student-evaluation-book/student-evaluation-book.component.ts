@@ -1,6 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { CommonModule } from '@angular/common';
 import { Component, Injector, TemplateRef, ViewChild } from '@angular/core';
+import { FormsModule } from '@angular/forms';
+import { MtxSelectModule } from '@ng-matero/extensions/select';
 import { MtxGridColumn } from '@ng-matero/extensions/grid';
 import { filter, take } from 'rxjs';
 
@@ -20,6 +22,8 @@ import { LopMonHocDetailSubjectResponse } from '@app/model/admin/lop-mon-hoc.mod
 import { LopMonHocService } from '@app/service/admin/lop-mon-hoc.service';
 import { NamHocOptionResponse } from '@app/model/admin/nam-hoc.model';
 import { NamHocService } from '@app/service/admin/nam-hoc.service';
+import { ID_TYPE } from '@model/response.model';
+import { HocKyService } from '@app/service/admin/hoc-ky.service';
 import { AuthService } from '@service';
 
 interface TeacherClassAssignmentResponse {
@@ -45,6 +49,8 @@ interface TeacherClassAssignmentResponse {
   styleUrls: ['./student-evaluation-book.component.scss'],
   imports: [
     CommonModule,
+    FormsModule,
+    MtxSelectModule,
     AppTableComponent,
     IconComponent,
     ...MATERIAL_MODULE,
@@ -53,6 +59,20 @@ interface TeacherClassAssignmentResponse {
 })
 export class StudentEvaluationBookComponent extends ComponentBaseAbstract {
   @ViewChild('nameTpl', { static: true }) nameTpl!: TemplateRef<unknown>;
+  @ViewChild('middleTermTpl', { static: true })
+  middleTermTpl!: TemplateRef<unknown>;
+  @ViewChild('commentGKTpl', { static: true })
+  commentGKTpl!: TemplateRef<unknown>;
+  @ViewChild('finalTermTpl', { static: true })
+  finalTermTpl!: TemplateRef<unknown>;
+  @ViewChild('commentFinalTpl', { static: true })
+  commentFinalTpl!: TemplateRef<unknown>;
+
+  readonly termOptions = [
+    { value: 'T', label: 'T' },
+    { value: 'H', label: 'H' },
+    { value: 'C', label: 'C' },
+  ];
 
   readonly key = {
     CLASSROOM_ID: 'classroomId',
@@ -63,7 +83,7 @@ export class StudentEvaluationBookComponent extends ComponentBaseAbstract {
   $formItem: FormType[] = [
     SELECT_CONTROL({
       controlName: this.key.SEMESTER_ID,
-      label: 'Học kỳ',
+      placeholder: 'Chọn học kỳ',
       required: false,
       listOption: [],
       clearable: true,
@@ -86,6 +106,15 @@ export class StudentEvaluationBookComponent extends ComponentBaseAbstract {
   subjects: LopMonHocDetailSubjectResponse[] = [];
   selectedSubjectId?: any;
   currentSchoolYear?: NamHocOptionResponse;
+
+  get selectedSubjectName(): string {
+    if (!this.selectedSubjectId || !this.subjects.length) return '';
+    const found = this.subjects.find(
+      (s) => s.subjectId === this.selectedSubjectId
+    );
+    return found?.subjectName ?? '';
+  }
+
   private subjectsByClassId = new Map<
     string,
     LopMonHocDetailSubjectResponse[]
@@ -97,6 +126,7 @@ export class StudentEvaluationBookComponent extends ComponentBaseAbstract {
     private readonly phanCongService: PhanCongGiangDayService,
     private readonly lopMonHocService: LopMonHocService,
     private readonly namHocService: NamHocService,
+    private readonly hocKyService: HocKyService,
     private readonly authService: AuthService
   ) {
     super(injector);
@@ -107,41 +137,9 @@ export class StudentEvaluationBookComponent extends ComponentBaseAbstract {
     this.form = this.itemControl.toFormGroup(this.$formItem);
     this.loadInitialData();
 
-    // Sample students
-    this.dataSource = [
-      {
-        id: 1,
-        fullName: 'Siu Trâm Anh',
-        dob: '05/02/2019',
-        code: '64632517-00-2469',
-        middleTerm: 'H',
-        commentGK: 'Hoàn thành nội dung môn học.',
-        finalTerm: '',
-        commentFinal: '',
-      },
-      {
-        id: 2,
-        fullName: 'Ro Lan Chanh',
-        dob: '30/04/2019',
-        code: '64632517-00-2471',
-        middleTerm: 'H',
-        commentGK: 'Hoàn thành các yêu cầu học tập của môn học.',
-        finalTerm: '',
-        commentFinal: '',
-      },
-      {
-        id: 3,
-        fullName: 'Nguyễn Ngọc Châu',
-        dob: '28/04/2019',
-        code: '64632517-00-2463',
-        middleTerm: 'H',
-        commentGK: 'Có tiến bộ trong học tập.',
-        finalTerm: '',
-        commentFinal: '',
-      },
-    ];
-
-    this.dataSourceTotal = this.dataSource.length;
+    // Start with empty data – will be populated from API when class is selected
+    this.dataSource = [];
+    this.dataSourceTotal = 0;
 
     this.columns = [
       { header: 'STT', class: 'text-center', field: COMMON_TABLE_KEY.STT },
@@ -151,10 +149,32 @@ export class StudentEvaluationBookComponent extends ComponentBaseAbstract {
         minWidth: 220,
         cellTemplate: this.nameTpl,
       },
-      { header: 'Giữa học kỳ', field: 'middleTerm', class: 'text-center' },
-      { header: 'Nhận xét GK', field: 'commentGK' },
-      { header: 'Cuối học kỳ', field: 'finalTerm', class: 'text-center' },
-      { header: 'Nhận xét', field: 'commentFinal' },
+      {
+        header: 'Giữa học kỳ',
+        field: 'middleTerm',
+        width: '100px',
+        class: 'text-center',
+        cellTemplate: this.middleTermTpl,
+      },
+      {
+        header: 'Nhận xét GK',
+        field: 'commentGK',
+        minWidth: 320,
+        cellTemplate: this.commentGKTpl,
+      },
+      {
+        header: 'Cuối học kỳ',
+        field: 'finalTerm',
+        width: '100px',
+        class: 'text-center',
+        cellTemplate: this.finalTermTpl,
+      },
+      {
+        header: 'Nhận xét',
+        field: 'commentFinal',
+        minWidth: 320,
+        cellTemplate: this.commentFinalTpl,
+      },
     ];
   }
 
@@ -243,6 +263,11 @@ export class StudentEvaluationBookComponent extends ComponentBaseAbstract {
     this.namHocService.getCurrent().subscribe({
       next: ({ data }) => {
         this.currentSchoolYear = data as NamHocOptionResponse | undefined;
+        // load semester options for current school year
+        const syId = this.currentSchoolYear?.id;
+        if (syId != null) {
+          this.loadSemesterOptions(syId);
+        }
       },
       error: () => {
         this.currentSchoolYear = undefined;
@@ -300,6 +325,9 @@ export class StudentEvaluationBookComponent extends ComponentBaseAbstract {
       { emitEvent: false }
     );
 
+    // Load students for this classroom from API
+    this.loadStudentsForClass(classroom.id);
+
     const cachedSubjects = this.subjectsByClassId.get(`${classroom.id}`);
     if (cachedSubjects) {
       this.setSelectedSubjects(cachedSubjects);
@@ -335,6 +363,21 @@ export class StudentEvaluationBookComponent extends ComponentBaseAbstract {
     return classroom.classId ?? classroom.classroomId ?? classroom.id;
   }
 
+  private loadSemesterOptions(schoolYearId: ID_TYPE): void {
+    this.hocKyService.getOptions(schoolYearId).subscribe({
+      next: ({ data }) => {
+        this.findFormControl(this.$formItem, this.key.SEMESTER_ID).options = (
+          data ?? []
+        ).map((item: { id: number; name: string }) => ({
+          value: item.id,
+          label: item.name,
+        }));
+      },
+      error: () => {
+        this.findFormControl(this.$formItem, this.key.SEMESTER_ID).options = [];
+      },
+    });
+  }
   private mapTeacherClassesToGradeGroups(
     classrooms: TeacherClassAssignmentResponse[]
   ): DiemDanhKhoiNhomItem[] {
@@ -414,6 +457,10 @@ export class StudentEvaluationBookComponent extends ComponentBaseAbstract {
     this.toastr.success('Xuất Excel thành công (demo)', 'Thành công');
   }
 
+  exportPdf() {
+    this.toastr.success('Xuất PDF thành công (demo)', 'Thành công');
+  }
+
   openConfig() {
     this.toastr.info('Cấu hình (demo)', 'Thông tin');
   }
@@ -424,5 +471,60 @@ export class StudentEvaluationBookComponent extends ComponentBaseAbstract {
 
   openImport() {
     this.toastr.info('Nhập dữ liệu (demo)', 'Thông tin');
+  }
+
+  /** Load student list from API: GET /api/students/by-classroom?classroomId=X */
+  private loadStudentsForClass(classroomId: ID_TYPE): void {
+    this.diemDanhService.getStudentsByClassroom(classroomId).subscribe({
+      next: ({ data }) => {
+        const students = data ?? [];
+        this.dataSource = students.map((s: any) => ({
+          id: s.id,
+          fullName: s.name ?? s.fullName ?? '',
+          dob: s.dob ?? s.dateOfBirth ?? '',
+          code: s.code ?? s.studentCode ?? '',
+          middleTerm: s.middleTerm ?? '',
+          commentGK: s.commentGK ?? '',
+          finalTerm: s.finalTerm ?? '',
+          commentFinal: s.commentFinal ?? '',
+        }));
+        this.dataSourceTotal = this.dataSource.length;
+      },
+      error: (error) => {
+        this.dataSource = [];
+        this.dataSourceTotal = 0;
+        this.toastr.error(
+          error?.error?.userMessage ??
+          error?.error?.message ??
+          'Không tải được danh sách học sinh',
+          'Thất bại'
+        );
+      },
+    });
+  }
+
+  /** Handle inline cell edits – update dataSource in-place */
+  onCellChange(row: any, field: string, event: Event): void {
+    const target = event.target as
+      | HTMLInputElement
+      | HTMLSelectElement
+      | HTMLTextAreaElement;
+    row[field] = target.value;
+  }
+
+  /** Handle quick keys 1,2,3 -> T,H,C */
+  onTermKeydown(row: any, field: string, event: KeyboardEvent): void {
+    const key = event.key.toUpperCase();
+    let val = '';
+    if (key === '1' || key === 'T') val = 'T';
+    else if (key === '2' || key === 'H') val = 'H';
+    else if (key === '3' || key === 'C') val = 'C';
+
+    if (val) {
+      event.preventDefault();
+      const target = event.target as HTMLSelectElement;
+      target.value = val;
+      row[field] = val;
+    }
   }
 }

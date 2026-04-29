@@ -1019,6 +1019,7 @@ public class AttendanceServiceImpl implements AttendanceService {
         cell.setCellStyle(style);
     }
 
+    @SuppressWarnings("unused")
     private void addPdfHeaderCell(PdfPTable table, String text, com.lowagie.text.Font font) {
         PdfPCell cell = new PdfPCell(new Phrase(text == null ? "" : text, font));
         cell.setHorizontalAlignment(Element.ALIGN_CENTER);
@@ -1028,6 +1029,7 @@ public class AttendanceServiceImpl implements AttendanceService {
         table.addCell(cell);
     }
 
+    @SuppressWarnings("unused")
     private void addPdfBodyCell(PdfPTable table, String text, com.lowagie.text.Font font, int align) {
         PdfPCell cell = new PdfPCell(new Phrase(text == null ? "" : text, font));
         cell.setHorizontalAlignment(align);
