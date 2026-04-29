@@ -8,6 +8,8 @@ import lombok.Data;
 @Data
 @Builder
 public class TeacherAssignmentAssignmentDto {
+    private Long semesterId;
+    private String semesterName;
     private Long subjectId;
     private String subjectName;
     private List<Long> classIds;

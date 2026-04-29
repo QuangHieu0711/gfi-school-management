@@ -11,6 +11,7 @@ import com.gfi.backend.models.dtos.staff.TeacherAssignmentItemDto;
 import com.gfi.backend.models.dtos.staff.TeacherAssignmentSearchRequest;
 import com.gfi.backend.models.dtos.staff.TeacherAssignmentSearchResponse;
 import com.gfi.backend.models.dtos.staff.TeacherAssignmentSearchStaffItemDto;
+import com.gfi.backend.models.dtos.staff.TeacherAssignmentStaffClassResponse;
 import com.gfi.backend.models.entities.Classroom;
 import com.gfi.backend.models.entities.SchoolYear;
 import com.gfi.backend.models.entities.Semester;
@@ -46,6 +47,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -126,40 +128,103 @@ public class TeacherAssignmentServiceImpl implements TeacherAssignmentService {
                 .orElseThrow(() -> new UserMessageException(CommonErrorCode.STAFF_NOT_FOUND));
         schoolYearRepository.findById(request.getSchoolYearId())
                 .orElseThrow(() -> new UserMessageException(CommonErrorCode.SCHOOL_YEAR_NOT_FOUND));
-        Semester semester = findSemesterOrThrow(request.getSemesterId());
-        subjectRepository.findById(request.getSubjectId())
-                .orElseThrow(() -> new UserMessageException(CommonErrorCode.SUBJECT_NOT_FOUND));
+        Semester semester = request.getSemesterId() != null ? findSemesterOrThrow(request.getSemesterId()) : null;
+        if (request.getSubjectId() != null) {
+            subjectRepository.findById(request.getSubjectId())
+                    .orElseThrow(() -> new UserMessageException(CommonErrorCode.SUBJECT_NOT_FOUND));
+        }
 
         if (!staff.getUnit().getId().equals(request.getUnitId())) {
             throw new UserMessageException("Cán bộ không thuộc đơn vị được chọn");
         }
-        validateSemesterBelongsToSchoolYear(semester, request.getSchoolYearId());
+        if (semester != null) {
+            validateSemesterBelongsToSchoolYear(semester, request.getSchoolYearId());
+        }
 
-        List<TeacherAssignment> assignments = teacherAssignmentRepository.findAll((root, query, cb) -> cb.and(
-                cb.equal(root.get("staff").get("id"), request.getStaffId()),
-                cb.equal(root.get("schoolYear").get("id"), request.getSchoolYearId()),
-                cb.equal(root.get("semester").get("id"), request.getSemesterId()),
-                cb.equal(root.get("subject").get("id"), request.getSubjectId()),
-                cb.equal(root.get("classroom").get("unit").get("id"), request.getUnitId())),
-                Sort.by(Sort.Direction.ASC, "classroom.id"));
+        Semester selectedSemester = semester;
+        List<TeacherAssignment> assignments = teacherAssignmentRepository.findAll((root, query, cb) -> {
+                    List<Predicate> predicates = new ArrayList<>();
+                    predicates.add(cb.equal(root.get("staff").get("id"), request.getStaffId()));
+                    predicates.add(cb.equal(root.get("schoolYear").get("id"), request.getSchoolYearId()));
+                    predicates.add(cb.equal(root.get("classroom").get("unit").get("id"), request.getUnitId()));
+                    if (selectedSemester != null) {
+                        predicates.add(cb.equal(root.get("semester").get("id"), selectedSemester.getId()));
+                    }
+                    return cb.and(predicates.toArray(new Predicate[0]));
+                },
+                Sort.by(Sort.Direction.ASC, "semester.semesterOrder")
+                        .and(Sort.by(Sort.Direction.ASC, "semester.id"))
+                        .and(Sort.by(Sort.Direction.ASC, "classroom.id")));
 
         if (assignments.isEmpty()) {
             throw new UserMessageException(CommonErrorCode.RECORD_NOT_FOUND);
+        }
+        if (semester == null) {
+            semester = assignments.get(0).getSemester();
+            Long inferredSemesterId = semester != null ? semester.getId() : null;
+            assignments = assignments.stream()
+                    .filter(item -> item.getSemester() != null && Objects.equals(item.getSemester().getId(), inferredSemesterId))
+                    .toList();
         }
 
         List<Long> classIds = assignments.stream()
                 .map(a -> a.getClassroom() != null ? a.getClassroom().getId() : null)
                 .filter(Objects::nonNull)
+                .distinct()
+                .toList();
+
+        List<TeacherAssignmentAssignmentDto> assignmentItems = assignments.stream()
+                .collect(Collectors.groupingBy(
+                        item -> item.getSubject() != null ? item.getSubject().getId() : null,
+                        LinkedHashMap::new,
+                        Collectors.toList()))
+                .values()
+                .stream()
+                .map(this::toAssignmentDto)
                 .toList();
 
         return TeacherAssignmentDetailResponse.builder()
                 .unitId(request.getUnitId())
                 .staffId(request.getStaffId())
                 .schoolYearId(request.getSchoolYearId())
-                .semesterId(request.getSemesterId())
+                .semesterId(semester != null ? semester.getId() : request.getSemesterId())
+                .semesterName(semester != null ? semester.getName() : null)
                 .subjectId(request.getSubjectId())
                 .classIds(classIds)
+                .assignments(assignmentItems)
                 .build();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<TeacherAssignmentStaffClassResponse> getClassesByStaff(Long staffId) {
+        staffRepository.findById(staffId)
+                .orElseThrow(() -> new UserMessageException(CommonErrorCode.STAFF_NOT_FOUND));
+
+        return teacherAssignmentRepository.findByStaffId(staffId).stream()
+                .filter(item -> item.getClassroom() != null)
+                .sorted(Comparator
+                        .comparing((TeacherAssignment item) -> item.getSchoolYear() != null
+                                ? item.getSchoolYear().getId()
+                                : Long.MAX_VALUE)
+                        .thenComparing(item -> item.getSemester() != null
+                                ? item.getSemester().getSemesterOrder()
+                                : Integer.MAX_VALUE)
+                        .thenComparing(item -> item.getSemester() != null
+                                ? item.getSemester().getId()
+                                : Long.MAX_VALUE)
+                        .thenComparing(item -> item.getClassroom().getName(), Comparator.nullsLast(String::compareTo))
+                        .thenComparing(item -> item.getSubject() != null
+                                ? item.getSubject().getName()
+                                : "", Comparator.nullsLast(String::compareTo)))
+                .collect(Collectors.groupingBy(
+                        item -> item.getClassroom().getId(),
+                        LinkedHashMap::new,
+                        Collectors.toList()))
+                .values()
+                .stream()
+                .map(this::toStaffClassResponse)
+                .toList();
     }
 
     @Override
@@ -167,37 +232,12 @@ public class TeacherAssignmentServiceImpl implements TeacherAssignmentService {
     public List<TeacherAssignmentItemDto> create(TeacherAssignmentCreateRequest request) {
         AssignmentBuildContext context = validateAndBuildContext(request);
 
-        List<TeacherAssignment> existingAssignments = teacherAssignmentRepository
-                .findByStaffIdAndSchoolYearIdAndSemesterIdAndClassroomIdIn(
-                        context.staff().getId(),
-                        context.schoolYear().getId(),
-                        context.semester().getId(),
-                        context.classroomIds());
-
-        if (!existingAssignments.isEmpty()) {
-            Set<Long> existingClassIds = existingAssignments.stream()
-                    .map(item -> item.getClassroom() != null ? item.getClassroom().getId() : null)
-                    .filter(Objects::nonNull)
-                    .collect(Collectors.toCollection(LinkedHashSet::new));
-            throw new UserMessageException("Đã tồn tại phân công cho các lớp: " + existingClassIds);
+        try {
+            replaceExistingAssignments(context);
+            return saveAssignments(context);
+        } catch (DataIntegrityViolationException ex) {
+            throw new UserMessageException("Một số phân công đã tồn tại hoặc có xung đột, vui lòng thử lại.");
         }
-
-        return saveAssignments(context);
-    }
-
-    @Override
-    @Transactional
-    public List<TeacherAssignmentItemDto> update(TeacherAssignmentCreateRequest request) {
-        AssignmentBuildContext context = validateAndBuildContext(request);
-
-        List<TeacherAssignment> existingAssignments = teacherAssignmentRepository
-                .findByStaffIdAndSchoolYearIdAndSemesterId(context.staff().getId(), context.schoolYear().getId(),
-                        context.semester().getId());
-        if (!existingAssignments.isEmpty()) {
-            teacherAssignmentRepository.deleteAll(existingAssignments);
-        }
-
-        return saveAssignments(context);
     }
 
     @Override
@@ -327,10 +367,45 @@ public class TeacherAssignmentServiceImpl implements TeacherAssignmentService {
                 .toList();
 
         return TeacherAssignmentAssignmentDto.builder()
+                .semesterId(assignment.getSemester() != null ? assignment.getSemester().getId() : null)
+                .semesterName(assignment.getSemester() != null ? assignment.getSemester().getName() : null)
                 .subjectId(subject != null ? subject.getId() : null)
                 .subjectName(subject != null ? subject.getName() : null)
                 .classIds(classIds)
                 .classNames(classNames)
+                .build();
+    }
+
+    private TeacherAssignmentStaffClassResponse toStaffClassResponse(List<TeacherAssignment> assignments) {
+        TeacherAssignment assignment = assignments.get(0);
+        Classroom classroom = assignment.getClassroom();
+        SchoolYear schoolYear = assignment.getSchoolYear();
+
+        List<TeacherAssignmentStaffClassResponse.SubjectItem> subjects = assignments.stream()
+                .map(this::toStaffClassSubjectItem)
+                .toList();
+
+        return TeacherAssignmentStaffClassResponse.builder()
+                .classId(classroom.getId())
+                .classCode(classroom.getCode())
+                .className(classroom.getName())
+                .schoolYearId(schoolYear != null ? schoolYear.getId() : null)
+                .schoolYearName(schoolYear != null ? schoolYear.getName() : null)
+                .subjects(subjects)
+                .build();
+    }
+
+    private TeacherAssignmentStaffClassResponse.SubjectItem toStaffClassSubjectItem(TeacherAssignment assignment) {
+        Subject subject = assignment.getSubject();
+        Semester semester = assignment.getSemester();
+
+        return TeacherAssignmentStaffClassResponse.SubjectItem.builder()
+                .assignmentId(assignment.getId())
+                .subjectId(subject != null ? subject.getId() : null)
+                .subjectCode(subject != null ? subject.getCode() : null)
+                .subjectName(subject != null ? subject.getName() : null)
+                .semesterId(semester != null ? semester.getId() : null)
+                .semesterName(semester != null ? semester.getName() : null)
                 .build();
     }
 
@@ -362,6 +437,16 @@ public class TeacherAssignmentServiceImpl implements TeacherAssignmentService {
                 .orElseThrow(() -> new UserMessageException(CommonErrorCode.TEACHER_NOT_FOUND));
     }
 
+    private void replaceExistingAssignments(AssignmentBuildContext context) {
+        List<TeacherAssignment> existingAssignments = teacherAssignmentRepository
+                .findByStaffIdAndSchoolYearIdAndSemesterId(context.staff().getId(), context.schoolYear().getId(),
+                        context.semester().getId());
+        if (!existingAssignments.isEmpty()) {
+            teacherAssignmentRepository.deleteAll(existingAssignments);
+            teacherAssignmentRepository.flush();
+        }
+    }
+
     private List<TeacherAssignmentItemDto> saveAssignments(AssignmentBuildContext context) {
         List<TeacherAssignment> assignments = new ArrayList<>();
 
@@ -380,6 +465,51 @@ public class TeacherAssignmentServiceImpl implements TeacherAssignmentService {
                 .toList();
     }
 
+    private void validateAssignmentConflicts(Staff staff, SchoolYear schoolYear, Semester semester,
+            List<AssignmentSeed> seeds, Long unitId) {
+        if (seeds.isEmpty()) {
+            return;
+        }
+
+        Set<Long> classIds = seeds.stream()
+                .map(seed -> seed.classroom().getId())
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+        Set<Long> subjectIds = seeds.stream()
+                .map(seed -> seed.subject().getId())
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+        Set<Long> requestPairs = seeds.stream()
+                .map(seed -> buildPairKey(seed.classroom().getId(), seed.subject().getId()))
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+
+        List<TeacherAssignment> conflicts = teacherAssignmentRepository.findAll((root, query, cb) -> {
+            List<Predicate> predicates = new ArrayList<>();
+            predicates.add(cb.equal(root.get("schoolYear").get("id"), schoolYear.getId()));
+            predicates.add(cb.equal(root.get("semester").get("id"), semester.getId()));
+            predicates.add(cb.equal(root.get("classroom").get("unit").get("id"), unitId));
+            predicates.add(root.get("classroom").get("id").in(classIds));
+            predicates.add(root.get("subject").get("id").in(subjectIds));
+            predicates.add(cb.notEqual(root.get("staff").get("id"), staff.getId()));
+            return cb.and(predicates.toArray(new Predicate[0]));
+        });
+
+        Map<String, List<String>> conflictNames = conflicts.stream()
+                .filter(item -> item.getClassroom() != null && item.getSubject() != null)
+                .filter(item -> requestPairs.contains(buildPairKey(item.getClassroom().getId(), item.getSubject().getId())))
+                .collect(Collectors.groupingBy(
+                        item -> item.getSubject().getName(),
+                        LinkedHashMap::new,
+                        Collectors.mapping(item -> item.getClassroom().getName(),
+                                Collectors.collectingAndThen(Collectors.toCollection(LinkedHashSet::new),
+                                        ArrayList::new))));
+
+        if (!conflictNames.isEmpty()) {
+            String message = conflictNames.entrySet().stream()
+                    .map(entry -> entry.getKey() + ": " + String.join(", ", entry.getValue()))
+                    .collect(Collectors.joining("; "));
+            throw new UserMessageException("Phân công bị trùng trong cùng học kỳ: " + message);
+        }
+    }
+
     private AssignmentBuildContext validateAndBuildContext(TeacherAssignmentCreateRequest request) {
         Staff staff = staffRepository.findById(request.getStaffId())
                 .orElseThrow(() -> new UserMessageException(CommonErrorCode.STAFF_NOT_FOUND));
@@ -394,7 +524,7 @@ public class TeacherAssignmentServiceImpl implements TeacherAssignmentService {
 
         List<AssignmentSeed> seeds = new ArrayList<>();
         Set<Long> classroomIds = new LinkedHashSet<>();
-        Set<Long> duplicateClassIds = new LinkedHashSet<>();
+        Map<Long, String> duplicateClassNames = new LinkedHashMap<>();
         Map<Long, Subject> subjectMap = new HashMap<>();
         Map<Long, Classroom> classroomMap = new HashMap<>();
 
@@ -407,22 +537,24 @@ public class TeacherAssignmentServiceImpl implements TeacherAssignmentService {
 
                 if (!classroomSubjectRepository.existsByClassroomIdAndSubjectId(classroom.getId(), subject.getId())) {
                     throw new UserMessageException(
-                            "Môn " + subject.getId() + " chưa được cấu hình cho lớp " + classroom.getId());
+                            "Môn " + subject.getName() + " chưa được cấu hình cho lớp " + classroom.getName());
                 }
 
                 if (!classroomIds.add(classroom.getId())) {
-                    duplicateClassIds.add(classroom.getId());
+                    duplicateClassNames.put(classroom.getId(), classroom.getName());
                 }
 
                 seeds.add(new AssignmentSeed(classroom, subject));
             }
         }
 
-        if (!duplicateClassIds.isEmpty()) {
+        if (!duplicateClassNames.isEmpty()) {
             throw new UserMessageException(
                     "Một lớp chỉ được phân công một môn cho cùng giáo viên trong cùng học kỳ. Lớp bị trùng: "
-                            + duplicateClassIds);
+                            + String.join(", ", duplicateClassNames.values()));
         }
+
+        validateAssignmentConflicts(staff, schoolYear, semester, seeds, request.getUnitId());
 
         return new AssignmentBuildContext(staff, schoolYear, semester, seeds, new ArrayList<>(classroomIds));
     }

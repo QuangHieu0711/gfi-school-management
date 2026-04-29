@@ -101,6 +101,7 @@
             <th class="code-col">Mã cán bộ</th>
             <th class="name-col">Họ tên cán bộ</th>
             <th class="subject-col">Môn học</th>
+            <th class="semester-col">Học kỳ</th>
             <th class="class-col">Lớp phân công</th>
             <th class="action-col">Hành động</th>
           </tr>
@@ -131,6 +132,7 @@
               }
 
               <td class="subject-col">{{ row.subjectName || '--' }}</td>
+              <td class="semester-col">{{ row['semesterName'] || '--' }}</td>
               <td class="class-col">{{ (row.classNames || []).join(', ') || '--' }}</td>
 
               @if (row.isGroupHead) {
@@ -169,7 +171,7 @@
             <tr>
               <td
                 class="empty-row"
-                colspan="6">
+                colspan="7">
                 <div class="empty-state">
                   <img
                     class="empty-state__image"

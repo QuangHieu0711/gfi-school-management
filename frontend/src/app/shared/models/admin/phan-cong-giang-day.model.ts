@@ -55,6 +55,8 @@ export interface PhanCongGiangDayFilterRequest extends TableRequest {
 }
 
 export interface PhanCongGiangDayAssignmentItem {
+  semesterId?: ID_TYPE;
+  semesterName?: string;
   subjectId?: ID_TYPE;
   subjectName?: string;
   classIds?: ID_TYPE[];
@@ -125,6 +127,7 @@ export interface PhanCongGiangDayDetailRequest {
   unitId?: ID_TYPE;
   staffId?: ID_TYPE;
   schoolYearId?: ID_TYPE;
+  semesterId?: ID_TYPE;
   subjectId?: ID_TYPE;
 }
 
@@ -132,8 +135,11 @@ export interface PhanCongGiangDayDetailResponse {
   unitId?: ID_TYPE;
   staffId?: ID_TYPE;
   schoolYearId?: ID_TYPE;
+  semesterId?: ID_TYPE;
+  semesterName?: string;
   subjectId?: ID_TYPE;
   classIds?: ID_TYPE[];
+  assignments?: PhanCongGiangDayAssignmentItem[];
 }
 
 export const PHAN_CONG_GIANG_DAY_FORM = [
@@ -143,6 +149,7 @@ export const PHAN_CONG_GIANG_DAY_FORM = [
     placeholder: 'Chọn năm học',
     required: true,
     listOption: [],
+    clearable: true,
   }),
   SELECT_CONTROL({
     controlName: PHAN_CONG_GIANG_DAY_KEY.SEMESTER_ID,
@@ -150,6 +157,7 @@ export const PHAN_CONG_GIANG_DAY_FORM = [
     placeholder: 'Chọn học kỳ',
     required: true,
     listOption: [],
+    clearable: true,
   }),
   SELECT_CONTROL({
     controlName: PHAN_CONG_GIANG_DAY_KEY.CLASS_ID,
@@ -157,6 +165,8 @@ export const PHAN_CONG_GIANG_DAY_FORM = [
     placeholder: 'Chọn lớp học',
     required: true,
     listOption: [],
+    multiple: true,
+    clearable: true,
   }),
   TEXT_CONTROL({
     controlName: PHAN_CONG_GIANG_DAY_KEY.ASSIGNMENT_SUMMARY,
@@ -173,6 +183,7 @@ export const PHAN_CONG_GIANG_DAY_FORM = [
     placeholder: 'Chọn môn học',
     required: false,
     listOption: [],
+    clearable: true,
   }),
   SELECT_CONTROL({
     controlName: PHAN_CONG_GIANG_DAY_KEY.DEPARTMENT_ID,
@@ -180,6 +191,7 @@ export const PHAN_CONG_GIANG_DAY_FORM = [
     placeholder: 'Lựa chọn',
     required: false,
     listOption: [],
+    clearable: true,
   }),
   CHECKBOX_CONTROL({
     controlName: PHAN_CONG_GIANG_DAY_KEY.IS_HOMEROOM,

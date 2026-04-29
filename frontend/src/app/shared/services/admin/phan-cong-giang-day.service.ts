@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { HttpClient, HttpContext } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { ERROR_CONTEXT } from '@constant/error.registry';
@@ -50,6 +51,15 @@ export class PhanCongGiangDayService {
     return this.http.put<IResponse<PhanCongGiangDayResponse>>(
       this.baseUrl,
       payload,
+      {
+        context: this.silentContext,
+      }
+    );
+  }
+
+  getClassesByStaff(staffId: string | number) {
+    return this.http.get<IResponse<any[]>>(
+      `${this.baseUrl}/staff/${staffId}/classes`,
       {
         context: this.silentContext,
       }

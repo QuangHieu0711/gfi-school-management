@@ -1,0 +1,95 @@
+<app-table
+  tableTitle="Sổ đánh giá học sinh"
+  [pageIndex]="pageIndex"
+  [pageSize]="pageSize"
+  [total]="dataSourceTotal"
+  [tableConfig]="tableConfig"
+  [dataSource]="dataSource"
+  [tableColumns]="columns"
+  (queryChange)="filterData($event)">
+
+  <ng-container custom-buttons>
+    <div class="flex gap-2 items-center">
+      <button matButton="text" (click)="openConfig()">
+        <app-icon icon="settings"></app-icon>
+        Cấu hình
+      </button>
+      <button matButton="filled" color="primary" (click)="openComment()">
+        <app-icon icon="chat"></app-icon>
+        Nhận xét
+      </button>
+      <button matButton="filled" (click)="openImport()">
+        <app-icon icon="upload"></app-icon>
+        Nhập dữ liệu
+      </button>
+      <button matButton="filled" (click)="exportExcel()">
+        <app-icon icon="cloud_download"></app-icon>
+        Xuất Excel
+      </button>
+      <button matButton="filled" color="primary" (click)="save()">
+        <app-icon icon="save"></app-icon>
+        Lưu
+      </button>
+    </div>
+  </ng-container>
+
+  <ng-container filter-panel>
+    <app-form-control [form]="form" (submitEvent)="filterData()" (resetEvent)="resetFilter()">
+      <div class="flex gap-2 items-center">
+        <div class="relative">
+          <button matButton="outlined" (click)="showClassPicker = !showClassPicker">
+            <app-icon icon="group_work"></app-icon>
+            {{ selectedClassName || 'Chọn lớp' }}
+          </button>
+
+          <div class="class-picker-panel" *ngIf="showClassPicker" style="position: absolute; z-index: 50; background: white; border: 1px solid #eee; padding: 8px; max-height: 320px; overflow: auto; width: 260px;">
+            <div *ngFor="let group of gradeClassGroups">
+              <div class="grade-header" style="display:flex;align-items:center;justify-content:space-between;">
+                <button type="button" matButton="text" (click)="toggleGrade(group.gradeLevelId)">
+                  <mat-icon>{{ isGradeExpanded(group.gradeLevelId) ? 'expand_more' : 'chevron_right' }}</mat-icon>
+                  {{ group.gradeLevelName }}
+                </button>
+              </div>
+              <div *ngIf="isGradeExpanded(group.gradeLevelId)" style="padding-left: 8px;">
+                <div *ngFor="let cl of group.classes">
+                  <button type="button" matButton="text" (click)="selectClass(group, cl)" [class.active]="selectedClassId === cl.id">
+                    {{ cl.name }}
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div style="margin-top:8px;text-align:center;">
+              <a (click)="reloadClassGroups()">Tải lại danh sách lớp</a>
+            </div>
+          </div>
+        </div>
+
+        <app-select-control [item]="findFormControl($formItem, key.SEMESTER_ID)" [form]="form"></app-select-control>
+        <app-select-control [item]="findFormControl($formItem, key.INPUT_ROUND)" [form]="form"></app-select-control>
+        <div class="flex gap-1 items-center">
+          <button color="dark" matIconButton="text" type="submit">
+            <app-icon icon="svg:search" color="#858585"></app-icon>
+          </button>
+          <button color="dark" matIconButton="text" type="reset">
+            <app-icon icon="svg:cached" color="#858585"></app-icon>
+          </button>
+        </div>
+      </div>
+    </app-form-control>
+
+    <!-- Subject tabs: show when selected class has subjects -->
+    <div *ngIf="subjects?.length" style="margin:8px 0; display:flex; gap:8px; align-items:center;">
+      <button mat-button *ngFor="let s of subjects" [color]="selectedSubjectId === s.subjectId ? 'primary' : undefined" (click)="selectSubject(s.subjectId)">
+        {{ s.subjectName }}
+      </button>
+    </div>
+  </ng-container>
+
+  <ng-template #nameTpl let-row>
+    <div class="student-name">
+      <div class="name">{{ row?.fullName }}</div>
+      <div class="meta">{{ row?.dob }} - {{ row?.code }}</div>
+    </div>
+  </ng-template>
+
+</app-table>

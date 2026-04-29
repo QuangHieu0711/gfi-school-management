@@ -370,7 +370,24 @@ export class PhanCongGiangDayComponent extends ComponentBaseAbstract {
       });
     });
 
-    return this.markGroupHeads(Array.from(groupedRows.values()));
+    const rowsArray = Array.from(groupedRows.values());
+
+    // Ensure rows for the same staff are contiguous so rowspan calculations
+    // (markGroupHeads) work correctly. Sort by staff order then by subject.
+    rowsArray.sort((a, b) => {
+      const staffKeyA = `${a.unitId ?? ''}-${a.staffId ?? ''}`;
+      const staffKeyB = `${b.unitId ?? ''}-${b.staffId ?? ''}`;
+      const orderA = staffOrder.get(staffKeyA) ?? 0;
+      const orderB = staffOrder.get(staffKeyB) ?? 0;
+      if (orderA !== orderB) return orderA - orderB;
+      const sa = `${a.subjectName ?? ''}`.localeCompare(
+        `${b.subjectName ?? ''}`
+      );
+      if (sa !== 0) return sa;
+      return `${a.id ?? ''}`.localeCompare(`${b.id ?? ''}`);
+    });
+
+    return this.markGroupHeads(rowsArray);
   }
 
   private collectClassNames(item: PhanCongGiangDayResponse): string[] {

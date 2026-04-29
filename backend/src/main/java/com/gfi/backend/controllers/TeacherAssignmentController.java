@@ -8,6 +8,7 @@ import com.gfi.backend.models.dtos.staff.TeacherAssignmentImportResultDto;
 import com.gfi.backend.models.dtos.staff.TeacherAssignmentItemDto;
 import com.gfi.backend.models.dtos.staff.TeacherAssignmentSearchRequest;
 import com.gfi.backend.models.dtos.staff.TeacherAssignmentSearchResponse;
+import com.gfi.backend.models.dtos.staff.TeacherAssignmentStaffClassResponse;
 import com.gfi.backend.models.enums.ActionType;
 import com.gfi.backend.models.global.ApiResult;
 import com.gfi.backend.services.interfaces.TeacherAssignmentService;
@@ -20,9 +21,9 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -61,23 +62,23 @@ public class TeacherAssignmentController extends ApiBaseController {
                         "Hiển thị chi tiết phân công thành công"));
     }
 
+    @GetMapping("/staff/{staffId}/classes")
+    @DataScoped(feature = "ASSIGNMENT_LIST", action = ActionType.VIEW)
+    @Operation(summary = "Danh sách lớp và môn theo giáo viên", description = "Lấy danh sách lớp giáo viên được phân công và các môn giáo viên dạy trong từng lớp.")
+    public ResponseEntity<ApiResult<List<TeacherAssignmentStaffClassResponse>>> getClassesByStaff(
+            @PathVariable Long staffId) {
+        return executeApiResult(
+                () -> ApiResult.success(teacherAssignmentService.getClassesByStaff(staffId),
+                        "Hiển thị danh sách lớp phân công theo giáo viên thành công"));
+    }
+
     @PostMapping
     @DataScoped(feature = "ASSIGNMENT_LIST", action = ActionType.ADD)
-    @Operation(summary = "Thêm phân công", description = "Tạo danh sách phân công dạy học mới theo giáo viên.")
+    @Operation(summary = "Lưu phân công", description = "Tạo mới hoặc cập nhật danh sách phân công dạy học theo giáo viên.")
     public ResponseEntity<ApiResult<List<TeacherAssignmentItemDto>>> create(
             @Valid @RequestBody TeacherAssignmentCreateRequest request) {
         return executeApiResult(
-                () -> ApiResult.success(teacherAssignmentService.create(request), "Thêm phân công thành công"));
-    }
-
-    @PutMapping
-    @DataScoped(feature = "ASSIGNMENT_LIST", action = ActionType.EDIT)
-    @Operation(summary = "Sửa phân công", description = "Cập nhật danh sách phân công dạy học theo giáo viên.")
-    public ResponseEntity<ApiResult<List<TeacherAssignmentItemDto>>> update(
-            @Valid @RequestBody TeacherAssignmentCreateRequest request) {
-        return executeApiResult(
-                () -> ApiResult.success(teacherAssignmentService.update(request),
-                        "Cập nhật phân công thành công"));
+                () -> ApiResult.success(teacherAssignmentService.create(request), "Lưu phân công thành công"));
     }
 
     @PostMapping(value = "/excel-template", produces = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")

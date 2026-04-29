@@ -11,6 +11,8 @@ public class TeacherAssignmentDetailResponse {
     private Long staffId;
     private Long schoolYearId;
     private Long semesterId;
+    private String semesterName;
     private Long subjectId;
     private List<Long> classIds;
+    private List<TeacherAssignmentAssignmentDto> assignments;
 }

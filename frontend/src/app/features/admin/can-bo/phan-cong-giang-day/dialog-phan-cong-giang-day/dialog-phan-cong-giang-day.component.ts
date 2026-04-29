@@ -80,6 +80,7 @@ export class DialogPhanCongGiangDayComponent extends ComponentBaseAbstract {
     string,
     Map<string, string>
   >();
+  private readonly subjectLabelMap = new Map<string, string>();
   private subjectOrder: string[] = [];
 
   constructor(
@@ -148,36 +149,24 @@ export class DialogPhanCongGiangDayComponent extends ComponentBaseAbstract {
       return;
     }
 
-    if (this.data.type === this.TYPE_FORM.CREATE) {
-      this.phanCongService.create(payload).subscribe({
-        next: () => {
-          this.toastr.success('Lưu thành công', 'Thành công');
-          this.dialogRef.close(true);
-        },
-        error: (error) => {
-          this.toastr.error(
-            error?.error?.userMessage ??
-            error?.error?.message ??
-            'Lưu thất bại',
-            'Thất bại'
-          );
-        },
-      });
-      return;
-    }
-
-    this.phanCongService.update(payload).subscribe({
+    // Use the POST endpoint for both create and update (upsert).
+    this.phanCongService.create(payload).subscribe({
       next: () => {
-        this.toastr.success('Cập nhật thành công', 'Thành công');
+        const successMsg =
+          this.data.type === this.TYPE_FORM.CREATE
+            ? 'Lưu thành công'
+            : 'Cập nhật thành công';
+        this.toastr.success(successMsg, 'Thành công');
         this.dialogRef.close(true);
       },
       error: (error) => {
-        this.toastr.error(
+        const failMsg =
           error?.error?.userMessage ??
           error?.error?.message ??
-          'Cập nhật thất bại',
-          'Thất bại'
-        );
+          (this.data.type === this.TYPE_FORM.CREATE
+            ? 'Lưu thất bại'
+            : 'Cập nhật thất bại');
+        this.toastr.error(failMsg, 'Thất bại');
       },
     });
   }
@@ -210,6 +199,7 @@ export class DialogPhanCongGiangDayComponent extends ComponentBaseAbstract {
   ): PhanCongGiangDayDetailRequest | undefined {
     const staffId = seedData?.staffId ?? this.data.staffId;
     const schoolYearId = seedData?.schoolYearId;
+    const semesterId = seedData?.semesterId;
     const subjectId = seedData?.subjectId;
     const unitId = seedData?.unitId ?? this.getCurrentUnitId();
 
@@ -220,9 +210,6 @@ export class DialogPhanCongGiangDayComponent extends ComponentBaseAbstract {
       schoolYearId === null ||
       schoolYearId === undefined ||
       schoolYearId === '' ||
-      subjectId === null ||
-      subjectId === undefined ||
-      subjectId === '' ||
       unitId === null ||
       unitId === undefined ||
       unitId === ''
@@ -234,6 +221,7 @@ export class DialogPhanCongGiangDayComponent extends ComponentBaseAbstract {
       unitId,
       staffId,
       schoolYearId,
+      semesterId,
       subjectId,
     };
   }
@@ -243,6 +231,15 @@ export class DialogPhanCongGiangDayComponent extends ComponentBaseAbstract {
     this.form.get(this.key.ASSIGNMENT_SUMMARY)?.disable({ emitEvent: false });
     this.title = 'Chỉnh sửa phân công giảng dạy';
     this.data.type = this.TYPE_FORM.UPDATE;
+    const subjectKey = this.getCurrentSubjectKey();
+    if (subjectKey) {
+      this.form
+        .get(this.key.CLASS_ID)
+        ?.setValue(this.subjectClassSelections.get(subjectKey) ?? [], {
+          emitEvent: false,
+        });
+    }
+    this.updateAssignmentSummary();
   }
 
   toggleGroup(group: StaffGroup): void {
@@ -324,9 +321,9 @@ export class DialogPhanCongGiangDayComponent extends ComponentBaseAbstract {
     const nextClassIds = checked
       ? Array.from(new Set([...selectedIds, ...displayedClassIds]))
       : selectedIds.filter(
-        (item) =>
-          !displayedClassIds.some((displayed) => `${displayed}` === `${item}`)
-      );
+          (item) =>
+            !displayedClassIds.some((displayed) => `${displayed}` === `${item}`)
+        );
 
     this.form
       .get(this.key.CLASS_ID)
@@ -416,7 +413,7 @@ export class DialogPhanCongGiangDayComponent extends ComponentBaseAbstract {
           this.staffGroups = [
             {
               gradeId: data.gradeId ?? 'grade',
-              gradeName: data.gradeName ?? 'Can bo',
+              gradeName: data.gradeName ?? 'Cán bộ',
               staffs: [data],
               expanded: true,
             },
@@ -516,31 +513,45 @@ export class DialogPhanCongGiangDayComponent extends ComponentBaseAbstract {
   private patchData(
     data: Partial<PhanCongGiangDayResponse> & PhanCongGiangDayDetailResponse
   ): void {
+    this.hydrateAssignmentSelections(data);
+    const firstAssignment = data.assignments?.find((item) => item.subjectId);
+    const activeSubjectId = data.subjectId ?? firstAssignment?.subjectId;
     const selectedClassIds = Array.isArray(data.classIds)
       ? data.classIds.filter(
-        (item) => item !== null && item !== undefined && item !== ''
-      )
+          (item) => item !== null && item !== undefined && item !== ''
+        )
       : data.classId != null && data.classId !== ''
         ? [data.classId]
         : [];
+    const activeClassIds =
+      selectedClassIds.length || !firstAssignment?.classIds?.length
+        ? selectedClassIds
+        : firstAssignment.classIds.filter(
+            (item) => item !== null && item !== undefined && item !== ''
+          );
 
     this.form.patchValue(
       {
         schoolYearId: data.schoolYearId ?? '',
         semesterId: data.semesterId ?? '',
-        classId: this.isCreateMode()
-          ? selectedClassIds
-          : (selectedClassIds[0] ?? ''),
-        subjectId: data.subjectId ?? '',
+        classId: activeClassIds,
+        subjectId: activeSubjectId ?? '',
         departmentId: data.departmentId ?? '',
-        assignmentSummary: data.className ?? '',
+        assignmentSummary:
+          this.buildAssignmentSummaryFromSelections() || data.className || '',
       },
       { emitEvent: false }
     );
 
-    if (data.subjectId != null && data.subjectId !== '') {
-      const subjectKey = this.toKey(data.subjectId);
-      const classIds = selectedClassIds;
+    const patchedSchoolYearId =
+      data.schoolYearId ?? this.form.get(this.key.SCHOOL_YEAR_ID)?.value;
+    if (patchedSchoolYearId != null && patchedSchoolYearId !== '') {
+      this.loadSemesterOptions(patchedSchoolYearId as ID_TYPE);
+    }
+
+    if (activeSubjectId != null && activeSubjectId !== '') {
+      const subjectKey = this.toKey(activeSubjectId);
+      const classIds = activeClassIds;
 
       if (classIds.length) {
         this.subjectClassSelections.set(subjectKey, classIds);
@@ -556,7 +567,7 @@ export class DialogPhanCongGiangDayComponent extends ComponentBaseAbstract {
       }
     }
 
-    this.previousSubjectId = data.subjectId;
+    this.previousSubjectId = activeSubjectId;
 
     if (data.staffId != null && data.staffId !== '') {
       this.resolveSelectedStaff(data.staffId);
@@ -702,31 +713,81 @@ export class DialogPhanCongGiangDayComponent extends ComponentBaseAbstract {
     ];
   }
 
+  private hydrateAssignmentSelections(
+    data: Partial<PhanCongGiangDayResponse> & PhanCongGiangDayDetailResponse
+  ): void {
+    const assignments = data.assignments ?? [];
+    if (!assignments.length) return;
+
+    this.subjectClassSelections.clear();
+    this.subjectClassLabelMap.clear();
+    this.subjectLabelMap.clear();
+    this.subjectOrder = [];
+
+    assignments.forEach((assignment) => {
+      const subjectKey = this.toKey(assignment.subjectId);
+      if (!subjectKey) return;
+
+      const classIds = (assignment.classIds ?? []).filter(
+        (item) => item !== null && item !== undefined && item !== ''
+      );
+      if (!classIds.length) return;
+
+      this.subjectClassSelections.set(subjectKey, classIds);
+      this.subjectOrder.push(subjectKey);
+      if (assignment.subjectName) {
+        this.subjectLabelMap.set(subjectKey, assignment.subjectName);
+      }
+
+      const labels = new Map<string, string>();
+      (assignment.classNames ?? []).forEach((className, index) => {
+        const classId = classIds[index];
+        if (classId !== null && classId !== undefined && className) {
+          labels.set(`${classId}`, className);
+        }
+      });
+      this.subjectClassLabelMap.set(subjectKey, labels);
+    });
+  }
+
+  private buildAssignmentSummaryFromSelections(): string {
+    return this.subjectOrder
+      .map((subjectKey) => {
+        const classIds = this.subjectClassSelections.get(subjectKey) ?? [];
+        if (!classIds.length) return '';
+
+        const classLabels = classIds
+          .map((classId) => this.getClassLabel(subjectKey, classId))
+          .filter((item): item is string => !!item);
+        if (!classLabels.length) return '';
+
+        const subjectLabel = this.getSubjectLabel(subjectKey);
+        return subjectLabel
+          ? `${subjectLabel}(${classLabels.join(', ')})`
+          : classLabels.join(', ');
+      })
+      .filter((item) => !!item)
+      .join(' - ');
+  }
+
   private updateAssignmentSummary(): void {
+    if (this.data.type === this.TYPE_FORM.DETAIL && this.subjectOrder.length) {
+      this.form
+        .get(this.key.ASSIGNMENT_SUMMARY)
+        ?.setValue(this.buildAssignmentSummaryFromSelections(), {
+          emitEvent: false,
+        });
+      return;
+    }
+
     if (this.isCreateMode()) {
       this.syncCurrentSubjectSelection();
 
-      const summary = this.subjectOrder
-        .map((subjectKey) => {
-          const classIds = this.subjectClassSelections.get(subjectKey) ?? [];
-          if (!classIds.length) return '';
-
-          const classLabels = classIds
-            .map((classId) => this.getClassLabel(subjectKey, classId))
-            .filter((item): item is string => !!item);
-          if (!classLabels.length) return '';
-
-          const subjectLabel = this.getSubjectLabel(subjectKey);
-          return subjectLabel
-            ? `${subjectLabel}(${classLabels.join(', ')})`
-            : classLabels.join(', ');
-        })
-        .filter((item) => !!item)
-        .join(' - ');
-
       this.form
         .get(this.key.ASSIGNMENT_SUMMARY)
-        ?.setValue(summary, { emitEvent: false });
+        ?.setValue(this.buildAssignmentSummaryFromSelections(), {
+          emitEvent: false,
+        });
       return;
     }
 
@@ -809,7 +870,7 @@ export class DialogPhanCongGiangDayComponent extends ComponentBaseAbstract {
   }
 
   private isCreateMode(): boolean {
-    return this.data.type === this.TYPE_FORM.CREATE;
+    return this.data.type !== this.TYPE_FORM.DETAIL;
   }
 
   private getCurrentSubjectKey(): string {
@@ -881,7 +942,9 @@ export class DialogPhanCongGiangDayComponent extends ComponentBaseAbstract {
     return (
       this.findFormControl(this.$formItem, this.key.SUBJECT_ID).options.find(
         (item) => `${item.value}` === subjectKey
-      )?.label ?? ''
+      )?.label ??
+      this.subjectLabelMap.get(subjectKey) ??
+      ''
     );
   }
 

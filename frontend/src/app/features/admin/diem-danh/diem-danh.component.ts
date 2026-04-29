@@ -626,9 +626,8 @@ export class DiemDanhComponent extends ComponentBaseAbstract {
 
   private getRowStatus(studentId: string | number, date: string): string {
     return (
-      this.monthRows.find((row) => `${row.studentId}` === `${studentId}`)?.statusMap[
-        date
-      ] ?? ''
+      this.monthRows.find((row) => `${row.studentId}` === `${studentId}`)
+        ?.statusMap[date] ?? ''
     );
   }
 }

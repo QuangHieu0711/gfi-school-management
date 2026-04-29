@@ -14,9 +14,7 @@ public class TeacherAssignmentDetailRequest {
     @NotNull(message = "Năm học không được để trống")
     private Long schoolYearId;
 
-    @NotNull(message = "Há»c ká»³ khÃ´ng Ä‘Æ°á»£c Ä‘á»ƒ trá»‘ng")
     private Long semesterId;
 
-    @NotNull(message = "Môn học không được để trống")
     private Long subjectId;
 }

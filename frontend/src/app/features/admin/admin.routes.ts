@@ -366,4 +366,23 @@ export const AdminRoutes: Routes = [
       },
     ],
   },
+  {
+    path: 'student-evaluation-book',
+    component: AdminComponent,
+    children: [
+      {
+        path: '',
+        canActivate: [PermissionGuard],
+        data: { menuCode: 'STUDENT_EVALUATION_BOOK' },
+        providers: [
+          provideState({ name: 'style', reducer: StyleReducer }),
+          provideEffects(StyleEffect),
+        ],
+        loadComponent: () =>
+          import('@features/admin/student-evaluation-book/student-evaluation-book.component').then(
+            (m) => m.StudentEvaluationBookComponent
+          ),
+      },
+    ],
+  },
 ];
