@@ -90,7 +90,12 @@ export class AuthService {
   ): ICurrentUserWithTokens {
     const token = response?.data?.token ?? {};
     const user = response?.data?.user ?? {};
-    const staff = this.normalizeStaff(user.staff);
+    const staff = this.normalizeStaff(
+      user.staff ??
+        (user.staffId != null || user.teacherId != null
+          ? { id: user.staffId ?? user.teacherId }
+          : null)
+    );
     const unit = this.normalizeUnit(user.unit) ?? staff?.unit ?? null;
     const menus = this.normalizeMenus(response?.data?.permissions?.menus ?? []);
     return {

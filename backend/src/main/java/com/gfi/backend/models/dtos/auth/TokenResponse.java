@@ -31,6 +31,7 @@ public class TokenResponse {
     @AllArgsConstructor
     public static class UserInfo {
         private Long id;
+        private Long staffId;
         private String username;
         private String fullName;
         private String email;

@@ -7,6 +7,7 @@ package com.gfi.backend.models.enums;
  * UNIT: hạn chế theo đơn vị học
  * GRADE: hạn chế theo khối lớp
  * CLASS: hạn chế theo lớp học
+ * STAFF: hạn chế theo giáo viên/cán bộ
  * USER: hạn chế theo người dùng tạo ra
  * SELF: chỉ dữ liệu của chính người dùng đó
  */
@@ -15,6 +16,7 @@ public enum ScopeType {
     UNIT("Đơn vị"),
     GRADE("Khối lớp"),
     CLASS("Lớp học"),
+    STAFF("Giáo viên"),
     USER("Người dùng"),
     SELF("Chính mình");
 

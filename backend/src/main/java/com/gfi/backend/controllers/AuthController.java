@@ -180,6 +180,7 @@ public class AuthController extends ApiBaseController {
         private TokenResponse.UserInfo toUserInfo(User user) {
                 return TokenResponse.UserInfo.builder()
                                 .id(user.getId())
+                                .staffId(user.getStaff() == null ? null : user.getStaff().getId())
                                 .username(user.getUsername())
                                 .fullName(user.getFullName())
                                 .email(user.getEmail())

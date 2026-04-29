@@ -1,3 +1,97 @@
+// ────────────────────────────────────────────────────────────────────────────
+// Layout
+// ────────────────────────────────────────────────────────────────────────────
+.evaluation-page {
+  display: grid;
+  grid-template-columns: 268px minmax(0, 1fr);
+  gap: 0;
+  min-height: calc(100vh - 140px);
+  align-items: stretch;
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// Sidebar
+// ────────────────────────────────────────────────────────────────────────────
+.evaluation-sidebar {
+  background: #fff;
+  border-right: 1px solid #d8e4e8;
+  min-height: 100%;
+  padding: 18px 12px 18px 18px;
+}
+
+.sidebar-header {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 12px;
+  padding: 0 14px;
+
+  h3 { margin: 0; color: #104f5b; font-size: 16px; font-weight: 800; }
+  span { color: #6a7e86; font-size: 14px; }
+}
+
+.grade-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  height: calc(100vh - 230px);
+  overflow: auto;
+}
+
+.grade-card { padding: 0; }
+
+.grade-toggle {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  border-radius: 10px;
+  transition: background 0.12s;
+  &:hover { background: #f0f6f7; }
+}
+.grade-arrow { width: 16px; height: 16px; font-size: 17px; line-height: 16px; color: #4e7280; flex-shrink: 0; }
+.grade-title { color: #153947; font-weight: 700; font-size: 16px; }
+
+.class-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 4px 0 10px 30px;
+}
+
+.class-chip {
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #1d3942;
+  font-weight: 500;
+  font-size: 16px;
+  text-align: left;
+  padding: 10px 16px;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+  width: calc(100% - 10px);
+  &:hover { background: #f1f7f8; }
+  &.active { background: #68a7b0; color: #fff; font-weight: 700; }
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// Content area
+// ────────────────────────────────────────────────────────────────────────────
+.evaluation-content {
+  background: #fff;
+  padding: 16px 16px 0;
+  min-height: 100%;
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// Student name display
+// ────────────────────────────────────────────────────────────────────────────
 .student-name {
   .name {
     font-weight: 600;
