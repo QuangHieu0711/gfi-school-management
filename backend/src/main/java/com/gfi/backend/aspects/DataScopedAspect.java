@@ -34,7 +34,7 @@ public class DataScopedAspect {
     private final DataScopeFilterService dataScopeFilterService;
     private final SpelExpressionParser spelParser = new SpelExpressionParser();
 
-    public DataScopedAspect(DataScopeFilterService dataScopeFilterService) {
+    public DataScopedAspect(@org.springframework.context.annotation.Lazy DataScopeFilterService dataScopeFilterService) {
         this.dataScopeFilterService = dataScopeFilterService;
     }
     

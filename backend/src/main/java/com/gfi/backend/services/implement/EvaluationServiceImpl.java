@@ -198,12 +198,17 @@ public class EvaluationServiceImpl implements EvaluationService {
                         0
                 );
 
-        ProgramDistribution selectedPpct = null;
+        List<ProgramDistribution> validPpcts = new java.util.ArrayList<>();
         for (ProgramDistribution p : ppcts) {
             if (p.getWeekNumber() != null && p.getWeekNumber() >= weekRange[0] && p.getWeekNumber() <= weekRange[1]) {
-                selectedPpct = p;
-                break;
+                validPpcts.add(p);
             }
+        }
+        
+        ProgramDistribution selectedPpct = null;
+        if (!validPpcts.isEmpty()) {
+            java.util.Random random = new java.util.Random();
+            selectedPpct = validPpcts.get(random.nextInt(validPpcts.size()));
         }
 
         String lessonTitle = selectedPpct != null ? selectedPpct.getLessonName() : "Bài ôn tập";
@@ -240,6 +245,16 @@ public class EvaluationServiceImpl implements EvaluationService {
             attendanceStatus = "Có mặt";
         }
 
+        String rawEvaluation = request.getEvaluation();
+        String mappedEvaluation = rawEvaluation;
+        if ("T".equalsIgnoreCase(rawEvaluation)) {
+            mappedEvaluation = "Tốt";
+        } else if ("H".equalsIgnoreCase(rawEvaluation)) {
+            mappedEvaluation = "Hoàn thành";
+        } else if ("C".equalsIgnoreCase(rawEvaluation)) {
+            mappedEvaluation = "Cần cố gắng";
+        }
+
         AiGenerateCommentRequest aiRequest = AiGenerateCommentRequest.builder()
                 .gradeLevel(gradeLevelName)
                 .subjectName(subjectName)
@@ -248,7 +263,7 @@ public class EvaluationServiceImpl implements EvaluationService {
                 .lessonNo(lessonNo)
                 .lessonTitle(lessonTitle)
                 .learningObjective(learningObjective)
-                .evaluation(request.getEvaluation())
+                .evaluation(mappedEvaluation)
                 .attendanceStatus(attendanceStatus)
                 .attendanceCode(attendanceCode)
                 .participationLevel(request.getParticipationLevel())

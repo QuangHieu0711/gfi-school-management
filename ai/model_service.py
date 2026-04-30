@@ -1,5 +1,7 @@
 import os
 import re
+import unicodedata
+from typing import Optional
 
 import torch
 from peft import PeftModel
@@ -18,20 +20,33 @@ ADAPTER_PATH = os.path.join(
 
 SYSTEM_PROMPT = (
     "Bạn là giáo viên tiểu học Việt Nam. "
-    "Hãy viết một câu nhận xét học sinh ngắn gọn, tự nhiên, lịch sự. "
-    "Chỉ dùng tiếng Việt. "
+    "Hãy viết đúng 1 câu nhận xét học sinh ngắn gọn, tự nhiên, lịch sự. "
     "Câu trả lời phải bắt đầu bằng từ Em. "
+    "Tuyệt đối chỉ dùng tiếng Việt có dấu. "
+    "Không dùng tiếng Anh, tiếng Trung, tiếng Indonesia hoặc bất kỳ ngôn ngữ nước ngoài nào. "
     "Không nhắc tên học sinh, không viết tiêu đề, không lặp lại đề bài."
 )
 
+# Những từ/cụm từ nước ngoài mô hình hay tự chèn.
 BAD_WORDS = [
-    "kepada",
-    "direction",
-    "clearer",
-    "assignedhomework",
-    "回答",
-    "练习",
-    "预料",
+    "kepada", "direction", "clearer", "assignedhomework", "assigned homework",
+    "homework", "point score", "point", "score", "practice", "exercise",
+    "complete", "completed", "activity", "movement", "student", "teacher",
+    "lesson", "skill", "skills", "performance", "teamwork", "good", "better",
+    "run", "jump", "throw", "catch", "ball", "the", "and", "for", "with",
+    "has", "have", "had", "not", "but", "can", "should", "would", "could",
+    "more", "very", "well", "also", "need", "needs", "improve", "improvement",
+    "excellent", "try", "work", "hard", "class", "test", "exam", "grade",
+    "result", "results", "focus", "attention", "confident", "confidence",
+    "participate", "participation", "behavior", "behaviour", "effort",
+    "progress", "learning", "study", "training", "develop", "development",
+    "achieve", "achievement", "understand", "understanding", "knowledge",
+    "ability", "capable", "correct", "incorrect", "basic", "advanced",
+    "level", "task", "group", "individual", "cooperation", "attitude",
+    "positive", "negative", "strong", "weak", "fast", "slow", "high", "low",
+    "overall", "general", "specific", "important", "necessary",
+    "bola", "pointscore", "point score",
+    "回答", "练习", "预料",
 ]
 
 REPLACEMENTS = {
@@ -40,10 +55,113 @@ REPLACEMENTS = {
     "direction": "hướng",
     "clearer": "rõ ràng hơn",
     "assignedhomework": "bài tập",
+    "assigned homework": "bài tập",
+    "point score": "phối hợp",
+    "pointscore": "phối hợp",
+    "bola": "bóng",
+    "homework": "bài tập",
+    "exercise": "bài tập",
+    "practice": "luyện tập",
+    "skill": "kĩ năng",
+    "skills": "kĩ năng",
+    "activity": "hoạt động",
+    "movement": "vận động",
+    "student": "học sinh",
+    "teacher": "giáo viên",
+    "lesson": "bài học",
+    "performance": "thể hiện",
+    "teamwork": "phối hợp nhóm",
+    "complete": "hoàn thành",
+    "completed": "hoàn thành",
+    "good": "tốt",
+    "better": "tốt hơn",
+    "improve": "cải thiện",
+    "effort": "nỗ lực",
+    "progress": "tiến bộ",
+    "confident": "tự tin",
+    "confidence": "sự tự tin",
+    "focus": "tập trung",
+    "attention": "chú ý",
+    "excellent": "xuất sắc",
+    "participate": "tham gia",
+    "participation": "sự tham gia",
+    "learning": "học tập",
+    "training": "rèn luyện",
+    "understand": "hiểu",
+    "understanding": "sự hiểu biết",
+    "correct": "chính xác",
+    "basic": "cơ bản",
+    "cooperation": "hợp tác",
+    "attitude": "thái độ",
+    "positive": "tích cực",
+    "strong": "mạnh",
+    "weak": "yếu",
+    "fast": "nhanh",
+    "slow": "chậm",
     "回答": "trả lời",
     "练习": "luyện tập",
     "预料": "dự đoán",
 }
+
+from viet_syllables_set import VIET_SYLLABLES
+
+# ── Phát hiện từ nước ngoài bằng WHITELIST tiếng Việt ──────────────────────
+# Bất kỳ từ nào chỉ gồm ký tự ASCII a-z mà KHÔNG nằm trong whitelist
+# sẽ bị coi là từ nước ngoài. Đây là cách triệt để nhất.
+_VIET_ASCII_WHITELIST = VIET_SYLLABLES | {
+    "ok", "km", "kg", "cm", "mm",
+}
+
+
+def _strip_viet_diacritics(text: str) -> str:
+    """Remove Vietnamese diacritics, returning ASCII-only lowercase."""
+    nfkd = unicodedata.normalize("NFD", text.lower())
+    # Bỏ combining marks
+    base = "".join(c for c in nfkd if unicodedata.category(c) != "Mn")
+    # Xử lý đ -> d
+    base = base.replace("đ", "d")
+    return base
+
+
+def _is_pure_ascii_word(word: str) -> bool:
+    """Check if a word contains only ASCII a-z letters."""
+    return bool(re.fullmatch(r"[a-zA-Z]+", word))
+
+
+def _contains_foreign_words(text: str) -> bool:
+    """Detect foreign words using whitelist approach.
+    Any word that is pure ASCII a-z and NOT in the Vietnamese whitelist
+    is considered foreign.
+    """
+    for word in re.findall(r"[a-zA-ZÀ-ỹĐđ]+", text):
+        ascii_form = _strip_viet_diacritics(word)
+        # Nếu sau khi bỏ dấu mà chỉ toàn ASCII → kiểm tra whitelist
+        if _is_pure_ascii_word(ascii_form):
+            if ascii_form not in _VIET_ASCII_WHITELIST and len(ascii_form) >= 2:
+                return True
+    return False
+
+
+def _remove_foreign_words(text: str) -> str:
+    """Remove any foreign word from the text."""
+    def _replace_word(m: re.Match) -> str:
+        word = m.group(0)
+        ascii_form = _strip_viet_diacritics(word)
+        if _is_pure_ascii_word(ascii_form) and ascii_form not in _VIET_ASCII_WHITELIST and len(ascii_form) >= 2:
+            return ""
+        return word
+
+    result = re.sub(r"[a-zA-ZÀ-ỹĐđ]+", _replace_word, text)
+    # Dọn dẹp khoảng trắng thừa
+    result = re.sub(r"\s+", " ", result).strip()
+    return result
+
+
+# CJK + known foreign words regex (giữ lại để check nhanh)
+FOREIGN_TEXT_RE = re.compile(
+    r"[\u4e00-\u9fff\u3040-\u30ff\uac00-\ud7af]",
+    re.IGNORECASE,
+)
 
 DEFAULT_COMMENT = "Em cần tiếp tục cố gắng trong học tập."
 
@@ -59,10 +177,25 @@ def get_model_device():
 def build_bad_words_ids():
     """Build token ids that should be blocked during generation."""
     ids = []
+    seen = set()
+
     for word in BAD_WORDS:
-        token_ids = tokenizer.encode(word, add_special_tokens=False)
-        if token_ids:
-            ids.append(token_ids)
+        forms = {
+            word,
+            word.lower(),
+            word.capitalize(),
+            word.upper(),
+            " " + word,
+            " " + word.capitalize(),
+            "\n" + word,
+        }
+        for form in forms:
+            token_ids = tokenizer.encode(form, add_special_tokens=False)
+            key = tuple(token_ids)
+            if token_ids and key not in seen:
+                ids.append(token_ids)
+                seen.add(key)
+
     return ids
 
 
@@ -97,9 +230,16 @@ def load_model(device: str = "cpu"):
     bad_words_ids = build_bad_words_ids()
 
 
-def build_prompt(data: dict) -> str:
+def build_prompt(data: dict, extra_instruction: str = "") -> str:
     """Create a Vietnamese-only prompt from backend request data."""
     attendance_full = "Có" if data.get("attendance_full") else "Không"
+    extra_line = f"\n- {extra_instruction}" if extra_instruction else ""
+
+    lesson_title = str(data.get("lesson_title", ""))
+    lesson_title = re.sub(r'(?i)(bài|tiết)\s*\d+[\s\-:]*', '', lesson_title).strip()
+    
+    objective = str(data.get("learning_objective", ""))
+    objective = re.sub(r'(?i)(bài|tiết)\s*\d+[\s\-:]*', '', objective).strip()
 
     return f"""Viết nhận xét cho học sinh dựa trên thông tin sau:
 
@@ -108,46 +248,131 @@ Môn học: {data.get("subject_name", "")}
 Học kì: {data.get("term", "")}
 Tuần: {data.get("week_no", "")}
 Tiết: {data.get("lesson_no", "")}
-Tên bài học: {data.get("lesson_title", "")}
-Mục tiêu bài học: {data.get("learning_objective", "")}
+Tên bài học: {lesson_title}
+Mục tiêu bài học: {objective}
 Mức đánh giá: {data.get("evaluation", "")}
 Đi học đầy đủ: {attendance_full}
 Mức độ tham gia: {data.get("participation_level", "")}
 Thái độ: {data.get("behavior_tag", "")}
 Bộ sách: {data.get("textbook_series", "")}
 
-Yêu cầu:
+Yêu cầu bắt buộc:
 - Chỉ viết 1 câu nhận xét.
 - Bắt đầu bằng "Em".
-- Chỉ dùng tiếng Việt.
+- Chỉ dùng tiếng Việt có dấu.
+- Không dùng tiếng Anh hoặc từ nước ngoài.
 - Không nhắc tên học sinh.
-- Không giải thích."""
+- Tuyệt đối không lặp lại chữ 'Bài' hay 'Tiết' trong nhận xét.
+- Không giải thích.{extra_line}"""
 
 
-def clean_response(text: str) -> str:
-    """Normalize common bad tokens and keep only one short sentence."""
+def has_foreign_text(text: str) -> bool:
+    """Return True if the sentence contains any foreign-language fragments.
+    Uses both CJK regex AND the Vietnamese whitelist approach.
+    """
+    if not text:
+        return False
+    if FOREIGN_TEXT_RE.search(text):
+        return True
+    return _contains_foreign_words(text)
+
+
+def clean_response(text: str) -> Optional[str]:
+    """Normalize common bad tokens and keep only one short Vietnamese sentence."""
+    if not text:
+        return None
+
+    text = text.strip().strip('"""\'\'`')
+    text = re.sub(
+        r"^(?:assistant|nhận xét|comment|answer|trả lời)\s*[:：\-]\s*",
+        "",
+        text,
+        flags=re.IGNORECASE,
+    )
+
     for bad, good in REPLACEMENTS.items():
-        text = text.replace(bad, good)
+        text = re.sub(re.escape(bad), good, text, flags=re.IGNORECASE)
 
-    text = text.strip()
+    text = _remove_foreign_words(text)
+    text = re.sub(r"\s+", " ", text).strip()
+
     match = re.match(r"(.+?[.!?])(\s|$)", text)
     if match:
         text = match.group(1).strip()
 
     if not text:
-        return DEFAULT_COMMENT
+        return None
 
-    if not text.startswith("Em"):
-        text = "Em " + text[0].lower() + text[1:]
+    # Dọn dẹp khoảng trắng thừa và chuẩn hóa dấu câu
+    text = re.sub(r"\s+([,.!?;:])", r"\1", text)
+    text = re.sub(r"([,.!?;:])(?=[^\s])", r"\1 ", text)
+    text = re.sub(r"\s+", " ", text).strip()
+
+    # Xử lý viết hoa/viết thường: viết thường tất cả trước, sau đó viết hoa đầu câu
+    text = text.lower()
+
+    def capitalize_sentence(match):
+        return match.group(1) + match.group(2).upper()
+
+    text = re.sub(r'(^|[.!?]\s+)([a-zà-ỹđ])', capitalize_sentence, text)
+
+    if text.startswith("em "):
+        text = "Em " + text[3:]
+    elif not text.startswith("Em"):
+        text = "Em " + text[0].lower() + text[1:] if text else ""
+
+    if text and text[-1] not in ".!?":
+        text += "."
+
+    if has_foreign_text(text):
+        return None
+
+    # Câu quá ngắn sau khi xóa từ nước ngoài → không hợp lệ.
+    word_count = len(re.findall(r"[a-zA-ZÀ-ỹĐđ]+", text))
+    if word_count < 4:
+        return None
 
     return text
 
 
-def generate_comment(data: dict, max_new_tokens: int = 45) -> str:
-    """Generate one cleaned Vietnamese student comment for the backend."""
-    load_model()
+def _safe_lesson_phrase(data: dict) -> str:
+    """Create a safe Vietnamese phrase for fallback comments."""
+    raw = str(data.get("lesson_title") or data.get("learning_objective") or "").strip()
+    raw = re.sub(r'(?i)(bài|tiết)\s*\d+[\s\-:]*', '', raw)
+    
+    for bad, good in REPLACEMENTS.items():
+        raw = re.sub(re.escape(bad), good, raw, flags=re.IGNORECASE)
 
-    prompt = build_prompt(data)
+    raw = _remove_foreign_words(raw)
+    raw = FOREIGN_TEXT_RE.sub("", raw)
+    raw = re.sub(r"[^0-9A-Za-zÀ-ỹĐđ\s,;:()./\-]", "", raw)
+    raw = re.sub(r"\s+", " ", raw).strip(" .,:;-")
+
+    if not raw:
+        return "nội dung bài học"
+
+    if len(raw) > 80:
+        raw = raw[:80].rsplit(" ", 1)[0].strip(" .,:;-")
+
+    return raw[0].lower() + raw[1:]
+
+
+def fallback_comment(data: dict) -> str:
+    """Always return a safe Vietnamese-only comment if model output is invalid."""
+    lesson = _safe_lesson_phrase(data)
+    evaluation = str(data.get("evaluation", "")).strip().upper()
+
+    if evaluation.startswith("T"):
+        return f"Em thực hiện tốt {lesson} và biết phối hợp với bạn khi luyện tập."
+    if evaluation.startswith("H"):
+        return f"Em hoàn thành {lesson} theo hướng dẫn, cần rèn thêm để động tác chính xác hơn."
+    if evaluation.startswith("C"):
+        return f"Em cần cố gắng hơn khi thực hiện {lesson} và chú ý luyện tập theo hướng dẫn."
+
+    return DEFAULT_COMMENT
+
+
+def _generate_raw(prompt: str, max_new_tokens: int, do_sample: bool, temperature: float, top_p: float) -> str:
     messages = [
         {"role": "system", "content": SYSTEM_PROMPT},
         {"role": "user", "content": prompt},
@@ -162,21 +387,60 @@ def generate_comment(data: dict, max_new_tokens: int = 45) -> str:
     encoded = {key: value.to(get_model_device()) for key, value in encoded.items()}
     input_ids = encoded["input_ids"]
 
-    with torch.no_grad():
-        output = model.generate(
-            **encoded,
-            max_new_tokens=max_new_tokens,
-            do_sample=False,
-            repetition_penalty=1.25,
-            no_repeat_ngram_size=4,
-            bad_words_ids=bad_words_ids,
-            eos_token_id=tokenizer.eos_token_id,
-            pad_token_id=tokenizer.eos_token_id,
-        )
+    generation_kwargs = {
+        **encoded,
+        "max_new_tokens": max_new_tokens,
+        "do_sample": do_sample,
+        "repetition_penalty": 1.2,
+        "no_repeat_ngram_size": 4,
+        "bad_words_ids": bad_words_ids or None,
+        "eos_token_id": tokenizer.eos_token_id,
+        "pad_token_id": tokenizer.eos_token_id,
+    }
+    if do_sample:
+        generation_kwargs.update({"temperature": temperature, "top_p": top_p})
 
-    response = tokenizer.decode(
+    with torch.no_grad():
+        output = model.generate(**generation_kwargs)
+
+    return tokenizer.decode(
         output[0][input_ids.shape[-1] :],
         skip_special_tokens=True,
     ).strip()
 
-    return clean_response(response)
+
+def generate_comment(data: dict, max_new_tokens: int = 40) -> str:
+    """Generate one cleaned Vietnamese student comment for the backend."""
+    load_model()
+
+    attempts = [
+        {
+            "do_sample": False,
+            "temperature": 0.0,
+            "top_p": 1.0,
+            "extra_instruction": "",
+        },
+        {
+            "do_sample": True,
+            "temperature": 0.25,
+            "top_p": 0.75,
+            "extra_instruction": (
+                "Nếu câu có lẫn tiếng Anh hoặc từ nước ngoài, hãy viết lại hoàn toàn bằng tiếng Việt."
+            ),
+        },
+    ]
+
+    for cfg in attempts:
+        prompt = build_prompt(data, extra_instruction=cfg["extra_instruction"])
+        raw = _generate_raw(
+            prompt=prompt,
+            max_new_tokens=max_new_tokens,
+            do_sample=cfg["do_sample"],
+            temperature=cfg["temperature"],
+            top_p=cfg["top_p"],
+        )
+        cleaned = clean_response(raw)
+        if cleaned:
+            return cleaned
+
+    return fallback_comment(data)
