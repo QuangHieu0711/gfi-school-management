@@ -12,7 +12,7 @@ import { IconComponent } from '@components/app-icon/app-icon.component';
 import { FORM_CONTROL_MODULE, MATERIAL_MODULE } from '@modules';
 import { FormType, SELECT_CONTROL } from '@model/form-control.model';
 import { ComponentBaseAbstract } from '@layout';
-import { COMMON_TABLE_KEY } from '@model/table.model';
+import { COMMON_TABLE_KEY, TableConfig } from '@model/table.model';
 import {
   DiemDanhKhoiNhomItem,
   DiemDanhLopItem,
@@ -93,10 +93,11 @@ export class StudentEvaluationBookComponent extends ComponentBaseAbstract {
     }),
   ];
 
-  tableConfig = {
+  tableConfig: TableConfig = {
     hasFilterPanel: true,
     hasFilterPanelButton: false,
     hasExport: true,
+    showPaginator: false,
   };
   columns: MtxGridColumn[] = [];
   dataSource: any[] = [];
@@ -146,37 +147,35 @@ export class StudentEvaluationBookComponent extends ComponentBaseAbstract {
     this.dataSourceTotal = 0;
 
     this.columns = [
-      { header: 'STT', class: 'text-center', field: COMMON_TABLE_KEY.STT },
+      { header: 'STT', class: 'text-center', field: COMMON_TABLE_KEY.STT, width: '50px' },
       {
         header: 'Họ và tên',
         field: 'fullName',
-        minWidth: 220,
+        width: '210px',
         cellTemplate: this.nameTpl,
       },
       {
         header: 'Giữa học kỳ',
         field: 'middleTerm',
-        width: '100px',
+        width: '65px',
         class: 'text-center',
         cellTemplate: this.middleTermTpl,
       },
       {
         header: 'Nhận xét GK',
         field: 'commentGK',
-        minWidth: 320,
         cellTemplate: this.commentGKTpl,
       },
       {
         header: 'Cuối học kỳ',
         field: 'finalTerm',
-        width: '100px',
+        width: '65px',
         class: 'text-center',
         cellTemplate: this.finalTermTpl,
       },
       {
         header: 'Nhận xét',
         field: 'commentFinal',
-        minWidth: 320,
         cellTemplate: this.commentFinalTpl,
       },
     ];
@@ -488,6 +487,12 @@ export class StudentEvaluationBookComponent extends ComponentBaseAbstract {
         );
       }
     });
+  }
+
+  cancel() {
+    // Reload the data from the server to discard changes
+    this.loadEvaluationSheet();
+    this.toastr.info('Đã hủy bỏ các thay đổi', 'Thông báo');
   }
 
   exportExcel() {

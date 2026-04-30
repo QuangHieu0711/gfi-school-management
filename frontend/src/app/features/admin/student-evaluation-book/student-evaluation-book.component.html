@@ -41,27 +41,19 @@
       [tableConfig]="tableConfig" [dataSource]="dataSource" [tableColumns]="columns" (queryChange)="filterData($event)">
       <ng-container custom-buttons>
         <div class="flex gap-2 items-center">
-          <button matButton="text" (click)="openConfig()">
-            <app-icon icon="settings"></app-icon>
-            Cấu hình
-          </button>
           <button matButton="filled" color="primary" (click)="openComment()">
             <app-icon icon="chat"></app-icon>
             Nhận xét
           </button>
-          <button matButton="filled" (click)="openImport()">
+          <button matButton="filled" color="primary" (click)="openImport()">
             <app-icon icon="upload"></app-icon>
             Nhập dữ liệu
           </button>
-          <button matButton="filled" (click)="exportExcel()">
+          <button matButton="filled" color="primary" (click)="exportExcel()">
             <app-icon icon="cloud_download"></app-icon>
             Xuất Excel
           </button>
-          <button matButton="filled" color="primary" (click)="save()">
-            <app-icon icon="save"></app-icon>
-            Lưu
-          </button>
-          <button matButton="outlined" (click)="exportPdf()">
+          <button matButton="filled" color="primary" (click)="exportPdf()">
             <app-icon icon="picture_as_pdf"></app-icon>
             Xuất
           </button>
@@ -100,9 +92,19 @@
             }
           </div>
           }
-          <!-- Hint / Gợi ý - red italic below -->
-          <div class="evaluation-hint mt-2 text-sm text-red-600 italic">
-            Gợi ý: T = Hoàn thành tốt &bull; H = Hoàn thành &bull; C = Chưa hoàn thành
+          <!-- Hint / Gợi ý and Save/Cancel buttons -->
+          <div class="flex justify-between items-center mt-2">
+            <div class="evaluation-hint text-sm text-red-600 italic">
+              Gợi ý: T = Hoàn thành tốt &bull; H = Hoàn thành &bull; C = Chưa hoàn thành
+            </div>
+            <div class="flex gap-2 items-center">
+              <button matButton="outlined" color="primary" (click)="cancel()">
+                Hủy
+              </button>
+              <button matButton="filled" color="primary" (click)="save()">
+                Lưu
+              </button>
+            </div>
           </div>
         </div>
       </ng-container>

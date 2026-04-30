@@ -130,11 +130,14 @@
 .student-name {
   .name {
     font-weight: 600;
+    font-size: 14px;
+    color: #0f172a;
   }
 
   .meta {
     font-size: 12px;
-    color: #9aa6a6;
+    color: #64748b;
+    margin-top: 2px;
   }
 }
 
@@ -148,11 +151,12 @@
 // ────────────────────────────────────────────────────────────────────────────
 .subject-tabs-container {
   display: flex;
-  gap: 24px;
-  border-bottom: 2px solid #e2e8f0;
+  gap: 8px;
+  border-bottom: none;
   margin-top: 6px;
   margin-bottom: 12px;
   overflow-x: auto;
+  padding-bottom: 4px;
   
   &::-webkit-scrollbar {
     height: 4px;
@@ -164,26 +168,28 @@
 }
 
 .subject-tab {
-  background: transparent;
-  border: none;
-  border-bottom: 2px solid transparent;
-  padding: 8px 4px;
-  margin-bottom: -2px; /* Pull down to overlap container border */
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  padding: 8px 16px;
+  margin-bottom: 0;
   font-size: 14px;
   font-weight: 500;
-  color: #64748b;
+  color: #475569;
   cursor: pointer;
   white-space: nowrap;
   transition: all 0.2s ease;
 
   &:hover {
+    background: #e2e8f0;
     color: #0f172a;
   }
 
   &.active {
+    background: #e6f4f1;
     color: #2a8a6c;
+    border-color: #2a8a6c;
     font-weight: 600;
-    border-bottom-color: #2a8a6c;
   }
 }
 
@@ -194,22 +200,37 @@
 
 // Override the arrow to match global select-control arrow
 ::ng-deep .cell-mtx-select {
+  .ng-select-container {
+    min-height: 36px !important;
+    height: 36px !important;
+    padding: 0 2px !important;
+  }
+  .ng-value-container {
+    padding-left: 0 !important;
+    justify-content: center !important;
+    .ng-value {
+      width: 100%;
+      text-align: center;
+      font-size: 14px;
+    }
+  }
   .ng-arrow-wrapper {
     width: 24px !important;
     display: flex;
     align-items: center;
     justify-content: center;
+    padding-right: 2px !important;
     .ng-arrow {
       border: none !important;
-      width: 24px !important;
-      height: 24px !important;
+      width: 20px !important;
+      height: 20px !important;
       transition: transform 0.2s ease;
       &::after {
         content: 'keyboard_arrow_down';
         font-family: 'Material Symbols Outlined', sans-serif;
         font-weight: normal;
         font-style: normal;
-        font-size: 24px;
+        font-size: 20px;
         line-height: 1;
         color: #64748b; /* equivalent to var(--color-neutral-500) */
       }
@@ -242,6 +263,10 @@
   border-radius: 4px;
   outline: none;
   resize: vertical;
+  font-size: 14px;
+  font-family: inherit;
+  color: #1e293b;
+  line-height: 1.4;
   transition: border-color 0.15s, box-shadow 0.15s;
 
   &:focus {
@@ -250,14 +275,14 @@
   }
 
   &::placeholder {
-    color: #b0c4ca;
+    color: #94a3b8;
     font-style: italic;
   }
 }
 
 .char-counter {
   font-size: 11px;
-  color: #6a7e86;
+  color: #64748b;
   text-align: left;
   margin-top: 2px;
 }
