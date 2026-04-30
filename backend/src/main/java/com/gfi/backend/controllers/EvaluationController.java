@@ -20,6 +20,9 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
+import org.springframework.web.bind.annotation.PostMapping;
+import com.gfi.backend.models.dtos.evaluation.EvaluationGenerateCommentRequest;
+
 @RestController
 @RequestMapping("/api/evaluations")
 @RequiredArgsConstructor
@@ -27,6 +30,15 @@ import lombok.RequiredArgsConstructor;
 public class EvaluationController extends ApiBaseController {
 
     private final EvaluationService evaluationService;
+
+    @PostMapping("/generate-comment")
+    @DataScoped(feature = "STUDENT_EVALUATION_BOOK", action = ActionType.VIEW)
+    @Operation(summary = "Gọi AI sinh nhận xét đánh giá")
+    public ResponseEntity<ApiResult<String>> generateComment(@Valid @RequestBody EvaluationGenerateCommentRequest request) {
+        return executeApiResult(() -> ApiResult.success(
+                evaluationService.generateComment(request),
+                "Sinh nhận xét thành công"));
+    }
 
     @GetMapping("/sheet")
     @DataScoped(feature = "STUDENT_EVALUATION_BOOK", action = ActionType.VIEW)

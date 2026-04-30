@@ -25,6 +25,8 @@ import { NamHocService } from '@app/service/admin/nam-hoc.service';
 import { ID_TYPE } from '@model/response.model';
 import { HocKyService } from '@app/service/admin/hoc-ky.service';
 import { AuthService } from '@service';
+import { EvaluationService } from '@app/service/admin/evaluation.service';
+import { EvaluationBulkSaveRequest } from '@app/model/admin/evaluation.model';
 
 interface TeacherClassAssignmentResponse {
   classId?: string | number;
@@ -127,7 +129,8 @@ export class StudentEvaluationBookComponent extends ComponentBaseAbstract {
     private readonly lopMonHocService: LopMonHocService,
     private readonly namHocService: NamHocService,
     private readonly hocKyService: HocKyService,
-    private readonly authService: AuthService
+    private readonly authService: AuthService,
+    private readonly evaluationService: EvaluationService
   ) {
     super(injector);
   }
@@ -450,7 +453,39 @@ export class StudentEvaluationBookComponent extends ComponentBaseAbstract {
   }
 
   save() {
-    this.toastr.success('Lưu thành công', 'Thành công');
+    const classroomId = this.form.get(this.key.CLASSROOM_ID)?.value;
+    const semesterId = this.form.get(this.key.SEMESTER_ID)?.value;
+    const subjectId = this.selectedSubjectId;
+
+    if (!classroomId || !semesterId || !subjectId) {
+      this.toastr.warning('Vui lòng chọn đầy đủ Lớp, Học kỳ và Môn học', 'Cảnh báo');
+      return;
+    }
+
+    const payload: EvaluationBulkSaveRequest = {
+      classroomId: Number(classroomId),
+      subjectId: Number(subjectId),
+      semesterId: Number(semesterId),
+      items: this.dataSource.map(s => ({
+        studentId: Number(s.id),
+        midtermLevel: s.middleTerm,
+        midtermRemark: s.commentGK,
+        finalLevel: s.finalTerm,
+        finalRemark: s.commentFinal,
+      })),
+    };
+
+    this.evaluationService.saveBulk(payload).subscribe({
+      next: () => {
+        this.toastr.success('Lưu thành công', 'Thành công');
+      },
+      error: (err) => {
+        this.toastr.error(
+          err?.error?.userMessage ?? err?.error?.message ?? 'Lưu thất bại',
+          'Lỗi'
+        );
+      }
+    });
   }
 
   exportExcel() {

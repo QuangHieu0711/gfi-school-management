@@ -19,4 +19,7 @@ public interface AttendanceRecordRepository extends JpaRepository<AttendanceReco
 
     List<AttendanceRecord> findByClassroomIdAndAttendanceDateAndSessionTypeAndDeletedFlagOrderByStudentIdAsc(
             Long classroomId, LocalDate attendanceDate, String sessionType, Integer deletedFlag);
+
+    List<AttendanceRecord> findByClassroomIdAndStudentIdAndDeletedFlag(
+            Long classroomId, Long studentId, Integer deletedFlag);
 }
