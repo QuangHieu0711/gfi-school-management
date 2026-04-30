@@ -21,9 +21,7 @@ public class EvaluationGenerateCommentRequest {
     @NotBlank(message = "Mức đánh giá không được để trống")
     private String evaluation; // Tốt/Hoàn thành/Cần cố gắng (hoặc T/H/C)
     
-    @NotBlank(message = "Mức độ tham gia không được để trống")
     private String participationLevel;
     
-    @NotBlank(message = "Thẻ hành vi không được để trống")
     private String behaviorTag;
 }

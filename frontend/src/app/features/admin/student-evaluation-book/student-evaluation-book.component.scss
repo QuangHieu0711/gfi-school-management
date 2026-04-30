@@ -144,21 +144,47 @@
 }
 
 // ────────────────────────────────────────────────────────────────────────────
-// Subject display – simple text in a bordered box
+// Subject Tabs display
 // ────────────────────────────────────────────────────────────────────────────
-.subject-display {
+.subject-tabs-container {
+  display: flex;
+  gap: 24px;
+  border-bottom: 2px solid #e2e8f0;
   margin-top: 6px;
-  padding: 10px 16px;
-  border: 1px solid #d4e3e8;
-  border-radius: 8px;
-  background: #fff;
+  margin-bottom: 12px;
+  overflow-x: auto;
+  
+  &::-webkit-scrollbar {
+    height: 4px;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 4px;
+  }
 }
 
-.subject-display-text {
+.subject-tab {
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  padding: 8px 4px;
+  margin-bottom: -2px; /* Pull down to overlap container border */
   font-size: 14px;
-  font-weight: 600;
-  color: #2a8a6c;
-  line-height: 1.4;
+  font-weight: 500;
+  color: #64748b;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+
+  &:hover {
+    color: #0f172a;
+  }
+
+  &.active {
+    color: #2a8a6c;
+    font-weight: 600;
+    border-bottom-color: #2a8a6c;
+  }
 }
 
 .cell-mtx-select {

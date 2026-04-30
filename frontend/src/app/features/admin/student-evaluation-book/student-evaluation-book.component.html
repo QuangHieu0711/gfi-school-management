@@ -84,11 +84,20 @@
           </div>
         </app-form-control>
 
-        <!-- Selected subject display + Rating select -->
+        <!-- Subject tabs display -->
         <div class="evaluation-subject-section mt-2">
-          @if (selectedSubjectName) {
-          <div class="subject-display mb-2">
-            <span class="subject-display-text">{{ selectedSubjectName }}</span>
+          @if (subjects && subjects.length > 0) {
+          <div class="subject-tabs-container">
+            @for (subject of subjects; track subject.subjectId) {
+            <button
+              type="button"
+              class="subject-tab"
+              [class.active]="selectedSubjectId === subject.subjectId"
+              (click)="selectSubject(subject.subjectId)"
+            >
+              {{ subject.subjectName }}
+            </button>
+            }
           </div>
           }
           <!-- Hint / Gợi ý - red italic below -->

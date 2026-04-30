@@ -12,3 +12,33 @@ export interface EvaluationItemSaveRequest {
   finalLevel?: string;
   finalRemark?: string;
 }
+
+export interface EvaluationGenerateCommentRequest {
+  classroomId: number | string;
+  subjectId: number | string;
+  studentId: number | string;
+  term: string;
+  evaluation: string;
+  participationLevel?: string;
+  behaviorTag?: string;
+}
+
+export interface EvaluationSheetResponse {
+  classroomId: number;
+  classroomName: string;
+  subjectId: number;
+  subjectName: string;
+  semesterId: number;
+  semesterName: string;
+  students: EvaluationSheetStudent[];
+}
+
+export interface EvaluationSheetStudent {
+  studentId: number;
+  studentCode: string;
+  studentName: string;
+  midtermLevel: string;
+  midtermRemark: string;
+  finalLevel: string;
+  finalRemark: string;
+}

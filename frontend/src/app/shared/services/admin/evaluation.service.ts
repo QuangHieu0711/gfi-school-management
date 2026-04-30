@@ -3,7 +3,7 @@ import { Injectable } from '@angular/core';
 import { ERROR_CONTEXT } from '@constant/error.registry';
 import { environment } from '@env/environment';
 import { IResponse } from '@model/response.model';
-import { EvaluationBulkSaveRequest } from '@app/model/admin/evaluation.model';
+import { EvaluationBulkSaveRequest, EvaluationGenerateCommentRequest, EvaluationSheetResponse } from '@app/model/admin/evaluation.model';
 
 @Injectable({ providedIn: 'root' })
 export class EvaluationService {
@@ -17,6 +17,18 @@ export class EvaluationService {
   saveBulk(payload: EvaluationBulkSaveRequest) {
     return this.http.put<IResponse<unknown>>(`${this.baseUrl}/bulk`, payload, {
       context: this.silentContext,
+    });
+  }
+
+  generateComment(payload: EvaluationGenerateCommentRequest) {
+    return this.http.post<IResponse<string>>(`${this.baseUrl}/generate-comment`, payload, {
+      context: this.silentContext,
+    });
+  }
+
+  getSheet(classroomId: string | number, subjectId: string | number, semesterId: string | number) {
+    return this.http.get<IResponse<EvaluationSheetResponse>>(`${this.baseUrl}/sheet`, {
+      params: { classroomId, subjectId, semesterId },
     });
   }
 }

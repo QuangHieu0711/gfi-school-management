@@ -4,7 +4,8 @@ import { Component, Injector, TemplateRef, ViewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MtxSelectModule } from '@ng-matero/extensions/select';
 import { MtxGridColumn } from '@ng-matero/extensions/grid';
-import { filter, take } from 'rxjs';
+import { filter, take, forkJoin, of } from 'rxjs';
+import { map, catchError } from 'rxjs/operators';
 
 import { AppTableComponent } from '@components/app-table/app-table.component';
 import { IconComponent } from '@components/app-icon/app-icon.component';
@@ -26,7 +27,7 @@ import { ID_TYPE } from '@model/response.model';
 import { HocKyService } from '@app/service/admin/hoc-ky.service';
 import { AuthService } from '@service';
 import { EvaluationService } from '@app/service/admin/evaluation.service';
-import { EvaluationBulkSaveRequest } from '@app/model/admin/evaluation.model';
+import { EvaluationBulkSaveRequest, EvaluationGenerateCommentRequest } from '@app/model/admin/evaluation.model';
 
 interface TeacherClassAssignmentResponse {
   classId?: string | number;
@@ -184,8 +185,7 @@ export class StudentEvaluationBookComponent extends ComponentBaseAbstract {
   filterData(pageChangeEvent?: any) {
     this.pageIndex = pageChangeEvent?.pageIndex ?? 0;
     this.pageSize = pageChangeEvent?.pageSize ?? this.pageSize;
-    // In a real implementation call API with filter values from `this.form`
-    this.dataSourceTotal = this.dataSource.length;
+    this.loadEvaluationSheet();
   }
 
   private loadInitialData(): void {
@@ -328,9 +328,6 @@ export class StudentEvaluationBookComponent extends ComponentBaseAbstract {
       { emitEvent: false }
     );
 
-    // Load students for this classroom from API
-    this.loadStudentsForClass(classroom.id);
-
     const cachedSubjects = this.subjectsByClassId.get(`${classroom.id}`);
     if (cachedSubjects) {
       this.setSelectedSubjects(cachedSubjects);
@@ -369,12 +366,16 @@ export class StudentEvaluationBookComponent extends ComponentBaseAbstract {
   private loadSemesterOptions(schoolYearId: ID_TYPE): void {
     this.hocKyService.getOptions(schoolYearId).subscribe({
       next: ({ data }) => {
-        this.findFormControl(this.$formItem, this.key.SEMESTER_ID).options = (
-          data ?? []
-        ).map((item: { id: number; name: string }) => ({
+        const options = (data ?? []).map((item: { id: number; name: string }) => ({
           value: item.id,
           label: item.name,
         }));
+        this.findFormControl(this.$formItem, this.key.SEMESTER_ID).options = options;
+
+        if (options.length > 0 && !this.form.get(this.key.SEMESTER_ID)?.value) {
+          this.form.patchValue({ [this.key.SEMESTER_ID]: options[0].value }, { emitEvent: false });
+          this.loadEvaluationSheet();
+        }
       },
       error: () => {
         this.findFormControl(this.$formItem, this.key.SEMESTER_ID).options = [];
@@ -436,6 +437,7 @@ export class StudentEvaluationBookComponent extends ComponentBaseAbstract {
     this.selectedSubjectId = subjects.length
       ? subjects[0].subjectId
       : undefined;
+    this.loadEvaluationSheet();
   }
 
   reloadClassGroups(): void {
@@ -444,7 +446,7 @@ export class StudentEvaluationBookComponent extends ComponentBaseAbstract {
 
   selectSubject(subjectId: any): void {
     this.selectedSubjectId = subjectId;
-    // optional: set form value or trigger reload of table data filtered by subject
+    this.loadEvaluationSheet();
   }
 
   resetFilter() {
@@ -453,7 +455,7 @@ export class StudentEvaluationBookComponent extends ComponentBaseAbstract {
   }
 
   save() {
-    const classroomId = this.form.get(this.key.CLASSROOM_ID)?.value;
+    const classroomId = this.selectedClassId;
     const semesterId = this.form.get(this.key.SEMESTER_ID)?.value;
     const subjectId = this.selectedSubjectId;
 
@@ -501,27 +503,107 @@ export class StudentEvaluationBookComponent extends ComponentBaseAbstract {
   }
 
   openComment() {
-    this.toastr.info('Nhận xét (demo)', 'Thông tin');
+    const classroomId = this.selectedClassId;
+    const subjectId = this.selectedSubjectId;
+
+    if (!classroomId || !subjectId) {
+      this.toastr.warning('Vui lòng chọn đầy đủ Lớp và Môn học để sinh nhận xét', 'Cảnh báo');
+      return;
+    }
+
+    const requests: { row: any, termField: string, commentField: string, request: EvaluationGenerateCommentRequest }[] = [];
+
+    for (const row of this.dataSource) {
+      if (row.middleTerm && !row.commentGK) {
+        requests.push({
+          row,
+          termField: 'middleTerm',
+          commentField: 'commentGK',
+          request: {
+            classroomId: Number(classroomId),
+            subjectId: Number(subjectId),
+            studentId: Number(row.id),
+            term: 'GK',
+            evaluation: row.middleTerm
+          }
+        });
+      }
+
+      if (row.finalTerm && !row.commentFinal) {
+        requests.push({
+          row,
+          termField: 'finalTerm',
+          commentField: 'commentFinal',
+          request: {
+            classroomId: Number(classroomId),
+            subjectId: Number(subjectId),
+            studentId: Number(row.id),
+            term: 'CK',
+            evaluation: row.finalTerm
+          }
+        });
+      }
+    }
+
+    if (requests.length === 0) {
+      this.toastr.info('Không có học sinh nào cần sinh nhận xét mới (chưa có điểm T/H/C hoặc đã có nhận xét).', 'Thông báo');
+      return;
+    }
+
+    this.toastr.info(`Đang sinh nhận xét cho ${requests.length} dòng...`, 'Đang xử lý');
+
+    const observables = requests.map(req =>
+      this.evaluationService.generateComment(req.request).pipe(
+        map(res => ({ req, res })),
+        catchError(err => of({ req, error: err }))
+      )
+    );
+
+    forkJoin(observables).subscribe(results => {
+      let successCount = 0;
+      for (const result of results) {
+        const resObj = result as any;
+        if (!resObj.error && resObj.res?.data) {
+          resObj.req.row[resObj.req.commentField] = resObj.res.data;
+          successCount++;
+        }
+      }
+
+      if (successCount > 0) {
+        this.toastr.success(`Đã sinh thành công ${successCount} nhận xét. Vui lòng kiểm tra và bấm Lưu để ghi nhận.`, 'Thành công');
+      } else {
+        this.toastr.warning('Không thể sinh nhận xét nào. Vui lòng thử lại sau.', 'Cảnh báo');
+      }
+    });
   }
 
   openImport() {
     this.toastr.info('Nhập dữ liệu (demo)', 'Thông tin');
   }
 
-  /** Load student list from API: GET /api/students/by-classroom?classroomId=X */
-  private loadStudentsForClass(classroomId: ID_TYPE): void {
-    this.diemDanhService.getStudentsByClassroom(classroomId).subscribe({
+  /** Load evaluation sheet from API: GET /api/evaluations/sheet */
+  private loadEvaluationSheet(): void {
+    const classroomId = this.selectedClassId;
+    const subjectId = this.selectedSubjectId;
+    const semesterId = this.form.get(this.key.SEMESTER_ID)?.value;
+
+    if (!classroomId || !subjectId || !semesterId) {
+      this.dataSource = [];
+      this.dataSourceTotal = 0;
+      return;
+    }
+
+    this.evaluationService.getSheet(classroomId, subjectId, semesterId).subscribe({
       next: ({ data }) => {
-        const students = data ?? [];
+        const students = data?.students ?? [];
         this.dataSource = students.map((s: any) => ({
-          id: s.id,
-          fullName: s.name ?? s.fullName ?? '',
-          dob: s.dob ?? s.dateOfBirth ?? '',
-          code: s.code ?? s.studentCode ?? '',
-          middleTerm: s.middleTerm ?? '',
-          commentGK: s.commentGK ?? '',
-          finalTerm: s.finalTerm ?? '',
-          commentFinal: s.commentFinal ?? '',
+          id: s.studentId,
+          fullName: s.studentName ?? '',
+          code: s.studentCode ?? '',
+          middleTerm: s.midtermLevel ?? '',
+          commentGK: s.midtermRemark ?? '',
+          finalTerm: s.finalLevel ?? '',
+          commentFinal: s.finalRemark ?? '',
         }));
         this.dataSourceTotal = this.dataSource.length;
       },
@@ -531,7 +613,7 @@ export class StudentEvaluationBookComponent extends ComponentBaseAbstract {
         this.toastr.error(
           error?.error?.userMessage ??
           error?.error?.message ??
-          'Không tải được danh sách học sinh',
+          'Không tải được bảng đánh giá',
           'Thất bại'
         );
       },
@@ -539,27 +621,43 @@ export class StudentEvaluationBookComponent extends ComponentBaseAbstract {
   }
 
   /** Handle inline cell edits – update dataSource in-place */
-  onCellChange(row: any, field: string, event: Event): void {
-    const target = event.target as
-      | HTMLInputElement
-      | HTMLSelectElement
-      | HTMLTextAreaElement;
-    row[field] = target.value;
+  onCellChange(row: any, field: string, valueOrEvent: any): void {
+    let newValue = valueOrEvent;
+    if (valueOrEvent && valueOrEvent.target !== undefined) {
+      // It's an Event object (from textarea input)
+      newValue = valueOrEvent.target.value;
+    }
+    
+    // Cập nhật row hiện tại trên giao diện
+    row[field] = newValue;
+
+    // Đảm bảo cập nhật chính xác vào dataSource gốc (tránh trường hợp table clone data)
+    if (this.dataSource) {
+      const dataRow = this.dataSource.find(item => item.id === row.id);
+      if (dataRow) {
+        dataRow[field] = newValue;
+      }
+    }
   }
 
-  /** Handle quick keys 1,2,3 -> T,H,C */
+  /** Handle quick keys T, H, C */
   onTermKeydown(row: any, field: string, event: KeyboardEvent): void {
     const key = event.key.toUpperCase();
     let val = '';
-    if (key === '1' || key === 'T') val = 'T';
-    else if (key === '2' || key === 'H') val = 'H';
-    else if (key === '3' || key === 'C') val = 'C';
+    if (key === 'T') val = 'T';
+    else if (key === 'H') val = 'H';
+    else if (key === 'C') val = 'C';
 
     if (val) {
       event.preventDefault();
-      const target = event.target as HTMLSelectElement;
-      target.value = val;
       row[field] = val;
+      
+      if (this.dataSource) {
+        const dataRow = this.dataSource.find(item => item.id === row.id);
+        if (dataRow) {
+          dataRow[field] = val;
+        }
+      }
     }
   }
 }
