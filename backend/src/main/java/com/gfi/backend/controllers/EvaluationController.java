@@ -22,6 +22,8 @@ import lombok.RequiredArgsConstructor;
 
 import org.springframework.web.bind.annotation.PostMapping;
 import com.gfi.backend.models.dtos.evaluation.EvaluationGenerateCommentRequest;
+import com.gfi.backend.models.dtos.evaluation.EvaluationBulkGenerateCommentRequest;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/evaluations")
@@ -38,6 +40,15 @@ public class EvaluationController extends ApiBaseController {
         return executeApiResult(() -> ApiResult.success(
                 evaluationService.generateComment(request),
                 "Sinh nhận xét thành công"));
+    }
+
+    @PostMapping("/bulk-generate-comment")
+    @DataScoped(feature = "STUDENT_EVALUATION_BOOK", action = ActionType.VIEW)
+    @Operation(summary = "Gọi AI sinh nhận xét đánh giá hàng loạt")
+    public ResponseEntity<ApiResult<Map<Long, String>>> bulkGenerateComment(@Valid @RequestBody EvaluationBulkGenerateCommentRequest request) {
+        return executeApiResult(() -> ApiResult.success(
+                evaluationService.bulkGenerateComment(request),
+                "Sinh nhận xét hàng loạt thành công"));
     }
 
     @GetMapping("/sheet")

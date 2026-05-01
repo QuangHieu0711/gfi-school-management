@@ -27,7 +27,7 @@ import { ID_TYPE } from '@model/response.model';
 import { HocKyService } from '@app/service/admin/hoc-ky.service';
 import { AuthService } from '@service';
 import { EvaluationService } from '@app/service/admin/evaluation.service';
-import { EvaluationBulkSaveRequest, EvaluationGenerateCommentRequest } from '@app/model/admin/evaluation.model';
+import { EvaluationBulkSaveRequest, EvaluationGenerateCommentRequest, EvaluationBulkGenerateCommentRequest, EvaluationBulkGenerateCommentItem } from '@app/model/admin/evaluation.model';
 
 interface TeacherClassAssignmentResponse {
   classId?: string | number;
@@ -516,68 +516,94 @@ export class StudentEvaluationBookComponent extends ComponentBaseAbstract {
       return;
     }
 
-    const requests: { row: any, termField: string, commentField: string, request: EvaluationGenerateCommentRequest }[] = [];
+    const gkItems: EvaluationBulkGenerateCommentItem[] = [];
+    const ckItems: EvaluationBulkGenerateCommentItem[] = [];
 
     for (const row of this.dataSource) {
       if (row.middleTerm && !row.commentGK) {
-        requests.push({
-          row,
-          termField: 'middleTerm',
-          commentField: 'commentGK',
-          request: {
-            classroomId: Number(classroomId),
-            subjectId: Number(subjectId),
-            studentId: Number(row.id),
-            term: 'GK',
-            evaluation: row.middleTerm
-          }
-        });
+        gkItems.push({ studentId: Number(row.id), evaluation: row.middleTerm });
       }
 
       if (row.finalTerm && !row.commentFinal) {
-        requests.push({
-          row,
-          termField: 'finalTerm',
-          commentField: 'commentFinal',
-          request: {
-            classroomId: Number(classroomId),
-            subjectId: Number(subjectId),
-            studentId: Number(row.id),
-            term: 'CK',
-            evaluation: row.finalTerm
-          }
-        });
+        ckItems.push({ studentId: Number(row.id), evaluation: row.finalTerm });
       }
     }
 
-    if (requests.length === 0) {
+    if (gkItems.length === 0 && ckItems.length === 0) {
       this.toastr.info('Không có học sinh nào cần sinh nhận xét mới (chưa có điểm T/H/C hoặc đã có nhận xét).', 'Thông báo');
       return;
     }
 
-    this.toastr.info(`Đang sinh nhận xét cho ${requests.length} dòng...`, 'Đang xử lý');
+    this.toastr.info(`Đang sinh nhận xét hàng loạt...`, 'Đang xử lý');
 
-    const observables = requests.map(req =>
-      this.evaluationService.generateComment(req.request).pipe(
-        map(res => ({ req, res })),
-        catchError(err => of({ req, error: err }))
-      )
-    );
+    const observables = [];
 
-    forkJoin(observables).subscribe(results => {
+    if (gkItems.length > 0) {
+      const payload: EvaluationBulkGenerateCommentRequest = {
+        classroomId: Number(classroomId),
+        subjectId: Number(subjectId),
+        term: 'GK',
+        items: gkItems
+      };
+      observables.push(
+        this.evaluationService.bulkGenerateComment(payload).pipe(
+          map(res => ({ term: 'GK', data: res.data })),
+          catchError(err => of({ term: 'GK', error: err }))
+        )
+      );
+    }
+
+    if (ckItems.length > 0) {
+      const payload: EvaluationBulkGenerateCommentRequest = {
+        classroomId: Number(classroomId),
+        subjectId: Number(subjectId),
+        term: 'CK',
+        items: ckItems
+      };
+      observables.push(
+        this.evaluationService.bulkGenerateComment(payload).pipe(
+          map(res => ({ term: 'CK', data: res.data })),
+          catchError(err => of({ term: 'CK', error: err }))
+        )
+      );
+    }
+
+    forkJoin(observables).subscribe((results: any[]) => {
+      let hasError = false;
       let successCount = 0;
-      for (const result of results) {
-        const resObj = result as any;
-        if (!resObj.error && resObj.res?.data) {
-          resObj.req.row[resObj.req.commentField] = resObj.res.data;
+
+      const gkMap = results.find(r => r.term === 'GK')?.data || {};
+      const ckMap = results.find(r => r.term === 'CK')?.data || {};
+      
+      hasError = results.some(r => !!r.error);
+
+      this.dataSource = this.dataSource.map(row => {
+        let updated = false;
+        const newRow = { ...row };
+
+        if (gkMap[row.id]) {
+          newRow.commentGK = gkMap[row.id];
+          updated = true;
           successCount++;
         }
-      }
+
+        if (ckMap[row.id]) {
+          newRow.commentFinal = ckMap[row.id];
+          updated = true;
+          successCount++;
+        }
+
+        return updated ? newRow : row;
+      });
 
       if (successCount > 0) {
-        this.toastr.success(`Đã sinh thành công ${successCount} nhận xét. Vui lòng kiểm tra và bấm Lưu để ghi nhận.`, 'Thành công');
-      } else {
-        this.toastr.warning('Không thể sinh nhận xét nào. Vui lòng thử lại sau.', 'Cảnh báo');
+        this.toastr.success('Sinh nhận xét thành công', 'Thành công');
+      } else if (!hasError) {
+        this.toastr.warning('Không có nhận xét nào được sinh', 'Cảnh báo');
+      }
+
+      if (hasError) {
+        this.toastr.error('Có lỗi xảy ra trong quá trình sinh nhận xét.', 'Lỗi');
       }
     });
   }

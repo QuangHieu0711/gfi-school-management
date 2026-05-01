@@ -284,6 +284,34 @@ public class EvaluationServiceImpl implements EvaluationService {
         }
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public java.util.Map<Long, String> bulkGenerateComment(com.gfi.backend.models.dtos.evaluation.EvaluationBulkGenerateCommentRequest request) {
+        java.util.Map<Long, String> result = new java.util.concurrent.ConcurrentHashMap<>();
+
+        request.getItems().parallelStream().forEach(item -> {
+            com.gfi.backend.models.dtos.evaluation.EvaluationGenerateCommentRequest singleReq = new com.gfi.backend.models.dtos.evaluation.EvaluationGenerateCommentRequest();
+            singleReq.setClassroomId(request.getClassroomId());
+            singleReq.setSubjectId(request.getSubjectId());
+            singleReq.setTerm(request.getTerm());
+            singleReq.setStudentId(item.getStudentId());
+            singleReq.setEvaluation(item.getEvaluation());
+            singleReq.setParticipationLevel(item.getParticipationLevel());
+            singleReq.setBehaviorTag(item.getBehaviorTag());
+
+            try {
+                String comment = generateComment(singleReq);
+                result.put(item.getStudentId(), comment);
+            } catch (Exception e) {
+                // If one fails, we can just put empty or an error message. Or log and put empty.
+                e.printStackTrace();
+                result.put(item.getStudentId(), ""); // fallback
+            }
+        });
+
+        return result;
+    }
+
     private int[] getWeekRangeForTerm(String term) {
         if (term == null) return new int[]{1, 35};
         switch (term.toUpperCase()) {

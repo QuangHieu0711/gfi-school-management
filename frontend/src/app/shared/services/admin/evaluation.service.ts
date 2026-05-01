@@ -3,7 +3,7 @@ import { Injectable } from '@angular/core';
 import { ERROR_CONTEXT } from '@constant/error.registry';
 import { environment } from '@env/environment';
 import { IResponse } from '@model/response.model';
-import { EvaluationBulkSaveRequest, EvaluationGenerateCommentRequest, EvaluationSheetResponse } from '@app/model/admin/evaluation.model';
+import { EvaluationBulkSaveRequest, EvaluationGenerateCommentRequest, EvaluationSheetResponse, EvaluationBulkGenerateCommentRequest } from '@app/model/admin/evaluation.model';
 
 @Injectable({ providedIn: 'root' })
 export class EvaluationService {
@@ -22,6 +22,12 @@ export class EvaluationService {
 
   generateComment(payload: EvaluationGenerateCommentRequest) {
     return this.http.post<IResponse<string>>(`${this.baseUrl}/generate-comment`, payload, {
+      context: this.silentContext,
+    });
+  }
+
+  bulkGenerateComment(payload: EvaluationBulkGenerateCommentRequest) {
+    return this.http.post<IResponse<{ [key: string]: string }>>(`${this.baseUrl}/bulk-generate-comment`, payload, {
       context: this.silentContext,
     });
   }

@@ -23,6 +23,18 @@ export interface EvaluationGenerateCommentRequest {
   behaviorTag?: string;
 }
 
+export interface EvaluationBulkGenerateCommentItem {
+  studentId: number | string;
+  evaluation: string;
+}
+
+export interface EvaluationBulkGenerateCommentRequest {
+  classroomId: number | string;
+  subjectId: number | string;
+  term: string;
+  items: EvaluationBulkGenerateCommentItem[];
+}
+
 export interface EvaluationSheetResponse {
   classroomId: number;
   classroomName: string;
