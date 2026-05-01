@@ -293,8 +293,8 @@ def clean_response(text: str) -> Optional[str]:
     for bad, good in REPLACEMENTS.items():
         text = re.sub(re.escape(bad), good, text, flags=re.IGNORECASE)
 
-    text = _remove_foreign_words(text)
-    text = re.sub(r"\s+", " ", text).strip()
+    if has_foreign_text(text):
+        return None
 
     match = re.match(r"(.+?[.!?])(\s|$)", text)
     if match:
@@ -324,10 +324,11 @@ def clean_response(text: str) -> Optional[str]:
     if text and text[-1] not in ".!?":
         text += "."
 
-    if has_foreign_text(text):
+    # Từ chối nếu câu có dấu gạch ngang lơ lửng hoặc giới từ đứng trước dấu câu
+    if re.search(r"-\s*[,.!?;:]", text) or re.search(r"\b(với|của|và|hoặc|nhưng|để|cho|bằng)\b\s*[,.!?;:]", text, flags=re.IGNORECASE):
         return None
 
-    # Câu quá ngắn sau khi xóa từ nước ngoài → không hợp lệ.
+    # Câu quá ngắn → không hợp lệ.
     word_count = len(re.findall(r"[a-zA-ZÀ-ỹĐđ]+", text))
     if word_count < 4:
         return None
