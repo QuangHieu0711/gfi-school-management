@@ -104,4 +104,10 @@ public interface UserRepository extends JpaRepository<User, Long>, JpaSpecificat
      */
     @Query("SELECT u FROM User u LEFT JOIN FETCH u.role WHERE u.username = :username AND u.deletedFlag = 0")
     Optional<User> findByUsernameWithRole(@Param("username") String username);
+
+    // ── Dashboard queries ────────────────────────────────────────────────────
+
+    /** Đếm user theo staff unit IDs */
+    @Query("SELECT COUNT(u) FROM User u LEFT JOIN u.staff s WHERE s.unit.id IN :unitIds AND u.deletedFlag = 0")
+    long countByStaffUnitIdIn(@Param("unitIds") List<Long> unitIds);
 }

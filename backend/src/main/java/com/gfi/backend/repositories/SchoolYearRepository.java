@@ -16,6 +16,11 @@ public interface SchoolYearRepository extends JpaRepository<SchoolYear, Long>, J
     Optional<SchoolYear> findByName(String name);
     Optional<SchoolYear> findByIsCurrentTrueAndDeletedFlagEquals(Integer deletedFlag);
 
+    /** Dashboard convenience: lấy năm học hiện tại (deletedFlag = 0) */
+    default Optional<SchoolYear> findCurrentSchoolYear() {
+        return findByIsCurrentTrueAndDeletedFlagEquals(0);
+    }
+
     @Modifying
     @Query("update SchoolYear sy set sy.isCurrent = false where sy.isCurrent = true and sy.id <> :id")
     void clearCurrentExcept(Long id);
