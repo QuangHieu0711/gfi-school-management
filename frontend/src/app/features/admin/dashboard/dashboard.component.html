@@ -1,0 +1,257 @@
+<section class="dashboard">
+  <header class="dashboard-hero">
+    <div class="hero-text">
+      <span class="hero-eyebrow">Tổng quan</span>
+      <h1>Trang chủ</h1>
+      <p class="hero-subtitle">
+        Năm học hiện tại:
+        <strong>{{ summary?.currentSchoolYearName || 'Chưa cập nhật' }}</strong>
+      </p>
+    </div>
+
+    <div class="hero-card">
+      <div class="hero-label">Tỷ lệ điểm danh tháng này</div>
+      <div class="hero-rate">{{ formatPercent(summary?.attendanceRateCurrentMonth) }}</div>
+      <div class="hero-progress">
+        <span
+          class="hero-progress__bar"
+          [style.width.%]="percentValue(summary?.attendanceRateCurrentMonth)"></span>
+      </div>
+      <div class="hero-note">Dữ liệu cập nhật theo tháng</div>
+    </div>
+  </header>
+
+  <section class="stat-grid">
+    <div class="stat-card">
+      <div class="stat-icon">
+        <app-icon icon="groups" [size]="22"></app-icon>
+      </div>
+      <div>
+        <div class="stat-value">{{ formatNumber(summary?.totalStudents) }}</div>
+        <div class="stat-label">Tổng học sinh</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">
+        <app-icon icon="supervisor_account" [size]="22"></app-icon>
+      </div>
+      <div>
+        <div class="stat-value">{{ formatNumber(summary?.totalStaffs) }}</div>
+        <div class="stat-label">Tổng cán bộ</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">
+        <app-icon icon="meeting_room" [size]="22"></app-icon>
+      </div>
+      <div>
+        <div class="stat-value">{{ formatNumber(summary?.totalClassrooms) }}</div>
+        <div class="stat-label">Tổng lớp học</div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">
+        <app-icon icon="badge" [size]="22"></app-icon>
+      </div>
+      <div>
+        <div class="stat-value">{{ formatNumber(summary?.totalUsers) }}</div>
+        <div class="stat-label">Tổng người dùng</div>
+      </div>
+    </div>
+  </section>
+
+  @if (loading) {
+    <div class="loading-state">Đang tải dữ liệu dashboard...</div>
+  } @else {
+    <section class="dashboard-grid">
+      <article class="panel">
+        <div class="panel-header">
+          <h3>Điểm danh 6 tháng gần nhất</h3>
+        </div>
+        @if ((summary?.attendanceLast6Months?.length ?? 0) === 0) {
+          <div class="panel-empty">Chưa có dữ liệu điểm danh.</div>
+        } @else {
+          <div class="bar-list">
+            @for (item of summary?.attendanceLast6Months; track item.month) {
+              <div class="bar-row">
+                <div class="bar-label">{{ item.month }}</div>
+                <div class="bar-track">
+                  <div
+                    class="bar-segment bar-present"
+                    [style.width.%]="percentOf(item.presentCount, maxAttendanceTotal(summary?.attendanceLast6Months))"></div>
+                  <div
+                    class="bar-segment bar-absent"
+                    [style.width.%]="percentOf(item.absentCount, maxAttendanceTotal(summary?.attendanceLast6Months))"></div>
+                </div>
+                <div class="bar-value">
+                  {{ formatNumber(item.presentCount) }} / {{ formatNumber(item.absentCount) }}
+                </div>
+              </div>
+            }
+          </div>
+        }
+      </article>
+
+      <article class="panel">
+        <div class="panel-header">
+          <h3>Học sinh theo khối</h3>
+        </div>
+        @if ((summary?.studentsByGradeLevel?.length ?? 0) === 0) {
+          <div class="panel-empty">Chưa có dữ liệu khối học.</div>
+        } @else {
+          <div class="progress-list">
+            @for (item of summary?.studentsByGradeLevel; track trackByLabel($index, item)) {
+              <div class="progress-row">
+                <div class="progress-label">{{ item.label }}</div>
+                <div class="progress-track">
+                  <div
+                    class="progress-bar"
+                    [style.width.%]="percentOf(item.value, maxDistribution(summary?.studentsByGradeLevel))"></div>
+                </div>
+                <div class="progress-value">{{ formatNumber(item.value) }}</div>
+              </div>
+            }
+          </div>
+        }
+      </article>
+
+      <article class="panel">
+        <div class="panel-header">
+          <h3>Lớp theo khối</h3>
+        </div>
+        @if ((summary?.classroomsByGradeLevel?.length ?? 0) === 0) {
+          <div class="panel-empty">Chưa có dữ liệu lớp học.</div>
+        } @else {
+          <div class="progress-list">
+            @for (item of summary?.classroomsByGradeLevel; track trackByLabel($index, item)) {
+              <div class="progress-row">
+                <div class="progress-label">{{ item.label }}</div>
+                <div class="progress-track">
+                  <div
+                    class="progress-bar alt"
+                    [style.width.%]="percentOf(item.value, maxDistribution(summary?.classroomsByGradeLevel))"></div>
+                </div>
+                <div class="progress-value">{{ formatNumber(item.value) }}</div>
+              </div>
+            }
+          </div>
+        }
+      </article>
+
+      <article class="panel">
+        <div class="panel-header">
+          <h3>Trạng thái học sinh</h3>
+        </div>
+        @if ((summary?.studentStatusDistribution?.length ?? 0) === 0) {
+          <div class="panel-empty">Chưa có dữ liệu trạng thái.</div>
+        } @else {
+          <div class="progress-list">
+            @for (item of summary?.studentStatusDistribution; track trackByLabel($index, item)) {
+              <div class="progress-row">
+                <div class="progress-label">{{ item.label }}</div>
+                <div class="progress-track">
+                  <div
+                    class="progress-bar warn"
+                    [style.width.%]="percentOf(item.value, maxDistribution(summary?.studentStatusDistribution))"></div>
+                </div>
+                <div class="progress-value">{{ formatNumber(item.value) }}</div>
+              </div>
+            }
+          </div>
+        }
+      </article>
+
+      <article class="panel">
+        <div class="panel-header">
+          <h3>Giới tính cán bộ</h3>
+        </div>
+        @if ((summary?.staffGenderDistribution?.length ?? 0) === 0) {
+          <div class="panel-empty">Chưa có dữ liệu giới tính.</div>
+        } @else {
+          <div class="progress-list">
+            @for (item of summary?.staffGenderDistribution; track trackByLabel($index, item)) {
+              <div class="progress-row">
+                <div class="progress-label">{{ item.label }}</div>
+                <div class="progress-track">
+                  <div
+                    class="progress-bar info"
+                    [style.width.%]="percentOf(item.value, maxDistribution(summary?.staffGenderDistribution))"></div>
+                </div>
+                <div class="progress-value">{{ formatNumber(item.value) }}</div>
+              </div>
+            }
+          </div>
+        }
+      </article>
+
+      <article class="panel">
+        <div class="panel-header">
+          <h3>Xu hướng tuyển sinh</h3>
+        </div>
+        @if ((summary?.studentEnrollmentTrend?.length ?? 0) === 0) {
+          <div class="panel-empty">Chưa có dữ liệu tuyển sinh.</div>
+        } @else {
+          <div class="progress-list">
+            @for (item of summary?.studentEnrollmentTrend; track trackByLabel($index, item)) {
+              <div class="progress-row">
+                <div class="progress-label">{{ item.label }}</div>
+                <div class="progress-track">
+                  <div
+                    class="progress-bar"
+                    [style.width.%]="percentOf(item.value, maxDistribution(summary?.studentEnrollmentTrend))"></div>
+                </div>
+                <div class="progress-value">{{ formatNumber(item.value) }}</div>
+              </div>
+            }
+          </div>
+        }
+      </article>
+
+      <article class="panel">
+        <div class="panel-header">
+          <h3>Top đơn vị theo số học sinh</h3>
+        </div>
+        @if ((summary?.topUnitsByStudentCount?.length ?? 0) === 0) {
+          <div class="panel-empty">Chưa có dữ liệu đơn vị.</div>
+        } @else {
+          <div class="progress-list">
+            @for (item of summary?.topUnitsByStudentCount; track trackByLabel($index, item)) {
+              <div class="progress-row">
+                <div class="progress-label">{{ item.label }}</div>
+                <div class="progress-track">
+                  <div
+                    class="progress-bar alt"
+                    [style.width.%]="percentOf(item.value, maxDistribution(summary?.topUnitsByStudentCount))"></div>
+                </div>
+                <div class="progress-value">{{ formatNumber(item.value) }}</div>
+              </div>
+            }
+          </div>
+        }
+      </article>
+
+      <article class="panel">
+        <div class="panel-header">
+          <h3>Phân công cán bộ</h3>
+        </div>
+        @if ((summary?.staffByAssignment?.length ?? 0) === 0) {
+          <div class="panel-empty">Chưa có dữ liệu phân công.</div>
+        } @else {
+          <div class="progress-list">
+            @for (item of summary?.staffByAssignment; track trackByLabel($index, item)) {
+              <div class="progress-row">
+                <div class="progress-label">{{ item.label }}</div>
+                <div class="progress-track">
+                  <div
+                    class="progress-bar info"
+                    [style.width.%]="percentOf(item.value, maxDistribution(summary?.staffByAssignment))"></div>
+                </div>
+                <div class="progress-value">{{ formatNumber(item.value) }}</div>
+              </div>
+            }
+          </div>
+        }
+      </article>
+    </section>
+  }
+</section>

@@ -23,6 +23,13 @@ import { sha256 } from '@utils/utils';
 export class LoginComponent {
   private readonly defaultRedirects = [
     {
+      menuCode: 'HOME',
+      commands: [
+        NAVIGATOR_ENDPOINT.ADMIN.BASE_PATH,
+        NAVIGATOR_ENDPOINT.ADMIN.DASHBOARD.BASE_PATH,
+      ],
+    },
+    {
       menuCode: 'ACCOUNT_MANAGEMENT',
       commands: [
         NAVIGATOR_ENDPOINT.ADMIN.BASE_PATH,

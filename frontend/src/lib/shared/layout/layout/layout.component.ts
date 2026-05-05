@@ -488,13 +488,15 @@ export class LayoutComponent extends ComponentBaseAbstract {
         return null;
       }
 
+      const menuCode = String(menu.menuCode ?? '').trim().toUpperCase();
+
       return {
         id: menu.menuCode,
         parentId: menu.parentMenuId ?? null,
         name: menu.menuName ?? this.getMenuLabel(menu.menuCode),
         url: parentCanView ? url : null, // Only set URL if has view permission
         icon: menu.icon || 'menu',
-        ordinal: Number(menu.level ?? ordinalFallback),
+        ordinal: menuCode === 'HOME' ? -1 : Number(menu.level ?? ordinalFallback),
         level,
         expanded: children.length > 0,
         children,

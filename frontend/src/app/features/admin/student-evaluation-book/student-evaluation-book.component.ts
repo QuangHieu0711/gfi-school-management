@@ -510,7 +510,7 @@ export class StudentEvaluationBookComponent extends ComponentBaseAbstract {
   openComment() {
     const classroomId = this.selectedClassId;
     const subjectId = this.selectedSubjectId;
-    
+
     // Lấy thông tin học kỳ đang chọn để xác định hậu tố (1 hoặc 2)
     const semesterId = this.form.get(this.key.SEMESTER_ID)?.value;
     const semesterOption = (this.findFormControl(this.$formItem, this.key.SEMESTER_ID).options as any[])?.find(o => o.value === semesterId);
@@ -580,7 +580,7 @@ export class StudentEvaluationBookComponent extends ComponentBaseAbstract {
 
       const gkMap = results.find(r => r.term === 'GK')?.data || {};
       const ckMap = results.find(r => r.term === 'CK')?.data || {};
-      
+
       hasError = results.some(r => !!r.error);
 
       this.dataSource = this.dataSource.map(row => {
@@ -664,7 +664,7 @@ export class StudentEvaluationBookComponent extends ComponentBaseAbstract {
       // It's an Event object (from textarea input)
       newValue = valueOrEvent.target.value;
     }
-    
+
     // Cập nhật row hiện tại trên giao diện
     row[field] = newValue;
 
@@ -688,7 +688,7 @@ export class StudentEvaluationBookComponent extends ComponentBaseAbstract {
     if (val) {
       event.preventDefault();
       row[field] = val;
-      
+
       if (this.dataSource) {
         const dataRow = this.dataSource.find(item => item.id === row.id);
         if (dataRow) {

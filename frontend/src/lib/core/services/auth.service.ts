@@ -4,7 +4,7 @@ import { HttpRequest, HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 
 import { ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY } from '@constant/constant';
-import { PermissionCheckService, StorageService } from '@service';
+import { PermissionCheckService, PermissionService, StorageService } from '@service';
 import {
   AUTH_API_ENDPOINT,
   ICurrentUser,
@@ -65,7 +65,8 @@ export class AuthService {
   constructor(
     private storageService: StorageService,
     private http: HttpClient,
-    private permissionCheckService: PermissionCheckService
+    private permissionCheckService: PermissionCheckService,
+    private permissionService: PermissionService
   ) {}
 
   // Restore session from storage into memory
@@ -79,6 +80,7 @@ export class AuthService {
       this.permissionCheckService.setPermissions(
         this.mapRulesToPermissions(userInfo.role?.rules ?? [])
       );
+      this.permissionService.setRules(userInfo.role?.rules ?? []);
       // Menus Ä‘Ã£ Ä‘Æ°á»£c lÆ°u trong userInfo.permissions.menus, component sáº½ láº¥y tá»« store
     }
   }
@@ -141,6 +143,7 @@ export class AuthService {
     this.permissionCheckService.setPermissions(
       this.mapRulesToPermissions(user.role?.rules ?? [])
     );
+    this.permissionService.setRules(user.role?.rules ?? []);
   }
 
   // Public API expected by the rest of the app
@@ -266,6 +269,7 @@ export class AuthService {
     const flatMenus = this.flattenMenus(menus);
 
     return flatMenus.map((menu, index) => ({
+      // Align HOME menu to admin dashboard route
       ruleId: index + 1,
       roleId: 0,
       moduleId: index + 1,
@@ -278,9 +282,13 @@ export class AuthService {
       isConfig: menu.actions?.isConfig ?? 0,
       isApprove: 0,
       name: menu.menuName ?? this.getMenuDisplayName(menu.menuCode ?? ''),
-      url: menu.path ?? '',
+      url:
+        String(menu.menuCode ?? '').toUpperCase() === 'HOME'
+          ? '/admin/dashboard'
+          : menu.path ?? '',
       pathId: String(index + 1),
-      ordinal: index,
+      ordinal:
+        String(menu.menuCode ?? '').toUpperCase() === 'HOME' ? 0 : index + 1,
       icon: menu.icon ?? this.getMenuIcon(menu.menuCode ?? ''),
       pid: undefined,
       dataScopes: (menu.dataScopes ?? []).map((ds: any) => ({

@@ -128,7 +128,7 @@
   #toggleTpl
   let-row
   let-col="colDef">
-  @if (!isRootMenu(row)) {
+  @if (!hasChildren(row)) {
     <mat-slide-toggle
       [checked]="col?.field === 'allPermissions' ? isAllSelected(row) : !!(col?.field && row[col.field])"
       (change)="onTogglePermission(row, col?.field, $event)">

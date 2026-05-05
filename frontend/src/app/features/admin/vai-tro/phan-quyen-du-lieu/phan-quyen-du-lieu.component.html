@@ -124,7 +124,7 @@
   #toggleTpl
   let-row
   let-col="colDef">
-  @if (!isDataRootMenu(row)) {
+  @if (!hasDataChildren(row)) {
     <mat-slide-toggle
       [disabled]="col?.field !== 'ALL' && isDataScopeEnabled(row, 'ALL')"
       [checked]="!!(col?.field && isDataScopeEnabled(row, col.field))"

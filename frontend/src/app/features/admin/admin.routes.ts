@@ -16,8 +16,27 @@ export const AdminRoutes: Routes = [
       provideState({ name: 'style', reducer: StyleReducer }),
       provideEffects(StyleEffect),
     ],
-    redirectTo: NAVIGATOR_ENDPOINT.ADMIN.NGUOI_DUNG.BASE_PATH,
+    redirectTo: NAVIGATOR_ENDPOINT.ADMIN.DASHBOARD.BASE_PATH,
     pathMatch: 'full',
+  },
+  {
+    path: NAVIGATOR_ENDPOINT.ADMIN.DASHBOARD.BASE_PATH,
+    component: AdminComponent,
+    children: [
+      {
+        path: '',
+        canActivate: [PermissionGuard],
+        data: { menuCode: 'HOME' },
+        providers: [
+          provideState({ name: 'style', reducer: StyleReducer }),
+          provideEffects(StyleEffect),
+        ],
+        loadComponent: () =>
+          import('@features/admin/dashboard/dashboard.component').then(
+            (m) => m.DashboardComponent
+          ),
+      },
+    ],
   },
   {
     path: NAVIGATOR_ENDPOINT.ADMIN.NGUOI_DUNG.BASE_PATH,

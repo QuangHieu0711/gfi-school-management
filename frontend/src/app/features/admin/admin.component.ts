@@ -42,6 +42,7 @@ export class AdminComponent extends ComponentBaseAbstract {
 
   private buildMenuFromRules(rules: any[]): MenuItem[] {
     const menuConfigMap: Record<string, { ordinal: number }> = {
+      HOME: { ordinal: 0 },
       ACCOUNT_MANAGEMENT: { ordinal: 1 },
       UNIT_MANAGEMENT: { ordinal: 2 },
       ROLE_MANAGEMENT: { ordinal: 3 },
@@ -83,6 +84,7 @@ export class AdminComponent extends ComponentBaseAbstract {
   ): string | undefined {
     const adminBase = `/${NAVIGATOR_ENDPOINT.ADMIN.BASE_PATH}`;
     const codeToUrl: Partial<Record<string, string>> = {
+      HOME: `${adminBase}/${NAVIGATOR_ENDPOINT.ADMIN.DASHBOARD.BASE_PATH}`,
       ACCOUNT_MANAGEMENT: `${adminBase}/${NAVIGATOR_ENDPOINT.ADMIN.NGUOI_DUNG.BASE_PATH}`,
       UNIT_MANAGEMENT: `${adminBase}/${NAVIGATOR_ENDPOINT.ADMIN.DON_VI.BASE_PATH}`,
       ROLE_MANAGEMENT: `${adminBase}/${NAVIGATOR_ENDPOINT.ADMIN.VAI_TRO.BASE_PATH}`,
@@ -100,6 +102,9 @@ export class AdminComponent extends ComponentBaseAbstract {
     }
 
     if (!url) return undefined;
+    if (code === 'HOME') {
+      return `${adminBase}/${NAVIGATOR_ENDPOINT.ADMIN.DASHBOARD.BASE_PATH}`;
+    }
     if (url.startsWith('/admin/')) {
       return `/Admin/${url.slice('/admin/'.length)}`;
     }
@@ -111,6 +116,7 @@ export class AdminComponent extends ComponentBaseAbstract {
 
   private getFallbackIcon(code: string): string {
     const codeToIcon: Record<string, string> = {
+      HOME: 'home',
       USER_ADMIN: 'group',
       ACCOUNT_MANAGEMENT: 'person',
       UNIT_MANAGEMENT: 'account_tree',

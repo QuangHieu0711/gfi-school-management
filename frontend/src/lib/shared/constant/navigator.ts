@@ -13,6 +13,9 @@ export const NAVIGATOR_ENDPOINT = {
 
   ADMIN: {
     BASE_PATH: 'admin',
+    DASHBOARD: {
+      BASE_PATH: 'dashboard',
+    },
     NGUOI_DUNG: {
       BASE_PATH: 'nguoi-dung',
     },

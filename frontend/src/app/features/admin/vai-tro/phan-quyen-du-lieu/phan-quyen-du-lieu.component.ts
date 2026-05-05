@@ -184,7 +184,7 @@ export class PhanQuyenDuLieuComponent
     scopeType: string,
     event: MatSlideToggleChange | { checked: boolean }
   ) {
-    if (this.isDataRootMenu(row)) return;
+    if (this.hasDataChildren(row)) return;
 
     const sourceRow = this.allDataPermissionRows.find(
       (item) => item.id === row.id

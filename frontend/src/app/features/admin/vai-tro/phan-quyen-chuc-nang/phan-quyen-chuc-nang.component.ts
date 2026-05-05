@@ -192,7 +192,7 @@ export class PhanQuyenChucNangComponent
     field: PermissionToggleKey | 'allPermissions',
     event: MatSlideToggleChange | { checked: boolean }
   ) {
-    if (this.isRootMenu(displayRow)) return;
+    if (this.hasChildren(displayRow)) return;
 
     const sourceRow = this.allRows.find((row) => row.id === displayRow.id);
     if (!sourceRow) return;

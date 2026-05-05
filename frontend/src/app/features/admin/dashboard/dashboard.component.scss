@@ -1,0 +1,273 @@
+:host {
+  display: block;
+  padding: 24px 24px 32px;
+  background: radial-gradient(circle at top left, #f2f8f8 0%, #f8fafc 45%, #ffffff 100%);
+  color: #1f2933;
+}
+
+.dashboard {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.dashboard-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr);
+  gap: 20px;
+  align-items: stretch;
+}
+
+.hero-text h1 {
+  font-size: 30px;
+  margin: 6px 0 8px;
+  letter-spacing: -0.4px;
+}
+
+.hero-eyebrow {
+  text-transform: uppercase;
+  font-size: 12px;
+  letter-spacing: 1.6px;
+  color: #4a6f6f;
+  font-weight: 600;
+}
+
+.hero-subtitle {
+  margin: 0;
+  color: #526170;
+  font-size: 15px;
+}
+
+.hero-card {
+  background: linear-gradient(135deg, #0f766e, #0ea5a4);
+  color: #ffffff;
+  border-radius: 20px;
+  padding: 20px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  box-shadow: 0 12px 28px rgba(15, 118, 110, 0.25);
+}
+
+.hero-label {
+  font-size: 13px;
+  opacity: 0.85;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.hero-rate {
+  font-size: 34px;
+  font-weight: 700;
+}
+
+.hero-progress {
+  background: rgba(255, 255, 255, 0.2);
+  height: 10px;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.hero-progress__bar {
+  display: block;
+  height: 100%;
+  background: #fef3c7;
+}
+
+.hero-note {
+  font-size: 12px;
+  opacity: 0.75;
+}
+
+.stat-grid {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.stat-card {
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 16px 18px;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
+}
+
+.stat-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #e0f2f1;
+  color: #0f766e;
+}
+
+.stat-value {
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.stat-label {
+  font-size: 13px;
+  color: #526170;
+}
+
+.loading-state {
+  padding: 16px;
+  border-radius: 12px;
+  background: #ffffff;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
+  color: #60707f;
+}
+
+.dashboard-grid {
+  display: grid;
+  gap: 18px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.panel {
+  background: #ffffff;
+  border-radius: 18px;
+  padding: 18px 20px 20px;
+  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.panel-header h3 {
+  margin: 0;
+  font-size: 16px;
+  color: #1f2a37;
+}
+
+.panel-empty {
+  color: #7c8a96;
+  font-size: 13px;
+}
+
+.bar-list,
+.progress-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.bar-row {
+  display: grid;
+  grid-template-columns: 90px minmax(0, 1fr) 110px;
+  gap: 12px;
+  align-items: center;
+}
+
+.bar-label {
+  font-size: 13px;
+  color: #526170;
+}
+
+.bar-track {
+  height: 12px;
+  border-radius: 999px;
+  background: #eef2f4;
+  overflow: hidden;
+  display: flex;
+}
+
+.bar-segment {
+  height: 100%;
+}
+
+.bar-present {
+  background: #22c55e;
+}
+
+.bar-absent {
+  background: #f97316;
+}
+
+.bar-value {
+  font-size: 12px;
+  color: #526170;
+  text-align: right;
+}
+
+.progress-row {
+  display: grid;
+  grid-template-columns: 140px minmax(0, 1fr) 80px;
+  gap: 12px;
+  align-items: center;
+}
+
+.progress-label {
+  font-size: 13px;
+  color: #526170;
+}
+
+.progress-track {
+  height: 10px;
+  border-radius: 999px;
+  background: #eef2f4;
+  overflow: hidden;
+}
+
+.progress-bar {
+  height: 100%;
+  background: #0ea5a4;
+}
+
+.progress-bar.alt {
+  background: #60a5fa;
+}
+
+.progress-bar.warn {
+  background: #fbbf24;
+}
+
+.progress-bar.info {
+  background: #38bdf8;
+}
+
+.progress-value {
+  font-size: 12px;
+  color: #526170;
+  text-align: right;
+}
+
+@media (max-width: 1200px) {
+  .dashboard-hero {
+    grid-template-columns: 1fr;
+  }
+
+  .stat-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 720px) {
+  :host {
+    padding: 16px;
+  }
+
+  .stat-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .bar-row,
+  .progress-row {
+    grid-template-columns: 1fr;
+  }
+
+  .bar-value,
+  .progress-value {
+    text-align: left;
+  }
+}
