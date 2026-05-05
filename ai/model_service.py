@@ -2,10 +2,17 @@ import os
 import re
 import unicodedata
 from typing import Optional
+import logging
 
 import torch
 from peft import PeftModel
 from transformers import AutoModelForCausalLM, AutoTokenizer
+
+# Suppress HF Hub warnings
+os.environ['HF_HUB_DISABLE_TELEMETRY'] = '1'
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+
+logger = logging.getLogger(__name__)
 
 
 BASE_MODEL = "Qwen/Qwen2.5-1.5B-Instruct"
@@ -168,6 +175,7 @@ DEFAULT_COMMENT = "Em cần tiếp tục cố gắng trong học tập."
 tokenizer = None
 model = None
 bad_words_ids = None
+_model_load_failed = False  # Track if we already tried and failed to load
 
 
 def get_model_device():
@@ -201,33 +209,55 @@ def build_bad_words_ids():
 
 def load_model(device: str = "cpu"):
     """Load tokenizer, base model, and LoRA adapter once at service startup."""
-    global tokenizer, model, bad_words_ids
+    global tokenizer, model, bad_words_ids, _model_load_failed
+
+    # If we already know loading fails, don't retry
+    if _model_load_failed:
+        logger.warning("Model loading previously failed; skipping retry.")
+        return
 
     if model is not None and tokenizer is not None:
         return
 
     adapter_path = os.environ.get("ADAPTER_PATH", ADAPTER_PATH)
     if not os.path.isdir(adapter_path):
+        _model_load_failed = True
         raise FileNotFoundError(f"Adapter path does not exist: {adapter_path}")
 
-    tokenizer = AutoTokenizer.from_pretrained(BASE_MODEL, trust_remote_code=True)
-    if tokenizer.pad_token_id is None:
-        tokenizer.pad_token = tokenizer.eos_token
+    try:
+        # Pre-check: try loading in subprocess first to detect early failures
+        from model_loader_subprocess import load_model_in_subprocess
+        if not load_model_in_subprocess(BASE_MODEL, adapter_path, timeout_sec=120):
+            logger.error("Model loading failed in subprocess; using fallback comments.")
+            _model_load_failed = True
+            return
 
-    kwargs = {"trust_remote_code": True}
-    if device == "cuda":
-        kwargs.update({"device_map": "auto", "torch_dtype": torch.float16})
-    else:
-        kwargs.update({"low_cpu_mem_usage": True})
+        # Now load in-process if subprocess check passed
+        tokenizer = AutoTokenizer.from_pretrained(BASE_MODEL, trust_remote_code=True)
+        if tokenizer.pad_token_id is None:
+            tokenizer.pad_token = tokenizer.eos_token
 
-    base_model = AutoModelForCausalLM.from_pretrained(BASE_MODEL, **kwargs)
-    model = PeftModel.from_pretrained(base_model, adapter_path)
+        kwargs = {"trust_remote_code": True}
+        if device == "cuda":
+            kwargs.update({"device_map": "auto", "torch_dtype": torch.float16})
+        else:
+            kwargs.update({"low_cpu_mem_usage": False})  # Changed from True
 
-    if device == "cpu":
-        model.to("cpu")
+        base_model = AutoModelForCausalLM.from_pretrained(BASE_MODEL, **kwargs)
+        model = PeftModel.from_pretrained(base_model, adapter_path)
 
-    model.eval()
-    bad_words_ids = build_bad_words_ids()
+        if device == "cpu":
+            model.to("cpu")
+
+        model.eval()
+        bad_words_ids = build_bad_words_ids()
+        
+        logger.info("Model loaded successfully.")
+        
+    except Exception as e:
+        logger.exception(f"Failed to load model: {e}")
+        _model_load_failed = True
+        # Don't re-raise; let the caller use fallback
 
 
 def build_prompt(data: dict, extra_instruction: str = "") -> str:
@@ -412,7 +442,27 @@ def _generate_raw(prompt: str, max_new_tokens: int, do_sample: bool, temperature
 
 def generate_comment(data: dict, max_new_tokens: int = 40) -> str:
     """Generate one cleaned Vietnamese student comment for the backend."""
-    load_model()
+    # Lazily load the model on first request. Wrap in try/except so
+    # the API can return a safe fallback if model loading fails.
+    global model, tokenizer, _model_load_failed
+    
+    if _model_load_failed:
+        # We already know loading failed; return fallback immediately
+        logger.debug("Model is unavailable; returning fallback comment.")
+        return fallback_comment(data)
+    
+    if model is None or tokenizer is None:
+        try:
+            load_model()
+        except Exception as e:
+            logger.exception(f"Model failed to load during request: {e}")
+            _model_load_failed = True
+            return fallback_comment(data)
+    
+    # If still no model after load attempt, use fallback
+    if model is None or tokenizer is None:
+        logger.debug("Model not loaded; using fallback comment.")
+        return fallback_comment(data)
 
     attempts = [
         {

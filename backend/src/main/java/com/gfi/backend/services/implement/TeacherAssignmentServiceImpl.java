@@ -448,11 +448,28 @@ public class TeacherAssignmentServiceImpl implements TeacherAssignmentService {
     }
 
     private void replaceExistingAssignments(AssignmentBuildContext context) {
-        List<TeacherAssignment> existingAssignments = teacherAssignmentRepository
-                .findByStaffIdAndSchoolYearIdAndSemesterId(context.staff().getId(), context.schoolYear().getId(),
-                        context.semester().getId());
-        if (!existingAssignments.isEmpty()) {
-            teacherAssignmentRepository.deleteAll(existingAssignments);
+        // Chỉ xóa các bản ghi (class + subject) khớp với request của teacher này,
+        // không xóa toàn bộ phân công của giáo viên trong học kỳ
+        Set<Long> requestClassIds = context.seeds().stream()
+                .map(seed -> seed.classroom().getId())
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+        Set<Long> requestSubjectIds = context.seeds().stream()
+                .map(seed -> seed.subject().getId())
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+        Set<Long> requestPairKeys = context.seeds().stream()
+                .map(seed -> buildPairKey(seed.classroom().getId(), seed.subject().getId()))
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+
+        List<TeacherAssignment> toDelete = teacherAssignmentRepository
+                .findByStaffIdAndSchoolYearIdAndSemesterId(
+                        context.staff().getId(), context.schoolYear().getId(), context.semester().getId())
+                .stream()
+                .filter(a -> a.getClassroom() != null && a.getSubject() != null)
+                .filter(a -> requestPairKeys.contains(buildPairKey(a.getClassroom().getId(), a.getSubject().getId())))
+                .toList();
+
+        if (!toDelete.isEmpty()) {
+            teacherAssignmentRepository.deleteAll(toDelete);
             teacherAssignmentRepository.flush();
         }
     }
@@ -481,43 +498,36 @@ public class TeacherAssignmentServiceImpl implements TeacherAssignmentService {
             return;
         }
 
-        // Find existing assignments for this staff in the same semester
-        List<TeacherAssignment> existingAssignments = teacherAssignmentRepository.findAll((root, query, cb) -> {
+        // Kiểm tra xem (lớp + môn + học kỳ) đã được phân công cho giáo viên KHÁC chưa
+        Set<Long> requestPairKeys = seeds.stream()
+                .map(seed -> buildPairKey(seed.classroom().getId(), seed.subject().getId()))
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+
+        List<TeacherAssignment> conflictingAssignments = teacherAssignmentRepository.findAll((root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
-            predicates.add(cb.equal(root.get("staff").get("id"), staff.getId()));
             predicates.add(cb.equal(root.get("schoolYear").get("id"), schoolYear.getId()));
             predicates.add(cb.equal(root.get("semester").get("id"), semester.getId()));
+            predicates.add(cb.notEqual(root.get("staff").get("id"), staff.getId()));
             return cb.and(predicates.toArray(new Predicate[0]));
         });
 
-        // Check for conflicts: same classroom but different subject
-        Map<Long, Set<Long>> existingClassroomSubjects = new HashMap<>();
-        for (TeacherAssignment assignment : existingAssignments) {
-            if (assignment.getClassroom() != null && assignment.getSubject() != null) {
-                Long classId = assignment.getClassroom().getId();
-                Long subjectId = assignment.getSubject().getId();
-                existingClassroomSubjects.computeIfAbsent(classId, k -> new LinkedHashSet<>()).add(subjectId);
-            }
-        }
-
-        // Validate: a classroom can only have one subject for this staff in the same semester
         Map<String, String> conflicts = new LinkedHashMap<>();
-        for (AssignmentSeed seed : seeds) {
-            Long classId = seed.classroom().getId();
-            Long subjectId = seed.subject().getId();
-            
-            if (existingClassroomSubjects.containsKey(classId)) {
-                Set<Long> existingSubjectIds = existingClassroomSubjects.get(classId);
-                if (!existingSubjectIds.contains(subjectId)) {
-                    String conflictMsg = "Lớp " + seed.classroom().getName() + " đã được phân công môn khác";
-                    conflicts.put(classId.toString(), conflictMsg);
-                }
+        for (TeacherAssignment existing : conflictingAssignments) {
+            if (existing.getClassroom() == null || existing.getSubject() == null) continue;
+            Long pairKey = buildPairKey(existing.getClassroom().getId(), existing.getSubject().getId());
+            if (requestPairKeys.contains(pairKey)) {
+                String key = pairKey.toString();
+                String msg = "Lớp " + existing.getClassroom().getName()
+                        + " - Môn " + existing.getSubject().getName()
+                        + " đã được phân công cho giáo viên khác";
+                conflicts.put(key, msg);
             }
         }
 
         if (!conflicts.isEmpty()) {
-            throw new UserMessageException("Một lớp chỉ được phân công một môn cho cùng giáo viên trong cùng học kỳ: "
-                    + String.join("; ", conflicts.values()));
+            throw new UserMessageException(
+                    "Phân công bị trùng (1 lớp + 1 môn + 1 học kỳ chỉ được phân 1 lần): "
+                            + String.join("; ", conflicts.values()));
         }
     }
 
@@ -580,7 +590,9 @@ public class TeacherAssignmentServiceImpl implements TeacherAssignmentService {
 
         List<AssignmentSeed> seeds = new ArrayList<>();
         Set<Long> classroomIds = new LinkedHashSet<>();
-        Map<Long, String> duplicateClassNames = new LinkedHashMap<>();
+        // Dùng cặp (classId|subjectId) để phát hiện trùng trong cùng 1 request
+        Set<String> classSubjectKeys = new LinkedHashSet<>();
+        Map<String, String> duplicatePairNames = new LinkedHashMap<>();
         Map<Long, Subject> subjectMap = new HashMap<>();
         Map<Long, Classroom> classroomMap = new HashMap<>();
 
@@ -596,21 +608,24 @@ public class TeacherAssignmentServiceImpl implements TeacherAssignmentService {
                             "Môn " + subject.getName() + " chưa được cấu hình cho lớp " + classroom.getName());
                 }
 
-                if (!classroomIds.add(classroom.getId())) {
-                    duplicateClassNames.put(classroom.getId(), classroom.getName());
+                // Kiểm tra trùng theo cặp (lớp + môn) trong cùng request
+                String pairKey = classroom.getId() + "|" + subject.getId();
+                if (!classSubjectKeys.add(pairKey)) {
+                    duplicatePairNames.put(pairKey,
+                            "Lớp " + classroom.getName() + " - Môn " + subject.getName());
                 }
 
+                classroomIds.add(classroom.getId());
                 seeds.add(new AssignmentSeed(classroom, subject));
             }
         }
 
-        if (!duplicateClassNames.isEmpty()) {
+        if (!duplicatePairNames.isEmpty()) {
             throw new UserMessageException(
-                    "Một lớp chỉ được phân công một môn cho cùng giáo viên trong cùng học kỳ. Lớp bị trùng: "
-                            + String.join(", ", duplicateClassNames.values()));
+                    "1 lớp + 1 môn + 1 học kỳ chỉ được phân công 1 lần. Bị trùng trong yêu cầu: "
+                            + String.join(", ", duplicatePairNames.values()));
         }
 
-        validateClassroomSubjectConflicts(staff, schoolYear, semester, seeds);
         validateAssignmentConflicts(staff, schoolYear, semester, seeds, request.getUnitId());
 
         return new AssignmentBuildContext(staff, schoolYear, semester, seeds, new ArrayList<>(classroomIds));

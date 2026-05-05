@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from pydantic import BaseModel
 from typing import Optional
 
-from model_service import generate_comment, load_model
+from model_service import generate_comment
 
 app = FastAPI(title="GFI Comment AI Service")
 
@@ -24,10 +24,9 @@ class CommentRequest(BaseModel):
     textbook_series: Optional[str] = ""
 
 
-@app.on_event("startup")
-def startup():
-    """Load the model once so the first API request does not pay the full cost."""
-    load_model()
+# Do not preload the model at startup. Loading the model at process startup
+# caused segmentation faults on some environments (low-memory / Windows).
+# The model will be loaded lazily on first request by `generate_comment`.
 
 
 @app.get("/health")

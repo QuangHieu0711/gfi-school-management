@@ -510,6 +510,12 @@ export class StudentEvaluationBookComponent extends ComponentBaseAbstract {
   openComment() {
     const classroomId = this.selectedClassId;
     const subjectId = this.selectedSubjectId;
+    
+    // Lấy thông tin học kỳ đang chọn để xác định hậu tố (1 hoặc 2)
+    const semesterId = this.form.get(this.key.SEMESTER_ID)?.value;
+    const semesterOption = (this.findFormControl(this.$formItem, this.key.SEMESTER_ID).options as any[])?.find(o => o.value === semesterId);
+    const semesterName = semesterOption?.label || '';
+    const semesterSuffix = semesterName.includes('2') ? '2' : '1';
 
     if (!classroomId || !subjectId) {
       this.toastr.warning('Vui lòng chọn đầy đủ Lớp và Môn học để sinh nhận xét', 'Cảnh báo');
@@ -542,7 +548,7 @@ export class StudentEvaluationBookComponent extends ComponentBaseAbstract {
       const payload: EvaluationBulkGenerateCommentRequest = {
         classroomId: Number(classroomId),
         subjectId: Number(subjectId),
-        term: 'GK',
+        term: 'GK' + semesterSuffix,
         items: gkItems
       };
       observables.push(
@@ -557,7 +563,7 @@ export class StudentEvaluationBookComponent extends ComponentBaseAbstract {
       const payload: EvaluationBulkGenerateCommentRequest = {
         classroomId: Number(classroomId),
         subjectId: Number(subjectId),
-        term: 'CK',
+        term: 'CK' + semesterSuffix,
         items: ckItems
       };
       observables.push(
@@ -597,7 +603,7 @@ export class StudentEvaluationBookComponent extends ComponentBaseAbstract {
       });
 
       if (successCount > 0) {
-        this.toastr.success('Sinh nhận xét thành công', 'Thành công');
+        this.toastr.success(`Đã sinh xong ${successCount} nhận xét`, 'Thành công');
       } else if (!hasError) {
         this.toastr.warning('Không có nhận xét nào được sinh', 'Cảnh báo');
       }

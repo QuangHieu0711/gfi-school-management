@@ -6,7 +6,7 @@ import lombok.Setter;
 
 @Entity
 @Table(name = "teacher_assignments", uniqueConstraints = {
-        @UniqueConstraint(name = "uk_staff_schoolyear_semester_class", columnNames = { "staff_id", "school_year_id", "semester_id", "class_id" })
+        @UniqueConstraint(name = "uk_schoolyear_semester_class_subject", columnNames = { "school_year_id", "semester_id", "class_id", "subject_id" })
 })
 @Getter
 @Setter
