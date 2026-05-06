@@ -1,16 +1,15 @@
 <section class="dashboard">
   <header class="dashboard-hero">
     <div class="hero-text">
-      <span class="hero-eyebrow">Tổng quan</span>
+      <span class="hero-eyebrow">📊 Tổng quan</span>
       <h1>Trang chủ</h1>
       <p class="hero-subtitle">
-        Năm học hiện tại:
-        <strong>{{ summary?.currentSchoolYearName || 'Chưa cập nhật' }}</strong>
+        Năm học: <strong>{{ summary?.currentSchoolYearName || 'Chưa cập nhật' }}</strong>
       </p>
     </div>
 
     <div class="hero-card">
-      <div class="hero-label">Tỷ lệ điểm danh tháng này</div>
+      <div class="hero-label">📋 Tỷ lệ điểm danh tháng này</div>
       <div class="hero-rate">{{ formatPercent(summary?.attendanceRateCurrentMonth) }}</div>
       <div class="hero-progress">
         <span
@@ -28,7 +27,7 @@
       </div>
       <div>
         <div class="stat-value">{{ formatNumber(summary?.totalStudents) }}</div>
-        <div class="stat-label">Tổng học sinh</div>
+        <div class="stat-label">👥 Học sinh</div>
       </div>
     </div>
     <div class="stat-card">
@@ -37,7 +36,7 @@
       </div>
       <div>
         <div class="stat-value">{{ formatNumber(summary?.totalStaffs) }}</div>
-        <div class="stat-label">Tổng cán bộ</div>
+        <div class="stat-label">👨‍💼 Cán bộ</div>
       </div>
     </div>
     <div class="stat-card">
@@ -46,7 +45,7 @@
       </div>
       <div>
         <div class="stat-value">{{ formatNumber(summary?.totalClassrooms) }}</div>
-        <div class="stat-label">Tổng lớp học</div>
+        <div class="stat-label">🏫 Lớp học</div>
       </div>
     </div>
     <div class="stat-card">
@@ -55,7 +54,7 @@
       </div>
       <div>
         <div class="stat-value">{{ formatNumber(summary?.totalUsers) }}</div>
-        <div class="stat-label">Tổng người dùng</div>
+        <div class="stat-label">👤 Người dùng</div>
       </div>
     </div>
   </section>
@@ -66,7 +65,7 @@
     <section class="dashboard-grid">
       <article class="panel">
         <div class="panel-header">
-          <h3>Điểm danh 6 tháng gần nhất</h3>
+          <h3>📋 Điểm danh 6 tháng gần nhất</h3>
         </div>
         @if ((summary?.attendanceLast6Months?.length ?? 0) === 0) {
           <div class="panel-empty">Chưa có dữ liệu điểm danh.</div>
@@ -94,7 +93,7 @@
 
       <article class="panel">
         <div class="panel-header">
-          <h3>Học sinh theo khối</h3>
+          <h3>🎓 Học sinh theo khối</h3>
         </div>
         @if ((summary?.studentsByGradeLevel?.length ?? 0) === 0) {
           <div class="panel-empty">Chưa có dữ liệu khối học.</div>
@@ -117,7 +116,7 @@
 
       <article class="panel">
         <div class="panel-header">
-          <h3>Lớp theo khối</h3>
+          <h3>🏫 Lớp theo khối</h3>
         </div>
         @if ((summary?.classroomsByGradeLevel?.length ?? 0) === 0) {
           <div class="panel-empty">Chưa có dữ liệu lớp học.</div>
@@ -140,7 +139,7 @@
 
       <article class="panel">
         <div class="panel-header">
-          <h3>Trạng thái học sinh</h3>
+          <h3>📊 Trạng thái học sinh</h3>
         </div>
         @if ((summary?.studentStatusDistribution?.length ?? 0) === 0) {
           <div class="panel-empty">Chưa có dữ liệu trạng thái.</div>
@@ -163,7 +162,7 @@
 
       <article class="panel">
         <div class="panel-header">
-          <h3>Giới tính cán bộ</h3>
+          <h3>👥 Giới tính cán bộ</h3>
         </div>
         @if ((summary?.staffGenderDistribution?.length ?? 0) === 0) {
           <div class="panel-empty">Chưa có dữ liệu giới tính.</div>
@@ -186,7 +185,7 @@
 
       <article class="panel">
         <div class="panel-header">
-          <h3>Xu hướng tuyển sinh</h3>
+          <h3>📈 Xu hướng tuyển sinh</h3>
         </div>
         @if ((summary?.studentEnrollmentTrend?.length ?? 0) === 0) {
           <div class="panel-empty">Chưa có dữ liệu tuyển sinh.</div>
@@ -209,7 +208,7 @@
 
       <article class="panel">
         <div class="panel-header">
-          <h3>Top đơn vị theo số học sinh</h3>
+          <h3>🏆 Top đơn vị theo số học sinh</h3>
         </div>
         @if ((summary?.topUnitsByStudentCount?.length ?? 0) === 0) {
           <div class="panel-empty">Chưa có dữ liệu đơn vị.</div>
@@ -232,7 +231,7 @@
 
       <article class="panel">
         <div class="panel-header">
-          <h3>Phân công cán bộ</h3>
+          <h3>📌 Phân công cán bộ</h3>
         </div>
         @if ((summary?.staffByAssignment?.length ?? 0) === 0) {
           <div class="panel-empty">Chưa có dữ liệu phân công.</div>

@@ -1,69 +1,93 @@
 :host {
   display: block;
-  padding: 24px 24px 32px;
-  background: radial-gradient(circle at top left, #f2f8f8 0%, #f8fafc 45%, #ffffff 100%);
+  padding: 28px 28px 40px;
+  background: linear-gradient(135deg, #f8fafc 0%, #f0f4f8 50%, #ffffff 100%);
   color: #1f2933;
 }
 
 .dashboard {
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 28px;
 }
 
 .dashboard-hero {
   display: grid;
   grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr);
-  gap: 20px;
+  gap: 24px;
   align-items: stretch;
 }
 
 .hero-text h1 {
-  font-size: 30px;
-  margin: 6px 0 8px;
-  letter-spacing: -0.4px;
+  font-size: 32px;
+  margin: 8px 0 12px;
+  letter-spacing: -0.5px;
+  font-weight: 700;
+  color: #0f172a;
 }
 
 .hero-eyebrow {
   text-transform: uppercase;
-  font-size: 12px;
-  letter-spacing: 1.6px;
-  color: #4a6f6f;
-  font-weight: 600;
+  font-size: 11px;
+  letter-spacing: 1.8px;
+  color: #0ea5a4;
+  font-weight: 700;
 }
 
 .hero-subtitle {
   margin: 0;
-  color: #526170;
+  color: #64748b;
   font-size: 15px;
+  font-weight: 500;
 }
 
 .hero-card {
-  background: linear-gradient(135deg, #0f766e, #0ea5a4);
+  background: linear-gradient(135deg, #0f766e 0%, #0ea5a4 100%);
   color: #ffffff;
-  border-radius: 20px;
-  padding: 20px 22px;
+  border-radius: 24px;
+  padding: 24px 28px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  box-shadow: 0 12px 28px rgba(15, 118, 110, 0.25);
+  gap: 14px;
+  box-shadow: 0 20px 44px rgba(15, 118, 110, 0.22);
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.hero-card::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  right: -50%;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.hero-card:hover {
+  box-shadow: 0 24px 48px rgba(15, 118, 110, 0.28);
+  transform: translateY(-2px);
 }
 
 .hero-label {
-  font-size: 13px;
-  opacity: 0.85;
+  font-size: 12px;
+  opacity: 0.88;
   text-transform: uppercase;
-  letter-spacing: 1px;
+  letter-spacing: 1.2px;
+  font-weight: 600;
 }
 
 .hero-rate {
-  font-size: 34px;
+  font-size: 42px;
   font-weight: 700;
+  line-height: 1;
 }
 
 .hero-progress {
-  background: rgba(255, 255, 255, 0.2);
-  height: 10px;
+  background: rgba(255, 255, 255, 0.25);
+  height: 12px;
   border-radius: 999px;
   overflow: hidden;
 }
@@ -71,111 +95,143 @@
 .hero-progress__bar {
   display: block;
   height: 100%;
-  background: #fef3c7;
+  background: linear-gradient(90deg, #fbbf24 0%, #f59e0b 100%);
+  border-radius: 999px;
+  transition: width 0.4s ease;
 }
 
 .hero-note {
   font-size: 12px;
-  opacity: 0.75;
+  opacity: 0.78;
+  font-weight: 500;
 }
 
 .stat-grid {
   display: grid;
-  gap: 16px;
+  gap: 18px;
   grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
 .stat-card {
   background: #ffffff;
-  border-radius: 16px;
-  padding: 16px 18px;
+  border-radius: 18px;
+  padding: 20px 22px;
   display: flex;
-  gap: 12px;
+  gap: 14px;
   align-items: center;
-  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.05);
+  border: 1px solid rgba(15, 118, 110, 0.08);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+}
+
+.stat-card:hover {
+  box-shadow: 0 12px 28px rgba(15, 118, 110, 0.12);
+  transform: translateY(-4px);
+  border-color: rgba(15, 118, 110, 0.15);
 }
 
 .stat-icon {
-  width: 40px;
-  height: 40px;
-  border-radius: 12px;
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #e0f2f1;
+  background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
   color: #0f766e;
+  flex-shrink: 0;
+  box-shadow: 0 4px 12px rgba(15, 118, 110, 0.1);
 }
 
 .stat-value {
-  font-size: 22px;
+  font-size: 24px;
   font-weight: 700;
+  color: #0f172a;
 }
 
 .stat-label {
-  font-size: 13px;
-  color: #526170;
+  font-size: 12px;
+  color: #64748b;
+  font-weight: 500;
 }
 
 .loading-state {
-  padding: 16px;
-  border-radius: 12px;
-  background: #ffffff;
-  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
-  color: #60707f;
+  padding: 24px;
+  border-radius: 14px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  color: #64748b;
+  text-align: center;
+  font-weight: 500;
 }
 
 .dashboard-grid {
   display: grid;
-  gap: 18px;
+  gap: 20px;
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .panel {
   background: #ffffff;
-  border-radius: 18px;
-  padding: 18px 20px 20px;
-  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.08);
+  border-radius: 20px;
+  padding: 24px 26px;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.05);
+  border: 1px solid #f0f4f8;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 18px;
+  transition: all 0.3s ease;
+}
+
+.panel:hover {
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.08);
+  border-color: rgba(15, 118, 110, 0.1);
 }
 
 .panel-header h3 {
   margin: 0;
-  font-size: 16px;
-  color: #1f2a37;
+  font-size: 17px;
+  color: #0f172a;
+  font-weight: 700;
+  letter-spacing: -0.3px;
 }
 
 .panel-empty {
-  color: #7c8a96;
-  font-size: 13px;
+  color: #94a3b8;
+  font-size: 14px;
+  text-align: center;
+  padding: 20px 0;
+  font-weight: 500;
 }
 
 .bar-list,
 .progress-list {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 14px;
 }
 
 .bar-row {
   display: grid;
-  grid-template-columns: 90px minmax(0, 1fr) 110px;
-  gap: 12px;
+  grid-template-columns: 100px minmax(0, 1fr) 120px;
+  gap: 14px;
   align-items: center;
 }
 
 .bar-label {
   font-size: 13px;
-  color: #526170;
+  color: #475569;
+  font-weight: 600;
 }
 
 .bar-track {
-  height: 12px;
+  height: 14px;
   border-radius: 999px;
-  background: #eef2f4;
+  background: #e2e8f0;
   overflow: hidden;
   display: flex;
+  box-shadow: inset 0 2px 4px rgba(15, 23, 42, 0.05);
 }
 
 .bar-segment {
@@ -183,59 +239,65 @@
 }
 
 .bar-present {
-  background: #22c55e;
+  background: linear-gradient(90deg, #10b981 0%, #059669 100%);
 }
 
 .bar-absent {
-  background: #f97316;
+  background: linear-gradient(90deg, #f97316 0%, #ea580c 100%);
 }
 
 .bar-value {
   font-size: 12px;
-  color: #526170;
+  color: #64748b;
   text-align: right;
+  font-weight: 600;
 }
 
 .progress-row {
   display: grid;
-  grid-template-columns: 140px minmax(0, 1fr) 80px;
-  gap: 12px;
+  grid-template-columns: 150px minmax(0, 1fr) 90px;
+  gap: 14px;
   align-items: center;
 }
 
 .progress-label {
   font-size: 13px;
-  color: #526170;
+  color: #475569;
+  font-weight: 600;
 }
 
 .progress-track {
-  height: 10px;
+  height: 12px;
   border-radius: 999px;
-  background: #eef2f4;
+  background: #e2e8f0;
   overflow: hidden;
+  box-shadow: inset 0 2px 4px rgba(15, 23, 42, 0.05);
 }
 
 .progress-bar {
   height: 100%;
-  background: #0ea5a4;
+  background: linear-gradient(90deg, #0ea5a4 0%, #0d9488 100%);
+  border-radius: 999px;
+  transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .progress-bar.alt {
-  background: #60a5fa;
+  background: linear-gradient(90deg, #3b82f6 0%, #1d4ed8 100%);
 }
 
 .progress-bar.warn {
-  background: #fbbf24;
+  background: linear-gradient(90deg, #f59e0b 0%, #d97706 100%);
 }
 
 .progress-bar.info {
-  background: #38bdf8;
+  background: linear-gradient(90deg, #06b6d4 0%, #0891b2 100%);
 }
 
 .progress-value {
   font-size: 12px;
-  color: #526170;
+  color: #64748b;
   text-align: right;
+  font-weight: 600;
 }
 
 @media (max-width: 1200px) {
@@ -254,20 +316,48 @@
 
 @media (max-width: 720px) {
   :host {
-    padding: 16px;
+    padding: 16px 16px 24px;
+  }
+
+  .dashboard-hero {
+    gap: 16px;
   }
 
   .stat-grid {
     grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .stat-card {
+    padding: 16px 18px;
+  }
+
+  .dashboard-grid {
+    gap: 14px;
   }
 
   .bar-row,
   .progress-row {
-    grid-template-columns: 1fr;
+    grid-template-columns: 80px minmax(0, 1fr) 70px;
+    gap: 10px;
+  }
+
+  .bar-label,
+  .progress-label {
+    font-size: 12px;
   }
 
   .bar-value,
   .progress-value {
-    text-align: left;
+    font-size: 11px;
+  }
+
+  .panel {
+    padding: 16px 18px;
+    gap: 12px;
+  }
+
+  .panel-header h3 {
+    font-size: 15px;
   }
 }
