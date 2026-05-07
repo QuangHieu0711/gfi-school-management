@@ -22,6 +22,7 @@ import org.apache.poi.ss.usermodel.DataFormatter;
 import org.apache.poi.ss.usermodel.FillPatternType;
 import org.apache.poi.ss.usermodel.Font;
 import org.apache.poi.ss.usermodel.HorizontalAlignment;
+import org.apache.poi.ss.usermodel.IndexedColors;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.VerticalAlignment;
@@ -1649,7 +1650,7 @@ public class StaffServiceImpl implements StaffService {
     private byte[] buildStaffImportErrorFile(Workbook workbook, Sheet sheet, Map<Integer, String> rowErrors,
             int headerRowIndex) {
         CellStyle headerStyle = createExcelHeaderStyle(workbook);
-        CellStyle bodyStyle = createExcelBodyStyle(workbook);
+        CellStyle bodyStyle = createExcelErrorBodyStyle(workbook);
         Row headerRow = sheet.getRow(headerRowIndex);
         if (headerRow == null) {
             headerRow = sheet.createRow(headerRowIndex);
@@ -1662,6 +1663,10 @@ public class StaffServiceImpl implements StaffService {
         createCell(headerRow, reasonColumnIndex, "Lý do lỗi", headerStyle);
         for (Map.Entry<Integer, String> entry : rowErrors.entrySet()) {
             Row row = sheet.getRow(entry.getKey());
+            if (row == null) {
+                row = sheet.createRow(entry.getKey());
+            }
+            applyRowStyle(row, 0, reasonColumnIndex, bodyStyle);
             createCell(row, resultColumnIndex, "Thất bại", bodyStyle);
             createCell(row, reasonColumnIndex, entry.getValue(), bodyStyle);
         }
@@ -1728,6 +1733,17 @@ public class StaffServiceImpl implements StaffService {
     private void fillRowWithStyle(Row row, int fromColumn, int toColumn, CellStyle style) {
         for (int i = fromColumn; i <= toColumn; i++) {
             createCell(row, i, "", style);
+        }
+    }
+
+    private void applyRowStyle(Row row, int fromColumn, int toColumn, CellStyle style) {
+        for (int i = fromColumn; i <= toColumn; i++) {
+            Cell cell = row.getCell(i);
+            if (cell == null) {
+                cell = row.createCell(i);
+                cell.setCellValue("");
+            }
+            cell.setCellStyle(style);
         }
     }
 
@@ -2003,6 +2019,15 @@ public class StaffServiceImpl implements StaffService {
         style.setWrapText(true);
         Font font = workbook.createFont();
         font.setFontName(EXPORT_FONT_NAME);
+        style.setFont(font);
+        return style;
+    }
+
+    private CellStyle createExcelErrorBodyStyle(Workbook workbook) {
+        CellStyle style = createExcelBodyStyle(workbook);
+        Font font = workbook.createFont();
+        font.setFontName(EXPORT_FONT_NAME);
+        font.setColor(IndexedColors.RED.getIndex());
         style.setFont(font);
         return style;
     }

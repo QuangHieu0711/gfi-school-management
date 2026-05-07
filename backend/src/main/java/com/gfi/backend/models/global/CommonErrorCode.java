@@ -5,7 +5,7 @@ import lombok.Getter;
 @Getter
 public enum CommonErrorCode {
     INVALID_CREDENTIALS(1000, "Tên đăng nhập hoặc mật khẩu không chính xác"),
-    USER_INACTIVE(1070, "Tài khoản đang bị khóa"),
+    USER_INACTIVE(1070, "Tài khoản đang bị khóa hoặc không còn hoạt động"),
     USERNAME_ALREADY_EXISTS(1001, "Tên đăng nhập đã tồn tại"),
     EMAIL_ALREADY_EXISTS(2004, "Email đã tồn tại"),
     PHONE_ALREADY_EXISTS(2005, "Số điện thoại đã tồn tại"),

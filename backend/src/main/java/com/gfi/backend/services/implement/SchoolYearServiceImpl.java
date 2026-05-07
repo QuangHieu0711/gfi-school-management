@@ -608,7 +608,11 @@ public class SchoolYearServiceImpl implements SchoolYearService {
         CellStyle resultHeaderStyle = createImportResultHeaderStyle(workbook);
         CellStyle errorCellStyle = createImportErrorCellStyle(workbook);
 
-        Row headerRow = sheet.getRow(resolver.resolve(sheet, new DataFormatter()) - 1);
+        int headerRowIndex = resolver.resolve(sheet, new DataFormatter()) - 1;
+        Row headerRow = sheet.getRow(headerRowIndex);
+        if (headerRow == null) {
+            headerRow = sheet.createRow(headerRowIndex);
+        }
         createCell(headerRow, resultColumnIndex, "Kết quả", resultHeaderStyle);
         createCell(headerRow, reasonColumnIndex, "Lý do lỗi", resultHeaderStyle);
 
@@ -621,8 +625,10 @@ public class SchoolYearServiceImpl implements SchoolYearService {
                 Cell cell = row.getCell(columnIndex);
                 if (cell == null) {
                     cell = row.createCell(columnIndex);
+                    cell.setCellStyle(errorCellStyle);
+                    continue;
                 }
-                cell.setCellStyle(errorCellStyle);
+                cell.setCellStyle(createHighlightedImportCellStyle(workbook, cell.getCellStyle()));
             }
             row.getCell(resultColumnIndex).setCellValue("Thất bại");
             row.getCell(reasonColumnIndex).setCellValue(entry.getValue());
@@ -1005,11 +1011,24 @@ public class SchoolYearServiceImpl implements SchoolYearService {
         style.setBorderLeft(BorderStyle.THIN);
         style.setBorderRight(BorderStyle.THIN);
         style.setWrapText(true);
-        style.setFillForegroundColor(IndexedColors.ROSE.getIndex());
-        style.setFillPattern(FillPatternType.SOLID_FOREGROUND);
         Font font = workbook.createFont();
         font.setFontName(EXPORT_FONT_NAME);
+        font.setColor(IndexedColors.RED.getIndex());
         style.setFont(font);
+        return style;
+    }
+
+    private CellStyle createHighlightedImportCellStyle(Workbook workbook, CellStyle baseStyle) {
+        CellStyle style = workbook.createCellStyle();
+        if (baseStyle != null) {
+            style.cloneStyleFrom(baseStyle);
+        }
+        Font font = workbook.createFont();
+        font.setFontName(EXPORT_FONT_NAME);
+        font.setColor(IndexedColors.RED.getIndex());
+        style.setFont(font);
+        // remove background fill for highlighted import cells (show error as red text only)
+        style.setFillPattern(FillPatternType.NO_FILL);
         return style;
     }
 

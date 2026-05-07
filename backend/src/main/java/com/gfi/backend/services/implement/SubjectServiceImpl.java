@@ -670,10 +670,9 @@ public class SubjectServiceImpl implements SubjectService {
         style.setBorderLeft(BorderStyle.THIN);
         style.setBorderRight(BorderStyle.THIN);
         style.setWrapText(true);
-        style.setFillForegroundColor(IndexedColors.ROSE.getIndex());
-        style.setFillPattern(FillPatternType.SOLID_FOREGROUND);
         Font font = workbook.createFont();
         font.setFontName(EXPORT_FONT_NAME);
+        font.setColor(IndexedColors.RED.getIndex());
         style.setFont(font);
         return style;
     }

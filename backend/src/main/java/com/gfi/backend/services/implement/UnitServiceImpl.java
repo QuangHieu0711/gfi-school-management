@@ -156,6 +156,9 @@ public class UnitServiceImpl implements UnitService {
     @Transactional
     public UnitImportResultDto importExcel(MultipartFile file) {
         validateExcelFile(file);
+        int successCount = 0;
+        int failedCount = 0;
+        Map<Integer, String> rowErrors = new LinkedHashMap<>();
 
         try (Workbook workbook = new XSSFWorkbook(file.getInputStream())) {
             Sheet sheet = workbook.getSheet("DonVi");
@@ -167,14 +170,11 @@ public class UnitServiceImpl implements UnitService {
             }
 
             DataFormatter formatter = new DataFormatter();
-            int successCount = 0;
-            int failedCount = 0;
             int dataStartRowIndex = findUnitImportDataStartRow(sheet, formatter);
-            Map<Integer, String> rowErrors = new LinkedHashMap<>();
 
             for (int rowIndex = dataStartRowIndex; rowIndex <= sheet.getLastRowNum(); rowIndex++) {
                 Row row = sheet.getRow(rowIndex);
-                if (row == null) {
+                if (isEmptyRow(row, 1, 6, formatter)) {
                     continue;
                 }
 
@@ -213,9 +213,9 @@ public class UnitServiceImpl implements UnitService {
                     unit.setCreatedBy(SecurityUtils.getCurrentUsername());
                     unitRepository.save(unit);
                     successCount++;
-                } catch (UserMessageException ex) {
+                } catch (Exception ex) {
                     failedCount++;
-                    rowErrors.put(rowIndex, ex.getMessage());
+                    rowErrors.put(rowIndex, resolveImportErrorMessage(ex));
                 }
             }
 
@@ -637,13 +637,37 @@ public class UnitServiceImpl implements UnitService {
     private String readCellText(Cell cell, DataFormatter formatter) {
         return cell == null ? "" : formatter.formatCellValue(cell).trim();
     }
+
+    private boolean isEmptyRow(Row row, int fromColumn, int toColumn, DataFormatter formatter) {
+        if (row == null) {
+            return true;
+        }
+        for (int columnIndex = fromColumn; columnIndex <= toColumn; columnIndex++) {
+            if (StringUtils.hasText(readCellText(row.getCell(columnIndex), formatter))) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private String resolveImportErrorMessage(Exception ex) {
+        if (ex instanceof UserMessageException userMessageException) {
+            return userMessageException.getMessage();
+        }
+        return ex.getMessage() == null ? "Dá»¯ liá»‡u khÃ´ng há»£p lá»‡" : ex.getMessage();
+    }
+
     private byte[] buildUnitImportErrorFile(Workbook workbook, Sheet sheet, Map<Integer, String> rowErrors) {
         CellStyle resultHeaderStyle = createImportResultHeaderStyle(workbook);
         CellStyle errorCellStyle = createImportErrorCellStyle(workbook);
         int resultColumnIndex = 7;
         int reasonColumnIndex = 8;
 
-        Row headerRow = sheet.getRow(findUnitImportDataStartRow(sheet, new DataFormatter()) - 1);
+        int headerRowIndex = findUnitImportDataStartRow(sheet, new DataFormatter()) - 1;
+        Row headerRow = sheet.getRow(headerRowIndex);
+        if (headerRow == null) {
+            headerRow = sheet.createRow(headerRowIndex);
+        }
         createCell(headerRow, resultColumnIndex, "Kết quả", resultHeaderStyle);
         createCell(headerRow, reasonColumnIndex, "Lý do lỗi", resultHeaderStyle);
 
@@ -657,8 +681,10 @@ public class UnitServiceImpl implements UnitService {
                 Cell cell = row.getCell(columnIndex);
                 if (cell == null) {
                     cell = row.createCell(columnIndex);
+                    cell.setCellStyle(errorCellStyle);
+                    continue;
                 }
-                cell.setCellStyle(errorCellStyle);
+                cell.setCellStyle(createHighlightedImportCellStyle(workbook, cell.getCellStyle()));
             }
             row.getCell(resultColumnIndex).setCellValue("Thất bại");
             row.getCell(reasonColumnIndex).setCellValue(entry.getValue());
@@ -690,11 +716,24 @@ public class UnitServiceImpl implements UnitService {
         style.setBorderLeft(BorderStyle.THIN);
         style.setBorderRight(BorderStyle.THIN);
         style.setWrapText(true);
-        style.setFillForegroundColor(IndexedColors.ROSE.getIndex());
-        style.setFillPattern(FillPatternType.SOLID_FOREGROUND);
         Font font = workbook.createFont();
         font.setFontName(EXPORT_FONT_NAME);
+        font.setColor(IndexedColors.RED.getIndex());
         style.setFont(font);
+        return style;
+    }
+
+    private CellStyle createHighlightedImportCellStyle(Workbook workbook, CellStyle baseStyle) {
+        CellStyle style = workbook.createCellStyle();
+        if (baseStyle != null) {
+            style.cloneStyleFrom(baseStyle);
+        }
+        Font font = workbook.createFont();
+        font.setFontName(EXPORT_FONT_NAME);
+        font.setColor(IndexedColors.RED.getIndex());
+        style.setFont(font);
+        // remove background fill for highlighted import cells (show error as red text only)
+        style.setFillPattern(FillPatternType.NO_FILL);
         return style;
     }
 

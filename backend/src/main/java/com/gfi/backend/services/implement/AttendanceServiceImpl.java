@@ -744,6 +744,14 @@ public class AttendanceServiceImpl implements AttendanceService {
                 row = sheet.createRow(entry.getKey());
             }
             createCell(row, resultColumnIndex, "Thất bại", errorStyle);
+            for (int columnIndex = 0; columnIndex <= reasonColumnIndex; columnIndex++) {
+                Cell cell = row.getCell(columnIndex);
+                if (cell == null) {
+                    cell = row.createCell(columnIndex);
+                    cell.setCellValue("");
+                }
+                cell.setCellStyle(errorStyle);
+            }
             createCell(row, reasonColumnIndex, entry.getValue(), errorStyle);
         }
 
@@ -759,7 +767,7 @@ public class AttendanceServiceImpl implements AttendanceService {
     }
 
     private CellStyle createAttendanceImportErrorStyle(Workbook workbook) {
-        CellStyle style = createBodyStyle(workbook, HorizontalAlignment.LEFT, IndexedColors.ROSE);
+        CellStyle style = createBodyStyle(workbook, HorizontalAlignment.LEFT, IndexedColors.WHITE);
         Font font = workbook.createFont();
         font.setFontName(EXPORT_FONT_NAME);
         font.setFontHeightInPoints((short) 10);
