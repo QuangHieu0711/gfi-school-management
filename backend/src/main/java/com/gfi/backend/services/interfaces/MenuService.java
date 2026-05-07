@@ -8,6 +8,7 @@ import com.gfi.backend.models.dtos.menu.MenuDetailDto;
 import com.gfi.backend.models.dtos.menu.MenuFilterDto;
 import com.gfi.backend.models.dtos.menu.MenuListItemDto;
 import com.gfi.backend.models.dtos.menu.MenuUpdateRequest;
+import com.gfi.backend.models.enums.ExportType;
 
 public interface MenuService {
     List<MenuListItemDto> search(MenuFilterDto filter);
@@ -16,4 +17,5 @@ public interface MenuService {
     MenuDetailDto create(MenuCreateRequest request);
     MenuDetailDto update(Long id, MenuUpdateRequest request);
     void delete(Long id);
+    byte[] export(MenuFilterDto filter, ExportType exportType);
 }

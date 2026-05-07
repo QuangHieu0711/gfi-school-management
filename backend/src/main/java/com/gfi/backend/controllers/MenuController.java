@@ -1,7 +1,11 @@
 package com.gfi.backend.controllers;
 
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -10,6 +14,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.gfi.backend.models.dtos.common.LookupItemDto;
@@ -18,8 +23,11 @@ import com.gfi.backend.models.dtos.menu.MenuDetailDto;
 import com.gfi.backend.models.dtos.menu.MenuFilterDto;
 import com.gfi.backend.models.dtos.menu.MenuListItemDto;
 import com.gfi.backend.models.dtos.menu.MenuUpdateRequest;
+import com.gfi.backend.models.enums.ExportType;
 import com.gfi.backend.models.global.ApiResult;
 import com.gfi.backend.services.interfaces.MenuService;
+import com.gfi.backend.controllers.annotations.DataScoped;
+import com.gfi.backend.models.enums.ActionType;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -108,5 +116,28 @@ public class MenuController extends ApiBaseController {
             menuService.delete(id);
             return ApiResult.success(null, "Xóa menu thành công");
         });
+    }
+
+    @PostMapping("/export")
+    @DataScoped(feature = "FUNCTION_MANAGEMENT", action = ActionType.DOWNLOAD)
+    @Operation(summary = "Xuất danh sách menu", description = "Xuất danh sách menu theo điều kiện tìm kiếm, hỗ trợ EXCEL hoặc PDF.")
+    public ResponseEntity<byte[]> export(
+            @RequestBody(required = false) MenuFilterDto request,
+            @RequestParam(defaultValue = "EXCEL") ExportType exportType) {
+        MenuFilterDto safeRequest = request == null ? new MenuFilterDto() : request;
+        byte[] content = menuService.export(safeRequest, exportType);
+        String extension = exportType == ExportType.PDF ? "pdf" : "xlsx";
+        String contentType = exportType == ExportType.PDF
+                ? MediaType.APPLICATION_PDF_VALUE
+                : "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+        String fileName = "danh-sach-menu." + extension;
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, ContentDisposition.attachment()
+                        .filename(fileName, StandardCharsets.UTF_8)
+                        .build()
+                        .toString())
+                .contentType(MediaType.parseMediaType(contentType))
+                .body(content);
     }
 }

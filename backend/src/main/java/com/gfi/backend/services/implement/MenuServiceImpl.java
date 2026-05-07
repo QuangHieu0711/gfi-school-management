@@ -2,12 +2,40 @@ package com.gfi.backend.services.implement;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import org.apache.poi.ss.usermodel.BorderStyle;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.CellStyle;
+import org.apache.poi.ss.usermodel.FillPatternType;
+import org.apache.poi.ss.usermodel.Font;
+import org.apache.poi.ss.usermodel.HorizontalAlignment;
+import org.apache.poi.ss.usermodel.IndexedColors;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.VerticalAlignment;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+
 import com.gfi.backend.controllers.exceptions.UserMessageException;
+import com.gfi.backend.models.enums.ExportType;
+import com.lowagie.text.Document;
+import com.lowagie.text.DocumentException;
+import com.lowagie.text.Element;
+import com.lowagie.text.PageSize;
+import com.lowagie.text.Paragraph;
+import com.lowagie.text.Phrase;
+import com.lowagie.text.pdf.BaseFont;
+import com.lowagie.text.pdf.PdfPCell;
+import com.lowagie.text.pdf.PdfPTable;
+import com.lowagie.text.pdf.PdfWriter;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import com.gfi.backend.models.dtos.common.LookupItemDto;
 import com.gfi.backend.models.dtos.menu.MenuCreateRequest;
 import com.gfi.backend.models.dtos.menu.MenuDetailDto;
@@ -250,4 +278,165 @@ public class MenuServiceImpl implements MenuService {
     private String normalizeNullable(String value) {
         return hasText(value) ? value.trim() : null;
     }
+
+    @Override
+    public byte[] export(MenuFilterDto filter, ExportType exportType) {
+        List<MenuListItemDto> items = search(filter);
+        if (exportType == ExportType.PDF) {
+            return exportMenusPdf(items);
+        }
+        return exportMenusExcel(items);
+    }
+
+    private byte[] exportMenusExcel(List<MenuListItemDto> items) {
+        try (Workbook workbook = new XSSFWorkbook(); ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
+            Sheet sheet = workbook.createSheet("Menus");
+            int rowIndex = 0;
+            Row header = sheet.createRow(rowIndex++);
+            String[] headers = new String[] { "Menu ID", "Menu Code", "Menu Name", "Parent Code", "URL", "Icon", "Ordinal" };
+            CellStyle headerStyle = createExportHeaderStyle(workbook);
+            for (int i = 0; i < headers.length; i++) {
+                Cell cell = header.createCell(i);
+                cell.setCellValue(headers[i]);
+                cell.setCellStyle(headerStyle);
+            }
+
+            CellStyle bodyStyle = workbook.createCellStyle();
+            bodyStyle.setAlignment(HorizontalAlignment.LEFT);
+            Font bodyFont = workbook.createFont();
+            bodyFont.setFontName("Times New Roman");
+            bodyStyle.setFont(bodyFont);
+
+            for (MenuListItemDto item : items) {
+                Row row = sheet.createRow(rowIndex++);
+                int c = 0;
+                Cell cell = row.createCell(c++);
+                cell.setCellValue(item.getId() == null ? "" : String.valueOf(item.getId()));
+                cell = row.createCell(c++);
+                cell.setCellValue(item.getCode());
+                cell = row.createCell(c++);
+                cell.setCellValue(item.getName());
+                cell = row.createCell(c++);
+                cell.setCellValue(item.getParentCode());
+                cell = row.createCell(c++);
+                cell.setCellValue(item.getUrl());
+                cell = row.createCell(c++);
+                cell.setCellValue(item.getIcon());
+                cell = row.createCell(c++);
+                cell.setCellValue(item.getOrdinal() == null ? 0 : item.getOrdinal());
+            }
+
+            for (int i = 0; i < headers.length; i++) {
+                sheet.autoSizeColumn(i);
+            }
+
+            workbook.write(outputStream);
+            return outputStream.toByteArray();
+        } catch (IOException ex) {
+            throw new UserMessageException("Không thể tạo file Excel menu");
+        }
+    }
+
+    private byte[] exportMenusPdf(List<MenuListItemDto> items) {
+        try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
+            Document document = new Document(PageSize.A4.rotate(), 24, 24, 20, 20);
+            PdfWriter.getInstance(document, outputStream);
+            document.open();
+
+            com.lowagie.text.Font titleFont = createPdfFont(16, com.lowagie.text.Font.BOLD);
+            com.lowagie.text.Font headerFont = createPdfFont(10, com.lowagie.text.Font.BOLD);
+            com.lowagie.text.Font bodyFont = createPdfFont(10, com.lowagie.text.Font.NORMAL);
+
+            Paragraph title = new Paragraph("DANH SÁCH MENU", titleFont);
+            title.setAlignment(Element.ALIGN_CENTER);
+            title.setSpacingAfter(12f);
+            document.add(title);
+
+            PdfPTable table = new PdfPTable(new float[] { 1.2f, 2.0f, 3.0f, 2.0f, 3.0f, 2.0f, 1.0f });
+            table.setWidthPercentage(100);
+
+            addPdfHeaderCell(table, "Menu ID", headerFont);
+            addPdfHeaderCell(table, "Menu Code", headerFont);
+            addPdfHeaderCell(table, "Menu Name", headerFont);
+            addPdfHeaderCell(table, "Parent Code", headerFont);
+            addPdfHeaderCell(table, "URL", headerFont);
+            addPdfHeaderCell(table, "Icon", headerFont);
+            addPdfHeaderCell(table, "Ordinal", headerFont);
+
+            for (MenuListItemDto item : items) {
+                addPdfBodyCell(table, item.getId() == null ? "" : String.valueOf(item.getId()), bodyFont, Element.ALIGN_CENTER);
+                addPdfBodyCell(table, item.getCode(), bodyFont, Element.ALIGN_LEFT);
+                addPdfBodyCell(table, item.getName(), bodyFont, Element.ALIGN_LEFT);
+                addPdfBodyCell(table, item.getParentCode(), bodyFont, Element.ALIGN_LEFT);
+                addPdfBodyCell(table, item.getUrl(), bodyFont, Element.ALIGN_LEFT);
+                addPdfBodyCell(table, item.getIcon(), bodyFont, Element.ALIGN_LEFT);
+                addPdfBodyCell(table, item.getOrdinal() == null ? "0" : String.valueOf(item.getOrdinal()), bodyFont, Element.ALIGN_CENTER);
+            }
+
+            document.add(table);
+            document.close();
+            return outputStream.toByteArray();
+        } catch (DocumentException | IOException ex) {
+            throw new UserMessageException("Không thể tạo file PDF menu");
+        }
+    }
+
+    private void addPdfHeaderCell(PdfPTable table, String text, com.lowagie.text.Font font) {
+        PdfPCell cell = new PdfPCell(new Phrase(text == null ? "" : text, font));
+        cell.setHorizontalAlignment(Element.ALIGN_CENTER);
+        cell.setVerticalAlignment(Element.ALIGN_MIDDLE);
+        cell.setPadding(6f);
+        cell.setBackgroundColor(new java.awt.Color(224, 242, 241));
+        table.addCell(cell);
+    }
+
+    private void addPdfBodyCell(PdfPTable table, String text, com.lowagie.text.Font font, int align) {
+        PdfPCell cell = new PdfPCell(new Phrase(text == null ? "" : text, font));
+        cell.setHorizontalAlignment(align);
+        cell.setVerticalAlignment(Element.ALIGN_MIDDLE);
+        cell.setPadding(5f);
+        table.addCell(cell);
+    }
+
+    private com.lowagie.text.Font createPdfFont(float size, int style) {
+        String fontPath = switch (style) {
+            case com.lowagie.text.Font.BOLD -> TIMES_FONT_BOLD_PATH;
+            case com.lowagie.text.Font.ITALIC -> TIMES_FONT_ITALIC_PATH;
+            default -> TIMES_FONT_REGULAR_PATH;
+        };
+
+        try {
+            if (Files.exists(Path.of(fontPath))) {
+                BaseFont baseFont = BaseFont.createFont(fontPath, BaseFont.IDENTITY_H, BaseFont.EMBEDDED);
+                return new com.lowagie.text.Font(baseFont, size, com.lowagie.text.Font.NORMAL);
+            }
+        } catch (Exception ignored) {
+            // Fallback to font factory below.
+        }
+
+        return com.lowagie.text.FontFactory.getFont(EXPORT_FONT_NAME, BaseFont.IDENTITY_H, true, size, style);
+    }
+
+    private CellStyle createExportHeaderStyle(Workbook workbook) {
+        CellStyle style = workbook.createCellStyle();
+        style.setAlignment(HorizontalAlignment.CENTER);
+        style.setVerticalAlignment(VerticalAlignment.CENTER);
+        style.setFillForegroundColor((short) 41);
+        style.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+        style.setBorderTop(BorderStyle.THIN);
+        style.setBorderBottom(BorderStyle.THIN);
+        style.setBorderLeft(BorderStyle.THIN);
+        style.setBorderRight(BorderStyle.THIN);
+
+        Font font = workbook.createFont();
+        font.setBold(true);
+        font.setFontName(EXPORT_FONT_NAME);
+        style.setFont(font);
+        return style;
+    }
+
+    private static final String EXPORT_FONT_NAME = "Times New Roman";
+    private static final String TIMES_FONT_REGULAR_PATH = "C:/Windows/Fonts/times.ttf";
+    private static final String TIMES_FONT_BOLD_PATH = "C:/Windows/Fonts/timesbd.ttf";
+    private static final String TIMES_FONT_ITALIC_PATH = "C:/Windows/Fonts/timesi.ttf";
 }
