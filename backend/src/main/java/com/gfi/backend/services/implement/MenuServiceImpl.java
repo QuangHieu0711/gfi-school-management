@@ -1,6 +1,7 @@
 package com.gfi.backend.services.implement;
 
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -20,6 +21,7 @@ import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.VerticalAlignment;
 import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.ss.util.CellRangeAddress;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 import com.gfi.backend.controllers.exceptions.UserMessageException;
@@ -292,8 +294,43 @@ public class MenuServiceImpl implements MenuService {
         try (Workbook workbook = new XSSFWorkbook(); ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
             Sheet sheet = workbook.createSheet("Menus");
             int rowIndex = 0;
+
+            // Row 1: Export info (date and user) - top right
+            Row infoRow = sheet.createRow(rowIndex++);
+            String exportInfo = "Thời gian tải: " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm:ss")) 
+                    + " | Người tải: " + SecurityUtils.getCurrentUsername();
+            Cell infoCell = infoRow.createCell(0);
+            infoCell.setCellValue(exportInfo);
+            CellStyle infoStyle = workbook.createCellStyle();
+            infoStyle.setAlignment(HorizontalAlignment.RIGHT);
+            Font infoFont = workbook.createFont();
+            infoFont.setFontHeightInPoints((short) 10);
+            infoFont.setFontName("Times New Roman");
+            infoStyle.setFont(infoFont);
+            infoCell.setCellStyle(infoStyle);
+            sheet.addMergedRegion(new CellRangeAddress(0, 0, 0, 6));
+
+            // Row 2: Title
+            Row titleRow = sheet.createRow(rowIndex++);
+            Cell titleCell = titleRow.createCell(0);
+            titleCell.setCellValue("DANH SÁCH MENU");
+            CellStyle titleStyle = workbook.createCellStyle();
+            titleStyle.setAlignment(HorizontalAlignment.CENTER);
+            titleStyle.setVerticalAlignment(VerticalAlignment.CENTER);
+            Font titleFont = workbook.createFont();
+            titleFont.setBold(true);
+            titleFont.setFontHeightInPoints((short) 14);
+            titleFont.setFontName("Times New Roman");
+            titleStyle.setFont(titleFont);
+            titleCell.setCellStyle(titleStyle);
+            sheet.addMergedRegion(new CellRangeAddress(1, 1, 0, 6));
+
+            // Row 3: Empty
+            rowIndex++;
+
+            // Row 4: Header
             Row header = sheet.createRow(rowIndex++);
-            String[] headers = new String[] { "Menu ID", "Menu Code", "Menu Name", "Parent Code", "URL", "Icon", "Ordinal" };
+            String[] headers = new String[] { "STT", "Mã chức năng", "Tên chức năng", "Mã chức năng cha", "Đường dẫn", "Biểu tượng", "Thứ tự" };
             CellStyle headerStyle = createExportHeaderStyle(workbook);
             for (int i = 0; i < headers.length; i++) {
                 Cell cell = header.createCell(i);
@@ -307,11 +344,12 @@ public class MenuServiceImpl implements MenuService {
             bodyFont.setFontName("Times New Roman");
             bodyStyle.setFont(bodyFont);
 
+            int stt = 1;
             for (MenuListItemDto item : items) {
                 Row row = sheet.createRow(rowIndex++);
                 int c = 0;
                 Cell cell = row.createCell(c++);
-                cell.setCellValue(item.getId() == null ? "" : String.valueOf(item.getId()));
+                cell.setCellValue(stt++);
                 cell = row.createCell(c++);
                 cell.setCellValue(item.getCode());
                 cell = row.createCell(c++);
@@ -346,6 +384,15 @@ public class MenuServiceImpl implements MenuService {
             com.lowagie.text.Font titleFont = createPdfFont(16, com.lowagie.text.Font.BOLD);
             com.lowagie.text.Font headerFont = createPdfFont(10, com.lowagie.text.Font.BOLD);
             com.lowagie.text.Font bodyFont = createPdfFont(10, com.lowagie.text.Font.NORMAL);
+            com.lowagie.text.Font infoFont = createPdfFont(9, com.lowagie.text.Font.ITALIC);
+
+            // Export info
+            String exportInfo = "Thời gian tải: " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm:ss")) 
+                    + " | Người tải: " + SecurityUtils.getCurrentUsername();
+            Paragraph exportParagraph = new Paragraph(exportInfo, infoFont);
+            exportParagraph.setAlignment(Element.ALIGN_RIGHT);
+            exportParagraph.setSpacingAfter(8f);
+            document.add(exportParagraph);
 
             Paragraph title = new Paragraph("DANH SÁCH MENU", titleFont);
             title.setAlignment(Element.ALIGN_CENTER);
@@ -355,16 +402,17 @@ public class MenuServiceImpl implements MenuService {
             PdfPTable table = new PdfPTable(new float[] { 1.2f, 2.0f, 3.0f, 2.0f, 3.0f, 2.0f, 1.0f });
             table.setWidthPercentage(100);
 
-            addPdfHeaderCell(table, "Menu ID", headerFont);
-            addPdfHeaderCell(table, "Menu Code", headerFont);
-            addPdfHeaderCell(table, "Menu Name", headerFont);
-            addPdfHeaderCell(table, "Parent Code", headerFont);
-            addPdfHeaderCell(table, "URL", headerFont);
-            addPdfHeaderCell(table, "Icon", headerFont);
-            addPdfHeaderCell(table, "Ordinal", headerFont);
+            addPdfHeaderCell(table, "STT", headerFont);
+            addPdfHeaderCell(table, "Mã chức năng", headerFont);
+            addPdfHeaderCell(table, "Tên chức năng", headerFont);
+            addPdfHeaderCell(table, "Mã chức năng cha", headerFont);
+            addPdfHeaderCell(table, "Đường dẫn", headerFont);
+            addPdfHeaderCell(table, "Biểu tượng", headerFont);
+            addPdfHeaderCell(table, "Thứ tự", headerFont);
 
+            int stt = 1;
             for (MenuListItemDto item : items) {
-                addPdfBodyCell(table, item.getId() == null ? "" : String.valueOf(item.getId()), bodyFont, Element.ALIGN_CENTER);
+                addPdfBodyCell(table, String.valueOf(stt++), bodyFont, Element.ALIGN_CENTER);
                 addPdfBodyCell(table, item.getCode(), bodyFont, Element.ALIGN_LEFT);
                 addPdfBodyCell(table, item.getName(), bodyFont, Element.ALIGN_LEFT);
                 addPdfBodyCell(table, item.getParentCode(), bodyFont, Element.ALIGN_LEFT);
