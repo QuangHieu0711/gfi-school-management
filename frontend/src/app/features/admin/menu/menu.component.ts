@@ -8,12 +8,14 @@ import { TYPE_FORM, TYPE_FORM_KEY } from '@constant/constant';
 import { COMMON_TABLE_KEY } from '@model/table.model';
 import { ComponentBaseAbstract } from '@layout';
 import { FORM_CONTROL_MODULE, MATERIAL_MODULE } from '@modules';
+import { defaultExportFileName, saveBlobAsFile } from '@utils/file-util';
 
 import {
   MENU_FILTER_FORM,
   MENU_KEY,
   MenuResponse,
   MenuTreeRow,
+  MenuExportRequest,
 } from '@app/model/admin/menu.model';
 import { MenuService } from '@app/service/admin/menu.service';
 import { DialogMenuComponent } from './dialog-menu/dialog-menu.component';
@@ -53,6 +55,10 @@ export class MenuComponent extends ComponentBaseAbstract {
 
   get canAdd(): boolean {
     return this.permissionCheckService.canAdd(this.menuCode);
+  }
+
+  get canDownload(): boolean {
+    return this.permissionCheckService.canDownload(this.menuCode);
   }
 
   constructor(
@@ -197,6 +203,116 @@ export class MenuComponent extends ComponentBaseAbstract {
         });
       }
     );
+  }
+
+  exportExcel(): void {
+    if (!this.canDownload) {
+      this.toastr.warning('Bạn không có quyền tải xuống', 'Cảnh báo');
+      return;
+    }
+    this.exportFile('EXCEL');
+  }
+
+  exportPdf(): void {
+    if (!this.canDownload) {
+      this.toastr.warning('Bạn không có quyền tải xuống', 'Cảnh báo');
+      return;
+    }
+    this.exportFile('PDF');
+  }
+
+  private exportFile(exportType: 'PDF' | 'EXCEL'): void {
+    const formValues = this.form.getRawValue();
+    const payload: MenuExportRequest = {
+      exportType,
+      filter: {
+        menu: formValues['menu'],
+      },
+    };
+
+    this.menuService.export(payload).subscribe({
+      next: (res: any) => {
+        this.toastr.removeToastr();
+
+        const blob = this.extractBlob(res);
+        if (!blob) {
+          this.toastr.error(
+            `Xuất ${exportType} thất bại: Dữ liệu không hợp lệ`,
+            'Lỗi'
+          );
+          return;
+        }
+
+        const ext = exportType === 'PDF' ? 'pdf' : 'xlsx';
+        const fallbackName = defaultExportFileName('menu', ext);
+        const disposition = this.getHeader(res, 'content-disposition');
+        const fileName = this.getFileNameFromDisposition(
+          disposition,
+          fallbackName
+        );
+
+        saveBlobAsFile(blob, fileName);
+        this.toastr.success(
+          `Tải xuống ${exportType} thành công`,
+          `Xuất ${exportType}`
+        );
+      },
+      error: () => {
+        this.toastr.removeToastr();
+        this.toastr.error(`Xuất ${exportType} thất bại`, 'Lỗi');
+      },
+    });
+  }
+
+  private extractBlob(res: any): Blob | null {
+    if (res instanceof Blob) return res;
+    if (res?.body instanceof Blob) return res.body;
+    if (res?.data instanceof Blob) return res.data;
+    return null;
+  }
+
+  private getHeader(res: any, headerName: string): string | null {
+    if (res?.headers?.get) return res.headers.get(headerName);
+
+    const headers = res?.headers;
+    if (headers && typeof headers === 'object') {
+      const key = headerName.toLowerCase();
+      return headers[headerName] ?? headers[key] ?? null;
+    }
+
+    return null;
+  }
+
+  private getFileNameFromDisposition(
+    disposition: string | null,
+    fallbackName: string
+  ): string {
+    if (!disposition) return fallbackName;
+
+    const match = disposition.match(/filename\*?=(?:UTF-8'')?"?([^";]+)/i);
+    if (!match?.[1]) return fallbackName;
+
+    const rawFileName = match[1].trim();
+
+    try {
+      return this.decodeMimeFileName(decodeURIComponent(rawFileName));
+    } catch {
+      return this.decodeMimeFileName(rawFileName);
+    }
+  }
+
+  private decodeMimeFileName(fileName: string): string {
+    const mimeMatch = fileName.match(/^=\?UTF-8\?Q\?(.+)\?=$/i);
+    if (!mimeMatch?.[1]) return fileName;
+
+    const normalized = mimeMatch[1].replace(/_/g, ' ');
+    const decoded = normalized.replace(/=([0-9A-F]{2})/gi, '%$1');
+
+    try {
+      return decodeURIComponent(decoded);
+    } catch {
+      return fileName;
+    }
   }
 
   private buildTreeRows(items: MenuResponse[]): MenuTreeRow[] {

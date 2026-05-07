@@ -20,6 +20,7 @@ export const MENU_API_ENDPOINT = {
   BASE_PATH: 'menus',
   FILTER: 'search',
   OPTIONS: 'options',
+  EXPORT: 'export',
 };
 
 export interface MenuOptionResponse {
@@ -31,6 +32,13 @@ export interface MenuOptionResponse {
 
 export interface MenuFilterRequest {
   menu?: string;
+}
+
+export interface MenuExportRequest {
+  exportType: 'EXCEL' | 'PDF';
+  filter?: {
+    menu?: string;
+  };
 }
 
 export interface MenuFormRequest {
