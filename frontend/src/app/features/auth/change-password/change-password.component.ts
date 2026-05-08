@@ -4,9 +4,11 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { ICurrentUser, IMenuPermission } from '@model/auth.model';
 import { NAVIGATOR_ENDPOINT } from '@constant/navigator';
-import { MATERIAL_MODULE } from '@modules';
+import { FORM_CONTROL_MODULE, MATERIAL_MODULE } from '@modules';
+import { FormType, TEXT_CONTROL } from '@model/form-control.model';
 import {
   AuthService,
+  ItemControlService,
   PermissionCheckService,
   ToastService,
 } from '@service';
@@ -17,7 +19,7 @@ import { sha256 } from '@utils/utils';
   standalone: true,
   templateUrl: './change-password.component.html',
   styleUrls: ['./change-password.component.scss'],
-  imports: [CommonModule, ReactiveFormsModule, ...MATERIAL_MODULE],
+  imports: [CommonModule, ReactiveFormsModule, ...MATERIAL_MODULE, ...FORM_CONTROL_MODULE],
 })
 export class ChangePasswordComponent {
   private readonly defaultRedirects = [
@@ -101,9 +103,36 @@ export class ChangePasswordComponent {
   ] as const;
 
   readonly logoUrl = 'config/Logo_login.png';
-  showCurrentPassword = false;
-  showNewPassword = false;
-  showConfirmPassword = false;
+  
+  $formItem: FormType[] = [
+    TEXT_CONTROL({
+      controlName: 'currentPassword',
+      label: 'Mật khẩu hiện tại',
+      placeholder: 'Mật khẩu hiện tại',
+      required: true,
+      hidden: true,
+      type: 'password',
+      hint: 'Mật khẩu hiện tại là một mật khẩu tạm thời được gửi qua email',
+    }),
+    TEXT_CONTROL({
+      controlName: 'newPassword',
+      label: 'Mật khẩu mới',
+      placeholder: 'Mật khẩu mới',
+      required: true,
+      hidden: true,
+      type: 'password',
+      regex: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_])[A-Za-z\d\W_]{8,}$/,
+      hint: 'Tối thiểu 8 ký tự, bao gồm chữ hoa, chữ thường, ký tự số và ký tự đặc biệt',
+    }),
+    TEXT_CONTROL({
+      controlName: 'confirmPassword',
+      label: 'Xác nhận mật khẩu mới',
+      placeholder: 'Xác nhận mật khẩu mới',
+      required: true,
+      hidden: true,
+      type: 'password',
+    }),
+  ];
 
   readonly form;
 
@@ -112,21 +141,10 @@ export class ChangePasswordComponent {
     private readonly authService: AuthService,
     private readonly permissionCheckService: PermissionCheckService,
     private readonly toastService: ToastService,
-    private readonly router: Router
+    private readonly router: Router,
+    private readonly itemControl: ItemControlService
   ) {
-    this.form = this.fb.group({
-      currentPassword: ['', Validators.required],
-      newPassword: [
-        '',
-        [
-          Validators.required,
-          Validators.pattern(
-            /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_])[A-Za-z\d\W_]{8,}$/
-          ),
-        ],
-      ],
-      confirmPassword: ['', Validators.required],
-    });
+    this.form = this.itemControl.toFormGroup(this.$formItem);
 
     this.form.get('confirmPassword')?.addValidators((control) => {
       const newPassword = this.form?.get('newPassword')?.value;
@@ -169,30 +187,11 @@ export class ChangePasswordComponent {
               void this.router.navigate(['/login']);
             }
           },
-          error: (error) => {
-            const message =
-              error?.error?.userMessage ??
-              error?.error?.message ??
-              error?.message ??
-              'Đổi mật khẩu thất bại';
-
-            this.toastService.removeToastr();
-            this.toastService.error(message, 'Thất bại');
+          error: () => {
+            // interceptor already handled the error toast message
           },
         });
     });
-  }
-
-  toggleCurrentPasswordVisibility(): void {
-    this.showCurrentPassword = !this.showCurrentPassword;
-  }
-
-  toggleNewPasswordVisibility(): void {
-    this.showNewPassword = !this.showNewPassword;
-  }
-
-  toggleConfirmPasswordVisibility(): void {
-    this.showConfirmPassword = !this.showConfirmPassword;
   }
 
   private getFirstAccessibleRoute(
