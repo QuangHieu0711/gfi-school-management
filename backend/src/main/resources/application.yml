@@ -31,6 +31,25 @@ spring:
       mode: never
       encoding: UTF-8
 
+  # ===============================
+  # MAIL (Gmail SMTP)
+  # ===============================
+  # Để gửi mail cần tạo App Password trên Google Account:
+  # 1. Bật 2FA tại https://myaccount.google.com/security
+  # 2. Tạo App Password tại https://myaccount.google.com/apppasswords
+  # 3. Thay thế username và password bên dưới
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: your-email@gmail.com
+    password: your-app-password
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
 # ===============================
 # FILE UPLOAD (MinIO)
 # ===============================
@@ -60,3 +79,4 @@ server:
 jwt:
   expiration: 3600000
   refresh-expiration: 86400000
+

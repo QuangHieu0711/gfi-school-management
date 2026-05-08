@@ -60,4 +60,17 @@ public interface UserService {
      * Xóa (xóa mềm) user theo ID.
      */
     void delete(Long id);
+
+    /**
+     * Reset mật khẩu người dùng.
+     * Tạo mật khẩu tạm thời 8 ký tự (1 chữ hoa, 1 số, 1 ký tự đặc biệt)
+     * và gửi về email của người dùng.
+     */
+    void resetPassword(Long id);
+
+    /**
+     * Đổi mật khẩu (user tự đổi sau khi đăng nhập bằng mật khẩu tạm).
+     * Xóa flag mustChangePassword và tempPasswordExpiredAt sau khi đổi thành công.
+     */
+    void changePassword(String currentPassword, String newPassword);
 }

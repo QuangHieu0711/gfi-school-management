@@ -77,6 +77,9 @@ public enum CommonErrorCode {
     PROGRAM_DISTRIBUTION_CLASSROOM_UNIT_MISMATCH(1067, "Lớp không thuộc đơn vị đã chọn"),
     RECORD_NOT_FOUND(1068, "Không tìm thấy dữ liệu"),
     INVALID_REQUEST(1069, "Yêu cầu không hợp lệ"),
+    USER_EMAIL_NOT_FOUND(1071, "Người dùng chưa có email, không thể gửi mật khẩu mới"),
+    EMAIL_SEND_FAILED(1072, "Gửi email thất bại, vui lòng thử lại sau"),
+    TEMP_PASSWORD_EXPIRED(1073, "Mật khẩu tạm thời đã hết hạn, vui lòng liên hệ quản trị viên để reset lại"),
     ACCESS_DENIED(1403, "Bạn không có quyền truy cập tài nguyên này"),
     BAD_REQUEST(1400, "Dữ liệu không hợp lệ, vui lòng kiểm tra lại"),
     INTERNAL_SERVER_ERROR(1500, "Lỗi hệ thống, vui lòng thử lại sau.");

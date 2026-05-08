@@ -4,9 +4,11 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
@@ -53,6 +55,7 @@ import com.gfi.backend.repositories.UnitRepository;
 import com.gfi.backend.repositories.UserRepository;
 import com.gfi.backend.repositories.specifications.UserSpecification;
 import com.gfi.backend.services.interfaces.UserService;
+import com.gfi.backend.services.EmailService;
 import com.gfi.backend.models.entities.Staff;
 import com.gfi.backend.utils.PageableUtils;
 import com.gfi.backend.utils.PasswordUtils;
@@ -96,6 +99,7 @@ public class UserServiceImpl implements UserService {
     private final UnitRepository unitRepository;
     private final StaffRepository staffRepository;
     private final RoleAssignmentPermissionRepository roleAssignmentPermissionRepository;
+    private final EmailService emailService;
     private final UserSpecification userSpecification;
     private final UserMapper userMapper;
     
@@ -400,6 +404,121 @@ public class UserServiceImpl implements UserService {
         user.setDeletedFlag(1);
         user.setDeletedAt(LocalDateTime.now());
         user.setDeletedBy(SecurityUtils.getCurrentUsername());
+        userRepository.save(user);
+    }
+
+    // Reset mật khẩu người dùng
+    @Override
+    @Transactional
+    public void resetPassword(Long id) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new UserMessageException(CommonErrorCode.USER_NOT_FOUND));
+
+        validateUserAccess(user, ActionType.EDIT);
+
+        // Kiểm tra user có email hay không (email lấy từ Staff qua convenience getter)
+        String email = user.getEmail();
+        if (email == null || email.isBlank()) {
+            throw new UserMessageException(CommonErrorCode.USER_EMAIL_NOT_FOUND);
+        }
+
+        // Tạo mật khẩu tạm thời 8 ký tự
+        String tempPassword = generateTemporaryPassword();
+
+        // Hash mật khẩu: convention của project là SHA256(SHA256(plaintext))
+        // FE gửi SHA256(password) -> BE hash SHA256 thêm lần nữa
+        // Ở đây BE tự set nên phải hash 2 lần
+        String hashedOnce = PasswordUtils.sha256(tempPassword);
+        String hashedTwice = PasswordUtils.sha256(hashedOnce);
+        user.setPasswordHash(hashedTwice);
+
+        // Set flag bắt buộc đổi mật khẩu + thời hạn 15 phút
+        user.setMustChangePassword(true);
+        user.setPasswordResetAt(LocalDateTime.now());
+        user.setTempPasswordExpiredAt(LocalDateTime.now().plusMinutes(15));
+
+        user.setUpdatedBy(SecurityUtils.getCurrentUsername());
+        userRepository.save(user);
+
+        // Gửi email chứa mật khẩu tạm thời
+        String fullName = user.getFullName() != null ? user.getFullName() : user.getUsername();
+        try {
+            String subject = "[GFI] Mật khẩu tạm thời - Hệ thống quản lý trường học";
+            String body = "Xin chào " + fullName + ",\n\n"
+                    + "Mật khẩu tài khoản của bạn đã được đặt lại.\n\n"
+                    + "Tên đăng nhập: " + user.getUsername() + "\n"
+                    + "Mật khẩu mới: " + tempPassword + "\n\n"
+                    + "⚠ Lưu ý: Mật khẩu tạm thời này chỉ có hiệu lực trong 15 phút.\n"
+                    + "Vui lòng đăng nhập và đổi mật khẩu ngay sau khi nhận được email này.\n\n"
+                    + "Trân trọng,\n"
+                    + "Hệ thống quản lý trường học GFI";
+
+            emailService.sendSimpleEmail(email, subject, body);
+        } catch (Exception ex) {
+            // RuntimeException → @Transactional sẽ rollback password change
+            throw new UserMessageException(CommonErrorCode.EMAIL_SEND_FAILED);
+        }
+    }
+
+    /**
+     * Tạo mật khẩu tạm thời ngẫu nhiên 8 ký tự.
+     * Đảm bảo có ít nhất: 1 chữ hoa, 1 số, 1 ký tự đặc biệt.
+     * Các ký tự còn lại là chữ thường.
+     */
+    private String generateTemporaryPassword() {
+        SecureRandom random = new SecureRandom();
+        String upperChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+        String lowerChars = "abcdefghijklmnopqrstuvwxyz";
+        String digitChars = "0123456789";
+        String specialChars = "@#$%&*!";
+
+        List<Character> password = new ArrayList<>();
+        // 1 chữ hoa bắt buộc
+        password.add(upperChars.charAt(random.nextInt(upperChars.length())));
+        // 1 số bắt buộc
+        password.add(digitChars.charAt(random.nextInt(digitChars.length())));
+        // 1 ký tự đặc biệt bắt buộc
+        password.add(specialChars.charAt(random.nextInt(specialChars.length())));
+        // 5 ký tự chữ thường còn lại
+        for (int i = 0; i < 5; i++) {
+            password.add(lowerChars.charAt(random.nextInt(lowerChars.length())));
+        }
+
+        // Xáo trộn để không có pattern cố định
+        Collections.shuffle(password, random);
+
+        StringBuilder sb = new StringBuilder();
+        for (char c : password) {
+            sb.append(c);
+        }
+        return sb.toString();
+    }
+
+    // Đổi mật khẩu (user tự đổi)
+    @Override
+    @Transactional
+    public void changePassword(String currentPassword, String newPassword) {
+        // Lấy user hiện tại đang đăng nhập
+        String username = SecurityUtils.getCurrentUsername();
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new UserMessageException(CommonErrorCode.USER_NOT_FOUND));
+
+        // Verify mật khẩu hiện tại: FE gửi SHA256(plaintext), BE hash thêm lần nữa để so sánh
+        String currentPasswordHash = PasswordUtils.sha256(currentPassword.trim());
+        if (!currentPasswordHash.equals(user.getPasswordHash())) {
+            throw new UserMessageException(CommonErrorCode.INVALID_CREDENTIALS.getCode(),
+                    "Mật khẩu hiện tại không chính xác");
+        }
+
+        // Set mật khẩu mới: FE gửi SHA256(newPlaintext), BE hash thêm lần nữa
+        String newPasswordHash = PasswordUtils.sha256(newPassword.trim());
+        user.setPasswordHash(newPasswordHash);
+
+        // Xóa flag bắt buộc đổi mật khẩu
+        user.setMustChangePassword(false);
+        user.setTempPasswordExpiredAt(null);
+
+        user.setUpdatedBy(SecurityUtils.getCurrentUsername());
         userRepository.save(user);
     }
 

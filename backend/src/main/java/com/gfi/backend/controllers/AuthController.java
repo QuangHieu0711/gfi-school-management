@@ -1,5 +1,7 @@
 package com.gfi.backend.controllers;
 
+import java.time.LocalDateTime;
+
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseCookie;
@@ -15,6 +17,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.gfi.backend.models.dtos.auth.ChangePasswordRequest;
 import com.gfi.backend.models.dtos.auth.LoginRequest;
 import com.gfi.backend.models.dtos.auth.RegisterRequest;
 import com.gfi.backend.models.dtos.auth.RegisterResponse;
@@ -26,10 +29,12 @@ import com.gfi.backend.repositories.RoleRepository;
 import com.gfi.backend.repositories.UserRepository;
 import com.gfi.backend.services.ITokenService;
 import com.gfi.backend.services.interfaces.AuthPermissionService;
+import com.gfi.backend.services.interfaces.UserService;
 import com.gfi.backend.utils.SecurityContextUtils;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -41,16 +46,19 @@ public class AuthController extends ApiBaseController {
         private final RoleRepository roleRepository;
         private final PasswordEncoder passwordEncoder;
         private final AuthPermissionService authPermissionService;
+        private final UserService userService;
 
         public AuthController(AuthenticationManager authenticationManager, ITokenService tokenService,
                         UserRepository userRepository, RoleRepository roleRepository,
-                        PasswordEncoder passwordEncoder, AuthPermissionService authPermissionService) {
+                        PasswordEncoder passwordEncoder, AuthPermissionService authPermissionService,
+                        UserService userService) {
                 this.authenticationManager = authenticationManager;
                 this.tokenService = tokenService;
                 this.userRepository = userRepository;
                 this.roleRepository = roleRepository;
                 this.passwordEncoder = passwordEncoder;
                 this.authPermissionService = authPermissionService;
+                this.userService = userService;
         }
 
         @PostMapping("/login")
@@ -81,7 +89,21 @@ public class AuthController extends ApiBaseController {
                                         .orElseThrow(() -> new BadCredentialsException(
                                                         CommonErrorCode.INVALID_CREDENTIALS.getMessage()));
 
+                        // Kiểm tra mật khẩu tạm đã hết hạn chưa
+                        if (user.getTempPasswordExpiredAt() != null
+                                        && user.getTempPasswordExpiredAt().isBefore(LocalDateTime.now())) {
+                                return ResponseEntity
+                                                .status(HttpStatus.UNAUTHORIZED)
+                                                .body(ApiResult.fail(
+                                                                CommonErrorCode.TEMP_PASSWORD_EXPIRED.getCode(),
+                                                                CommonErrorCode.TEMP_PASSWORD_EXPIRED.getMessage()));
+                        }
+
                         tokens.setUser(toUserInfo(user));
+
+                        // Set flag mustChangePassword nếu cần đổi mật khẩu
+                        tokens.setMustChangePassword(
+                                        Boolean.TRUE.equals(user.getMustChangePassword()));
 
                         // Fetch and set permissions if user has a role
                         if (user.getRole() != null) {
@@ -217,5 +239,15 @@ public class AuthController extends ApiBaseController {
                 return ResponseEntity.ok()
                                 .header(HttpHeaders.SET_COOKIE, deleteCookie.toString())
                                 .body(ApiResult.success(null, "Đăng xuất thành công"));
+        }
+
+        @PostMapping("/change-password")
+        @Operation(summary = "Đổi mật khẩu", description = "User tự đổi mật khẩu sau khi đăng nhập (bắt buộc sau khi reset mật khẩu tạm thời).")
+        public ResponseEntity<ApiResult<String>> changePassword(
+                        @Valid @RequestBody ChangePasswordRequest request) {
+                return executeApiResult(() -> {
+                        userService.changePassword(request.getCurrentPassword(), request.getNewPassword());
+                        return ApiResult.success(null, "Đổi mật khẩu thành công");
+                });
         }
 }

@@ -52,6 +52,18 @@ public class User extends BaseEntity {
     @Column
     private Integer status;
 
+    // Flag bắt buộc đổi mật khẩu sau khi reset
+    @Column(name = "must_change_password")
+    private Boolean mustChangePassword;
+
+    // Thời điểm admin reset mật khẩu
+    @Column(name = "password_reset_at")
+    private LocalDateTime passwordResetAt;
+
+    // Thời điểm mật khẩu tạm hết hạn
+    @Column(name = "temp_password_expired_at")
+    private LocalDateTime tempPasswordExpiredAt;
+
     // Convenience getters: Profile data now lives in Staff, not User
     public String getFullName() {
         return staff != null ? staff.getFullName() : null;

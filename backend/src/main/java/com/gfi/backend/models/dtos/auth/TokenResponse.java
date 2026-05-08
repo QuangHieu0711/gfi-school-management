@@ -13,6 +13,7 @@ public class TokenResponse {
     private TokenInfo token;
     private UserInfo user;
     private PermissionsResponse permissions;
+    private Boolean mustChangePassword;
 
     @Data
     @Builder

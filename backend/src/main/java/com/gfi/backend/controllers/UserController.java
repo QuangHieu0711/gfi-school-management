@@ -129,4 +129,17 @@ public class UserController extends ApiBaseController {
             return ApiResult.success(null, "Xóa người dùng thành công");
         });
     }
+
+    /**
+     * Reset mật khẩu người dùng.
+     * Tạo mật khẩu tạm thời và gửi về email.
+     */
+    @PostMapping("/{id}/reset-password")
+    @Operation(summary = "Reset mật khẩu", description = "Tạo mật khẩu tạm thời và gửi về email của người dùng.")
+    public ResponseEntity<ApiResult<String>> resetPassword(@PathVariable Long id) {
+        return executeApiResult(() -> {
+            userService.resetPassword(id);
+            return ApiResult.success(null, "Đã gửi mật khẩu mới về email của người dùng");
+        });
+    }
 }
