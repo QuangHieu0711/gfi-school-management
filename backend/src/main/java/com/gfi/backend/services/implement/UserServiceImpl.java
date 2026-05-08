@@ -442,9 +442,10 @@ public class UserServiceImpl implements UserService {
 
         // Gửi email HTML chứa mật khẩu tạm thời
         String fullName = user.getFullName() != null ? user.getFullName() : user.getUsername();
+        LocalDateTime expiryTime = user.getTempPasswordExpiredAt();
         try {
             String subject = "Mật khẩu tạm thời — Hệ thống quản lý trường học GFI";
-            String htmlBody = buildResetPasswordHtmlEmail(fullName, user.getUsername(), tempPassword);
+            String htmlBody = buildResetPasswordHtmlEmail(fullName, user.getUsername(), tempPassword, expiryTime);
 
             emailService.sendHtmlEmail(email, subject, htmlBody);
         } catch (Exception ex) {
@@ -457,7 +458,9 @@ public class UserServiceImpl implements UserService {
      * Tạo nội dung HTML email reset mật khẩu.
      * Thiết kế chuyên nghiệp với branding, countdown, và hướng dẫn.
      */
-    private String buildResetPasswordHtmlEmail(String fullName, String username, String tempPassword) {
+    private String buildResetPasswordHtmlEmail(String fullName, String username, String tempPassword, LocalDateTime expiryTime) {
+        String expiryTimeStr = expiryTime.format(DateTimeFormatter.ofPattern("HH:mm"));
+        String expiryDateStr = expiryTime.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
         return """
             <!DOCTYPE html>
             <html lang="vi">
@@ -474,7 +477,7 @@ public class UserServiceImpl implements UserService {
                                 <!-- Header gradient -->
                                 <tr>
                                     <td style="background:linear-gradient(135deg,#1a8a6e 0%%,#2cb88a 50%%,#34d399 100%%);padding:36px 40px;text-align:center;">
-                                        <div style="font-size:32px;margin-bottom:8px;">🏫</div>
+                                        <div style="margin-bottom:12px;"><img src="http://localhost:8080/images/logo.png" alt="GFI" width="72" height="72" style="border-radius:12px;box-shadow:0 2px 12px rgba(0,0,0,0.2);"></div>
                                         <h1 style="margin:0;color:#ffffff;font-size:22px;font-weight:700;letter-spacing:0.5px;">
                                             Hệ thống quản lý trường học
                                         </h1>
@@ -545,24 +548,19 @@ public class UserServiceImpl implements UserService {
                                 <!-- Timer warning -->
                                 <tr>
                                     <td style="padding:20px 40px 0;">
-                                        <table role="presentation" width="100%%" cellpadding="0" cellspacing="0" style="background:#fef3c7;border:1px solid #fbbf24;border-radius:10px;">
+                                        <table role="presentation" width="100%%" cellpadding="0" cellspacing="0" style="background:linear-gradient(135deg,#fef3c7 0%%,#fde68a 100%%);border:1px solid #fbbf24;border-radius:12px;overflow:hidden;">
                                             <tr>
-                                                <td style="padding:16px 20px;">
-                                                    <table role="presentation" cellpadding="0" cellspacing="0">
-                                                        <tr>
-                                                            <td style="vertical-align:top;padding-right:12px;">
-                                                                <span style="font-size:24px;">⏱️</span>
-                                                            </td>
-                                                            <td>
-                                                                <p style="margin:0;color:#92400e;font-size:14px;font-weight:700;">
-                                                                    Hiệu lực: 15 phút
-                                                                </p>
-                                                                <p style="margin:4px 0 0;color:#a16207;font-size:13px;line-height:1.5;">
-                                                                    Mật khẩu tạm thời sẽ hết hạn sau 15 phút kể từ khi nhận email. Hãy đăng nhập ngay!
-                                                                </p>
-                                                            </td>
-                                                        </tr>
-                                                    </table>
+                                                <td style="padding:20px 24px;text-align:center;">
+                                                    <p style="margin:0 0 8px;color:#92400e;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;">
+                                                        ⏱ Mật khẩu sẽ hết hạn lúc
+                                                    </p>
+                                                    <!-- Đồng hồ đếm ngược -->
+                                                    <div style="display:inline-block;background:#92400e;border-radius:10px;padding:12px 28px;margin:4px 0;">
+                                                        <span style="color:#fef3c7;font-size:36px;font-weight:800;font-family:'Courier New',monospace;letter-spacing:4px;">%s</span>
+                                                    </div>
+                                                    <p style="margin:8px 0 0;color:#a16207;font-size:13px;">
+                                                        Ngày %s · Còn <strong>15 phút</strong> kể từ khi nhận email
+                                                    </p>
                                                 </td>
                                             </tr>
                                         </table>
@@ -655,7 +653,7 @@ public class UserServiceImpl implements UserService {
                 </table>
             </body>
             </html>
-            """.formatted(fullName, username, tempPassword);
+            """.formatted(fullName, username, tempPassword, expiryTimeStr, expiryDateStr);
     }
 
     /**
