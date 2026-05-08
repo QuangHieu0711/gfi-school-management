@@ -313,7 +313,7 @@ public class MenuServiceImpl implements MenuService {
             // Row 2: Title
             Row titleRow = sheet.createRow(rowIndex++);
             Cell titleCell = titleRow.createCell(0);
-            titleCell.setCellValue("DANH SÁCH MENU");
+            titleCell.setCellValue("DANH SÁCH CHỨC NĂNG");
             CellStyle titleStyle = workbook.createCellStyle();
             titleStyle.setAlignment(HorizontalAlignment.CENTER);
             titleStyle.setVerticalAlignment(VerticalAlignment.CENTER);
@@ -340,6 +340,10 @@ public class MenuServiceImpl implements MenuService {
 
             CellStyle bodyStyle = workbook.createCellStyle();
             bodyStyle.setAlignment(HorizontalAlignment.LEFT);
+            bodyStyle.setBorderTop(BorderStyle.THIN);
+            bodyStyle.setBorderBottom(BorderStyle.THIN);
+            bodyStyle.setBorderLeft(BorderStyle.THIN);
+            bodyStyle.setBorderRight(BorderStyle.THIN);
             Font bodyFont = workbook.createFont();
             bodyFont.setFontName("Times New Roman");
             bodyStyle.setFont(bodyFont);
@@ -350,18 +354,25 @@ public class MenuServiceImpl implements MenuService {
                 int c = 0;
                 Cell cell = row.createCell(c++);
                 cell.setCellValue(stt++);
+                cell.setCellStyle(bodyStyle);
                 cell = row.createCell(c++);
                 cell.setCellValue(item.getCode());
+                cell.setCellStyle(bodyStyle);
                 cell = row.createCell(c++);
                 cell.setCellValue(item.getName());
+                cell.setCellStyle(bodyStyle);
                 cell = row.createCell(c++);
                 cell.setCellValue(item.getParentCode());
+                cell.setCellStyle(bodyStyle);
                 cell = row.createCell(c++);
                 cell.setCellValue(item.getUrl());
+                cell.setCellStyle(bodyStyle);
                 cell = row.createCell(c++);
                 cell.setCellValue(item.getIcon());
+                cell.setCellStyle(bodyStyle);
                 cell = row.createCell(c++);
                 cell.setCellValue(item.getOrdinal() == null ? 0 : item.getOrdinal());
+                cell.setCellStyle(bodyStyle);
             }
 
             for (int i = 0; i < headers.length; i++) {
@@ -394,7 +405,7 @@ public class MenuServiceImpl implements MenuService {
             exportParagraph.setSpacingAfter(8f);
             document.add(exportParagraph);
 
-            Paragraph title = new Paragraph("DANH SÁCH MENU", titleFont);
+            Paragraph title = new Paragraph("DANH SÁCH CHỨC NĂNG", titleFont);
             title.setAlignment(Element.ALIGN_CENTER);
             title.setSpacingAfter(12f);
             document.add(title);

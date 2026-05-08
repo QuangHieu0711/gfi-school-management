@@ -116,4 +116,26 @@ public class GradeLevelController extends ApiBaseController {
             return ApiResult.success(null, "Xóa khối thành công");
         });
     }
+    @PostMapping("/export")
+    @com.gfi.backend.controllers.annotations.DataScoped(feature = "GRADE_CONFIG", action = com.gfi.backend.models.enums.ActionType.DOWNLOAD)
+    @Operation(summary = "Xuất danh sách khối", description = "Xuất danh sách khối theo điều kiện tìm kiếm, hỗ trợ EXCEL hoặc PDF.")
+    public ResponseEntity<byte[]> export(
+            @RequestBody(required = false) PageRequestDto<GradeLevelFilterDto> request,
+            @org.springframework.web.bind.annotation.RequestParam(defaultValue = "EXCEL") com.gfi.backend.models.enums.ExportType exportType) {
+        PageRequestDto<GradeLevelFilterDto> safeRequest = request == null ? new PageRequestDto<>() : request;
+        byte[] content = gradeLevelService.export(safeRequest, exportType);
+        String extension = exportType == com.gfi.backend.models.enums.ExportType.PDF ? "pdf" : "xlsx";
+        String contentType = exportType == com.gfi.backend.models.enums.ExportType.PDF
+                ? org.springframework.http.MediaType.APPLICATION_PDF_VALUE
+                : "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+        String fileName = "danh-sach-khoi." + extension;
+
+        return ResponseEntity.ok()
+                .header(org.springframework.http.HttpHeaders.CONTENT_DISPOSITION, org.springframework.http.ContentDisposition.attachment()
+                        .filename(fileName, java.nio.charset.StandardCharsets.UTF_8)
+                        .build()
+                        .toString())
+                .contentType(org.springframework.http.MediaType.parseMediaType(contentType))
+                .body(content);
+    }
 }

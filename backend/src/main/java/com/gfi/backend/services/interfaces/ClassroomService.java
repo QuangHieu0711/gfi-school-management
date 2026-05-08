@@ -12,6 +12,11 @@ import com.gfi.backend.models.dtos.common.LookupItemDto;
 import com.gfi.backend.models.dtos.common.PageRequestDto;
 import com.gfi.backend.models.dtos.common.PageResponseDto;
 
+import org.springframework.web.multipart.MultipartFile;
+import com.gfi.backend.models.dtos.common.TemporaryFileDto;
+import com.gfi.backend.models.dtos.classroom.ClassroomImportResultDto;
+import com.gfi.backend.models.enums.ExportType;
+
 public interface ClassroomService {
     PageResponseDto<ClassroomListItemDto, ClassroomFilterDto> search(PageRequestDto<ClassroomFilterDto> request);
     List<LookupItemDto> getOptions(Long unitId, Long gradeLevelId, Long schoolYearId);
@@ -20,4 +25,8 @@ public interface ClassroomService {
     ClassroomDetailDto create(ClassroomCreateRequest request);
     ClassroomDetailDto update(Long id, ClassroomUpdateRequest request);
     void delete(Long id);
+    byte[] export(PageRequestDto<ClassroomFilterDto> request, ExportType exportType);
+    byte[] exportExcelTemplate();
+    ClassroomImportResultDto importExcel(MultipartFile file);
+    TemporaryFileDto getImportErrorFile(String token);
 }

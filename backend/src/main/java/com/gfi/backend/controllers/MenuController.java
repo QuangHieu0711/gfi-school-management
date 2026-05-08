@@ -130,7 +130,7 @@ public class MenuController extends ApiBaseController {
         String contentType = exportType == ExportType.PDF
                 ? MediaType.APPLICATION_PDF_VALUE
                 : "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
-        String fileName = "danh-sach-menu." + extension;
+        String fileName = "danh-sach-chuc-nang." + extension;
 
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION, ContentDisposition.attachment()

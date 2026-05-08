@@ -130,4 +130,62 @@ public class ClassroomController extends ApiBaseController {
             return ApiResult.success(null, "Xóa lớp thành công");
         });
     }
+    @PostMapping("/export")
+    @DataScoped(feature = "CLASS_MANAGEMENT", action = ActionType.DOWNLOAD)
+    @Operation(summary = "Xuất danh sách lớp", description = "Xuất danh sách lớp theo điều kiện tìm kiếm.")
+    public ResponseEntity<byte[]> export(
+            @RequestBody(required = false) PageRequestDto<ClassroomFilterDto> request,
+            @RequestParam(defaultValue = "EXCEL") com.gfi.backend.models.enums.ExportType exportType) {
+        PageRequestDto<ClassroomFilterDto> safeRequest = request == null ? new PageRequestDto<>() : request;
+        byte[] content = classroomService.export(safeRequest, exportType);
+        String extension = exportType == com.gfi.backend.models.enums.ExportType.PDF ? "pdf" : "xlsx";
+        String contentType = exportType == com.gfi.backend.models.enums.ExportType.PDF
+                ? org.springframework.http.MediaType.APPLICATION_PDF_VALUE
+                : "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+        String fileName = "danh-sach-lop-hoc." + extension;
+
+        return ResponseEntity.ok()
+                .header(org.springframework.http.HttpHeaders.CONTENT_DISPOSITION, org.springframework.http.ContentDisposition.attachment()
+                        .filename(fileName, java.nio.charset.StandardCharsets.UTF_8)
+                        .build()
+                        .toString())
+                .contentType(org.springframework.http.MediaType.parseMediaType(contentType))
+                .body(content);
+    }
+
+    @GetMapping("/export-template")
+    @DataScoped(feature = "CLASS_MANAGEMENT", action = ActionType.DOWNLOAD)
+    @Operation(summary = "Tải file Excel mẫu", description = "Tải file Excel mẫu để import danh sách lớp.")
+    public ResponseEntity<byte[]> exportExcelTemplate() {
+        byte[] content = classroomService.exportExcelTemplate();
+        return ResponseEntity.ok()
+                .header(org.springframework.http.HttpHeaders.CONTENT_DISPOSITION, org.springframework.http.ContentDisposition.attachment()
+                        .filename("mau-import-lop-hoc.xlsx", java.nio.charset.StandardCharsets.UTF_8)
+                        .build()
+                        .toString())
+                .contentType(org.springframework.http.MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+                .body(content);
+    }
+
+    @PostMapping("/import")
+    @DataScoped(feature = "CLASS_MANAGEMENT", action = ActionType.ADD)
+    @Operation(summary = "Import lớp học từ Excel", description = "Import danh sách lớp học từ file Excel.")
+    public ResponseEntity<ApiResult<com.gfi.backend.models.dtos.classroom.ClassroomImportResultDto>> importExcel(
+            @RequestParam("file") org.springframework.web.multipart.MultipartFile file) {
+        return executeApiResult(() -> ApiResult.success(classroomService.importExcel(file), "Import lớp học hoàn tất"));
+    }
+
+    @GetMapping("/import-errors/{token}")
+    @DataScoped(feature = "CLASS_MANAGEMENT", action = ActionType.VIEW)
+    @Operation(summary = "Tải file lỗi import", description = "Tải file Excel chứa các dòng dữ liệu lỗi sau khi import.")
+    public ResponseEntity<byte[]> getImportErrorFile(@PathVariable String token) {
+        com.gfi.backend.models.dtos.common.TemporaryFileDto fileDto = classroomService.getImportErrorFile(token);
+        return ResponseEntity.ok()
+                .header(org.springframework.http.HttpHeaders.CONTENT_DISPOSITION, org.springframework.http.ContentDisposition.attachment()
+                        .filename(fileDto.getFileName(), java.nio.charset.StandardCharsets.UTF_8)
+                        .build()
+                        .toString())
+                .contentType(org.springframework.http.MediaType.parseMediaType(fileDto.getContentType()))
+                .body(fileDto.getContent());
+    }
 }
