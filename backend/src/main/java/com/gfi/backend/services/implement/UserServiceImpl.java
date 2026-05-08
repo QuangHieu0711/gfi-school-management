@@ -464,193 +464,89 @@ public class UserServiceImpl implements UserService {
         return """
             <!DOCTYPE html>
             <html lang="vi">
-            <head>
-                <meta charset="UTF-8">
-                <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            </head>
-            <body style="margin:0;padding:0;background-color:#f0f2f5;font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;">
-                <table role="presentation" width="100%%" cellpadding="0" cellspacing="0" style="background-color:#f0f2f5;padding:32px 0;">
-                    <tr>
-                        <td align="center">
-                            <table role="presentation" width="520" cellpadding="0" cellspacing="0" style="background-color:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
+            <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
+            <body style="margin:0;padding:0;background:#f0f2f5;font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;">
+            <table width="100%%" cellpadding="0" cellspacing="0" style="background:#f0f2f5;padding:24px 0;">
+            <tr><td align="center">
+            <table width="460" cellpadding="0" cellspacing="0" style="background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 2px 16px rgba(0,0,0,0.06);">
 
-                                <!-- Header gradient -->
-                                <tr>
-                                    <td style="background:linear-gradient(135deg,#1a8a6e 0%%,#2cb88a 50%%,#34d399 100%%);padding:36px 40px;text-align:center;">
-                                        <div style="margin-bottom:12px;"><img src="http://localhost:8080/images/logo.png" alt="GFI" width="72" height="72" style="border-radius:12px;box-shadow:0 2px 12px rgba(0,0,0,0.2);"></div>
-                                        <h1 style="margin:0;color:#ffffff;font-size:22px;font-weight:700;letter-spacing:0.5px;">
-                                            Hệ thống quản lý trường học
-                                        </h1>
-                                        <p style="margin:4px 0 0;color:rgba(255,255,255,0.85);font-size:13px;font-weight:400;">
-                                            GFI School Management System
-                                        </p>
-                                    </td>
-                                </tr>
+            <!-- Header -->
+            <tr><td style="background:linear-gradient(135deg,#1a8a6e,#2cb88a);padding:24px 32px;text-align:center;">
+                <img src="cid:logo" alt="GFI" height="56" style="margin-bottom:8px;display:block;margin-left:auto;margin-right:auto;width:auto;">
+                <p style="margin:0;color:#fff;font-size:15px;font-weight:600;">Hệ thống quản lý trường học GFI</p>
+            </td></tr>
 
-                                <!-- Body -->
-                                <tr>
-                                    <td style="padding:32px 40px 16px;">
-                                        <p style="margin:0 0 6px;color:#64748b;font-size:13px;font-weight:500;text-transform:uppercase;letter-spacing:1px;">
-                                            ĐẶT LẠI MẬT KHẨU
-                                        </p>
-                                        <p style="margin:0 0 20px;color:#1e293b;font-size:16px;line-height:1.6;">
-                                            Xin chào <strong>%s</strong>,
-                                        </p>
-                                        <p style="margin:0 0 24px;color:#475569;font-size:14px;line-height:1.7;">
-                                            Mật khẩu tài khoản của bạn đã được quản trị viên đặt lại.
-                                            Vui lòng sử dụng thông tin bên dưới để đăng nhập.
-                                        </p>
-                                    </td>
-                                </tr>
+            <!-- Body -->
+            <tr><td style="padding:24px 32px 12px;">
+                <p style="margin:0 0 4px;color:#94a3b8;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:1px;">Đặt lại mật khẩu</p>
+                <p style="margin:0 0 14px;color:#1e293b;font-size:14px;">Xin chào <strong>%s</strong>,</p>
+                <p style="margin:0;color:#64748b;font-size:13px;line-height:1.6;">Mật khẩu tài khoản của bạn đã được quản trị viên đặt lại. Vui lòng đăng nhập bằng thông tin bên dưới.</p>
+            </td></tr>
 
-                                <!-- Credentials box -->
-                                <tr>
-                                    <td style="padding:0 40px;">
-                                        <table role="presentation" width="100%%" cellpadding="0" cellspacing="0" style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden;">
-                                            <tr>
-                                                <td style="padding:20px 24px;border-bottom:1px solid #e2e8f0;">
-                                                    <table role="presentation" width="100%%" cellpadding="0" cellspacing="0">
-                                                        <tr>
-                                                            <td style="color:#64748b;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;padding-bottom:4px;">
-                                                                👤 Tên đăng nhập
-                                                            </td>
-                                                        </tr>
-                                                        <tr>
-                                                            <td style="color:#0f172a;font-size:18px;font-weight:700;font-family:'Courier New',monospace;letter-spacing:1px;">
-                                                                %s
-                                                            </td>
-                                                        </tr>
-                                                    </table>
-                                                </td>
-                                            </tr>
-                                            <tr>
-                                                <td style="padding:20px 24px;">
-                                                    <table role="presentation" width="100%%" cellpadding="0" cellspacing="0">
-                                                        <tr>
-                                                            <td style="color:#64748b;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;padding-bottom:4px;">
-                                                                🔑 Mật khẩu tạm thời
-                                                            </td>
-                                                        </tr>
-                                                        <tr>
-                                                            <td>
-                                                                <span style="display:inline-block;background:linear-gradient(135deg,#1a8a6e,#2cb88a);color:#ffffff;font-size:20px;font-weight:700;font-family:'Courier New',monospace;letter-spacing:3px;padding:10px 20px;border-radius:8px;">
-                                                                    %s
-                                                                </span>
-                                                            </td>
-                                                        </tr>
-                                                    </table>
-                                                </td>
-                                            </tr>
-                                        </table>
-                                    </td>
-                                </tr>
-
-                                <!-- Timer warning -->
-                                <tr>
-                                    <td style="padding:20px 40px 0;">
-                                        <table role="presentation" width="100%%" cellpadding="0" cellspacing="0" style="background:linear-gradient(135deg,#fef3c7 0%%,#fde68a 100%%);border:1px solid #fbbf24;border-radius:12px;overflow:hidden;">
-                                            <tr>
-                                                <td style="padding:20px 24px;text-align:center;">
-                                                    <p style="margin:0 0 8px;color:#92400e;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;">
-                                                        ⏱ Mật khẩu sẽ hết hạn lúc
-                                                    </p>
-                                                    <!-- Đồng hồ đếm ngược -->
-                                                    <div style="display:inline-block;background:#92400e;border-radius:10px;padding:12px 28px;margin:4px 0;">
-                                                        <span style="color:#fef3c7;font-size:36px;font-weight:800;font-family:'Courier New',monospace;letter-spacing:4px;">%s</span>
-                                                    </div>
-                                                    <p style="margin:8px 0 0;color:#a16207;font-size:13px;">
-                                                        Ngày %s · Còn <strong>15 phút</strong> kể từ khi nhận email
-                                                    </p>
-                                                </td>
-                                            </tr>
-                                        </table>
-                                    </td>
-                                </tr>
-
-                                <!-- Steps -->
-                                <tr>
-                                    <td style="padding:24px 40px 0;">
-                                        <p style="margin:0 0 12px;color:#1e293b;font-size:14px;font-weight:600;">
-                                            Các bước tiếp theo:
-                                        </p>
-                                        <table role="presentation" width="100%%" cellpadding="0" cellspacing="0">
-                                            <tr>
-                                                <td style="padding:6px 0;">
-                                                    <table role="presentation" cellpadding="0" cellspacing="0">
-                                                        <tr>
-                                                            <td style="vertical-align:top;padding-right:10px;">
-                                                                <span style="display:inline-block;width:24px;height:24px;line-height:24px;text-align:center;background:#1a8a6e;color:#fff;border-radius:50%%;font-size:12px;font-weight:700;">1</span>
-                                                            </td>
-                                                            <td style="color:#475569;font-size:14px;line-height:24px;">
-                                                                Đăng nhập bằng mật khẩu tạm thời ở trên
-                                                            </td>
-                                                        </tr>
-                                                    </table>
-                                                </td>
-                                            </tr>
-                                            <tr>
-                                                <td style="padding:6px 0;">
-                                                    <table role="presentation" cellpadding="0" cellspacing="0">
-                                                        <tr>
-                                                            <td style="vertical-align:top;padding-right:10px;">
-                                                                <span style="display:inline-block;width:24px;height:24px;line-height:24px;text-align:center;background:#1a8a6e;color:#fff;border-radius:50%%;font-size:12px;font-weight:700;">2</span>
-                                                            </td>
-                                                            <td style="color:#475569;font-size:14px;line-height:24px;">
-                                                                Hệ thống sẽ yêu cầu bạn đổi mật khẩu mới
-                                                            </td>
-                                                        </tr>
-                                                    </table>
-                                                </td>
-                                            </tr>
-                                            <tr>
-                                                <td style="padding:6px 0;">
-                                                    <table role="presentation" cellpadding="0" cellspacing="0">
-                                                        <tr>
-                                                            <td style="vertical-align:top;padding-right:10px;">
-                                                                <span style="display:inline-block;width:24px;height:24px;line-height:24px;text-align:center;background:#1a8a6e;color:#fff;border-radius:50%%;font-size:12px;font-weight:700;">3</span>
-                                                            </td>
-                                                            <td style="color:#475569;font-size:14px;line-height:24px;">
-                                                                Tạo mật khẩu mới an toàn và ghi nhớ
-                                                            </td>
-                                                        </tr>
-                                                    </table>
-                                                </td>
-                                            </tr>
-                                        </table>
-                                    </td>
-                                </tr>
-
-                                <!-- Security note -->
-                                <tr>
-                                    <td style="padding:24px 40px 0;">
-                                        <table role="presentation" width="100%%" cellpadding="0" cellspacing="0" style="background:#eff6ff;border-radius:8px;">
-                                            <tr>
-                                                <td style="padding:12px 16px;">
-                                                    <p style="margin:0;color:#1e40af;font-size:12px;line-height:1.6;">
-                                                        🔒 <strong>Bảo mật:</strong> Không chia sẻ email này cho bất kỳ ai.
-                                                        Nếu bạn không yêu cầu đặt lại mật khẩu, vui lòng liên hệ quản trị viên ngay.
-                                                    </p>
-                                                </td>
-                                            </tr>
-                                        </table>
-                                    </td>
-                                </tr>
-
-                                <!-- Footer -->
-                                <tr>
-                                    <td style="padding:28px 40px 32px;">
-                                        <hr style="border:none;border-top:1px solid #e2e8f0;margin:0 0 20px;">
-                                        <p style="margin:0;color:#94a3b8;font-size:12px;text-align:center;line-height:1.6;">
-                                            Email tự động từ <strong>Hệ thống quản lý trường học GFI</strong><br>
-                                            Vui lòng không trả lời email này.
-                                        </p>
-                                    </td>
-                                </tr>
-
-                            </table>
-                        </td>
-                    </tr>
+            <!-- Credentials -->
+            <tr><td style="padding:12px 32px;">
+                <table width="100%%" cellpadding="0" cellspacing="0" style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;">
+                <tr><td style="padding:14px 18px;border-bottom:1px solid #e2e8f0;">
+                    <span style="color:#94a3b8;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">Tên đăng nhập</span><br>
+                    <span style="color:#0f172a;font-size:15px;font-weight:700;font-family:'Courier New',monospace;">%s</span>
+                </td></tr>
+                <tr><td style="padding:14px 18px;">
+                    <span style="color:#94a3b8;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">Mật khẩu tạm thời</span><br>
+                    <span style="display:inline-block;margin-top:6px;background:linear-gradient(135deg,#1a8a6e,#2cb88a);color:#fff;font-size:16px;font-weight:700;font-family:'Courier New',monospace;letter-spacing:2px;padding:7px 16px;border-radius:6px;">%s</span>
+                </td></tr>
                 </table>
+            </td></tr>
+
+            <!-- Countdown -->
+            <tr><td style="padding:8px 32px;">
+                <table width="100%%" cellpadding="0" cellspacing="0" style="background:#fef3c7;border:1px solid #fbbf24;border-radius:8px;">
+                <tr><td style="padding:14px 18px;text-align:center;">
+                    <span style="color:#92400e;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:1px;">⏱ Hết hạn lúc</span><br>
+                    <span style="display:inline-block;margin:6px 0 4px;background:#92400e;color:#fef3c7;font-size:24px;font-weight:800;font-family:'Courier New',monospace;letter-spacing:3px;padding:6px 18px;border-radius:6px;">%s</span><br>
+                    <span style="color:#a16207;font-size:11px;">Ngày %s · Còn <strong>15 phút</strong> kể từ lúc nhận email</span>
+                </td></tr>
+                </table>
+            </td></tr>
+
+            <!-- Steps -->
+            <tr><td style="padding:16px 32px 0;">
+                <p style="margin:0 0 8px;color:#1e293b;font-size:13px;font-weight:600;">Hướng dẫn:</p>
+                <table width="100%%" cellpadding="0" cellspacing="0">
+                <tr><td style="padding:3px 0;color:#64748b;font-size:12px;line-height:1.5;">
+                    <span style="display:inline-block;width:18px;height:18px;line-height:18px;text-align:center;background:#1a8a6e;color:#fff;border-radius:50%%;font-size:10px;font-weight:700;margin-right:6px;vertical-align:middle;">1</span>
+                    Đăng nhập bằng mật khẩu tạm thời ở trên
+                </td></tr>
+                <tr><td style="padding:3px 0;color:#64748b;font-size:12px;line-height:1.5;">
+                    <span style="display:inline-block;width:18px;height:18px;line-height:18px;text-align:center;background:#1a8a6e;color:#fff;border-radius:50%%;font-size:10px;font-weight:700;margin-right:6px;vertical-align:middle;">2</span>
+                    Hệ thống sẽ yêu cầu bạn đổi mật khẩu mới
+                </td></tr>
+                <tr><td style="padding:3px 0;color:#64748b;font-size:12px;line-height:1.5;">
+                    <span style="display:inline-block;width:18px;height:18px;line-height:18px;text-align:center;background:#1a8a6e;color:#fff;border-radius:50%%;font-size:10px;font-weight:700;margin-right:6px;vertical-align:middle;">3</span>
+                    Tạo mật khẩu mới an toàn và ghi nhớ
+                </td></tr>
+                </table>
+            </td></tr>
+
+            <!-- Security -->
+            <tr><td style="padding:14px 32px 0;">
+                <table width="100%%" cellpadding="0" cellspacing="0" style="background:#eff6ff;border-radius:6px;">
+                <tr><td style="padding:10px 14px;">
+                    <p style="margin:0;color:#1e40af;font-size:11px;line-height:1.5;">🔒 <strong>Bảo mật:</strong> Không chia sẻ email này. Nếu bạn không yêu cầu đặt lại mật khẩu, liên hệ quản trị viên ngay.</p>
+                </td></tr>
+                </table>
+            </td></tr>
+
+            <!-- Footer -->
+            <tr><td style="padding:20px 32px 24px;">
+                <hr style="border:none;border-top:1px solid #e2e8f0;margin:0 0 14px;">
+                <p style="margin:0;color:#94a3b8;font-size:11px;text-align:center;line-height:1.5;">
+                    Email tự động từ <strong>Hệ thống GFI</strong> · Vui lòng không trả lời email này.
+                </p>
+            </td></tr>
+
+            </table>
+            </td></tr>
+            </table>
             </body>
             </html>
             """.formatted(fullName, username, tempPassword, expiryTimeStr, expiryDateStr);
