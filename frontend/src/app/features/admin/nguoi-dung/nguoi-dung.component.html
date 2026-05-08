@@ -23,20 +23,6 @@
           Thêm mới
         </button>
       }
-      @if (canAdd) {
-        <button
-          class="btn-tight"
-          color="primary"
-          matButton
-          [attr.matbutton]="matButton()"
-          (click)="import()">
-          <app-icon
-            class="btn-icon"
-            icon="upload"
-            [size]="18" />
-          Kết nạp
-        </button>
-      }
       @if (canDownload) {
         <button
           color="primary"

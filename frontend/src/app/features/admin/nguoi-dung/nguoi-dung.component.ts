@@ -27,7 +27,6 @@ import {
 import { DonViService } from '@app/service/admin/don-vi.service';
 import { NguoiDungService } from '@app/service/admin/nguoi-dung.service';
 import { VaiTroService } from '@app/service/admin/vai-tro.service';
-import { DialogImportComponent } from './dialog-import/dialog-import.component';
 import { DialogThemNguoiDungComponent } from './dialog-them-nguoi-dung/dialog-them-nguoi-dung.component';
 import { PermissionCheckService, PermissionService } from '@service';
 
@@ -358,24 +357,6 @@ export class NguoiDungComponent extends ComponentBaseAbstract {
             pageIndex: this.pageIndex,
             pageSize: this.pageSize,
           });
-        }
-      }
-    );
-  }
-
-  import() {
-    if (!this.canAdd) {
-      this.toastr.warning('Bạn không có quyền kết nạp dữ liệu', 'Cảnh báo');
-      return;
-    }
-    this.dialog.componentDialog(
-      DialogImportComponent,
-      {
-        width: '900px',
-      },
-      (result) => {
-        if (result) {
-          this.resetFilter();
         }
       }
     );
