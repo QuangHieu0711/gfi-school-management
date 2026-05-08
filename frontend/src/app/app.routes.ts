@@ -17,6 +17,13 @@ export const routes: Routes = [
       ),
   },
   {
+    path: NAVIGATOR_ENDPOINT.CHANGE_PASSWORD,
+    loadComponent: () =>
+      import('@features/auth/change-password/change-password.component').then(
+        (m) => m.ChangePasswordComponent
+      ),
+  },
+  {
     path: NAVIGATOR_ENDPOINT.ADMIN.BASE_PATH,
     component: LayoutComponent,
     // canActivate: [AdminGuard], // guarding token

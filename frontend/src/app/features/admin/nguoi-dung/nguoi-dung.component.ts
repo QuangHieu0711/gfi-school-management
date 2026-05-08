@@ -216,6 +216,7 @@ export class NguoiDungComponent extends ComponentBaseAbstract {
             icon: 'key',
             class: 'action-view',
             tooltip: 'Mở khóa / Reset mật khẩu',
+            iif: () => this.permissionCheckService.canConfig(this.menuCode),
             click: (rowData: NguoiDungResponse) => {
               this.dialog.confirm(
                 {
@@ -227,9 +228,9 @@ export class NguoiDungComponent extends ComponentBaseAbstract {
                     this.authService
                       .resetPassword(Number(rowData?.[NGUOI_DUNG_KEY.ID]))
                       .subscribe({
-                        next: () => {
+                        next: (res: any) => {
                           this.toastr.success(
-                            'Reset mật khẩu thành công',
+                            res?.userMessage || 'Reset mật khẩu thành công',
                             'Thành công'
                           );
                         },

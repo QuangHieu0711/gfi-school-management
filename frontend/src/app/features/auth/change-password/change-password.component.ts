@@ -7,20 +7,19 @@ import { NAVIGATOR_ENDPOINT } from '@constant/navigator';
 import { MATERIAL_MODULE } from '@modules';
 import {
   AuthService,
-  DialogService,
   PermissionCheckService,
   ToastService,
 } from '@service';
 import { sha256 } from '@utils/utils';
 
 @Component({
-  selector: 'app-login',
+  selector: 'app-change-password',
   standalone: true,
-  templateUrl: './login.component.html',
-  styleUrls: ['./login.component.scss'],
+  templateUrl: './change-password.component.html',
+  styleUrls: ['./change-password.component.scss'],
   imports: [CommonModule, ReactiveFormsModule, ...MATERIAL_MODULE],
 })
-export class LoginComponent {
+export class ChangePasswordComponent {
   private readonly defaultRedirects = [
     {
       menuCode: 'HOME',
@@ -102,21 +101,42 @@ export class LoginComponent {
   ] as const;
 
   readonly logoUrl = 'config/Logo_login.png';
-  showPassword = false;
+  showCurrentPassword = false;
+  showNewPassword = false;
+  showConfirmPassword = false;
 
   readonly form;
 
   constructor(
     private readonly fb: FormBuilder,
     private readonly authService: AuthService,
-    private readonly dialogService: DialogService,
     private readonly permissionCheckService: PermissionCheckService,
     private readonly toastService: ToastService,
     private readonly router: Router
   ) {
     this.form = this.fb.group({
-      username: ['', Validators.required],
-      password: ['', Validators.required],
+      currentPassword: ['', Validators.required],
+      newPassword: [
+        '',
+        [
+          Validators.required,
+          Validators.pattern(
+            /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_])[A-Za-z\d\W_]{8,}$/
+          ),
+        ],
+      ],
+      confirmPassword: ['', Validators.required],
+    });
+
+    this.form.get('confirmPassword')?.addValidators((control) => {
+      const newPassword = this.form?.get('newPassword')?.value;
+      return newPassword === control.value ? null : { mismatch: true };
+    });
+
+    this.form.get('newPassword')?.valueChanges.subscribe(() => {
+      if (this.form.get('confirmPassword')?.value) {
+        this.form.get('confirmPassword')?.updateValueAndValidity({ emitEvent: false });
+      }
     });
   }
 
@@ -127,18 +147,26 @@ export class LoginComponent {
     }
 
     const value = this.form.getRawValue();
-    sha256(value.password ?? '').then((hashedPassword) => {
+
+    Promise.all([
+      sha256(value.currentPassword ?? ''),
+      sha256(value.newPassword ?? '')
+    ]).then(([currentHashed, newHashed]) => {
       this.authService
-        .login({
-          username: value.username ?? '',
-          password: hashedPassword,
+        .changePassword({
+          currentPassword: currentHashed,
+          newPassword: newHashed,
         })
         .subscribe({
-          next: (user: any) => {
-            if (user.mustChangePassword) {
-              void this.router.navigate(['/change-password']);
-            } else {
+          next: () => {
+            this.toastService.success('Đổi mật khẩu thành công', 'Thành công');
+            const user = this.authService.currentUser;
+            if (user) {
+              user.mustChangePassword = false;
+              this.authService.setLocalSession(user, false);
               void this.router.navigate(this.getFirstAccessibleRoute(user));
+            } else {
+              void this.router.navigate(['/login']);
             }
           },
           error: (error) => {
@@ -146,7 +174,7 @@ export class LoginComponent {
               error?.error?.userMessage ??
               error?.error?.message ??
               error?.message ??
-              'Đăng nhập thất bại';
+              'Đổi mật khẩu thất bại';
 
             this.toastService.removeToastr();
             this.toastService.error(message, 'Thất bại');
@@ -155,17 +183,16 @@ export class LoginComponent {
     });
   }
 
-  openForgotPassword(): void {
-    this.dialogService.success({
-      title: 'Quên mật khẩu',
-      message: 'Vui lòng liên hệ quản trị viên để được cấp lại mật khẩu.',
-      closeButtonText: 'Đóng',
-      width: '420px',
-    });
+  toggleCurrentPasswordVisibility(): void {
+    this.showCurrentPassword = !this.showCurrentPassword;
   }
 
-  togglePasswordVisibility(): void {
-    this.showPassword = !this.showPassword;
+  toggleNewPasswordVisibility(): void {
+    this.showNewPassword = !this.showNewPassword;
+  }
+
+  toggleConfirmPasswordVisibility(): void {
+    this.showConfirmPassword = !this.showConfirmPassword;
   }
 
   private getFirstAccessibleRoute(

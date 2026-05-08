@@ -1,4 +1,4 @@
-﻿/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { BehaviorSubject, Observable, of, map, catchError } from 'rxjs';
 import { HttpRequest, HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
@@ -17,6 +17,7 @@ import { UserPermission } from './permission-check.service';
 interface ICurrentUserWithTokens extends ICurrentUser {
   accessToken: string;
   refreshToken: string;
+  mustChangePassword?: boolean;
 }
 
 interface BackendPermissionItem {
@@ -208,9 +209,12 @@ export class AuthService {
     return of({ accessToken, refreshToken, tokenType: 'Bearer', expiresAt: 0 });
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  resetPassword(_accountId: number): Observable<any> {
-    return of({ success: true, message: 'Password reset locally' });
+  resetPassword(accountId: number): Observable<any> {
+    return this.http.post<any>(`/api/users/${accountId}/reset-password`, {});
+  }
+
+  changePassword(payload: any): Observable<any> {
+    return this.http.post<any>('/api/auth/change-password', payload);
   }
 
   login(
@@ -235,6 +239,10 @@ export class AuthService {
             payload.username,
             rules
           );
+
+          if (response?.data?.mustChangePassword === true) {
+            user.mustChangePassword = true;
+          }
 
           // Store user and tokens in storage and subject
           this.setLocalSession(user, rememberMe);
