@@ -62,7 +62,15 @@ export class DialogThemNguoiDungComponent extends ComponentBaseAbstract {
       });
 
       this.nguoiDungService.getStaffOptions().subscribe(({ data }) => {
-        this.staffOptionsData = data ?? [];
+        const newStaffs = data ?? [];
+        const merged = [...this.staffOptionsData];
+        newStaffs.forEach((newS: any) => {
+          if (!merged.some(s => s.id === newS.id)) {
+            merged.push(newS);
+          }
+        });
+        this.staffOptionsData = merged;
+
         const staffControl = this.findFormControl(this.$formItem, NGUOI_DUNG_KEY.STAFF_ID);
         if (staffControl) {
           staffControl.options = this.staffOptionsData.map((item) => ({
@@ -111,7 +119,32 @@ export class DialogThemNguoiDungComponent extends ComponentBaseAbstract {
   getDetail() {
     this.nguoiDungService.getById(this.data.id!).subscribe(({ data }) => {
       this.currentData = data;
-      this.form.patchValue(data);
+      
+      if (data['staffId']) {
+        if (!this.staffOptionsData.some(s => s.id === data['staffId'])) {
+          this.staffOptionsData.push({
+            id: data['staffId'],
+            name: data['fullName'],
+            staffCode: data['staffCode'],
+            email: data['email'],
+            unitName: data['unitName']
+          });
+          const staffControl = this.findFormControl(this.$formItem, NGUOI_DUNG_KEY.STAFF_ID);
+          if (staffControl) {
+            staffControl.options = this.staffOptionsData.map((item) => ({
+              value: item.id,
+              label: item.name,
+            }));
+          }
+        }
+      }
+
+      this.form.patchValue({
+        ...data,
+        [NGUOI_DUNG_KEY.STAFF_CODE]: data['staffCode'],
+        [NGUOI_DUNG_KEY.STAFF_EMAIL]: data['email'],
+        [NGUOI_DUNG_KEY.STAFF_UNIT]: data['unitName']
+      });
 
       const fullName = data[NGUOI_DUNG_KEY.FULL_NAME] ?? '';
       this.title =

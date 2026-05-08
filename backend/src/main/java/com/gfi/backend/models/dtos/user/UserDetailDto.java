@@ -18,4 +18,7 @@ public class UserDetailDto {
     private Integer status;
     private Long roleId;
     private Long unitId;
+    private Long staffId;
+    private String staffCode;
+    private String unitName;
 }

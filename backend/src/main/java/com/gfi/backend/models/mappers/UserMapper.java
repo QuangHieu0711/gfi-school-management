@@ -42,6 +42,9 @@ public class UserMapper {
                 .status(user.getStatus())
                 .roleId(user.getRole() == null ? null : user.getRole().getId())
                 .unitId(user.getUnitId())
+                .staffId(user.getStaff() != null ? user.getStaff().getId() : null)
+                .staffCode(user.getStaff() != null ? user.getStaff().getStaffCode() : null)
+                .unitName(user.getStaff() != null && user.getStaff().getUnit() != null ? user.getStaff().getUnit().getName() : null)
                 .build();
     }
 }
