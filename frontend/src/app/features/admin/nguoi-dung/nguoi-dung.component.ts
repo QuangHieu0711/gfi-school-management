@@ -341,7 +341,7 @@ export class NguoiDungComponent extends ComponentBaseAbstract {
     this.dialog.componentDialog(
       DialogThemNguoiDungComponent,
       {
-        width: '600px',
+        width: '800px',
         data: {
           type,
           id: rowData?.[NGUOI_DUNG_KEY.ID],

@@ -51,6 +51,12 @@ export class NguoiDungService {
     );
   }
 
+  getStaffOptions() {
+    return this.http.get<IResponse<any[]>>(
+      `${this.baseUrl}/${NGUOI_DUNG_API_ENDPOINT.STAFF_OPTIONS}`
+    );
+  }
+
   create(payload: NguoiDungFormRequest) {
     return this.http.post<IResponse<NguoiDungResponse>>(this.baseUrl, payload, {
       context: this.silentContext,

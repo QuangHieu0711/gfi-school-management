@@ -11,6 +11,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class StaffOptionDto {
     private Long id;
+    private String staffCode;
     private String name;
     private String email;
     private String unitName;

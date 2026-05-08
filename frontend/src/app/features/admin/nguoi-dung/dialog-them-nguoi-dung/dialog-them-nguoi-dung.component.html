@@ -5,7 +5,28 @@
     #formTpl
     [form]="form"
     (submitEvent)="onSubmit()">
-    <div class="flex flex-col gap-2">
+    <div class="grid grid-cols-2 gap-4">
+      <div class="col-span-2">
+        <app-select-control
+          [item]="findFormControl($formItem, key.STAFF_ID)"
+          [form]="form"></app-select-control>
+      </div>
+
+      <app-text-control
+        [item]="findFormControl($formItem, key.STAFF_CODE)"
+        [form]="form"></app-text-control>
+      <app-text-control
+        [item]="findFormControl($formItem, key.STAFF_EMAIL)"
+        [form]="form"></app-text-control>
+      <div class="col-span-2">
+        <app-text-control
+          [item]="findFormControl($formItem, key.STAFF_UNIT)"
+          [form]="form"></app-text-control>
+      </div>
+      <div class="col-span-2">
+        <hr class="my-2 border-gray-200" />
+      </div>
+
       <app-text-control
         [item]="findFormControl($formItem, key.USERNAME)"
         [form]="form"></app-text-control>

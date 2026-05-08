@@ -29,6 +29,7 @@ export class DialogThemNguoiDungComponent extends ComponentBaseAbstract {
   permissionUrl = '/Admin/NguoiDung';
   title = '';
   currentData: NguoiDungResponse | null = null;
+  staffOptionsData: any[] = [];
 
   constructor(
     protected override injector: Injector,
@@ -58,6 +59,34 @@ export class DialogThemNguoiDungComponent extends ComponentBaseAbstract {
           value: item.id,
           label: item.name,
         }));
+      });
+
+      this.nguoiDungService.getStaffOptions().subscribe(({ data }) => {
+        this.staffOptionsData = data ?? [];
+        const staffControl = this.findFormControl(this.$formItem, NGUOI_DUNG_KEY.STAFF_ID);
+        if (staffControl) {
+          staffControl.options = this.staffOptionsData.map((item) => ({
+            value: item.id,
+            label: item.name,
+          }));
+        }
+      });
+
+      this.form.get(NGUOI_DUNG_KEY.STAFF_ID)?.valueChanges.subscribe((staffId) => {
+        const staff = this.staffOptionsData.find(s => s.id === staffId);
+        if (staff) {
+          this.form.patchValue({
+            [NGUOI_DUNG_KEY.STAFF_CODE]: staff.staffCode,
+            [NGUOI_DUNG_KEY.STAFF_EMAIL]: staff.email,
+            [NGUOI_DUNG_KEY.STAFF_UNIT]: staff.unitName
+          }, { emitEvent: false });
+        } else {
+          this.form.patchValue({
+            [NGUOI_DUNG_KEY.STAFF_CODE]: null,
+            [NGUOI_DUNG_KEY.STAFF_EMAIL]: null,
+            [NGUOI_DUNG_KEY.STAFF_UNIT]: null
+          }, { emitEvent: false });
+        }
       });
     }
 
@@ -98,6 +127,7 @@ export class DialogThemNguoiDungComponent extends ComponentBaseAbstract {
       [NGUOI_DUNG_KEY.USERNAME]: formValue[NGUOI_DUNG_KEY.USERNAME],
       [NGUOI_DUNG_KEY.ROLE_ID]: formValue[NGUOI_DUNG_KEY.ROLE_ID],
       [NGUOI_DUNG_KEY.STATUS]: formValue[NGUOI_DUNG_KEY.STATUS],
+      [NGUOI_DUNG_KEY.STAFF_ID]: formValue[NGUOI_DUNG_KEY.STAFF_ID] || null,
     };
 
     if (this.data.type === this.TYPE_FORM.CREATE) {

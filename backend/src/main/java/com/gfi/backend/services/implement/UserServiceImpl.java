@@ -118,6 +118,7 @@ public class UserServiceImpl implements UserService {
         return staffRepository.findActiveStaffsWithoutUser().stream()
                 .map(staff -> com.gfi.backend.models.dtos.user.StaffOptionDto.builder()
                         .id(staff.getId())
+                        .staffCode(staff.getStaffCode())
                         .name(staff.getFullName())
                         .email(staff.getEmail())
                         .unitName(staff.getUnit() != null ? staff.getUnit().getName() : null)

@@ -16,6 +16,10 @@ export enum NGUOI_DUNG_KEY {
   AVATAR = 'avatar',
   UNIT_ID = 'unitId',
   UNIT_NAME = 'unitName',
+  STAFF_ID = 'staffId',
+  STAFF_CODE = 'staffCode',
+  STAFF_EMAIL = 'staffEmail',
+  STAFF_UNIT = 'staffUnit',
 }
 
 export const NGUOI_DUNG_API_ENDPOINT = {
@@ -24,6 +28,7 @@ export const NGUOI_DUNG_API_ENDPOINT = {
   EXPORT: 'export',
   OPTIONS: 'unit-options',
   ROLE: 'role-options',
+  STAFF_OPTIONS: 'staff-options',
 };
 
 export interface NguoiDungFilterRequest extends TableRequest {
@@ -80,6 +85,35 @@ export const NGUOI_DUNG_FORM = (requiredPassword = false) => [
     required: requiredPassword,
     type: 'password',
     regex: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_])[A-Za-z\d\W_]{8,}$/,
+  }),
+  SELECT_CONTROL({
+    controlName: NGUOI_DUNG_KEY.STAFF_ID,
+    label: 'Cán bộ',
+    placeholder: 'Chọn cán bộ',
+    required: true,
+    clearable: true,
+    listOption: [],
+  }),
+  TEXT_CONTROL({
+    controlName: NGUOI_DUNG_KEY.STAFF_CODE,
+    label: 'Mã cán bộ',
+    placeholder: 'Mã cán bộ',
+    disabled: true,
+    required: false,
+  }),
+  TEXT_CONTROL({
+    controlName: NGUOI_DUNG_KEY.STAFF_EMAIL,
+    label: 'Email',
+    placeholder: 'Email',
+    disabled: true,
+    required: false,
+  }),
+  TEXT_CONTROL({
+    controlName: NGUOI_DUNG_KEY.STAFF_UNIT,
+    label: 'Đơn vị',
+    placeholder: 'Đơn vị',
+    disabled: true,
+    required: false,
   }),
   SELECT_CONTROL({
     controlName: NGUOI_DUNG_KEY.STATUS,

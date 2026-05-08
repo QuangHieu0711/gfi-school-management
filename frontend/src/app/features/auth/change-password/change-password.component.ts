@@ -167,8 +167,8 @@ export class ChangePasswordComponent {
     const value = this.form.getRawValue();
 
     Promise.all([
-      sha256(value.currentPassword ?? ''),
-      sha256(value.newPassword ?? '')
+      sha256(value['currentPassword'] ?? ''),
+      sha256(value['newPassword'] ?? '')
     ]).then(([currentHashed, newHashed]) => {
       this.authService
         .changePassword({
