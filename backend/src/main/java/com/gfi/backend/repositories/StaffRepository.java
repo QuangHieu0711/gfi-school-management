@@ -25,6 +25,10 @@ public interface StaffRepository extends JpaRepository<Staff, Long>, JpaSpecific
     @Query("SELECT s FROM Staff s WHERE s.user IS NULL AND s.deletedFlag = 0")
     Page<Staff> findStaffsWithoutUserAccount(Pageable pageable);
 
+    @Query("SELECT s FROM Staff s WHERE s.deletedFlag = 0 AND s.status = 'ACTIVE' " +
+           "AND s.id NOT IN (SELECT u.staff.id FROM User u WHERE u.deletedFlag = 0 AND u.staff IS NOT NULL)")
+    List<Staff> findActiveStaffsWithoutUser();
+
     /**
      * Used for data verification and auditing
      */

@@ -8,6 +8,7 @@ import com.gfi.backend.models.dtos.user.UserDetailDto;
 import com.gfi.backend.models.dtos.user.UserFilterDto;
 import com.gfi.backend.models.dtos.user.UserListItemDto;
 import com.gfi.backend.models.dtos.user.UserUpdateRequest;
+import com.gfi.backend.models.dtos.user.StaffOptionDto;
 import com.gfi.backend.models.enums.ExportType;
 import java.util.List;
 
@@ -16,6 +17,11 @@ import java.util.List;
  * Định nghĩa contract cho các phép CRUD và business logic.
  */
 public interface UserService {
+    /**
+     * Lấy danh sách cán bộ chưa có tài khoản.
+     */
+    List<StaffOptionDto> getStaffOptionsForCreateUser();
+
     /**
      * Lấy danh sách unit options cho form tạo người dùng.
      * Chỉ trả về unit mà user hiện tại có quyền tạo.

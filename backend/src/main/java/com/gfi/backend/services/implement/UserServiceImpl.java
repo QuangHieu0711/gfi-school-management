@@ -102,7 +102,7 @@ public class UserServiceImpl implements UserService {
     private final EmailService emailService;
     private final UserSpecification userSpecification;
     private final UserMapper userMapper;
-    
+
     // Feature key cho phân quyền - match với DB (ACCOUNT_MANAGEMENT)
     private static final String FEATURE = FeatureKey.ACCOUNT_MANAGEMENT.getCode();
     private static final String STAFF_FEATURE = FeatureKey.STAFF_PROFILE.getCode();
@@ -111,6 +111,20 @@ public class UserServiceImpl implements UserService {
     private static final String TIMES_FONT_BOLD_PATH = "C:/Windows/Fonts/timesbd.ttf";
     private static final String TIMES_FONT_ITALIC_PATH = "C:/Windows/Fonts/timesi.ttf";
     private static final DateTimeFormatter EXPORT_TIME_FORMATTER = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss");
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<com.gfi.backend.models.dtos.user.StaffOptionDto> getStaffOptionsForCreateUser() {
+        return staffRepository.findActiveStaffsWithoutUser().stream()
+                .map(staff -> com.gfi.backend.models.dtos.user.StaffOptionDto.builder()
+                        .id(staff.getId())
+                        .name(staff.getFullName())
+                        .email(staff.getEmail())
+                        .unitName(staff.getUnit() != null ? staff.getUnit().getName() : null)
+                        .phone(staff.getPhone())
+                        .build())
+                .collect(Collectors.toList());
+    }
 
     /**
      * Lấy danh sách unit options cho form tạo người dùng.
@@ -122,7 +136,7 @@ public class UserServiceImpl implements UserService {
     @Transactional(readOnly = true)
     public List<LookupItemDto> getUnitOptionsForCreateUser() {
         List<ResolvedScope> allowedScopes = resolveScopesForCreateUserOptions();
-        
+
         // Check if user has unrestricted access
         boolean isUnrestricted = allowedScopes.stream().anyMatch(ResolvedScope::isUnrestricted);
 
@@ -131,7 +145,8 @@ public class UserServiceImpl implements UserService {
             // Unrestricted: get all active, non-deleted units
             units = unitRepository.findByStatusAndDeletedFlagOrderByName(1, 0);
         } else {
-            // Restricted: get units from allowed IDs (also filter by status and deleted flag)
+            // Restricted: get units from allowed IDs (also filter by status and deleted
+            // flag)
             List<Long> allowedUnitIds = allowedScopes.stream()
                     .flatMap(rs -> rs.getScopeIds().stream())
                     .toList();
@@ -231,7 +246,8 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional(readOnly = true)
     public byte[] export(PageRequestDto<UserFilterDto> request, ExportType exportType) {
-        UserFilterDto filter = request == null || request.getFilter() == null ? new UserFilterDto() : request.getFilter();
+        UserFilterDto filter = request == null || request.getFilter() == null ? new UserFilterDto()
+                : request.getFilter();
         UserFilterDto scopedFilter = applyViewScopeToFilter(filter);
         List<UserListItemDto> items = userRepository
                 .findAll(userSpecification.buildSpecification(scopedFilter), Sort.by(Sort.Direction.DESC, "id"))
@@ -267,14 +283,14 @@ public class UserServiceImpl implements UserService {
         // Step 2: Get current user scopes (already loaded by UserScopesLoadingFilter)
         UserScopes userScopes = SecurityContextUtils.getCurrentUserScopes()
                 .orElseThrow(() -> new UserMessageException(CommonErrorCode.ACCESS_DENIED));
-        
+
         // Step 3: Get allowed unit scopes
         List<ResolvedScope> allowedScopes = ScopeFilterUtils.getScopesForQuery(FEATURE, ActionType.ADD);
         boolean isUnrestricted = allowedScopes.stream().anyMatch(ResolvedScope::isUnrestricted);
 
         // Step 4: Handle unit assignment
         Long unitIdToAssign = request.getUnitId();
-        
+
         // If SCHOOL_ADMIN, auto-assign current user's unit if not specified
         if ("SCHOOL_ADMIN".equals(userScopes.getRoleCode())) {
             if (unitIdToAssign == null) {
@@ -305,19 +321,19 @@ public class UserServiceImpl implements UserService {
             }
         }
 
-        // Step 5: Validate role-assignment permission: can current user assign requested role?
+        // Step 5: Validate role-assignment permission: can current user assign
+        // requested role?
         boolean canAssignRole = roleAssignmentPermissionRepository
-            .existsByCreatorRoleIdAndTargetRoleIdAndCanCreateAndStatusAndDeletedFlag(
-                userScopes.getRoleId(),
-                request.getRoleId(),
-                1,
-                1,
-                0
-            );
+                .existsByCreatorRoleIdAndTargetRoleIdAndCanCreateAndStatusAndDeletedFlag(
+                        userScopes.getRoleId(),
+                        request.getRoleId(),
+                        1,
+                        1,
+                        0);
 
         if (!canAssignRole) {
             throw new UserMessageException(CommonErrorCode.ACCESS_DENIED.getCode(),
-                "Bạn không được phép gán vai trò này");
+                    "Bạn không được phép gán vai trò này");
         }
 
         // Step 6: Validate other duplicates
@@ -325,7 +341,7 @@ public class UserServiceImpl implements UserService {
         validateUsernameDuplicate(username, null);
 
         // Step 7: Create user
-        // ✅ NEW: User is now auth-only; profile data (fullName, email, phone, unit) 
+        // ✅ NEW: User is now auth-only; profile data (fullName, email, phone, unit)
         // will be managed via Staff entity after migration
         Role role = getRoleById(request.getRoleId());
 
@@ -346,7 +362,7 @@ public class UserServiceImpl implements UserService {
 
         // NOTE: fullName, email, phone, unit are now profile data managed via Staff
         // This will be handled in Phase 2 with full API restructuring
-        
+
         return userMapper.toDetailDto(userRepository.save(user));
     }
 
@@ -367,20 +383,19 @@ public class UserServiceImpl implements UserService {
         // If role is changing, validate current user can update to target role
         if (!user.getRole().getId().equals(request.getRoleId())) {
             UserScopes userScopes = SecurityContextUtils.getCurrentUserScopes()
-                .orElseThrow(() -> new UserMessageException(CommonErrorCode.ACCESS_DENIED));
+                    .orElseThrow(() -> new UserMessageException(CommonErrorCode.ACCESS_DENIED));
 
             boolean canUpdateRole = roleAssignmentPermissionRepository
-                .existsByCreatorRoleIdAndTargetRoleIdAndCanUpdateAndStatusAndDeletedFlag(
-                    userScopes.getRoleId(),
-                    request.getRoleId(),
-                    1,
-                    1,
-                    0
-                );
+                    .existsByCreatorRoleIdAndTargetRoleIdAndCanUpdateAndStatusAndDeletedFlag(
+                            userScopes.getRoleId(),
+                            request.getRoleId(),
+                            1,
+                            1,
+                            0);
 
             if (!canUpdateRole) {
-            throw new UserMessageException(CommonErrorCode.ACCESS_DENIED.getCode(),
-                "Bạn không được phép cập nhật sang vai trò này");
+                throw new UserMessageException(CommonErrorCode.ACCESS_DENIED.getCode(),
+                        "Bạn không được phép cập nhật sang vai trò này");
             }
         }
 
@@ -400,7 +415,7 @@ public class UserServiceImpl implements UserService {
 
         validateUserAccess(user, ActionType.DELETE);
 
-        // Xóa mềm: đánh dấu xóa 
+        // Xóa mềm: đánh dấu xóa
         user.setDeletedFlag(1);
         user.setDeletedAt(LocalDateTime.now());
         user.setDeletedBy(SecurityUtils.getCurrentUsername());
@@ -458,98 +473,100 @@ public class UserServiceImpl implements UserService {
      * Tạo nội dung HTML email reset mật khẩu.
      * Thiết kế chuyên nghiệp với branding, countdown, và hướng dẫn.
      */
-    private String buildResetPasswordHtmlEmail(String fullName, String username, String tempPassword, LocalDateTime expiryTime) {
+    private String buildResetPasswordHtmlEmail(String fullName, String username, String tempPassword,
+            LocalDateTime expiryTime) {
         String expiryTimeStr = expiryTime.format(DateTimeFormatter.ofPattern("HH:mm"));
         String expiryDateStr = expiryTime.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
         return """
-            <!DOCTYPE html>
-            <html lang="vi">
-            <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
-            <body style="margin:0;padding:0;background:#f0f2f5;font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;">
-            <table width="100%%" cellpadding="0" cellspacing="0" style="background:#f0f2f5;padding:24px 0;">
-            <tr><td align="center">
-            <table width="460" cellpadding="0" cellspacing="0" style="background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 2px 16px rgba(0,0,0,0.06);">
+                <!DOCTYPE html>
+                <html lang="vi">
+                <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
+                <body style="margin:0;padding:0;background:#f0f2f5;font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;">
+                <table width="100%%" cellpadding="0" cellspacing="0" style="background:#f0f2f5;padding:24px 0;">
+                <tr><td align="center">
+                <table width="460" cellpadding="0" cellspacing="0" style="background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 2px 16px rgba(0,0,0,0.06);">
 
-            <!-- Header -->
-            <tr><td style="background:linear-gradient(135deg,#1a8a6e,#2cb88a);padding:24px 32px;text-align:center;">
-                <img src="cid:logo" alt="GFI" height="56" style="margin-bottom:8px;display:block;margin-left:auto;margin-right:auto;width:auto;">
-                <p style="margin:0;color:#fff;font-size:15px;font-weight:600;">Hệ thống quản lý trường học GFI</p>
-            </td></tr>
-
-            <!-- Body -->
-            <tr><td style="padding:24px 32px 12px;">
-                <p style="margin:0 0 4px;color:#94a3b8;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:1px;">Đặt lại mật khẩu</p>
-                <p style="margin:0 0 14px;color:#1e293b;font-size:14px;">Xin chào <strong>%s</strong>,</p>
-                <p style="margin:0;color:#64748b;font-size:13px;line-height:1.6;">Mật khẩu tài khoản của bạn đã được quản trị viên đặt lại. Vui lòng đăng nhập bằng thông tin bên dưới.</p>
-            </td></tr>
-
-            <!-- Credentials -->
-            <tr><td style="padding:12px 32px;">
-                <table width="100%%" cellpadding="0" cellspacing="0" style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;">
-                <tr><td style="padding:14px 18px;border-bottom:1px solid #e2e8f0;">
-                    <span style="color:#94a3b8;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">Tên đăng nhập</span><br>
-                    <span style="color:#0f172a;font-size:15px;font-weight:700;font-family:'Courier New',monospace;">%s</span>
+                <!-- Header -->
+                <tr><td style="background:linear-gradient(135deg,#1a8a6e,#2cb88a);padding:24px 32px;text-align:center;">
+                    <img src="cid:logo" alt="GFI" height="56" style="margin-bottom:8px;display:block;margin-left:auto;margin-right:auto;width:auto;">
+                    <p style="margin:0;color:#fff;font-size:15px;font-weight:600;">Hệ thống quản lý trường học GFI</p>
                 </td></tr>
-                <tr><td style="padding:14px 18px;">
-                    <span style="color:#94a3b8;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">Mật khẩu tạm thời</span><br>
-                    <span style="display:inline-block;margin-top:6px;background:linear-gradient(135deg,#1a8a6e,#2cb88a);color:#fff;font-size:16px;font-weight:700;font-family:'Courier New',monospace;letter-spacing:2px;padding:7px 16px;border-radius:6px;">%s</span>
+
+                <!-- Body -->
+                <tr><td style="padding:24px 32px 12px;">
+                    <p style="margin:0 0 4px;color:#94a3b8;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:1px;">Đặt lại mật khẩu</p>
+                    <p style="margin:0 0 14px;color:#1e293b;font-size:14px;">Xin chào <strong>%s</strong>,</p>
+                    <p style="margin:0;color:#64748b;font-size:13px;line-height:1.6;">Mật khẩu tài khoản của bạn đã được quản trị viên đặt lại. Vui lòng đăng nhập bằng thông tin bên dưới.</p>
+                </td></tr>
+
+                <!-- Credentials -->
+                <tr><td style="padding:12px 32px;">
+                    <table width="100%%" cellpadding="0" cellspacing="0" style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;">
+                    <tr><td style="padding:14px 18px;border-bottom:1px solid #e2e8f0;">
+                        <span style="color:#94a3b8;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">Tên đăng nhập</span><br>
+                        <span style="color:#0f172a;font-size:15px;font-weight:700;font-family:'Courier New',monospace;">%s</span>
+                    </td></tr>
+                    <tr><td style="padding:14px 18px;">
+                        <span style="color:#94a3b8;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;">Mật khẩu tạm thời</span><br>
+                        <span style="display:inline-block;margin-top:6px;background:linear-gradient(135deg,#1a8a6e,#2cb88a);color:#fff;font-size:16px;font-weight:700;font-family:'Courier New',monospace;letter-spacing:2px;padding:7px 16px;border-radius:6px;">%s</span>
+                    </td></tr>
+                    </table>
+                </td></tr>
+
+                <!-- Countdown -->
+                <tr><td style="padding:8px 32px;">
+                    <table width="100%%" cellpadding="0" cellspacing="0" style="background:#fef3c7;border:1px solid #fbbf24;border-radius:8px;">
+                    <tr><td style="padding:14px 18px;text-align:center;">
+                        <span style="color:#92400e;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:1px;">⏱ Hết hạn lúc</span><br>
+                        <span style="display:inline-block;margin:6px 0 4px;background:#92400e;color:#fef3c7;font-size:24px;font-weight:800;font-family:'Courier New',monospace;letter-spacing:3px;padding:6px 18px;border-radius:6px;">%s</span><br>
+                        <span style="color:#a16207;font-size:11px;">Ngày %s · Còn <strong>15 phút</strong> kể từ lúc nhận email</span>
+                    </td></tr>
+                    </table>
+                </td></tr>
+
+                <!-- Steps -->
+                <tr><td style="padding:16px 32px 0;">
+                    <p style="margin:0 0 8px;color:#1e293b;font-size:13px;font-weight:600;">Hướng dẫn:</p>
+                    <table width="100%%" cellpadding="0" cellspacing="0">
+                    <tr><td style="padding:3px 0;color:#64748b;font-size:12px;line-height:1.5;">
+                        <span style="display:inline-block;width:18px;height:18px;line-height:18px;text-align:center;background:#1a8a6e;color:#fff;border-radius:50%%;font-size:10px;font-weight:700;margin-right:6px;vertical-align:middle;">1</span>
+                        Đăng nhập bằng mật khẩu tạm thời ở trên
+                    </td></tr>
+                    <tr><td style="padding:3px 0;color:#64748b;font-size:12px;line-height:1.5;">
+                        <span style="display:inline-block;width:18px;height:18px;line-height:18px;text-align:center;background:#1a8a6e;color:#fff;border-radius:50%%;font-size:10px;font-weight:700;margin-right:6px;vertical-align:middle;">2</span>
+                        Hệ thống sẽ yêu cầu bạn đổi mật khẩu mới
+                    </td></tr>
+                    <tr><td style="padding:3px 0;color:#64748b;font-size:12px;line-height:1.5;">
+                        <span style="display:inline-block;width:18px;height:18px;line-height:18px;text-align:center;background:#1a8a6e;color:#fff;border-radius:50%%;font-size:10px;font-weight:700;margin-right:6px;vertical-align:middle;">3</span>
+                        Tạo mật khẩu mới an toàn và ghi nhớ
+                    </td></tr>
+                    </table>
+                </td></tr>
+
+                <!-- Security -->
+                <tr><td style="padding:14px 32px 0;">
+                    <table width="100%%" cellpadding="0" cellspacing="0" style="background:#eff6ff;border-radius:6px;">
+                    <tr><td style="padding:10px 14px;">
+                        <p style="margin:0;color:#1e40af;font-size:11px;line-height:1.5;">🔒 <strong>Bảo mật:</strong> Không chia sẻ email này. Nếu bạn không yêu cầu đặt lại mật khẩu, liên hệ quản trị viên ngay.</p>
+                    </td></tr>
+                    </table>
+                </td></tr>
+
+                <!-- Footer -->
+                <tr><td style="padding:20px 32px 24px;">
+                    <hr style="border:none;border-top:1px solid #e2e8f0;margin:0 0 14px;">
+                    <p style="margin:0;color:#94a3b8;font-size:11px;text-align:center;line-height:1.5;">
+                        Email tự động từ <strong>Hệ thống GFI</strong> · Vui lòng không trả lời email này.
+                    </p>
+                </td></tr>
+
+                </table>
                 </td></tr>
                 </table>
-            </td></tr>
-
-            <!-- Countdown -->
-            <tr><td style="padding:8px 32px;">
-                <table width="100%%" cellpadding="0" cellspacing="0" style="background:#fef3c7;border:1px solid #fbbf24;border-radius:8px;">
-                <tr><td style="padding:14px 18px;text-align:center;">
-                    <span style="color:#92400e;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:1px;">⏱ Hết hạn lúc</span><br>
-                    <span style="display:inline-block;margin:6px 0 4px;background:#92400e;color:#fef3c7;font-size:24px;font-weight:800;font-family:'Courier New',monospace;letter-spacing:3px;padding:6px 18px;border-radius:6px;">%s</span><br>
-                    <span style="color:#a16207;font-size:11px;">Ngày %s · Còn <strong>15 phút</strong> kể từ lúc nhận email</span>
-                </td></tr>
-                </table>
-            </td></tr>
-
-            <!-- Steps -->
-            <tr><td style="padding:16px 32px 0;">
-                <p style="margin:0 0 8px;color:#1e293b;font-size:13px;font-weight:600;">Hướng dẫn:</p>
-                <table width="100%%" cellpadding="0" cellspacing="0">
-                <tr><td style="padding:3px 0;color:#64748b;font-size:12px;line-height:1.5;">
-                    <span style="display:inline-block;width:18px;height:18px;line-height:18px;text-align:center;background:#1a8a6e;color:#fff;border-radius:50%%;font-size:10px;font-weight:700;margin-right:6px;vertical-align:middle;">1</span>
-                    Đăng nhập bằng mật khẩu tạm thời ở trên
-                </td></tr>
-                <tr><td style="padding:3px 0;color:#64748b;font-size:12px;line-height:1.5;">
-                    <span style="display:inline-block;width:18px;height:18px;line-height:18px;text-align:center;background:#1a8a6e;color:#fff;border-radius:50%%;font-size:10px;font-weight:700;margin-right:6px;vertical-align:middle;">2</span>
-                    Hệ thống sẽ yêu cầu bạn đổi mật khẩu mới
-                </td></tr>
-                <tr><td style="padding:3px 0;color:#64748b;font-size:12px;line-height:1.5;">
-                    <span style="display:inline-block;width:18px;height:18px;line-height:18px;text-align:center;background:#1a8a6e;color:#fff;border-radius:50%%;font-size:10px;font-weight:700;margin-right:6px;vertical-align:middle;">3</span>
-                    Tạo mật khẩu mới an toàn và ghi nhớ
-                </td></tr>
-                </table>
-            </td></tr>
-
-            <!-- Security -->
-            <tr><td style="padding:14px 32px 0;">
-                <table width="100%%" cellpadding="0" cellspacing="0" style="background:#eff6ff;border-radius:6px;">
-                <tr><td style="padding:10px 14px;">
-                    <p style="margin:0;color:#1e40af;font-size:11px;line-height:1.5;">🔒 <strong>Bảo mật:</strong> Không chia sẻ email này. Nếu bạn không yêu cầu đặt lại mật khẩu, liên hệ quản trị viên ngay.</p>
-                </td></tr>
-                </table>
-            </td></tr>
-
-            <!-- Footer -->
-            <tr><td style="padding:20px 32px 24px;">
-                <hr style="border:none;border-top:1px solid #e2e8f0;margin:0 0 14px;">
-                <p style="margin:0;color:#94a3b8;font-size:11px;text-align:center;line-height:1.5;">
-                    Email tự động từ <strong>Hệ thống GFI</strong> · Vui lòng không trả lời email này.
-                </p>
-            </td></tr>
-
-            </table>
-            </td></tr>
-            </table>
-            </body>
-            </html>
-            """.formatted(fullName, username, tempPassword, expiryTimeStr, expiryDateStr);
+                </body>
+                </html>
+                """
+                .formatted(fullName, username, tempPassword, expiryTimeStr, expiryDateStr);
     }
 
     /**
@@ -595,7 +612,8 @@ public class UserServiceImpl implements UserService {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new UserMessageException(CommonErrorCode.USER_NOT_FOUND));
 
-        // Verify mật khẩu hiện tại: FE gửi SHA256(plaintext), BE hash thêm lần nữa để so sánh
+        // Verify mật khẩu hiện tại: FE gửi SHA256(plaintext), BE hash thêm lần nữa để
+        // so sánh
         String currentPasswordHash = PasswordUtils.sha256(currentPassword.trim());
         if (!currentPasswordHash.equals(user.getPasswordHash())) {
             throw new UserMessageException(CommonErrorCode.INVALID_CREDENTIALS.getCode(),
@@ -641,7 +659,7 @@ public class UserServiceImpl implements UserService {
 
     /**
      * Áp dụng các trường chung từ request vào entity User.
-     *  Profile fields (fullName, email, phone, unit) are now managed via Staff
+     * Profile fields (fullName, email, phone, unit) are now managed via Staff
      * User is authentication-only.
      */
     private void applyCommonFields(User user, UserUpdateRequest request, Role role) {
@@ -684,9 +702,10 @@ public class UserServiceImpl implements UserService {
         scopedFilter.setRoleId(filter.getRoleId());
         scopedFilter.setStatus(filter.getStatus());
 
-        List<Long> requestedUnitIds = filter.getUnitId() == null ? List.of() : filter.getUnitId().stream()
-                .filter(id -> id != null)
-                .toList();
+        List<Long> requestedUnitIds = filter.getUnitId() == null ? List.of()
+                : filter.getUnitId().stream()
+                        .filter(id -> id != null)
+                        .toList();
 
         List<ResolvedScope> allowedScopes = ScopeFilterUtils.getScopesForQuery(FEATURE, ActionType.VIEW);
         boolean isUnrestricted = allowedScopes.stream().anyMatch(ResolvedScope::isUnrestricted);
@@ -830,10 +849,10 @@ public class UserServiceImpl implements UserService {
             com.lowagie.text.Font bodyFont = createPdfFont(10, com.lowagie.text.Font.NORMAL);
             com.lowagie.text.Font infoFont = createPdfFont(10, com.lowagie.text.Font.ITALIC);
 
-                Paragraph exportInfo = new Paragraph(buildExportInfoLine(), infoFont);
+            Paragraph exportInfo = new Paragraph(buildExportInfoLine(), infoFont);
             exportInfo.setAlignment(Element.ALIGN_RIGHT);
             exportInfo.setSpacingAfter(6f);
-                document.add(exportInfo);
+            document.add(exportInfo);
 
             Paragraph title = new Paragraph("DANH SÁCH NGƯỜI DÙNG", titleFont);
             title.setAlignment(Element.ALIGN_CENTER);

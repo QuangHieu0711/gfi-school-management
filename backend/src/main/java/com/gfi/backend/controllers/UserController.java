@@ -52,6 +52,13 @@ public class UserController extends ApiBaseController {
                 ApiResult.success(userService.getRoleOptionsForCreateUser(), "Lấy danh sách vai trò thành công"));
     }
 
+    @GetMapping("/staff-options")
+    @Operation(summary = "Danh sách cán bộ chưa có tài khoản cho thêm mới người dùng")
+    public ResponseEntity<ApiResult<java.util.List<com.gfi.backend.models.dtos.user.StaffOptionDto>>> getStaffOptionsForCreateUser() {
+        return executeApiResult(() ->
+                ApiResult.success(userService.getStaffOptionsForCreateUser(), "Lấy danh sách cán bộ thành công"));
+    }
+
     /**
      * Tìm kiếm và phân trang users với filter.
      * Trả về list view chứa thông tin tối thiểu.
