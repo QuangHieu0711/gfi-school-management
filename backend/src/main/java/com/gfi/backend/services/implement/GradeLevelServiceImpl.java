@@ -255,6 +255,9 @@ public class GradeLevelServiceImpl implements GradeLevelService {
         if (pageNow == null || pageNow < 0) {
             return 0; // Default first page
         }
+        return pageNow;
+    }
+
     private static final String EXPORT_FONT_NAME = "Times New Roman";
     private static final String TIMES_FONT_REGULAR_PATH = "C:/Windows/Fonts/times.ttf";
     private static final String TIMES_FONT_BOLD_PATH = "C:/Windows/Fonts/timesbd.ttf";
@@ -262,13 +265,12 @@ public class GradeLevelServiceImpl implements GradeLevelService {
     private static final java.time.format.DateTimeFormatter EXPORT_TIME_FORMATTER = java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
 
     @Override
-    @org.springframework.transaction.annotation.Transactional(readOnly = true)
-    public byte[] export(com.gfi.backend.models.dtos.common.PageRequestDto<com.gfi.backend.models.dtos.classroom.GradeLevelFilterDto> request, com.gfi.backend.models.enums.ExportType exportType) {
-        com.gfi.backend.models.dtos.classroom.GradeLevelFilterDto filter = request.getFilter() == null ? new com.gfi.backend.models.dtos.classroom.GradeLevelFilterDto() : request.getFilter();
-        java.util.List<com.gfi.backend.models.security.ResolvedScope> resolvedScopes = dataScopeFilterService.getResolvedScopes(FEATURE, com.gfi.backend.models.enums.ActionType.VIEW);
-        java.util.List<GradeLevel> items = gradeLevelRepository.findAll(
-                gradeLevelSpecification.buildSpecification(filter, resolvedScopes),
-                org.springframework.data.domain.Sort.by(org.springframework.data.domain.Sort.Direction.ASC, "name").and(org.springframework.data.domain.Sort.by("id")));
+    @Transactional(readOnly = true)
+    public byte[] export(PageRequestDto<GradeLevelFilterDto> request, com.gfi.backend.models.enums.ExportType exportType) {
+        GradeLevelFilterDto filter = request.getFilter() == null ? new GradeLevelFilterDto() : request.getFilter();
+        List<GradeLevel> items = gradeLevelRepository.findAll(
+                gradeLevelSpecification.buildSpecification(filter),
+                Sort.by(Sort.Direction.ASC, "name").and(Sort.by("id")));
 
         if (exportType == com.gfi.backend.models.enums.ExportType.PDF) {
             return exportGradeLevelsPdf(items);

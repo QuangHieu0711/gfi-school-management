@@ -18,4 +18,5 @@ public interface GradeLevelService {
     GradeLevelDetailDto create(GradeLevelCreateRequest request);
     GradeLevelDetailDto update(Long id, GradeLevelUpdateRequest request);
     void delete(Long id);
+    byte[] export(PageRequestDto<GradeLevelFilterDto> request, com.gfi.backend.models.enums.ExportType exportType);
 }
