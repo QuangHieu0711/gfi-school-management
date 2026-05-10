@@ -28,6 +28,7 @@ import { HocKyService } from '@app/service/admin/hoc-ky.service';
 import { AuthService } from '@service';
 import { EvaluationService } from '@app/service/admin/evaluation.service';
 import { EvaluationBulkSaveRequest, EvaluationGenerateCommentRequest, EvaluationBulkGenerateCommentRequest, EvaluationBulkGenerateCommentItem } from '@app/model/admin/evaluation.model';
+import { DialogImportEvaluationComponent } from './dialog-import/dialog-import-evaluation.component';
 
 interface TeacherClassAssignmentResponse {
   classId?: string | number;
@@ -616,7 +617,32 @@ export class StudentEvaluationBookComponent extends ComponentBaseAbstract {
   }
 
   openImport() {
-    this.toastr.info('Nhập dữ liệu (demo)', 'Thông tin');
+    const classroomId = this.selectedClassId;
+    const subjectId = this.selectedSubjectId;
+    const semesterId = this.form.get(this.key.SEMESTER_ID)?.value;
+
+    if (!classroomId || !subjectId || !semesterId) {
+      this.toastr.warning('Vui lòng chọn đầy đủ Lớp, Môn học và Học kỳ để kết nạp', 'Cảnh báo');
+      return;
+    }
+
+    const semesterOption = (this.findFormControl(this.$formItem, this.key.SEMESTER_ID).options as any[])?.find(o => o.value === semesterId);
+
+    this.dialog.open(DialogImportEvaluationComponent, {
+      width: '600px',
+      data: {
+        classroomId: Number(classroomId),
+        subjectId: Number(subjectId),
+        semesterId: Number(semesterId),
+        classroomName: this.selectedClassName,
+        subjectName: this.selectedSubjectName,
+        semesterName: semesterOption?.label || ''
+      }
+    }).afterClosed().subscribe(res => {
+      if (res) {
+        this.loadEvaluationSheet();
+      }
+    });
   }
 
   /** Load evaluation sheet from API: GET /api/evaluations/sheet */

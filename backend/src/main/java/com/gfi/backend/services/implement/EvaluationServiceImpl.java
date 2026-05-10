@@ -7,9 +7,21 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.time.format.DateTimeFormatter;
+import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.ss.util.CellRangeAddress;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.springframework.web.multipart.MultipartFile;
+import com.gfi.backend.models.dtos.common.TemporaryFileDto;
+import com.gfi.backend.models.dtos.evaluation.EvaluationImportResultDto;
+import com.gfi.backend.services.interfaces.ImportErrorFileStorageService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
+import com.gfi.backend.models.dtos.evaluation.EvaluationBulkGenerateCommentRequest;
+import com.gfi.backend.models.dtos.evaluation.EvaluationBulkGenerateCommentItemDto;
 
 import com.gfi.backend.controllers.exceptions.UserMessageException;
 import com.gfi.backend.models.dtos.evaluation.EvaluationBulkUpsertRequest;
@@ -58,6 +70,7 @@ public class EvaluationServiceImpl implements EvaluationService {
     private final AttendanceRecordRepository attendanceRecordRepository;
     private final ProgramDistributionRepository programDistributionRepository;
     private final RestTemplate restTemplate;
+    private final ImportErrorFileStorageService importErrorFileStorageService;
 
     @Value("${ai.generate-comment.url:http://127.0.0.1:8001/generate-comment}")
     private String aiGenerateCommentUrl;
@@ -286,11 +299,11 @@ public class EvaluationServiceImpl implements EvaluationService {
 
     @Override
     @Transactional(readOnly = true)
-    public java.util.Map<Long, String> bulkGenerateComment(com.gfi.backend.models.dtos.evaluation.EvaluationBulkGenerateCommentRequest request) {
-        java.util.Map<Long, String> result = new java.util.concurrent.ConcurrentHashMap<>();
+    public Map<Long, String> bulkGenerateComment(EvaluationBulkGenerateCommentRequest request) {
+        Map<Long, String> result = new java.util.concurrent.ConcurrentHashMap<>();
 
         request.getItems().parallelStream().forEach(item -> {
-            com.gfi.backend.models.dtos.evaluation.EvaluationGenerateCommentRequest singleReq = new com.gfi.backend.models.dtos.evaluation.EvaluationGenerateCommentRequest();
+            EvaluationGenerateCommentRequest singleReq = new EvaluationGenerateCommentRequest();
             singleReq.setClassroomId(request.getClassroomId());
             singleReq.setSubjectId(request.getSubjectId());
             singleReq.setTerm(request.getTerm());
@@ -387,5 +400,236 @@ public class EvaluationServiceImpl implements EvaluationService {
 
     private String normalizeNullable(String value) {
         return StringUtils.hasText(value) ? value.trim() : null;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public byte[] exportExcelTemplate(Long classroomId, Long subjectId, Long semesterId) {
+        Classroom classroom = findClassroom(classroomId);
+        Subject subject = findSubject(subjectId);
+        Semester semester = findSemester(semesterId);
+
+        List<StudentEnrollment> enrollments = getActiveEnrollments(classroomId);
+
+        try (Workbook workbook = new XSSFWorkbook(); ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
+            Sheet sheet = workbook.createSheet("DanhGia");
+
+            // Title
+            Row titleRow = sheet.createRow(0);
+            titleRow.setHeightInPoints(35);
+            Cell titleCell = titleRow.createCell(0);
+            titleCell.setCellValue("MẪU IMPORT ĐÁNH GIÁ HỌC SINH");
+            CellStyle titleStyle = workbook.createCellStyle();
+            titleStyle.setAlignment(HorizontalAlignment.CENTER);
+            titleStyle.setVerticalAlignment(VerticalAlignment.CENTER);
+            Font titleFont = workbook.createFont();
+            titleFont.setBold(true);
+            titleFont.setFontHeightInPoints((short) 16);
+            titleFont.setFontName("Times New Roman");
+            titleStyle.setFont(titleFont);
+            titleCell.setCellStyle(titleStyle);
+            sheet.addMergedRegion(new CellRangeAddress(0, 0, 0, 5));
+
+            // Info row
+            Row infoRow = sheet.createRow(1);
+            infoRow.setHeightInPoints(25);
+            Cell infoCell = infoRow.createCell(0);
+            infoCell.setCellValue(String.format("Lớp: %s | Môn: %s | Học kỳ: %s", 
+                    classroom.getName(), subject.getName(), semester.getName()));
+            CellStyle infoStyle = workbook.createCellStyle();
+            infoStyle.setAlignment(HorizontalAlignment.CENTER);
+            infoStyle.setVerticalAlignment(VerticalAlignment.CENTER);
+            Font infoFont = workbook.createFont();
+            infoFont.setItalic(true);
+            infoFont.setFontName("Times New Roman");
+            infoStyle.setFont(infoFont);
+            infoCell.setCellStyle(infoStyle);
+            sheet.addMergedRegion(new CellRangeAddress(1, 1, 0, 5));
+
+            // Header
+            Row headerRow = sheet.createRow(3);
+            headerRow.setHeightInPoints(30);
+            String[] headers = { "STT", "Mã HS", "Họ và tên", "Mức đạt được (T/H/C)", "Nhận xét", "StudentId (Không sửa)" };
+            CellStyle headerStyle = workbook.createCellStyle();
+            headerStyle.setAlignment(HorizontalAlignment.CENTER);
+            headerStyle.setVerticalAlignment(VerticalAlignment.CENTER);
+            headerStyle.setFillForegroundColor(IndexedColors.LIGHT_TURQUOISE1.getIndex());
+            headerStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+            headerStyle.setBorderTop(BorderStyle.THIN);
+            headerStyle.setBorderBottom(BorderStyle.THIN);
+            headerStyle.setBorderLeft(BorderStyle.THIN);
+            headerStyle.setBorderRight(BorderStyle.THIN);
+            Font headerFont = workbook.createFont();
+            headerFont.setBold(true);
+            headerFont.setFontName("Times New Roman");
+            headerStyle.setFont(headerFont);
+
+            for (int i = 0; i < headers.length; i++) {
+                Cell cell = headerRow.createCell(i);
+                cell.setCellValue(headers[i]);
+                cell.setCellStyle(headerStyle);
+            }
+
+            // Body Style
+            CellStyle bodyStyle = workbook.createCellStyle();
+            bodyStyle.setBorderTop(BorderStyle.THIN);
+            bodyStyle.setBorderBottom(BorderStyle.THIN);
+            bodyStyle.setBorderLeft(BorderStyle.THIN);
+            bodyStyle.setBorderRight(BorderStyle.THIN);
+            bodyStyle.setVerticalAlignment(VerticalAlignment.CENTER);
+            Font bodyFont = workbook.createFont();
+            bodyFont.setFontName("Times New Roman");
+            bodyStyle.setFont(bodyFont);
+
+            // Populate students
+            int rowIndex = 4;
+            int stt = 1;
+            for (StudentEnrollment enrollment : enrollments) {
+                Student s = enrollment.getStudent();
+                Row row = sheet.createRow(rowIndex++);
+                row.setHeightInPoints(25);
+                row.createCell(0).setCellValue(stt++);
+                row.createCell(1).setCellValue(s.getStudentCode());
+                row.createCell(2).setCellValue(s.getFullName());
+                row.createCell(3).setCellValue(""); // Level
+                row.createCell(4).setCellValue(""); // Remark
+                row.createCell(5).setCellValue(s.getId()); // Hidden ID
+
+                for (int i = 0; i < headers.length; i++) {
+                    row.getCell(i).setCellStyle(bodyStyle);
+                }
+            }
+
+            // Column Widths
+            sheet.setColumnWidth(0, 8 * 256);
+            sheet.setColumnWidth(1, 15 * 256);
+            sheet.setColumnWidth(2, 35 * 256);
+            sheet.setColumnWidth(3, 25 * 256);
+            sheet.setColumnWidth(4, 60 * 256);
+            sheet.setColumnWidth(5, 0); // Hide StudentId
+
+            workbook.write(outputStream);
+            return outputStream.toByteArray();
+        } catch (IOException e) {
+            throw new UserMessageException("Lỗi khi tạo file mẫu");
+        }
+    }
+
+    @Override
+    @Transactional
+    public EvaluationImportResultDto importExcel(MultipartFile file, Long classroomId, Long subjectId, Long semesterId) {
+        if (file == null || file.isEmpty()) throw new UserMessageException("File không hợp lệ");
+        
+        Classroom classroom = findClassroom(classroomId);
+        Subject subject = findSubject(subjectId);
+        Semester semester = findSemester(semesterId);
+
+        int successCount = 0;
+        int failedCount = 0;
+        Map<Integer, String> rowErrors = new LinkedHashMap<>();
+
+        try (Workbook workbook = new XSSFWorkbook(file.getInputStream())) {
+            Sheet sheet = workbook.getSheetAt(0);
+            DataFormatter formatter = new DataFormatter();
+            
+            // Assume data starts from row 4 (index 4)
+            for (int rowIndex = 4; rowIndex <= sheet.getLastRowNum(); rowIndex++) {
+                Row row = sheet.getRow(rowIndex);
+                if (row == null) continue;
+
+                String studentIdStr = readCellText(row.getCell(5), formatter);
+                if (!StringUtils.hasText(studentIdStr)) continue;
+
+                try {
+                    Long studentId = Long.parseLong(studentIdStr);
+                    String levelText = readCellText(row.getCell(3), formatter);
+                    String remark = readCellText(row.getCell(4), formatter);
+
+                    if (!StringUtils.hasText(levelText) && !StringUtils.hasText(remark)) {
+                        continue; // Bỏ qua dòng trống
+                    }
+
+                    EvaluationStudentUpsertItemDto item = EvaluationStudentUpsertItemDto.builder()
+                            .studentId(studentId)
+                            .midtermLevel(levelText) 
+                            .midtermRemark(remark)
+                            .finalLevel(levelText) 
+                            .finalRemark(remark)
+                            .build();
+
+                    upsertStudentEvaluation(classroom, subject, semester, item);
+                    successCount++;
+                } catch (Exception e) {
+                    failedCount++;
+                    rowErrors.put(rowIndex, e instanceof UserMessageException ? e.getMessage() : "Lỗi xử lý dòng");
+                }
+            }
+
+            String errorFileToken = null;
+            String errorFileName = null;
+            if (!rowErrors.isEmpty()) {
+                byte[] errorFileContent = buildImportErrorFile(workbook, rowErrors);
+                errorFileName = "evaluation_import_errors_" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss")) + ".xlsx";
+                errorFileToken = importErrorFileStorageService.store(errorFileName, 
+                        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", 
+                        errorFileContent);
+            }
+
+            return EvaluationImportResultDto.builder()
+                    .successCount(successCount)
+                    .failedCount(failedCount)
+                    .hasErrorFile(!rowErrors.isEmpty())
+                    .errorFileName(errorFileName)
+                    .errorFileToken(errorFileToken)
+                    .build();
+
+        } catch (IOException e) {
+            throw new UserMessageException("Lỗi đọc file Excel");
+        }
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public TemporaryFileDto getImportErrorFile(String token) {
+        return importErrorFileStorageService.get(token);
+    }
+
+    private byte[] buildImportErrorFile(Workbook workbook, Map<Integer, String> rowErrors) {
+        Sheet sheet = workbook.getSheetAt(0);
+        int errorCol = 6;
+        
+        Row headerRow = sheet.getRow(3);
+        Cell errorHeader = headerRow.createCell(errorCol);
+        errorHeader.setCellValue("Lỗi chi tiết");
+        
+        CellStyle headerStyle = headerRow.getCell(0).getCellStyle();
+        errorHeader.setCellStyle(headerStyle);
+        
+        CellStyle errorStyle = workbook.createCellStyle();
+        errorStyle.cloneStyleFrom(sheet.getRow(4).getCell(0).getCellStyle());
+        Font errorFont = workbook.createFont();
+        errorFont.setColor(IndexedColors.RED.getIndex());
+        errorFont.setFontName("Times New Roman");
+        errorStyle.setFont(errorFont);
+
+        rowErrors.forEach((rowIndex, error) -> {
+            Row row = sheet.getRow(rowIndex);
+            Cell cell = row.createCell(errorCol);
+            cell.setCellValue(error);
+            cell.setCellStyle(errorStyle);
+        });
+
+        sheet.setColumnWidth(errorCol, 45 * 256);
+
+        try (ByteArrayOutputStream bos = new ByteArrayOutputStream()) {
+            workbook.write(bos);
+            return bos.toByteArray();
+        } catch (IOException e) {
+            return null;
+        }
+    }
+
+    private String readCellText(Cell cell, DataFormatter formatter) {
+        return cell == null ? "" : formatter.formatCellValue(cell).trim();
     }
 }

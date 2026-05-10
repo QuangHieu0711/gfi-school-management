@@ -13,7 +13,11 @@ import com.gfi.backend.models.dtos.evaluation.EvaluationBulkUpsertRequest;
 import com.gfi.backend.models.dtos.evaluation.EvaluationSheetDto;
 import com.gfi.backend.models.enums.ActionType;
 import com.gfi.backend.models.global.ApiResult;
+import com.gfi.backend.models.dtos.common.TemporaryFileDto;
+import com.gfi.backend.models.dtos.evaluation.EvaluationImportResultDto;
 import com.gfi.backend.services.interfaces.EvaluationService;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.multipart.MultipartFile;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -71,5 +75,49 @@ public class EvaluationController extends ApiBaseController {
             evaluationService.bulkUpsert(request);
             return ApiResult.success(null, "Lưu đánh giá thành công");
         });
+    }
+    
+    @GetMapping("/export-template")
+    @DataScoped(feature = "STUDENT_EVALUATION_BOOK", action = ActionType.VIEW)
+    @Operation(summary = "Tải file mẫu import đánh giá", description = "Tải file Excel mẫu chứa danh sách học sinh của lớp để nhập đánh giá.")
+    public ResponseEntity<byte[]> exportExcelTemplate(
+            @RequestParam Long classroomId,
+            @RequestParam Long subjectId,
+            @RequestParam Long semesterId) {
+        byte[] content = evaluationService.exportExcelTemplate(classroomId, subjectId, semesterId);
+        return ResponseEntity.ok()
+                .header(org.springframework.http.HttpHeaders.CONTENT_DISPOSITION, org.springframework.http.ContentDisposition.attachment()
+                        .filename("mau_import_danh_gia.xlsx", java.nio.charset.StandardCharsets.UTF_8)
+                        .build()
+                        .toString())
+                .contentType(org.springframework.http.MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+                .body(content);
+    }
+
+    @PostMapping("/import")
+    @DataScoped(feature = "STUDENT_EVALUATION_BOOK", action = ActionType.EDIT)
+    @Operation(summary = "Import đánh giá từ Excel", description = "Import đánh giá học sinh từ file Excel.")
+    public ResponseEntity<ApiResult<EvaluationImportResultDto>> importExcel(
+            @RequestParam("file") MultipartFile file,
+            @RequestParam Long classroomId,
+            @RequestParam Long subjectId,
+            @RequestParam Long semesterId) {
+        return executeApiResult(() -> ApiResult.success(
+                evaluationService.importExcel(file, classroomId, subjectId, semesterId),
+                "Import đánh giá hoàn tất"));
+    }
+
+    @GetMapping("/import-errors/{token}")
+    @DataScoped(feature = "STUDENT_EVALUATION_BOOK", action = ActionType.VIEW)
+    @Operation(summary = "Tải file lỗi import đánh giá", description = "Tải file Excel chứa các dòng đánh giá lỗi sau khi import.")
+    public ResponseEntity<byte[]> getImportErrorFile(@PathVariable String token) {
+        TemporaryFileDto fileDto = evaluationService.getImportErrorFile(token);
+        return ResponseEntity.ok()
+                .header(org.springframework.http.HttpHeaders.CONTENT_DISPOSITION, org.springframework.http.ContentDisposition.attachment()
+                        .filename(fileDto.getFileName(), java.nio.charset.StandardCharsets.UTF_8)
+                        .build()
+                        .toString())
+                .contentType(org.springframework.http.MediaType.parseMediaType(fileDto.getContentType()))
+                .body(fileDto.getContent());
     }
 }

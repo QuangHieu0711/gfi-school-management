@@ -37,4 +37,27 @@ export class EvaluationService {
       params: { classroomId, subjectId, semesterId },
     });
   }
+
+  exportTemplate(classroomId: number, subjectId: number, semesterId: number) {
+    return this.http.get(`${this.baseUrl}/export-template`, {
+      params: { classroomId, subjectId, semesterId },
+      responseType: 'blob',
+    });
+  }
+
+  importExcel(file: File, classroomId: number, subjectId: number, semesterId: number) {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('classroomId', classroomId.toString());
+    formData.append('subjectId', subjectId.toString());
+    formData.append('semesterId', semesterId.toString());
+
+    return this.http.post<IResponse<any>>(`${this.baseUrl}/import`, formData);
+  }
+
+  downloadImportError(token: string) {
+    return this.http.get(`${this.baseUrl}/import-errors/${token}`, {
+      responseType: 'blob',
+    });
+  }
 }
