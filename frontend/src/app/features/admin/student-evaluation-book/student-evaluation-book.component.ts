@@ -96,9 +96,10 @@ export class StudentEvaluationBookComponent extends ComponentBaseAbstract {
   tableConfig: TableConfig = {
     hasFilterPanel: true,
     hasFilterPanelButton: false,
-    hasExport: true,
+    hasExport: false,
     showPaginator: false,
   };
+
   columns: MtxGridColumn[] = [];
   dataSource: any[] = [];
 

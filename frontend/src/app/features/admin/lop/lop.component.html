@@ -1,147 +1,74 @@
-<app-table
-  tableTitle="Quản lý lớp học"
-  [pageIndex]="pageIndex"
-  [pageSize]="pageSize"
-  [total]="dataSourceTotal"
-  [tableConfig]="tableConfig"
-  [dataSource]="dataSource"
-  [tableColumns]="columns"
-  (queryChange)="filterData($event)">
+<app-table tableTitle="Quản lý lớp học" [pageIndex]="pageIndex" [pageSize]="pageSize" [total]="dataSourceTotal"
+  [tableConfig]="tableConfig" [dataSource]="dataSource" [tableColumns]="columns" (queryChange)="filterData($event)">
   <ng-container custom-buttons>
     <div class="flex gap-2 items-center">
       @if (canAdd) {
-        <button
-          color="primary"
-          matButton="filled"
-          class="btn-tight"
-          (click)="openDialog(TYPE_FORM.CREATE)">
-          <app-icon
-            icon="add_box"
-            [size]="18"
-            class="btn-icon" />
-          Thêm mới
-        </button>
+      <button color="primary" matButton="filled" class="btn-tight" (click)="openDialog(TYPE_FORM.CREATE)">
+        <app-icon icon="add_box" [size]="18" class="btn-icon" />
+        Thêm mới
+      </button>
       }
       @if (canAdd) {
-        <button
-          class="btn-tight"
-          color="primary"
-          matButton
-          (click)="import()">
-          <app-icon
-            class="btn-icon"
-            icon="upload"
-            [size]="18" />
-          Kết nạp
-        </button>
+      <button class="btn-tight" color="primary" matButton (click)="import()">
+        <app-icon class="btn-icon" icon="upload" [size]="18" />
+        Kết nạp
+      </button>
       }
       @if (canDownload) {
-        <button
-          color="primary"
-          matButton
-          class="btn-tight"
-          (click)="exportExcel()">
-          <app-icon
-            icon="file_download"
-            [size]="18"
-            class="btn-icon" />
-          Xuất Excel
-        </button>
+      <button color="primary" matButton class="btn-tight" (click)="exportExcel()">
+        <app-icon icon="file_download" [size]="18" class="btn-icon" />
+        Xuất Excel
+      </button>
       }
       @if (canDownload) {
-        <button
-          color="primary"
-          matButton
-          class="btn-tight"
-          (click)="exportPdf()">
-          <app-icon
-            icon="file_download"
-            [size]="18"
-            class="btn-icon" />
-          Xuất PDF
-        </button>
+      <button color="primary" matButton class="btn-tight" (click)="exportPdf()">
+        <app-icon icon="file_download" [size]="18" class="btn-icon" />
+        Xuất PDF
+      </button>
       }
     </div>
   </ng-container>
   <ng-container filter-panel>
-    <app-form-control
-      [form]="form"
-      (submitEvent)="filterData()"
-      (resetEvent)="resetFilter()">
+    <app-form-control [form]="form" (submitEvent)="filterData()" (resetEvent)="resetFilter()">
       <div class="flex flex-col gap-2">
         <div class="flex gap-2 items-center">
-          <app-text-control
-            [item]="findFormControl($formItem, key.NAME)"
-            [form]="form"></app-text-control>
-          <app-select-control
-            [item]="findFormControl($formItem, key.SCHOOL_YEAR_ID)"
+          <app-text-control [item]="findFormControl($formItem, key.NAME)" [form]="form"></app-text-control>
+          <app-select-control [item]="findFormControl($formItem, key.SCHOOL_YEAR_ID)"
             [form]="form"></app-select-control>
-          <app-select-control
-            [item]="findFormControl($formItem, key.GRADE_LEVEL_ID)"
+          <app-select-control [item]="findFormControl($formItem, key.GRADE_LEVEL_ID)"
             [form]="form"></app-select-control>
-          <app-select-control
-            [item]="findFormControl($formItem, key.UNIT_ID)"
-            [form]="form"></app-select-control>
-          <app-select-control
-            [item]="findFormControl($formItem, key.STATUS)"
-            [form]="form"></app-select-control>
+          <app-select-control [item]="findFormControl($formItem, key.UNIT_ID)" [form]="form"></app-select-control>
+          <app-select-control [item]="findFormControl($formItem, key.STATUS)" [form]="form"></app-select-control>
           <div class="flex gap-1 items-center">
-            <button
-              color="dark"
-              matIconButton="text"
-              [matTooltip]="showAdvancedFilters ? 'Thu gọn' : 'Mở rộng'"
-              type="button"
-              (click)="toggleAdvancedFilters()">
-              <app-icon
-                [icon]="showAdvancedFilters ? 'expand_less' : 'expand_more'"
-                color="#858585" />
+            <button color="dark" matIconButton="text" [matTooltip]="showAdvancedFilters ? 'Thu gọn' : 'Mở rộng'"
+              type="button" (click)="toggleAdvancedFilters()">
+              <app-icon [icon]="showAdvancedFilters ? 'expand_less' : 'expand_more'" color="#858585" />
             </button>
-            <button
-              color="dark"
-              matIconButton="text"
-              matTooltip="Tìm kiếm"
-              type="submit">
-              <app-icon
-                icon="svg:search"
-                color="#858585" />
+            <button color="dark" matIconButton="text" matTooltip="Tìm kiếm" type="submit">
+              <app-icon icon="svg:search" color="#858585" />
             </button>
-            <button
-              color="dark"
-              matIconButton="text"
-              matTooltip="Làm mới"
-              type="reset">
-              <app-icon
-                icon="svg:cached"
-                color="#858585" />
+            <button color="dark" matIconButton="text" matTooltip="Làm mới" type="reset">
+              <app-icon icon="svg:cached" color="#858585" />
             </button>
           </div>
         </div>
         @if (showAdvancedFilters) {
-          <div class="flex gap-2 items-center">
-            <app-select-control
-              [item]="findFormControl($formItem, key.UNIT_ID)"
-              [form]="form"></app-select-control>
-            <app-select-control
-              [item]="findFormControl($formItem, key.GRADE_LEVEL_ID)"
-              [form]="form"></app-select-control>
-            <app-select-control
-              [item]="findFormControl($formItem, key.SCHOOL_YEAR_ID)"
-              [form]="form"></app-select-control>
-          </div>
+        <div class="flex gap-2 items-center">
+          <app-select-control [item]="findFormControl($formItem, key.UNIT_ID)" [form]="form"></app-select-control>
+          <app-select-control [item]="findFormControl($formItem, key.GRADE_LEVEL_ID)"
+            [form]="form"></app-select-control>
+          <app-select-control [item]="findFormControl($formItem, key.SCHOOL_YEAR_ID)"
+            [form]="form"></app-select-control>
+        </div>
         }
       </div>
     </app-form-control>
   </ng-container>
 </app-table>
 
-<ng-template
-  #statusTpl
-  let-row>
+<ng-template #statusTpl let-row>
   <div class="status-cell">
-    <span
-      class="status-pill"
-      [class.is-active]="row?.[key.STATUS] === 1"
-      [class.is-inactive]="row?.[key.STATUS] !== 1">
+    <span class="status-pill" [class.is-active]="row?.[key.STATUS] === 1" [class.is-inactive]="row?.[key.STATUS] !== 1">
       {{ row?.[key.STATUS] === 1 ? 'Hoạt động' : 'Không hoạt động' }}
     </span>
   </div>

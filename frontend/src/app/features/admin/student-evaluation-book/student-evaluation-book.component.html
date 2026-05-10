@@ -41,21 +41,21 @@
       [tableConfig]="tableConfig" [dataSource]="dataSource" [tableColumns]="columns" (queryChange)="filterData($event)">
       <ng-container custom-buttons>
         <div class="flex gap-2 items-center">
-          <button matButton="filled" color="primary" (click)="openComment()">
+          <button matButton="filled" color="primary" class="btn-tight" (click)="openComment()">
             <app-icon icon="chat"></app-icon>
             Nhận xét
           </button>
-          <button matButton="filled" color="primary" (click)="openImport()">
+          <button matButton="filled" color="primary" class="btn-tight" (click)="openImport()">
             <app-icon icon="upload"></app-icon>
-            Nhập dữ liệu
+            Kết nạp
           </button>
-          <button matButton="filled" color="primary" (click)="exportExcel()">
+          <button matButton="filled" color="primary" class="btn-tight" (click)="exportExcel()">
             <app-icon icon="cloud_download"></app-icon>
             Xuất Excel
           </button>
-          <button matButton="filled" color="primary" (click)="exportPdf()">
+          <button matButton="filled" color="primary" class="btn-tight" (click)="exportPdf()">
             <app-icon icon="picture_as_pdf"></app-icon>
-            Xuất
+            Xuất PDF
           </button>
         </div>
       </ng-container>
