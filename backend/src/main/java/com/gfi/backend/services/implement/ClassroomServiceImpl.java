@@ -454,6 +454,7 @@ public class ClassroomServiceImpl implements ClassroomService {
                 String gradeCode = readCellText(row.getCell(4), formatter);
                 String schoolYearName = readCellText(row.getCell(5), formatter);
                 String statusText = readCellText(row.getCell(6), formatter);
+                String description = readCellText(row.getCell(7), formatter);
 
                 if (!StringUtils.hasText(code) || !StringUtils.hasText(name) || !StringUtils.hasText(unitCode) || !StringUtils.hasText(gradeCode) || !StringUtils.hasText(schoolYearName)) {
                     failedCount++;
@@ -477,6 +478,7 @@ public class ClassroomServiceImpl implements ClassroomService {
                     classroom.setUnit(unit);
                     classroom.setGradeLevel(gradeLevel);
                     classroom.setSchoolYear(schoolYear);
+                    classroom.setDescription(normalizeNullable(description));
                     
                     String normStatus = normalizeImportText(statusText);
                     Integer status = 1;
@@ -700,7 +702,11 @@ public class ClassroomServiceImpl implements ClassroomService {
                 c = row.createCell(col++); c.setCellValue(Integer.valueOf(1).equals(item.getStatus()) ? "Hoạt động" : "Không hoạt động"); c.setCellStyle(bodyStyle);
             }
             
-            for(int i=0; i<8; i++) sheet.autoSizeColumn(i);
+            for (int i = 0; i < 8; i++) {
+                sheet.autoSizeColumn(i);
+                int currentWidth = sheet.getColumnWidth(i);
+                sheet.setColumnWidth(i, currentWidth + 1200); // Thêm padding
+            }
             
             workbook.write(outputStream);
             return outputStream.toByteArray();
@@ -714,8 +720,9 @@ public class ClassroomServiceImpl implements ClassroomService {
             Sheet sheet = workbook.createSheet("LopHoc");
             
             org.apache.poi.ss.usermodel.Row titleRow = sheet.createRow(0);
+            titleRow.setHeightInPoints(30);
             org.apache.poi.ss.usermodel.Cell titleCell = titleRow.createCell(0);
-            titleCell.setCellValue("IMPORT LỚP HỌC");
+            titleCell.setCellValue("MẪU IMPORT DANH SÁCH LỚP HỌC");
             CellStyle titleStyle = workbook.createCellStyle();
             titleStyle.setAlignment(HorizontalAlignment.CENTER);
             titleStyle.setVerticalAlignment(VerticalAlignment.CENTER);
@@ -734,18 +741,23 @@ public class ClassroomServiceImpl implements ClassroomService {
             org.apache.poi.ss.usermodel.Font guideFont = workbook.createFont();
             guideFont.setItalic(true);
             guideFont.setFontName(EXPORT_FONT_NAME);
+            guideFont.setColor(IndexedColors.GREY_50_PERCENT.getIndex());
             guideStyle.setFont(guideFont);
             
             org.apache.poi.ss.usermodel.Row guide1 = sheet.createRow(1);
-            org.apache.poi.ss.usermodel.Cell gc1 = guide1.createCell(0); gc1.setCellValue("Hướng dẫn: Điền mã lớp, tên lớp, mã đơn vị, mã khối, tên năm học. Trạng thái: Hoạt động / Không hoạt động."); gc1.setCellStyle(guideStyle);
+            guide1.setHeightInPoints(35);
+            org.apache.poi.ss.usermodel.Cell gc1 = guide1.createCell(0); 
+            gc1.setCellValue("Hướng dẫn: Điền mã lớp, tên lớp, mã đơn vị, mã khối, tên năm học. \nTrạng thái: Hoạt động / Không hoạt động. Cột (*) là bắt buộc."); 
+            gc1.setCellStyle(guideStyle);
             sheet.addMergedRegion(new CellRangeAddress(1, 1, 0, 7));
             
             org.apache.poi.ss.usermodel.Row headerRow = sheet.createRow(3);
-            String[] headers = { "STT", "Mã lớp", "Tên lớp", "Mã đơn vị", "Mã khối", "Tên năm học", "Trạng thái" };
+            headerRow.setHeightInPoints(25);
+            String[] headers = { "STT", "Mã lớp (*)", "Tên lớp (*)", "Mã đơn vị (*)", "Mã khối (*)", "Tên năm học (*)", "Trạng thái", "Mô tả" };
             CellStyle headerStyle = workbook.createCellStyle();
             headerStyle.setAlignment(HorizontalAlignment.CENTER);
             headerStyle.setVerticalAlignment(VerticalAlignment.CENTER);
-            headerStyle.setFillForegroundColor((short) 41);
+            headerStyle.setFillForegroundColor(IndexedColors.LIGHT_TURQUOISE1.getIndex());
             headerStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
             headerStyle.setBorderTop(BorderStyle.THIN);
             headerStyle.setBorderBottom(BorderStyle.THIN);
@@ -763,7 +775,7 @@ public class ClassroomServiceImpl implements ClassroomService {
             }
 
             CellStyle bodyStyle = workbook.createCellStyle();
-            bodyStyle.setVerticalAlignment(VerticalAlignment.TOP);
+            bodyStyle.setVerticalAlignment(VerticalAlignment.CENTER);
             bodyStyle.setBorderTop(BorderStyle.THIN);
             bodyStyle.setBorderBottom(BorderStyle.THIN);
             bodyStyle.setBorderLeft(BorderStyle.THIN);
@@ -774,6 +786,7 @@ public class ClassroomServiceImpl implements ClassroomService {
             bodyStyle.setFont(bodyFont);
 
             org.apache.poi.ss.usermodel.Row sampleRow = sheet.createRow(4);
+            sampleRow.setHeightInPoints(20);
             int col = 0;
             org.apache.poi.ss.usermodel.Cell c = sampleRow.createCell(col++); c.setCellValue("1"); c.setCellStyle(bodyStyle);
             c = sampleRow.createCell(col++); c.setCellValue("THVN050_5B_1"); c.setCellStyle(bodyStyle);
@@ -782,8 +795,17 @@ public class ClassroomServiceImpl implements ClassroomService {
             c = sampleRow.createCell(col++); c.setCellValue("KHOI_5"); c.setCellStyle(bodyStyle);
             c = sampleRow.createCell(col++); c.setCellValue("Năm học 2025 - 2026"); c.setCellStyle(bodyStyle);
             c = sampleRow.createCell(col++); c.setCellValue("Hoạt động"); c.setCellStyle(bodyStyle);
+            c = sampleRow.createCell(col++); c.setCellValue("Ghi chú lớp học mẫu"); c.setCellStyle(bodyStyle);
             
-            for(int i=0; i<7; i++) sheet.autoSizeColumn(i);
+            // Set explicit widths for better spacing
+            sheet.setColumnWidth(0, 5 * 256);
+            sheet.setColumnWidth(1, 20 * 256);
+            sheet.setColumnWidth(2, 25 * 256);
+            sheet.setColumnWidth(3, 18 * 256);
+            sheet.setColumnWidth(4, 15 * 256);
+            sheet.setColumnWidth(5, 25 * 256);
+            sheet.setColumnWidth(6, 18 * 256);
+            sheet.setColumnWidth(7, 35 * 256);
             
             workbook.write(outputStream);
             return outputStream.toByteArray();

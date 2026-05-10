@@ -7,6 +7,8 @@ import { TYPE_FORM, TYPE_FORM_KEY } from '@constant/constant';
 import { COMMON_TABLE_KEY, TableQueryEvent } from '@model/table.model';
 import { ComponentBaseAbstract } from '@layout';
 import { FORM_CONTROL_MODULE, MATERIAL_MODULE } from '@modules';
+import { defaultExportFileName, saveBlobAsFile } from '@utils/file-util';
+
 
 import {
   LOP_FILTER_FORM,
@@ -19,7 +21,9 @@ import { LopService } from '@app/service/admin/lop.service';
 import { NamHocService } from '@app/service/admin/nam-hoc.service';
 import { DialogCauHinhMonHocLopComponent } from './dialog-cau-hinh-mon-hoc/dialog-cau-hinh-mon-hoc.component';
 import { DialogLopComponent } from './dialog-lop/dialog-lop.component';
+import { DialogImportComponent } from './dialog-import/dialog-import.component';
 import { PermissionCheckService } from '@service';
+
 
 @Component({
   selector: 'lop',
@@ -50,6 +54,11 @@ export class LopComponent extends ComponentBaseAbstract {
   get canAdd(): boolean {
     return this.permissionCheckService.canAdd(this.menuCode);
   }
+
+  get canDownload(): boolean {
+    return this.permissionCheckService.canDownload(this.menuCode);
+  }
+
 
   constructor(
     protected override injector: Injector,
@@ -284,4 +293,139 @@ export class LopComponent extends ComponentBaseAbstract {
       }));
     });
   }
+
+  exportPdf(): void {
+    if (!this.canDownload) {
+      this.toastr.warning('Bạn không có quyền tải xuống', 'Cảnh báo');
+      return;
+    }
+    this.exportFile('PDF');
+  }
+
+  exportExcel(): void {
+    if (!this.canDownload) {
+      this.toastr.warning('Bạn không có quyền tải xuống', 'Cảnh báo');
+      return;
+    }
+    this.exportFile('EXCEL');
+  }
+
+  import() {
+    if (!this.canAdd) {
+      this.toastr.warning('Bạn không có quyền kết nạp dữ liệu', 'Cảnh báo');
+      return;
+    }
+    this.dialog.componentDialog(
+      DialogImportComponent,
+      {
+        width: '900px',
+      },
+      (result) => {
+        if (result) {
+          this.resetFilter();
+        }
+      }
+    );
+  }
+
+  private exportFile(exportType: 'PDF' | 'EXCEL'): void {
+    const formValues = this.form.getRawValue();
+    const payload = {
+      pageSize: this.pageSize,
+      pageNow: this.pageIndex + 1,
+      exportType,
+      filter: {
+        className: formValues[LOP_KEY.NAME] ?? undefined,
+        unitId: formValues[LOP_KEY.UNIT_ID] ?? undefined,
+        gradeLevelId: formValues[LOP_KEY.GRADE_LEVEL_ID] ?? undefined,
+        schoolYearId: formValues[LOP_KEY.SCHOOL_YEAR_ID] ?? undefined,
+        status: formValues[LOP_KEY.STATUS] ?? undefined,
+      },
+    };
+
+    this.lopService.export(payload).subscribe({
+      next: (res: any) => {
+        this.toastr.removeToastr();
+
+        const blob = this.extractBlob(res);
+        if (!blob) {
+          this.toastr.error(
+            `Xuất ${exportType} thất bại: Dữ liệu không hợp lệ`,
+            'Lỗi'
+          );
+          return;
+        }
+
+        const ext = exportType === 'PDF' ? 'pdf' : 'xlsx';
+        const fallbackName = defaultExportFileName('danh-sach-lop-hoc', ext);
+        const disposition = this.getHeader(res, 'content-disposition');
+        const fileName = this.getFileNameFromDisposition(
+          disposition,
+          fallbackName
+        );
+
+        saveBlobAsFile(blob, fileName);
+        this.toastr.success(
+          `Tải xuống ${exportType} thành công`,
+          `Xuất ${exportType}`
+        );
+      },
+      error: () => {
+        this.toastr.removeToastr();
+        this.toastr.error(`Xuất ${exportType} thất bại`, 'Lỗi');
+      },
+    });
+  }
+
+  private extractBlob(res: any): Blob | null {
+    if (res instanceof Blob) return res;
+    if (res?.body instanceof Blob) return res.body;
+    if (res?.data instanceof Blob) return res.data;
+    return null;
+  }
+
+  private getHeader(res: any, headerName: string): string | null {
+    if (res?.headers?.get) return res.headers.get(headerName);
+
+    const headers = res?.headers;
+    if (headers && typeof headers === 'object') {
+      const key = headerName.toLowerCase();
+      return headers[headerName] ?? headers[key] ?? null;
+    }
+
+    return null;
+  }
+
+  private getFileNameFromDisposition(
+    disposition: string | null,
+    fallbackName: string
+  ): string {
+    if (!disposition) return fallbackName;
+
+    const match = disposition.match(/filename\*?=(?:UTF-8'')?"?([^";]+)/i);
+    if (!match?.[1]) return fallbackName;
+
+    const rawFileName = match[1].trim();
+
+    try {
+      return this.decodeMimeFileName(decodeURIComponent(rawFileName));
+    } catch {
+      return this.decodeMimeFileName(rawFileName);
+    }
+  }
+
+  private decodeMimeFileName(fileName: string): string {
+    const mimeMatch = fileName.match(/^=\?UTF-8\?Q\?(.+)\?=$/i);
+    if (!mimeMatch?.[1]) return fileName;
+
+    const normalized = mimeMatch[1].replace(/_/g, ' ');
+    const decoded = normalized.replace(/=([0-9A-F]{2})/gi, '%$1');
+
+    try {
+      return decodeURIComponent(decoded);
+    } catch {
+      return fileName;
+    }
+  }
 }
+

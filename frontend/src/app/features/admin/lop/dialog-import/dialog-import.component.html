@@ -1,0 +1,38 @@
+<app-dialog-container [dialogActionTemplate]="Actions">
+  <ng-container header-template>
+    <div class="flex justify-between items-center gap-2 w-full">
+      <h6
+        mat-dialog-title
+        class="!p-0 !text-lg !font-semibold !text-night-500 max-w-full">
+        <span class="block max-w-full truncate">Kết nạp dữ liệu lớp học</span>
+      </h6>
+      <button
+        color="primary"
+        matButton="text"
+        (click)="downloadTemplate()">
+        <app-icon icon="svg:download" />
+        Tải mẫu kết nạp
+      </button>
+    </div>
+  </ng-container>
+  <app-file-control
+    [item]="findFormControl($formItem, 'file')"
+    [form]="form"></app-file-control>
+</app-dialog-container>
+
+<ng-template #Actions>
+  <button
+    color="primary"
+    matButton="outlined"
+    mat-dialog-close>
+    Thoát
+  </button>
+  <button
+    type="button"
+    color="primary"
+    matButton="filled"
+    (click)="onSubmit()"
+    cdkFocusInitial>
+    Nhập dữ liệu
+  </button>
+</ng-template>

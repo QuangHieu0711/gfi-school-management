@@ -25,6 +25,10 @@ export const LOP_API_ENDPOINT = {
   BASE_PATH: 'classes',
   FILTER: 'search',
   OPTIONS: 'options',
+  EXPORT: 'export',
+  IMPORT: 'import',
+  TEMPLATE: 'export-template',
+  IMPORT_ERRORS: 'import-errors',
 };
 
 export interface LopFilter {

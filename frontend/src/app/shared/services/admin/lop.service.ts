@@ -70,4 +70,41 @@ export class LopService {
       context: this.silentContext,
     });
   }
+
+  export(payload: any) {
+    const { exportType, ...rest } = payload;
+    return this.http.post(
+      `${this.baseUrl}/${LOP_API_ENDPOINT.EXPORT}`,
+      rest,
+      {
+        params: { exportType: exportType || 'EXCEL' },
+        responseType: 'blob',
+        observe: 'response',
+      }
+    );
+  }
+
+  import(formData: FormData) {
+    return this.http.post<IResponse<any>>(
+      `${this.baseUrl}/${LOP_API_ENDPOINT.IMPORT}`,
+      formData
+    );
+  }
+
+  downloadTemplate() {
+    return this.http.get(`${this.baseUrl}/${LOP_API_ENDPOINT.TEMPLATE}`, {
+      responseType: 'blob',
+      observe: 'response',
+    });
+  }
+
+  downloadImportErrorFile(token: string) {
+    return this.http.get(
+      `${this.baseUrl}/${LOP_API_ENDPOINT.IMPORT_ERRORS}/${token}`,
+      {
+        responseType: 'blob',
+        observe: 'response',
+      }
+    );
+  }
 }

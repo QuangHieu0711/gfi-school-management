@@ -22,6 +22,45 @@
           Thêm mới
         </button>
       }
+      @if (canAdd) {
+        <button
+          class="btn-tight"
+          color="primary"
+          matButton
+          (click)="import()">
+          <app-icon
+            class="btn-icon"
+            icon="upload"
+            [size]="18" />
+          Kết nạp
+        </button>
+      }
+      @if (canDownload) {
+        <button
+          color="primary"
+          matButton
+          class="btn-tight"
+          (click)="exportExcel()">
+          <app-icon
+            icon="file_download"
+            [size]="18"
+            class="btn-icon" />
+          Xuất Excel
+        </button>
+      }
+      @if (canDownload) {
+        <button
+          color="primary"
+          matButton
+          class="btn-tight"
+          (click)="exportPdf()">
+          <app-icon
+            icon="file_download"
+            [size]="18"
+            class="btn-icon" />
+          Xuất PDF
+        </button>
+      }
     </div>
   </ng-container>
   <ng-container filter-panel>
