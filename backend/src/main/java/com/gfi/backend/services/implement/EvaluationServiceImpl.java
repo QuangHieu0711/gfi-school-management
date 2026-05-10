@@ -95,16 +95,18 @@ public class EvaluationServiceImpl implements EvaluationService {
 
         List<EvaluationSheetStudentDto> students = enrollments.stream()
                 .map(StudentEnrollment::getStudent)
-                .map(student -> {
-                    StudentEvaluation evaluation = evaluationByStudentId.get(student.getId());
+                .map(s -> {
+                    StudentEvaluation e = evaluationByStudentId.get(s.getId());
                     return EvaluationSheetStudentDto.builder()
-                            .studentId(student.getId())
-                            .studentCode(student.getStudentCode())
-                            .studentName(student.getFullName())
-                            .midtermLevel(evaluation == null ? null : evaluation.getMidtermLevel())
-                            .midtermRemark(evaluation == null ? null : evaluation.getMidtermRemark())
-                            .finalLevel(evaluation == null ? null : evaluation.getFinalLevel())
-                            .finalRemark(evaluation == null ? null : evaluation.getFinalRemark())
+                            .studentId(s.getId())
+                            .studentCode(s.getStudentCode())
+                            .studentName(s.getFullName())
+                            .midtermLevel(e != null ? e.getMidtermLevel() : null)
+                            .midtermScore(e != null ? e.getMidtermScore() : null)
+                            .midtermRemark(e != null ? e.getMidtermRemark() : null)
+                            .finalLevel(e != null ? e.getFinalLevel() : null)
+                            .finalScore(e != null ? e.getFinalScore() : null)
+                            .finalRemark(e != null ? e.getFinalRemark() : null)
                             .build();
                 })
                 .toList();
@@ -138,8 +140,12 @@ public class EvaluationServiceImpl implements EvaluationService {
         Student student = findStudent(item.getStudentId());
         validateStudentInClassroom(classroom.getId(), student.getId());
 
-        String midtermLevel = normalizeLevel(item.getMidtermLevel());
-        String finalLevel = normalizeLevel(item.getFinalLevel());
+        Double mScore = item.getMidtermScore();
+        Double fScore = item.getFinalScore();
+        
+        String midtermLevel = mScore != null ? calculateLevel(mScore) : normalizeLevel(item.getMidtermLevel());
+        String finalLevel = fScore != null ? calculateLevel(fScore) : normalizeLevel(item.getFinalLevel());
+        
         String midtermRemark = normalizeNullable(item.getMidtermRemark());
         String finalRemark = normalizeNullable(item.getFinalRemark());
 
@@ -151,7 +157,9 @@ public class EvaluationServiceImpl implements EvaluationService {
         boolean emptyPayload = !StringUtils.hasText(midtermLevel)
                 && !StringUtils.hasText(finalLevel)
                 && !StringUtils.hasText(midtermRemark)
-                && !StringUtils.hasText(finalRemark);
+                && !StringUtils.hasText(finalRemark)
+                && mScore == null
+                && fScore == null;
 
         if (emptyPayload) {
             if (evaluation != null) {
@@ -179,10 +187,19 @@ public class EvaluationServiceImpl implements EvaluationService {
         }
 
         evaluation.setMidtermLevel(midtermLevel);
+        evaluation.setMidtermScore(mScore);
         evaluation.setMidtermRemark(midtermRemark);
         evaluation.setFinalLevel(finalLevel);
+        evaluation.setFinalScore(fScore);
         evaluation.setFinalRemark(finalRemark);
         studentEvaluationRepository.save(evaluation);
+    }
+
+    private String calculateLevel(Double score) {
+        if (score == null) return null;
+        if (score >= 9) return "T";
+        if (score >= 5) return "H";
+        return "C";
     }
 
     @Override
@@ -428,7 +445,7 @@ public class EvaluationServiceImpl implements EvaluationService {
             titleFont.setFontName("Times New Roman");
             titleStyle.setFont(titleFont);
             titleCell.setCellStyle(titleStyle);
-            sheet.addMergedRegion(new CellRangeAddress(0, 0, 0, 5));
+            sheet.addMergedRegion(new CellRangeAddress(0, 0, 0, 8));
 
             // Info row
             Row infoRow = sheet.createRow(1);
@@ -444,12 +461,12 @@ public class EvaluationServiceImpl implements EvaluationService {
             infoFont.setFontName("Times New Roman");
             infoStyle.setFont(infoFont);
             infoCell.setCellStyle(infoStyle);
-            sheet.addMergedRegion(new CellRangeAddress(1, 1, 0, 5));
+            sheet.addMergedRegion(new CellRangeAddress(1, 1, 0, 8));
 
             // Header
             Row headerRow = sheet.createRow(3);
             headerRow.setHeightInPoints(30);
-            String[] headers = { "STT", "Mã HS", "Họ và tên", "Mức đạt được (T/H/C)", "Nhận xét", "StudentId (Không sửa)" };
+            String[] headers = { "STT", "Mã HS", "Họ và tên", "Điểm GK", "Mức GK", "Nhận xét GK", "Điểm CK", "Mức CK", "Nhận xét CK", "StudentId (Không sửa)" };
             CellStyle headerStyle = workbook.createCellStyle();
             headerStyle.setAlignment(HorizontalAlignment.CENTER);
             headerStyle.setVerticalAlignment(VerticalAlignment.CENTER);
@@ -491,9 +508,13 @@ public class EvaluationServiceImpl implements EvaluationService {
                 row.createCell(0).setCellValue(stt++);
                 row.createCell(1).setCellValue(s.getStudentCode());
                 row.createCell(2).setCellValue(s.getFullName());
-                row.createCell(3).setCellValue(""); // Level
-                row.createCell(4).setCellValue(""); // Remark
-                row.createCell(5).setCellValue(s.getId()); // Hidden ID
+                row.createCell(3).setCellValue(""); // Điểm GK
+                row.createCell(4).setCellValue(""); // Mức GK
+                row.createCell(5).setCellValue(""); // Nhận xét GK
+                row.createCell(6).setCellValue(""); // Điểm CK
+                row.createCell(7).setCellValue(""); // Mức CK
+                row.createCell(8).setCellValue(""); // Nhận xét CK
+                row.createCell(9).setCellValue(s.getId()); // Hidden ID
 
                 for (int i = 0; i < headers.length; i++) {
                     row.getCell(i).setCellStyle(bodyStyle);
@@ -503,10 +524,14 @@ public class EvaluationServiceImpl implements EvaluationService {
             // Column Widths
             sheet.setColumnWidth(0, 8 * 256);
             sheet.setColumnWidth(1, 15 * 256);
-            sheet.setColumnWidth(2, 35 * 256);
-            sheet.setColumnWidth(3, 25 * 256);
-            sheet.setColumnWidth(4, 60 * 256);
-            sheet.setColumnWidth(5, 0); // Hide StudentId
+            sheet.setColumnWidth(2, 30 * 256);
+            sheet.setColumnWidth(3, 10 * 256);
+            sheet.setColumnWidth(4, 10 * 256);
+            sheet.setColumnWidth(5, 30 * 256);
+            sheet.setColumnWidth(6, 10 * 256);
+            sheet.setColumnWidth(7, 10 * 256);
+            sheet.setColumnWidth(8, 30 * 256);
+            sheet.setColumnWidth(9, 0); // Hide StudentId
 
             workbook.write(outputStream);
             return outputStream.toByteArray();
@@ -537,24 +562,33 @@ public class EvaluationServiceImpl implements EvaluationService {
                 Row row = sheet.getRow(rowIndex);
                 if (row == null) continue;
 
-                String studentIdStr = readCellText(row.getCell(5), formatter);
+                String studentIdStr = readCellText(row.getCell(9), formatter);
                 if (!StringUtils.hasText(studentIdStr)) continue;
 
                 try {
                     Long studentId = Long.parseLong(studentIdStr);
-                    String levelText = readCellText(row.getCell(3), formatter);
-                    String remark = readCellText(row.getCell(4), formatter);
+                    
+                    Double gkScore = parseDouble(readCellText(row.getCell(3), formatter));
+                    String gkLevel = readCellText(row.getCell(4), formatter);
+                    String gkRemark = readCellText(row.getCell(5), formatter);
+                    
+                    Double ckScore = parseDouble(readCellText(row.getCell(6), formatter));
+                    String ckLevel = readCellText(row.getCell(7), formatter);
+                    String ckRemark = readCellText(row.getCell(8), formatter);
 
-                    if (!StringUtils.hasText(levelText) && !StringUtils.hasText(remark)) {
-                        continue; // Bỏ qua dòng trống
+                    if (gkScore == null && !StringUtils.hasText(gkLevel) && !StringUtils.hasText(gkRemark)
+                        && ckScore == null && !StringUtils.hasText(ckLevel) && !StringUtils.hasText(ckRemark)) {
+                        continue;
                     }
 
                     EvaluationStudentUpsertItemDto item = EvaluationStudentUpsertItemDto.builder()
                             .studentId(studentId)
-                            .midtermLevel(levelText) 
-                            .midtermRemark(remark)
-                            .finalLevel(levelText) 
-                            .finalRemark(remark)
+                            .midtermScore(gkScore)
+                            .midtermLevel(gkLevel) 
+                            .midtermRemark(gkRemark)
+                            .finalScore(ckScore)
+                            .finalLevel(ckLevel) 
+                            .finalRemark(ckRemark)
                             .build();
 
                     upsertStudentEvaluation(classroom, subject, semester, item);
@@ -588,6 +622,15 @@ public class EvaluationServiceImpl implements EvaluationService {
         }
     }
 
+    private Double parseDouble(String value) {
+        if (!StringUtils.hasText(value)) return null;
+        try {
+            return Double.parseDouble(value.replace(",", "."));
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
     @Override
     @Transactional(readOnly = true)
     public TemporaryFileDto getImportErrorFile(String token) {
@@ -596,7 +639,7 @@ public class EvaluationServiceImpl implements EvaluationService {
 
     private byte[] buildImportErrorFile(Workbook workbook, Map<Integer, String> rowErrors) {
         Sheet sheet = workbook.getSheetAt(0);
-        int errorCol = 6;
+        int errorCol = 10;
         
         Row headerRow = sheet.getRow(3);
         Cell errorHeader = headerRow.createCell(errorCol);

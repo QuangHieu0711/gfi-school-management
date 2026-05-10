@@ -10,7 +10,9 @@ public class EvaluationSheetStudentDto {
     private String studentCode;
     private String studentName;
     private String midtermLevel;
+    private Double midtermScore;
     private String midtermRemark;
     private String finalLevel;
+    private Double finalScore;
     private String finalRemark;
 }

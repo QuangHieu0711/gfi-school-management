@@ -15,7 +15,9 @@ public class EvaluationStudentUpsertItemDto {
     private Long studentId;
 
     private String midtermLevel;
+    private Double midtermScore;
     private String midtermRemark;
     private String finalLevel;
+    private Double finalScore;
     private String finalRemark;
 }

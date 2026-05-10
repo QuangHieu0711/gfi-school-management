@@ -10,17 +10,20 @@
       </button>
     </div>
   </ng-container>
-  
-  <div class="mb-4 text-sm text-gray-600">
-    <p>Đang kết nạp cho: <b>{{data.classroomName}}</b> - Môn: <b>{{data.subjectName}}</b></p>
-    <p>Học kỳ: <b>{{data.semesterName}}</b></p>
+
+  <div class="grid grid-cols-2 gap-4 mb-4">
+    <app-select-control [item]="findFormControl($formItem, 'classroomId')" [form]="form"></app-select-control>
+    <app-select-control [item]="findFormControl($formItem, 'subjectId')" [form]="form"></app-select-control>
+    <app-select-control [item]="findFormControl($formItem, 'semesterId')" [form]="form"></app-select-control>
   </div>
 
   <app-file-control [item]="findFormControl($formItem, 'file')" [form]="form"></app-file-control>
 </app-dialog-container>
 
 <ng-template #Actions>
-  <button color="primary" matButton="outlined" mat-dialog-close>Thoát</button>
+  <button color="primary" matButton="outlined" mat-dialog-close>
+    Thoát
+  </button>
   <button type="button" color="primary" matButton="filled" (click)="onSubmit()" cdkFocusInitial>
     Nhập dữ liệu
   </button>

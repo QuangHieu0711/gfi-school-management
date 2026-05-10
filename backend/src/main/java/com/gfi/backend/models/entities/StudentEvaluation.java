@@ -46,8 +46,14 @@ public class StudentEvaluation extends BaseEntity {
     @Column(name = "midterm_level", length = 10)
     private String midtermLevel;
 
+    @Column(name = "midterm_score")
+    private Double midtermScore;
+
     @Column(name = "midterm_remark", length = 2000)
     private String midtermRemark;
+
+    @Column(name = "final_score")
+    private Double finalScore;
 
     @Column(name = "final_level", length = 10)
     private String finalLevel;

@@ -63,10 +63,14 @@ interface TeacherClassAssignmentResponse {
 })
 export class StudentEvaluationBookComponent extends ComponentBaseAbstract {
   @ViewChild('nameTpl', { static: true }) nameTpl!: TemplateRef<unknown>;
+  @ViewChild('middleTermScoreTpl', { static: true })
+  middleTermScoreTpl!: TemplateRef<unknown>;
   @ViewChild('middleTermTpl', { static: true })
   middleTermTpl!: TemplateRef<unknown>;
   @ViewChild('commentGKTpl', { static: true })
   commentGKTpl!: TemplateRef<unknown>;
+  @ViewChild('finalTermScoreTpl', { static: true })
+  finalTermScoreTpl!: TemplateRef<unknown>;
   @ViewChild('finalTermTpl', { static: true })
   finalTermTpl!: TemplateRef<unknown>;
   @ViewChild('commentFinalTpl', { static: true })
@@ -112,6 +116,8 @@ export class StudentEvaluationBookComponent extends ComponentBaseAbstract {
   subjects: LopMonHocDetailSubjectResponse[] = [];
   selectedSubjectId?: any;
   currentSchoolYear?: NamHocOptionResponse;
+  classroomOptions: any[] = [];
+
 
   get selectedSubjectName(): string {
     if (!this.selectedSubjectId || !this.subjects.length) return '';
@@ -148,7 +154,15 @@ export class StudentEvaluationBookComponent extends ComponentBaseAbstract {
     this.dataSource = [];
     this.dataSourceTotal = 0;
 
-    this.columns = [
+    this.updateColumns();
+  }
+
+  private updateColumns() {
+    const scoredSubjectNames = ['Toán', 'Tiếng Việt', 'Khoa học', 'Lịch sử và Địa lý', 'Lịch sử & Địa lý', 'Tiếng Anh', 'Tin học', 'Công nghệ'];
+    const currentSub = this.subjects.find(s => s.subjectId == this.selectedSubjectId);
+    const isScored = currentSub?.subjectType == 1 || scoredSubjectNames.some(name => currentSub?.subjectName?.includes(name));
+
+    const baseColumns: MtxGridColumn[] = [
       { header: 'STT', class: 'text-center', field: COMMON_TABLE_KEY.STT, width: '50px' },
       {
         header: 'Họ và tên',
@@ -156,8 +170,21 @@ export class StudentEvaluationBookComponent extends ComponentBaseAbstract {
         width: '210px',
         cellTemplate: this.nameTpl,
       },
+    ];
+
+    if (isScored) {
+      baseColumns.push({
+        header: 'Điểm GK',
+        field: 'middleTermScore',
+        width: '80px',
+        class: 'text-center',
+        cellTemplate: this.middleTermScoreTpl,
+      });
+    }
+
+    baseColumns.push(
       {
-        header: 'Giữa học kỳ',
+        header: 'Mức GK',
         field: 'middleTerm',
         width: '65px',
         class: 'text-center',
@@ -167,9 +194,22 @@ export class StudentEvaluationBookComponent extends ComponentBaseAbstract {
         header: 'Nhận xét GK',
         field: 'commentGK',
         cellTemplate: this.commentGKTpl,
-      },
+      }
+    );
+
+    if (isScored) {
+      baseColumns.push({
+        header: 'Điểm CK',
+        field: 'finalTermScore',
+        width: '80px',
+        class: 'text-center',
+        cellTemplate: this.finalTermScoreTpl,
+      });
+    }
+
+    baseColumns.push(
       {
-        header: 'Cuối học kỳ',
+        header: 'Mức CK',
         field: 'finalTerm',
         width: '65px',
         class: 'text-center',
@@ -179,9 +219,12 @@ export class StudentEvaluationBookComponent extends ComponentBaseAbstract {
         header: 'Nhận xét',
         field: 'commentFinal',
         cellTemplate: this.commentFinalTpl,
-      },
-    ];
+      }
+    );
+
+    this.columns = baseColumns;
   }
+
 
   filterData(pageChangeEvent?: any) {
     this.pageIndex = pageChangeEvent?.pageIndex ?? 0;
@@ -205,8 +248,7 @@ export class StudentEvaluationBookComponent extends ComponentBaseAbstract {
             []) as TeacherClassAssignmentResponse[];
           this.subjectsByClassId.clear();
 
-          // Map classrooms to dropdown options (be tolerant about field names)
-          const classroomOptions = classrooms
+          this.classroomOptions = classrooms
             .map((c) => ({
               label: c.className ?? c.classCode ?? c.name ?? '',
               value: this.getClassId(c),
@@ -221,13 +263,14 @@ export class StudentEvaluationBookComponent extends ComponentBaseAbstract {
             this.findFormControl(
               this.$formItem,
               this.key.CLASSROOM_ID
-            ).options = classroomOptions;
+            ).options = this.classroomOptions;
           } catch {
             const item = (this.$formItem as any[]).find(
               (it: any) => it.key === this.key.CLASSROOM_ID
             );
-            if (item) item.options = classroomOptions;
+            if (item) item.options = this.classroomOptions;
           }
+
 
           // If API already returns grouped data, use it directly; otherwise build simple groups
           if (
@@ -447,8 +490,10 @@ export class StudentEvaluationBookComponent extends ComponentBaseAbstract {
 
   selectSubject(subjectId: any): void {
     this.selectedSubjectId = subjectId;
+    this.updateColumns();
     this.loadEvaluationSheet();
   }
+
 
   resetFilter() {
     this.form.reset();
@@ -472,8 +517,10 @@ export class StudentEvaluationBookComponent extends ComponentBaseAbstract {
       items: this.dataSource.map(s => ({
         studentId: Number(s.id),
         midtermLevel: s.middleTerm,
+        midtermScore: s.middleTermScore,
         midtermRemark: s.commentGK,
         finalLevel: s.finalTerm,
+        finalScore: s.finalTermScore,
         finalRemark: s.commentFinal,
       })),
     };
@@ -626,19 +673,24 @@ export class StudentEvaluationBookComponent extends ComponentBaseAbstract {
       return;
     }
 
-    const semesterOption = (this.findFormControl(this.$formItem, this.key.SEMESTER_ID).options as any[])?.find(o => o.value === semesterId);
+    const semesterOptions = this.findFormControl(this.$formItem, this.key.SEMESTER_ID).options as any[];
+    const semesterOption = semesterOptions?.find(o => o.value === semesterId);
 
-    this.dialog.open(DialogImportEvaluationComponent, {
-      width: '600px',
+    this.dialog.componentDialog(DialogImportEvaluationComponent, {
+      width: '900px',
       data: {
         classroomId: Number(classroomId),
         subjectId: Number(subjectId),
         semesterId: Number(semesterId),
         classroomName: this.selectedClassName,
         subjectName: this.selectedSubjectName,
-        semesterName: semesterOption?.label || ''
+        semesterName: semesterOption?.label || '',
+        classroomOptions: this.classroomOptions,
+        semesterOptions: semesterOptions,
+        subjectsByClassId: this.subjectsByClassId
       }
-    }).afterClosed().subscribe(res => {
+    }, (res: any) => {
+
       if (res) {
         this.loadEvaluationSheet();
       }
@@ -657,7 +709,9 @@ export class StudentEvaluationBookComponent extends ComponentBaseAbstract {
       return;
     }
 
+    this.updateColumns();
     this.evaluationService.getSheet(classroomId, subjectId, semesterId).subscribe({
+
       next: ({ data }) => {
         const students = data?.students ?? [];
         this.dataSource = students.map((s: any) => ({
@@ -665,8 +719,10 @@ export class StudentEvaluationBookComponent extends ComponentBaseAbstract {
           fullName: s.studentName ?? '',
           code: s.studentCode ?? '',
           middleTerm: s.midtermLevel ?? '',
+          middleTermScore: s.midtermScore,
           commentGK: s.midtermRemark ?? '',
           finalTerm: s.finalLevel ?? '',
+          finalTermScore: s.finalScore,
           commentFinal: s.finalRemark ?? '',
         }));
         this.dataSourceTotal = this.dataSource.length;
@@ -723,5 +779,32 @@ export class StudentEvaluationBookComponent extends ComponentBaseAbstract {
         }
       }
     }
+  }
+
+  onScoreChange(row: any, field: string, score: any): void {
+    const numericScore = score !== null && score !== '' ? parseFloat(score) : null;
+    row[field] = numericScore;
+
+    if (numericScore !== null && !isNaN(numericScore)) {
+      const levelField = field === 'middleTermScore' ? 'middleTerm' : 'finalTerm';
+      row[levelField] = this.calculateLevelFromScore(numericScore);
+    }
+
+    if (this.dataSource) {
+      const dataRow = this.dataSource.find(item => item.id === row.id);
+      if (dataRow) {
+        dataRow[field] = numericScore;
+        if (numericScore !== null && !isNaN(numericScore)) {
+          const levelField = field === 'middleTermScore' ? 'middleTerm' : 'finalTerm';
+          dataRow[levelField] = this.calculateLevelFromScore(numericScore);
+        }
+      }
+    }
+  }
+
+  private calculateLevelFromScore(score: number): string {
+    if (score >= 9) return 'T';
+    if (score >= 5) return 'H';
+    return 'C';
   }
 }

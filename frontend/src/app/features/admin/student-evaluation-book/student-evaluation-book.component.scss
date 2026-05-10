@@ -317,3 +317,74 @@
     grid-template-columns: 1fr;
   }
 }
+
+.cell-input {
+  width: 100%;
+  margin: 0;
+  display: block;
+
+  ::ng-deep {
+    .mat-mdc-text-field-wrapper {
+      padding: 0 !important;
+      min-height: 36px !important;
+      height: 36px !important;
+      background-color: transparent !important;
+      border: none !important;
+      box-shadow: none !important;
+    }
+    
+    .mat-mdc-form-field-flex {
+      height: 36px !important;
+    }
+
+    .mat-mdc-form-field-infix {
+      padding: 0 !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      min-height: 36px !important;
+    }
+
+    .mdc-notched-outline {
+      display: none !important;
+    }
+
+    input {
+      text-align: center;
+      font-size: 14px;
+      font-weight: 700;
+      color: #1e293b;
+      border: none !important;
+      background: transparent !important;
+      outline: none !important;
+      width: 100% !important;
+      cursor: text;
+
+      // Hide spin buttons
+      &::-webkit-outer-spin-button,
+      &::-webkit-inner-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+      }
+      &[type=number] {
+        -moz-appearance: textfield;
+      }
+      
+      &::placeholder {
+        color: transparent; // Hide placeholder for a cleaner look
+      }
+    }
+
+
+    // Hide everything even on focus
+    &.mat-focused .mat-mdc-text-field-wrapper {
+      border: none !important;
+      box-shadow: none !important;
+      background-color: rgba(104, 167, 176, 0.05) !important; // Very subtle hint on focus
+    }
+
+    .mat-mdc-form-field-subscript-wrapper {
+      display: none !important;
+    }
+  }
+}

@@ -8,8 +8,10 @@ export interface EvaluationBulkSaveRequest {
 export interface EvaluationItemSaveRequest {
   studentId: number | string;
   midtermLevel?: string;
+  midtermScore?: number;
   midtermRemark?: string;
   finalLevel?: string;
+  finalScore?: number;
   finalRemark?: string;
 }
 
@@ -50,7 +52,9 @@ export interface EvaluationSheetStudent {
   studentCode: string;
   studentName: string;
   midtermLevel: string;
+  midtermScore: number;
   midtermRemark: string;
   finalLevel: string;
+  finalScore: number;
   finalRemark: string;
 }

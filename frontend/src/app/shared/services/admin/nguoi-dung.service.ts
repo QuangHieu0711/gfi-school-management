@@ -25,7 +25,7 @@ export class NguoiDungService {
     silent: true,
   });
 
-  constructor(private readonly http: HttpClient) {}
+  constructor(private readonly http: HttpClient) { }
 
   filter(
     payload: NguoiDungFilterRequest
@@ -94,30 +94,6 @@ export class NguoiDungService {
         observe: 'response',
         responseType: 'blob',
       }
-    );
-  }
-
-  import(payload: FormData): Observable<{ data: { message: string } }> {
-    const file = payload.get('file');
-
-    return of({
-      data: {
-        message:
-          file instanceof File
-            ? `Imported locally: ${file.name}`
-            : 'Imported locally',
-      },
-    });
-  }
-
-  downloadTemplate(): Observable<Blob> {
-    const template =
-      'Ho,Ten,TenTaiKhoan,Email,SoDienThoai,DonVi,TrangThai,NhomQuyen\n';
-
-    return of(
-      new Blob([template], {
-        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      })
     );
   }
 
