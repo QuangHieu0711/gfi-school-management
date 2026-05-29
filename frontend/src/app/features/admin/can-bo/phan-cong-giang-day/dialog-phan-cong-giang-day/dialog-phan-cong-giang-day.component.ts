@@ -242,6 +242,24 @@ export class DialogPhanCongGiangDayComponent extends ComponentBaseAbstract {
     this.updateAssignmentSummary();
   }
 
+  deleteAssignment(): void {
+    if (!this.data.id) return;
+    this.dialog.confirm({ message: 'Bạn có chắc chắn muốn xóa phân công này không?' }, (confirmed) => {
+      if (confirmed) {
+        this.phanCongService.delete(this.data.id!).subscribe({
+          next: () => {
+            this.toastr.success('Xóa thành công', 'Thành công');
+            this.dialogRef.close(true);
+          },
+          error: (error) => {
+            const failMsg = error?.error?.userMessage ?? error?.error?.message ?? 'Xóa thất bại';
+            this.toastr.error(failMsg, 'Thất bại');
+          }
+        });
+      }
+    });
+  }
+
   toggleGroup(group: StaffGroup): void {
     group.expanded = !group.expanded;
   }

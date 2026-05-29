@@ -5,7 +5,9 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Queue;
 import java.util.Set;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -318,6 +320,7 @@ public class EvaluationServiceImpl implements EvaluationService {
     @Transactional(readOnly = true)
     public Map<Long, String> bulkGenerateComment(EvaluationBulkGenerateCommentRequest request) {
         Map<Long, String> result = new java.util.concurrent.ConcurrentHashMap<>();
+        Queue<String> errors = new ConcurrentLinkedQueue<>();
 
         request.getItems().parallelStream().forEach(item -> {
             EvaluationGenerateCommentRequest singleReq = new EvaluationGenerateCommentRequest();
@@ -332,12 +335,19 @@ public class EvaluationServiceImpl implements EvaluationService {
             try {
                 String comment = generateComment(singleReq);
                 result.put(item.getStudentId(), comment);
+            } catch (UserMessageException e) {
+                errors.add(String.format("studentId=%d: %s", item.getStudentId(), e.getMessage()));
             } catch (Exception e) {
-                // If one fails, we can just put empty or an error message. Or log and put empty.
-                e.printStackTrace();
-                result.put(item.getStudentId(), ""); // fallback
+                errors.add(String.format("studentId=%d: %s", item.getStudentId(), e.getMessage()));
             }
         });
+
+        if (!errors.isEmpty()) {
+            String firstError = errors.peek();
+            throw new UserMessageException(
+                    CommonErrorCode.INTERNAL_SERVER_ERROR.getCode(),
+                    "Khong the sinh nhan xet hang loat. " + firstError);
+        }
 
         return result;
     }

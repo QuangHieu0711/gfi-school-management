@@ -368,7 +368,7 @@ def clean_response(text: str) -> Optional[str]:
 
 def _safe_lesson_phrase(data: dict) -> str:
     """Create a safe Vietnamese phrase for fallback comments."""
-    raw = str(data.get("lesson_title") or data.get("learning_objective") or "").strip()
+    raw = str(data.get("learning_objective") or data.get("lesson_title") or "").strip()
     raw = re.sub(r'(?i)(bài|tiết)\s*\d+[\s\-:]*', '', raw)
     
     for bad, good in REPLACEMENTS.items():
@@ -388,16 +388,43 @@ def _safe_lesson_phrase(data: dict) -> str:
     return raw[0].lower() + raw[1:]
 
 
+def _is_generic_lesson_phrase(text: str) -> bool:
+    """Return True for overly generic lesson labels that should not appear in comments."""
+    normalized = unicodedata.normalize("NFD", text.lower())
+    normalized = "".join(c for c in normalized if unicodedata.category(c) != "Mn")
+    normalized = normalized.replace("Ä‘", "d")
+    normalized = normalized.replace("\u0111", "d")
+    normalized = re.sub(r"[^a-z0-9\s]", " ", normalized)
+    normalized = re.sub(r"\s+", " ", normalized).strip()
+
+    generic_phrases = {
+        "luyen tap chung",
+        "luyen tap",
+        "on tap",
+        "thuc hanh",
+        "hoat dong chung",
+        "noi dung bai hoc",
+    }
+    return normalized in generic_phrases
+
+
 def fallback_comment(data: dict) -> str:
     """Always return a safe Vietnamese-only comment if model output is invalid."""
     lesson = _safe_lesson_phrase(data)
     evaluation = str(data.get("evaluation", "")).strip().upper()
+    use_generic_comment = _is_generic_lesson_phrase(lesson)
 
     if evaluation.startswith("T"):
+        if use_generic_comment:
+            return "Em thực hiện tốt các yêu cầu của bài học và biết phối hợp với bạn khi luyện tập."
         return f"Em thực hiện tốt {lesson} và biết phối hợp với bạn khi luyện tập."
     if evaluation.startswith("H"):
+        if use_generic_comment:
+            return "Em hoàn thành các yêu cầu của bài học theo hướng dẫn, cần rèn thêm để thực hiện chính xác hơn."
         return f"Em hoàn thành {lesson} theo hướng dẫn, cần rèn thêm để động tác chính xác hơn."
     if evaluation.startswith("C"):
+        if use_generic_comment:
+            return "Em cần cố gắng hơn khi thực hiện các yêu cầu của bài học và chú ý luyện tập theo hướng dẫn."
         return f"Em cần cố gắng hơn khi thực hiện {lesson} và chú ý luyện tập theo hướng dẫn."
 
     return DEFAULT_COMMENT
@@ -448,7 +475,7 @@ def generate_comment(data: dict, max_new_tokens: int = 40) -> str:
     
     if _model_load_failed:
         # We already know loading failed; return fallback immediately
-        logger.debug("Model is unavailable; returning fallback comment.")
+        logger.warning("Model is unavailable; returning fallback comment.")
         return fallback_comment(data)
     
     if model is None or tokenizer is None:
@@ -461,7 +488,7 @@ def generate_comment(data: dict, max_new_tokens: int = 40) -> str:
     
     # If still no model after load attempt, use fallback
     if model is None or tokenizer is None:
-        logger.debug("Model not loaded; using fallback comment.")
+        logger.warning("Model not loaded; using fallback comment.")
         return fallback_comment(data)
 
     attempts = [
@@ -494,4 +521,5 @@ def generate_comment(data: dict, max_new_tokens: int = 40) -> str:
         if cleaned:
             return cleaned
 
+    logger.warning("Generated output was invalid after cleaning; using fallback comment.")
     return fallback_comment(data)

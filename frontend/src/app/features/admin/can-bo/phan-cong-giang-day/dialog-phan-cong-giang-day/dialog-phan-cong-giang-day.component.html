@@ -119,6 +119,15 @@
   </app-form-control>
 
   <ng-template #actionTemplate>
+    @if (data.type === TYPE_FORM.DETAIL || data.type === TYPE_FORM.UPDATE) {
+      <button
+        style="margin-right: auto;"
+        color="warn"
+        matButton="filled"
+        (click)="deleteAssignment()">
+        Xóa
+      </button>
+    }
     <button
       color="primary"
       matButton="outlined"

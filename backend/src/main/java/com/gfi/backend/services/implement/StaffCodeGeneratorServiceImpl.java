@@ -22,11 +22,11 @@ public class StaffCodeGeneratorServiceImpl implements StaffCodeGeneratorService 
     @Transactional
     public String generateStaffCode(Long unitId, Integer year) {
         Unit unit = unitRepository.findById(unitId)
-                .orElseThrow(() -> new RuntimeException("Khong tim thay don vi voi ID: " + unitId));
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy đơn vị với ID: " + unitId));
 
         String unitCode = unit.getCode();
         if (unitCode == null || unitCode.trim().isBlank()) {
-            throw new RuntimeException("Don vi chua co ma code, khong the sinh ma can bo");
+            throw new RuntimeException("Đơn vị chưa có mã code, không thể sinh mã cán bộ");
         }
         unitCode = unitCode.trim().toUpperCase();
 
@@ -41,7 +41,7 @@ public class StaffCodeGeneratorServiceImpl implements StaffCodeGeneratorService 
                 counter = counterRepository.saveAndFlush(newCounter);
             } catch (Exception ex) {
                 counter = counterRepository.findByUnitIdAndYearForUpdate(unitId, year)
-                        .orElseThrow(() -> new RuntimeException("Khong the tao hoac tim duoc counter", ex));
+                        .orElseThrow(() -> new RuntimeException("Không thể tạo hoặc tìm được số thứ tự", ex));
             }
         }
 
