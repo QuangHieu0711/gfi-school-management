@@ -5,6 +5,21 @@ export interface EvaluationBulkSaveRequest {
   items: EvaluationItemSaveRequest[];
 }
 
+export interface EvaluationEditWindowRequest {
+  semesterId: number | string;
+  startDate: string;
+  endDate: string;
+}
+
+export interface EvaluationEditWindowResponse {
+  id?: number | string;
+  semesterId: number | string;
+  startDate?: string | null;
+  endDate?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 export interface EvaluationItemSaveRequest {
   studentId: number | string;
   midtermLevel?: string;

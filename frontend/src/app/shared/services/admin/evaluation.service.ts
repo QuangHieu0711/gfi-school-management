@@ -3,7 +3,14 @@ import { Injectable } from '@angular/core';
 import { ERROR_CONTEXT } from '@constant/error.registry';
 import { environment } from '@env/environment';
 import { IResponse } from '@model/response.model';
-import { EvaluationBulkSaveRequest, EvaluationGenerateCommentRequest, EvaluationSheetResponse, EvaluationBulkGenerateCommentRequest } from '@app/model/admin/evaluation.model';
+import {
+  EvaluationBulkGenerateCommentRequest,
+  EvaluationBulkSaveRequest,
+  EvaluationEditWindowRequest,
+  EvaluationEditWindowResponse,
+  EvaluationGenerateCommentRequest,
+  EvaluationSheetResponse,
+} from '@app/model/admin/evaluation.model';
 
 @Injectable({ providedIn: 'root' })
 export class EvaluationService {
@@ -36,6 +43,26 @@ export class EvaluationService {
     return this.http.get<IResponse<EvaluationSheetResponse>>(`${this.baseUrl}/sheet`, {
       params: { classroomId, subjectId, semesterId },
     });
+  }
+
+  getEditWindow(semesterId: string | number) {
+    return this.http.get<IResponse<EvaluationEditWindowResponse | null>>(
+      `${this.baseUrl}/edit-window`,
+      {
+        params: { semesterId },
+        context: this.silentContext,
+      }
+    );
+  }
+
+  saveEditWindow(payload: EvaluationEditWindowRequest) {
+    return this.http.put<IResponse<EvaluationEditWindowResponse>>(
+      `${this.baseUrl}/edit-window`,
+      payload,
+      {
+        context: this.silentContext,
+      }
+    );
   }
 
   exportTemplate(classroomId: number, subjectId: number, semesterId: number) {

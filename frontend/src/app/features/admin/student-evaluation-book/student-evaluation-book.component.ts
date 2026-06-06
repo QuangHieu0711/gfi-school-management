@@ -2,32 +2,38 @@
 import { CommonModule } from '@angular/common';
 import { Component, Injector, TemplateRef, ViewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { MtxSelectModule } from '@ng-matero/extensions/select';
 import { MtxGridColumn } from '@ng-matero/extensions/grid';
-import { filter, take, forkJoin, of } from 'rxjs';
-import { map, catchError } from 'rxjs/operators';
+import { MtxSelectModule } from '@ng-matero/extensions/select';
+import { catchError, map } from 'rxjs/operators';
+import { filter, forkJoin, of, take } from 'rxjs';
 
-import { AppTableComponent } from '@components/app-table/app-table.component';
-import { IconComponent } from '@components/app-icon/app-icon.component';
-import { FORM_CONTROL_MODULE, MATERIAL_MODULE } from '@modules';
-import { FormType, SELECT_CONTROL } from '@model/form-control.model';
-import { ComponentBaseAbstract } from '@layout';
-import { COMMON_TABLE_KEY, TableConfig } from '@model/table.model';
+import { LopMonHocDetailSubjectResponse } from '@app/model/admin/lop-mon-hoc.model';
+import { NamHocOptionResponse } from '@app/model/admin/nam-hoc.model';
 import {
   DiemDanhKhoiNhomItem,
   DiemDanhLopItem,
 } from '@app/model/admin/diem-danh.model';
-import { DiemDanhService } from '@app/service/admin/diem-danh.service';
-import { PhanCongGiangDayService } from '@app/service/admin/phan-cong-giang-day.service';
-import { LopMonHocDetailSubjectResponse } from '@app/model/admin/lop-mon-hoc.model';
-import { LopMonHocService } from '@app/service/admin/lop-mon-hoc.service';
-import { NamHocOptionResponse } from '@app/model/admin/nam-hoc.model';
-import { NamHocService } from '@app/service/admin/nam-hoc.service';
-import { ID_TYPE } from '@model/response.model';
+import {
+  EvaluationBulkGenerateCommentItem,
+  EvaluationBulkGenerateCommentRequest,
+  EvaluationBulkSaveRequest,
+  EvaluationEditWindowResponse,
+} from '@app/model/admin/evaluation.model';
 import { HocKyService } from '@app/service/admin/hoc-ky.service';
-import { AuthService } from '@service';
+import { LopMonHocService } from '@app/service/admin/lop-mon-hoc.service';
+import { NamHocService } from '@app/service/admin/nam-hoc.service';
+import { PhanCongGiangDayService } from '@app/service/admin/phan-cong-giang-day.service';
 import { EvaluationService } from '@app/service/admin/evaluation.service';
-import { EvaluationBulkSaveRequest, EvaluationGenerateCommentRequest, EvaluationBulkGenerateCommentRequest, EvaluationBulkGenerateCommentItem } from '@app/model/admin/evaluation.model';
+import { AppTableComponent } from '@components/app-table/app-table.component';
+import { IconComponent } from '@components/app-icon/app-icon.component';
+import { ComponentBaseAbstract } from '@layout';
+import { COMMON_TABLE_KEY, TableConfig } from '@model/table.model';
+import { FormType, SELECT_CONTROL } from '@model/form-control.model';
+import { ID_TYPE } from '@model/response.model';
+import { FORM_CONTROL_MODULE, MATERIAL_MODULE } from '@modules';
+import { AuthService, PermissionCheckService } from '@service';
+
+import { DialogEditWindowComponent } from './dialog-edit-window/dialog-edit-window.component';
 import { DialogImportEvaluationComponent } from './dialog-import/dialog-import-evaluation.component';
 
 interface TeacherClassAssignmentResponse {
@@ -62,9 +68,9 @@ interface TeacherClassAssignmentResponse {
   ],
 })
 export class StudentEvaluationBookComponent extends ComponentBaseAbstract {
+  readonly menuCode = 'STUDENT_EVALUATION_BOOK';
+
   @ViewChild('nameTpl', { static: true }) nameTpl!: TemplateRef<unknown>;
-  @ViewChild('middleTermScoreTpl', { static: true })
-  middleTermScoreTpl!: TemplateRef<unknown>;
   @ViewChild('middleTermTpl', { static: true })
   middleTermTpl!: TemplateRef<unknown>;
   @ViewChild('commentGKTpl', { static: true })
@@ -88,7 +94,7 @@ export class StudentEvaluationBookComponent extends ComponentBaseAbstract {
     INPUT_ROUND: 'inputRound',
   } as const;
 
-  $formItem: FormType[] = [
+  readonly $formItem: FormType[] = [
     SELECT_CONTROL({
       controlName: this.key.SEMESTER_ID,
       placeholder: 'Chọn học kỳ',
@@ -98,7 +104,7 @@ export class StudentEvaluationBookComponent extends ComponentBaseAbstract {
     }),
   ];
 
-  tableConfig: TableConfig = {
+  readonly tableConfig: TableConfig = {
     hasFilterPanel: true,
     hasFilterPanelButton: false,
     hasExport: false,
@@ -107,82 +113,495 @@ export class StudentEvaluationBookComponent extends ComponentBaseAbstract {
 
   columns: MtxGridColumn[] = [];
   dataSource: any[] = [];
+  editWindowConfig: EvaluationEditWindowResponse | null = null;
+  editWindowMessage = 'Chưa cấu hình thời gian sửa điểm cho học kỳ này.';
 
-  // Class picker / subject UI state
   gradeClassGroups: DiemDanhKhoiNhomItem[] = [];
   expandedGradeIds = new Set<string>();
   selectedClassId?: string | number;
   selectedClassName = '';
   subjects: LopMonHocDetailSubjectResponse[] = [];
-  selectedSubjectId?: any;
+  selectedSubjectId?: string | number;
   currentSchoolYear?: NamHocOptionResponse;
-  classroomOptions: any[] = [];
+  classroomOptions: Array<{ label: string; value: string | number }> = [];
 
-
-  get selectedSubjectName(): string {
-    if (!this.selectedSubjectId || !this.subjects.length) return '';
-    const found = this.subjects.find(
-      (s) => s.subjectId === this.selectedSubjectId
-    );
-    return found?.subjectName ?? '';
-  }
+  private readonly scoredSubjectAliases = [
+    'toan',
+    'tieng viet',
+    'khoa hoc',
+    'lich su va dia li',
+    'lich su & dia li',
+    'tieng anh',
+  ];
 
   private subjectsByClassId = new Map<
     string,
     LopMonHocDetailSubjectResponse[]
   >();
 
+  get canConfig(): boolean {
+    return this.permissionCheckService.canConfig(this.menuCode);
+  }
+
+  get canEditBook(): boolean {
+    return this.permissionCheckService.canEdit(this.menuCode);
+  }
+
+  get isEditWindowOpen(): boolean {
+    if (!this.canEditBook) return false;
+
+    const startDate = this.normalizeDateValue(this.editWindowConfig?.startDate);
+    const endDate = this.normalizeDateValue(this.editWindowConfig?.endDate);
+    if (!startDate || !endDate) return false;
+
+    const today = this.getTodayKey();
+    return today >= startDate && today <= endDate;
+  }
+
+  get selectedSubjectName(): string {
+    if (!this.selectedSubjectId || !this.subjects.length) return '';
+    const found = this.subjects.find(
+      (subject) => subject.subjectId === this.selectedSubjectId
+    );
+    return found?.subjectName ?? '';
+  }
+
   constructor(
     protected override injector: Injector,
-    private readonly diemDanhService: DiemDanhService,
     private readonly phanCongService: PhanCongGiangDayService,
     private readonly lopMonHocService: LopMonHocService,
     private readonly namHocService: NamHocService,
     private readonly hocKyService: HocKyService,
     private readonly authService: AuthService,
-    private readonly evaluationService: EvaluationService
+    private readonly evaluationService: EvaluationService,
+    private readonly permissionCheckService: PermissionCheckService
   ) {
     super(injector);
   }
 
   protected override componentInit(): void {
-    // Initialize form controls and load class/subject data
     this.form = this.itemControl.toFormGroup(this.$formItem);
-    this.loadInitialData();
-
-    // Start with empty data – will be populated from API when class is selected
     this.dataSource = [];
     this.dataSourceTotal = 0;
-
     this.updateColumns();
+    this.loadInitialData();
   }
 
-  private updateColumns() {
-    const scoredSubjectNames = ['Toán', 'Tiếng Việt', 'Khoa học', 'Lịch sử và Địa lý', 'Lịch sử & Địa lý', 'Tiếng Anh', 'Tin học', 'Công nghệ'];
-    const currentSub = this.subjects.find(s => s.subjectId == this.selectedSubjectId);
-    const isScored = currentSub?.subjectType == 1 || scoredSubjectNames.some(name => currentSub?.subjectName?.includes(name));
+  filterData(pageChangeEvent?: any): void {
+    this.pageIndex = pageChangeEvent?.pageIndex ?? 0;
+    this.pageSize = pageChangeEvent?.pageSize ?? this.pageSize;
+    this.loadEvaluationSheet();
+  }
 
-    const baseColumns: MtxGridColumn[] = [
-      { header: 'STT', class: 'text-center', field: COMMON_TABLE_KEY.STT, width: '50px' },
+  toggleGrade(groupId: string | number): void {
+    const id = `${groupId}`;
+    if (this.expandedGradeIds.has(id)) {
+      this.expandedGradeIds.delete(id);
+      return;
+    }
+
+    this.expandedGradeIds.add(id);
+  }
+
+  isGradeExpanded(groupId: string | number): boolean {
+    return this.expandedGradeIds.has(`${groupId}`);
+  }
+
+  selectClass(group: DiemDanhKhoiNhomItem, classroom: DiemDanhLopItem): void {
+    this.selectedClassId = classroom.id;
+    this.selectedClassName = classroom.name;
+    this.expandedGradeIds.add(`${group.gradeLevelId}`);
+
+    this.form.patchValue(
+      { [this.key.CLASSROOM_ID]: classroom.id },
+      { emitEvent: false }
+    );
+
+    const cachedSubjects = this.subjectsByClassId.get(`${classroom.id}`);
+    if (cachedSubjects) {
+      this.setSelectedSubjects(cachedSubjects);
+      return;
+    }
+
+    this.lopMonHocService.getDetail(classroom.id).subscribe({
+      next: ({ data }) => {
+        this.setSelectedSubjects(data?.subjects ?? []);
+      },
+      error: () => {
+        this.setSelectedSubjects([]);
+      },
+    });
+  }
+
+  selectSubject(subjectId: any): void {
+    this.selectedSubjectId = subjectId;
+    this.updateColumns();
+    this.loadEvaluationSheet();
+  }
+
+  reloadClassGroups(): void {
+    this.loadInitialData();
+  }
+
+  resetFilter(): void {
+    this.form.reset();
+    this.appTableComponent.resetQuery();
+  }
+
+  save(): void {
+    if (!this.isEditWindowOpen) {
+      this.toastr.warning(this.editWindowMessage, 'Cảnh báo');
+      return;
+    }
+
+    const classroomId = this.selectedClassId;
+    const semesterId = this.form.get(this.key.SEMESTER_ID)?.value;
+    const subjectId = this.selectedSubjectId;
+
+    if (!classroomId || !semesterId || !subjectId) {
+      this.toastr.warning(
+        'Vui lòng chọn đầy đủ Lớp, Học kỳ và Môn học',
+        'Cảnh báo'
+      );
+      return;
+    }
+
+    const payload: EvaluationBulkSaveRequest = {
+      classroomId: Number(classroomId),
+      subjectId: Number(subjectId),
+      semesterId: Number(semesterId),
+      items: this.dataSource.map((student) => ({
+        studentId: Number(student.id),
+        midtermLevel: student.middleTerm,
+        midtermScore: student.middleTermScore,
+        midtermRemark: student.commentGK,
+        finalLevel: student.finalTerm,
+        finalScore: student.finalTermScore,
+        finalRemark: student.commentFinal,
+      })),
+    };
+
+    this.evaluationService.saveBulk(payload).subscribe({
+      next: () => {
+        this.toastr.success('Lưu thành công', 'Thành công');
+      },
+      error: (err) => {
+        this.toastr.error(
+          err?.error?.userMessage ?? err?.error?.message ?? 'Lưu thất bại',
+          'Lỗi'
+        );
+      },
+    });
+  }
+
+  cancel(): void {
+    this.loadEvaluationSheet();
+    this.toastr.info('Đã hủy bỏ các thay đổi', 'Thông báo');
+  }
+
+  exportExcel(): void {
+    this.toastr.success('Xuất Excel thành công (demo)', 'Thành công');
+  }
+
+  exportPdf(): void {
+    this.toastr.success('Xuất PDF thành công (demo)', 'Thành công');
+  }
+
+  openConfig(): void {
+    const semesterId = this.form.get(this.key.SEMESTER_ID)?.value;
+    if (!semesterId) {
+      this.toastr.warning(
+        'Vui lòng chọn học kỳ để cấu hình thời gian sửa điểm',
+        'Cảnh báo'
+      );
+      return;
+    }
+
+    const semesterOptions = this.findFormControl(
+      this.$formItem,
+      this.key.SEMESTER_ID
+    ).options as any[];
+    const semesterOption = semesterOptions?.find(
+      (option) => option.value === semesterId
+    );
+
+    this.dialog.componentDialog(
+      DialogEditWindowComponent,
+      {
+        width: '480px',
+        data: {
+          semesterId: Number(semesterId),
+          semesterName: semesterOption?.label || '',
+          currentConfig: this.editWindowConfig,
+        },
+      },
+      (result?: boolean) => {
+        if (result) {
+          this.loadEditWindowConfig();
+        }
+      }
+    );
+  }
+
+  openComment(): void {
+    if (!this.isEditWindowOpen) {
+      this.toastr.warning(this.editWindowMessage, 'Cảnh báo');
+      return;
+    }
+
+    const classroomId = this.selectedClassId;
+    const subjectId = this.selectedSubjectId;
+    const semesterId = this.form.get(this.key.SEMESTER_ID)?.value;
+    const semesterOption = (
+      this.findFormControl(this.$formItem, this.key.SEMESTER_ID)
+        .options as any[]
+    )?.find((option) => option.value === semesterId);
+    const semesterName = semesterOption?.label || '';
+    const semesterSuffix = semesterName.includes('2') ? '2' : '1';
+
+    if (!classroomId || !subjectId) {
+      this.toastr.warning(
+        'Vui lòng chọn đầy đủ Lớp và Môn học để sinh nhận xét',
+        'Cảnh báo'
+      );
+      return;
+    }
+
+    const gkItems: EvaluationBulkGenerateCommentItem[] = [];
+    const ckItems: EvaluationBulkGenerateCommentItem[] = [];
+
+    for (const row of this.dataSource) {
+      if (row.middleTerm && !row.commentGK) {
+        gkItems.push({ studentId: Number(row.id), evaluation: row.middleTerm });
+      }
+
+      if (row.finalTerm && !row.commentFinal) {
+        ckItems.push({ studentId: Number(row.id), evaluation: row.finalTerm });
+      }
+    }
+
+    if (gkItems.length === 0 && ckItems.length === 0) {
+      this.toastr.info(
+        'Không có học sinh nào cần sinh nhận xét mới (chưa có điểm T/H/C hoặc đã có nhận xét).',
+        'Thông báo'
+      );
+      return;
+    }
+
+    this.toastr.info('Đang sinh nhận xét hàng loạt...', 'Đang xử lý');
+
+    const requests = [];
+
+    if (gkItems.length > 0) {
+      const payload: EvaluationBulkGenerateCommentRequest = {
+        classroomId: Number(classroomId),
+        subjectId: Number(subjectId),
+        term: 'GK' + semesterSuffix,
+        items: gkItems,
+      };
+      requests.push(
+        this.evaluationService.bulkGenerateComment(payload).pipe(
+          map((response) => ({ term: 'GK', data: response.data })),
+          catchError((error) => of({ term: 'GK', error }))
+        )
+      );
+    }
+
+    if (ckItems.length > 0) {
+      const payload: EvaluationBulkGenerateCommentRequest = {
+        classroomId: Number(classroomId),
+        subjectId: Number(subjectId),
+        term: 'CK' + semesterSuffix,
+        items: ckItems,
+      };
+      requests.push(
+        this.evaluationService.bulkGenerateComment(payload).pipe(
+          map((response) => ({ term: 'CK', data: response.data })),
+          catchError((error) => of({ term: 'CK', error }))
+        )
+      );
+    }
+
+    forkJoin(requests).subscribe((results: any[]) => {
+      const gkMap = results.find((item) => item.term === 'GK')?.data || {};
+      const ckMap = results.find((item) => item.term === 'CK')?.data || {};
+      const hasError = results.some((item) => !!item.error);
+      let successCount = 0;
+
+      this.dataSource = this.dataSource.map((row) => {
+        let updated = false;
+        const nextRow = { ...row };
+
+        if (gkMap[row.id]) {
+          nextRow.commentGK = gkMap[row.id];
+          updated = true;
+          successCount++;
+        }
+
+        if (ckMap[row.id]) {
+          nextRow.commentFinal = ckMap[row.id];
+          updated = true;
+          successCount++;
+        }
+
+        return updated ? nextRow : row;
+      });
+
+      if (successCount > 0) {
+        this.toastr.success(
+          `Đã sinh xong ${successCount} nhận xét`,
+          'Thành công'
+        );
+      } else if (!hasError) {
+        this.toastr.warning('Không có nhận xét nào được sinh', 'Cảnh báo');
+      }
+
+      if (hasError) {
+        this.toastr.error(
+          'Có lỗi xảy ra trong quá trình sinh nhận xét.',
+          'Lỗi'
+        );
+      }
+    });
+  }
+
+  openImport(): void {
+    if (!this.isEditWindowOpen) {
+      this.toastr.warning(this.editWindowMessage, 'Cảnh báo');
+      return;
+    }
+
+    const classroomId = this.selectedClassId;
+    const subjectId = this.selectedSubjectId;
+    const semesterId = this.form.get(this.key.SEMESTER_ID)?.value;
+
+    if (!classroomId || !subjectId || !semesterId) {
+      this.toastr.warning(
+        'Vui lòng chọn đầy đủ Lớp, Môn học và Học kỳ để kết nạp',
+        'Cảnh báo'
+      );
+      return;
+    }
+
+    const semesterOptions = this.findFormControl(
+      this.$formItem,
+      this.key.SEMESTER_ID
+    ).options as any[];
+    const semesterOption = semesterOptions?.find(
+      (option) => option.value === semesterId
+    );
+
+    this.dialog.componentDialog(
+      DialogImportEvaluationComponent,
+      {
+        width: '900px',
+        data: {
+          classroomId: Number(classroomId),
+          subjectId: Number(subjectId),
+          semesterId: Number(semesterId),
+          classroomName: this.selectedClassName,
+          subjectName: this.selectedSubjectName,
+          semesterName: semesterOption?.label || '',
+          classroomOptions: this.classroomOptions,
+          semesterOptions,
+          subjectsByClassId: this.subjectsByClassId,
+        },
+      },
+      (result: any) => {
+        if (result) {
+          this.loadEvaluationSheet();
+        }
+      }
+    );
+  }
+
+  onCellChange(row: any, field: string, valueOrEvent: any): void {
+    if (!this.isEditWindowOpen) return;
+
+    let newValue = valueOrEvent;
+    if (valueOrEvent && valueOrEvent.target !== undefined) {
+      newValue = valueOrEvent.target.value;
+    }
+
+    row[field] = newValue;
+
+    const dataRow = this.dataSource.find((item) => item.id === row.id);
+    if (dataRow) {
+      dataRow[field] = newValue;
+    }
+  }
+
+  onTermKeydown(row: any, field: string, event: KeyboardEvent): void {
+    if (!this.isEditWindowOpen) return;
+
+    const key = event.key.toUpperCase();
+    let value = '';
+
+    if (key === 'T') value = 'T';
+    else if (key === 'H') value = 'H';
+    else if (key === 'C') value = 'C';
+
+    if (!value) return;
+
+    event.preventDefault();
+    row[field] = value;
+
+    const dataRow = this.dataSource.find((item) => item.id === row.id);
+    if (dataRow) {
+      dataRow[field] = value;
+    }
+  }
+
+  onScoreChange(row: any, field: string, score: any): void {
+    if (!this.isEditWindowOpen) return;
+
+    const numericScore =
+      score !== null && score !== '' ? parseFloat(score) : null;
+    row[field] = numericScore;
+
+    if (numericScore !== null && !isNaN(numericScore)) {
+      const levelField =
+        field === 'middleTermScore' ? 'middleTerm' : 'finalTerm';
+      row[levelField] = this.calculateLevelFromScore(numericScore);
+    }
+
+    const dataRow = this.dataSource.find((item) => item.id === row.id);
+    if (dataRow) {
+      dataRow[field] = numericScore;
+      if (numericScore !== null && !isNaN(numericScore)) {
+        const levelField =
+          field === 'middleTermScore' ? 'middleTerm' : 'finalTerm';
+        dataRow[levelField] = this.calculateLevelFromScore(numericScore);
+      }
+    }
+  }
+
+  private updateColumns(): void {
+    const currentSubject = this.subjects.find(
+      (subject) => subject.subjectId == this.selectedSubjectId
+    );
+    const normalizedSubjectName = this.normalizeVietnamese(
+      currentSubject?.subjectName
+    );
+    const isScored =
+      currentSubject?.subjectType == 1 ||
+      this.scoredSubjectAliases.some((name) =>
+        normalizedSubjectName.includes(name)
+      );
+
+    const columns: MtxGridColumn[] = [
+      {
+        header: 'STT',
+        class: 'text-center',
+        field: COMMON_TABLE_KEY.STT,
+        width: '50px',
+      },
       {
         header: 'Họ và tên',
         field: 'fullName',
         width: '210px',
         cellTemplate: this.nameTpl,
       },
-    ];
-
-    if (isScored) {
-      baseColumns.push({
-        header: 'Điểm GK',
-        field: 'middleTermScore',
-        width: '80px',
-        class: 'text-center',
-        cellTemplate: this.middleTermScoreTpl,
-      });
-    }
-
-    baseColumns.push(
       {
         header: 'Mức GK',
         field: 'middleTerm',
@@ -193,12 +612,13 @@ export class StudentEvaluationBookComponent extends ComponentBaseAbstract {
       {
         header: 'Nhận xét GK',
         field: 'commentGK',
+        width: '360px',
         cellTemplate: this.commentGKTpl,
-      }
-    );
+      },
+    ];
 
     if (isScored) {
-      baseColumns.push({
+      columns.push({
         header: 'Điểm CK',
         field: 'finalTermScore',
         width: '80px',
@@ -207,7 +627,7 @@ export class StudentEvaluationBookComponent extends ComponentBaseAbstract {
       });
     }
 
-    baseColumns.push(
+    columns.push(
       {
         header: 'Mức CK',
         field: 'finalTerm',
@@ -218,18 +638,12 @@ export class StudentEvaluationBookComponent extends ComponentBaseAbstract {
       {
         header: 'Nhận xét',
         field: 'commentFinal',
+        width: '360px',
         cellTemplate: this.commentFinalTpl,
       }
     );
 
-    this.columns = baseColumns;
-  }
-
-
-  filterData(pageChangeEvent?: any) {
-    this.pageIndex = pageChangeEvent?.pageIndex ?? 0;
-    this.pageSize = pageChangeEvent?.pageSize ?? this.pageSize;
-    this.loadEvaluationSheet();
+    this.columns = columns;
   }
 
   private loadInitialData(): void {
@@ -249,16 +663,18 @@ export class StudentEvaluationBookComponent extends ComponentBaseAbstract {
           this.subjectsByClassId.clear();
 
           this.classroomOptions = classrooms
-            .map((c) => ({
-              label: c.className ?? c.classCode ?? c.name ?? '',
-              value: this.getClassId(c),
+            .map((classroom) => ({
+              label:
+                classroom.className ?? classroom.classCode ?? classroom.name ?? '',
+              value: this.getClassId(classroom),
             }))
             .filter(
-              (option): option is { label: string; value: string | number } =>
+              (
+                option
+              ): option is { label: string; value: string | number } =>
                 option.value != null
             );
 
-          // Update the classroom dropdown control
           try {
             this.findFormControl(
               this.$formItem,
@@ -271,8 +687,6 @@ export class StudentEvaluationBookComponent extends ComponentBaseAbstract {
             if (item) item.options = this.classroomOptions;
           }
 
-
-          // If API already returns grouped data, use it directly; otherwise build simple groups
           if (
             Array.isArray(classrooms) &&
             classrooms.length &&
@@ -285,10 +699,10 @@ export class StudentEvaluationBookComponent extends ComponentBaseAbstract {
               this.mapTeacherClassesToGradeGroups(classrooms);
           }
 
-          for (const c of classrooms) {
-            const classId = this.getClassId(c);
-            if (classId != null && c.subjects?.length) {
-              this.subjectsByClassId.set(`${classId}`, c.subjects);
+          for (const classroom of classrooms) {
+            const classId = this.getClassId(classroom);
+            if (classId != null && classroom.subjects?.length) {
+              this.subjectsByClassId.set(`${classId}`, classroom.subjects);
             }
           }
 
@@ -306,14 +720,12 @@ export class StudentEvaluationBookComponent extends ComponentBaseAbstract {
       });
     };
 
-    // Load current school year (separate concern)
     this.namHocService.getCurrent().subscribe({
       next: ({ data }) => {
         this.currentSchoolYear = data as NamHocOptionResponse | undefined;
-        // load semester options for current school year
-        const syId = this.currentSchoolYear?.id;
-        if (syId != null) {
-          this.loadSemesterOptions(syId);
+        const schoolYearId = this.currentSchoolYear?.id;
+        if (schoolYearId != null) {
+          this.loadSemesterOptions(schoolYearId);
         }
       },
       error: () => {
@@ -321,72 +733,19 @@ export class StudentEvaluationBookComponent extends ComponentBaseAbstract {
       },
     });
 
-    // Call classes API immediately if staffId available, otherwise wait for auth service
     if (staffId) {
-      console.debug(
-        'StudentEvaluationBook: staffId from currentUser available',
-        staffId
-      );
       handleTeacherData(staffId);
-    } else {
-      console.debug(
-        'StudentEvaluationBook: staffId not available yet, waiting for auth.currentUser$'
-      );
-      this.authService.currentUser$
-        .pipe(
-          filter((u) => !!u),
-          take(1)
-        )
-        .subscribe((u) => {
-          const sid = this.getCurrentStaffId(u);
-          console.debug(
-            'StudentEvaluationBook: got staffId from auth.currentUser$',
-            sid
-          );
-          handleTeacherData(sid);
-        });
-    }
-  }
-
-  toggleGrade(groupId: string | number): void {
-    const id = `${groupId}`;
-    if (this.expandedGradeIds.has(id)) {
-      this.expandedGradeIds.delete(id);
-      return;
-    }
-    this.expandedGradeIds.add(id);
-  }
-
-  isGradeExpanded(groupId: string | number): boolean {
-    return this.expandedGradeIds.has(`${groupId}`);
-  }
-
-  selectClass(group: DiemDanhKhoiNhomItem, classroom: DiemDanhLopItem): void {
-    this.selectedClassId = classroom.id;
-    this.selectedClassName = classroom.name;
-    this.expandedGradeIds.add(`${group.gradeLevelId}`);
-
-    // set form control for classroom
-    this.form.patchValue(
-      { [this.key.CLASSROOM_ID]: classroom.id },
-      { emitEvent: false }
-    );
-
-    const cachedSubjects = this.subjectsByClassId.get(`${classroom.id}`);
-    if (cachedSubjects) {
-      this.setSelectedSubjects(cachedSubjects);
       return;
     }
 
-    // load subjects for classroom
-    this.lopMonHocService.getDetail(classroom.id).subscribe({
-      next: ({ data }) => {
-        this.setSelectedSubjects(data?.subjects ?? []);
-      },
-      error: () => {
-        this.setSelectedSubjects([]);
-      },
-    });
+    this.authService.currentUser$
+      .pipe(
+        filter((user) => !!user),
+        take(1)
+      )
+      .subscribe((user) => {
+        handleTeacherData(this.getCurrentStaffId(user));
+      });
   }
 
   private getCurrentStaffId(
@@ -414,10 +773,14 @@ export class StudentEvaluationBookComponent extends ComponentBaseAbstract {
           value: item.id,
           label: item.name,
         }));
-        this.findFormControl(this.$formItem, this.key.SEMESTER_ID).options = options;
+        this.findFormControl(this.$formItem, this.key.SEMESTER_ID).options =
+          options;
 
         if (options.length > 0 && !this.form.get(this.key.SEMESTER_ID)?.value) {
-          this.form.patchValue({ [this.key.SEMESTER_ID]: options[0].value }, { emitEvent: false });
+          this.form.patchValue(
+            { [this.key.SEMESTER_ID]: options[0].value },
+            { emitEvent: false }
+          );
           this.loadEvaluationSheet();
         }
       },
@@ -426,6 +789,7 @@ export class StudentEvaluationBookComponent extends ComponentBaseAbstract {
       },
     });
   }
+
   private mapTeacherClassesToGradeGroups(
     classrooms: TeacherClassAssignmentResponse[]
   ): DiemDanhKhoiNhomItem[] {
@@ -478,230 +842,17 @@ export class StudentEvaluationBookComponent extends ComponentBaseAbstract {
     subjects: LopMonHocDetailSubjectResponse[]
   ): void {
     this.subjects = subjects;
-    this.selectedSubjectId = subjects.length
-      ? subjects[0].subjectId
-      : undefined;
-    this.loadEvaluationSheet();
-  }
-
-  reloadClassGroups(): void {
-    this.loadInitialData();
-  }
-
-  selectSubject(subjectId: any): void {
-    this.selectedSubjectId = subjectId;
+    this.selectedSubjectId = subjects.length ? subjects[0].subjectId : undefined;
     this.updateColumns();
     this.loadEvaluationSheet();
   }
 
-
-  resetFilter() {
-    this.form.reset();
-    this.appTableComponent.resetQuery();
-  }
-
-  save() {
-    const classroomId = this.selectedClassId;
-    const semesterId = this.form.get(this.key.SEMESTER_ID)?.value;
-    const subjectId = this.selectedSubjectId;
-
-    if (!classroomId || !semesterId || !subjectId) {
-      this.toastr.warning('Vui lòng chọn đầy đủ Lớp, Học kỳ và Môn học', 'Cảnh báo');
-      return;
-    }
-
-    const payload: EvaluationBulkSaveRequest = {
-      classroomId: Number(classroomId),
-      subjectId: Number(subjectId),
-      semesterId: Number(semesterId),
-      items: this.dataSource.map(s => ({
-        studentId: Number(s.id),
-        midtermLevel: s.middleTerm,
-        midtermScore: s.middleTermScore,
-        midtermRemark: s.commentGK,
-        finalLevel: s.finalTerm,
-        finalScore: s.finalTermScore,
-        finalRemark: s.commentFinal,
-      })),
-    };
-
-    this.evaluationService.saveBulk(payload).subscribe({
-      next: () => {
-        this.toastr.success('Lưu thành công', 'Thành công');
-      },
-      error: (err) => {
-        this.toastr.error(
-          err?.error?.userMessage ?? err?.error?.message ?? 'Lưu thất bại',
-          'Lỗi'
-        );
-      }
-    });
-  }
-
-  cancel() {
-    // Reload the data from the server to discard changes
-    this.loadEvaluationSheet();
-    this.toastr.info('Đã hủy bỏ các thay đổi', 'Thông báo');
-  }
-
-  exportExcel() {
-    this.toastr.success('Xuất Excel thành công (demo)', 'Thành công');
-  }
-
-  exportPdf() {
-    this.toastr.success('Xuất PDF thành công (demo)', 'Thành công');
-  }
-
-  openConfig() {
-    this.toastr.info('Cấu hình (demo)', 'Thông tin');
-  }
-
-  openComment() {
-    const classroomId = this.selectedClassId;
-    const subjectId = this.selectedSubjectId;
-
-    // Lấy thông tin học kỳ đang chọn để xác định hậu tố (1 hoặc 2)
-    const semesterId = this.form.get(this.key.SEMESTER_ID)?.value;
-    const semesterOption = (this.findFormControl(this.$formItem, this.key.SEMESTER_ID).options as any[])?.find(o => o.value === semesterId);
-    const semesterName = semesterOption?.label || '';
-    const semesterSuffix = semesterName.includes('2') ? '2' : '1';
-
-    if (!classroomId || !subjectId) {
-      this.toastr.warning('Vui lòng chọn đầy đủ Lớp và Môn học để sinh nhận xét', 'Cảnh báo');
-      return;
-    }
-
-    const gkItems: EvaluationBulkGenerateCommentItem[] = [];
-    const ckItems: EvaluationBulkGenerateCommentItem[] = [];
-
-    for (const row of this.dataSource) {
-      if (row.middleTerm && !row.commentGK) {
-        gkItems.push({ studentId: Number(row.id), evaluation: row.middleTerm });
-      }
-
-      if (row.finalTerm && !row.commentFinal) {
-        ckItems.push({ studentId: Number(row.id), evaluation: row.finalTerm });
-      }
-    }
-
-    if (gkItems.length === 0 && ckItems.length === 0) {
-      this.toastr.info('Không có học sinh nào cần sinh nhận xét mới (chưa có điểm T/H/C hoặc đã có nhận xét).', 'Thông báo');
-      return;
-    }
-
-    this.toastr.info(`Đang sinh nhận xét hàng loạt...`, 'Đang xử lý');
-
-    const observables = [];
-
-    if (gkItems.length > 0) {
-      const payload: EvaluationBulkGenerateCommentRequest = {
-        classroomId: Number(classroomId),
-        subjectId: Number(subjectId),
-        term: 'GK' + semesterSuffix,
-        items: gkItems
-      };
-      observables.push(
-        this.evaluationService.bulkGenerateComment(payload).pipe(
-          map(res => ({ term: 'GK', data: res.data })),
-          catchError(err => of({ term: 'GK', error: err }))
-        )
-      );
-    }
-
-    if (ckItems.length > 0) {
-      const payload: EvaluationBulkGenerateCommentRequest = {
-        classroomId: Number(classroomId),
-        subjectId: Number(subjectId),
-        term: 'CK' + semesterSuffix,
-        items: ckItems
-      };
-      observables.push(
-        this.evaluationService.bulkGenerateComment(payload).pipe(
-          map(res => ({ term: 'CK', data: res.data })),
-          catchError(err => of({ term: 'CK', error: err }))
-        )
-      );
-    }
-
-    forkJoin(observables).subscribe((results: any[]) => {
-      let hasError = false;
-      let successCount = 0;
-
-      const gkMap = results.find(r => r.term === 'GK')?.data || {};
-      const ckMap = results.find(r => r.term === 'CK')?.data || {};
-
-      hasError = results.some(r => !!r.error);
-
-      this.dataSource = this.dataSource.map(row => {
-        let updated = false;
-        const newRow = { ...row };
-
-        if (gkMap[row.id]) {
-          newRow.commentGK = gkMap[row.id];
-          updated = true;
-          successCount++;
-        }
-
-        if (ckMap[row.id]) {
-          newRow.commentFinal = ckMap[row.id];
-          updated = true;
-          successCount++;
-        }
-
-        return updated ? newRow : row;
-      });
-
-      if (successCount > 0) {
-        this.toastr.success(`Đã sinh xong ${successCount} nhận xét`, 'Thành công');
-      } else if (!hasError) {
-        this.toastr.warning('Không có nhận xét nào được sinh', 'Cảnh báo');
-      }
-
-      if (hasError) {
-        this.toastr.error('Có lỗi xảy ra trong quá trình sinh nhận xét.', 'Lỗi');
-      }
-    });
-  }
-
-  openImport() {
-    const classroomId = this.selectedClassId;
-    const subjectId = this.selectedSubjectId;
-    const semesterId = this.form.get(this.key.SEMESTER_ID)?.value;
-
-    if (!classroomId || !subjectId || !semesterId) {
-      this.toastr.warning('Vui lòng chọn đầy đủ Lớp, Môn học và Học kỳ để kết nạp', 'Cảnh báo');
-      return;
-    }
-
-    const semesterOptions = this.findFormControl(this.$formItem, this.key.SEMESTER_ID).options as any[];
-    const semesterOption = semesterOptions?.find(o => o.value === semesterId);
-
-    this.dialog.componentDialog(DialogImportEvaluationComponent, {
-      width: '900px',
-      data: {
-        classroomId: Number(classroomId),
-        subjectId: Number(subjectId),
-        semesterId: Number(semesterId),
-        classroomName: this.selectedClassName,
-        subjectName: this.selectedSubjectName,
-        semesterName: semesterOption?.label || '',
-        classroomOptions: this.classroomOptions,
-        semesterOptions: semesterOptions,
-        subjectsByClassId: this.subjectsByClassId
-      }
-    }, (res: any) => {
-
-      if (res) {
-        this.loadEvaluationSheet();
-      }
-    });
-  }
-
-  /** Load evaluation sheet from API: GET /api/evaluations/sheet */
   private loadEvaluationSheet(): void {
     const classroomId = this.selectedClassId;
     const subjectId = this.selectedSubjectId;
     const semesterId = this.form.get(this.key.SEMESTER_ID)?.value;
+
+    this.loadEditWindowConfig();
 
     if (!classroomId || !subjectId || !semesterId) {
       this.dataSource = [];
@@ -711,19 +862,18 @@ export class StudentEvaluationBookComponent extends ComponentBaseAbstract {
 
     this.updateColumns();
     this.evaluationService.getSheet(classroomId, subjectId, semesterId).subscribe({
-
       next: ({ data }) => {
         const students = data?.students ?? [];
-        this.dataSource = students.map((s: any) => ({
-          id: s.studentId,
-          fullName: s.studentName ?? '',
-          code: s.studentCode ?? '',
-          middleTerm: s.midtermLevel ?? '',
-          middleTermScore: s.midtermScore,
-          commentGK: s.midtermRemark ?? '',
-          finalTerm: s.finalLevel ?? '',
-          finalTermScore: s.finalScore,
-          commentFinal: s.finalRemark ?? '',
+        this.dataSource = students.map((student: any) => ({
+          id: student.studentId,
+          fullName: student.studentName ?? '',
+          code: student.studentCode ?? '',
+          middleTerm: student.midtermLevel ?? '',
+          middleTermScore: student.midtermScore,
+          commentGK: student.midtermRemark ?? '',
+          finalTerm: student.finalLevel ?? '',
+          finalTermScore: student.finalScore,
+          commentFinal: student.finalRemark ?? '',
         }));
         this.dataSourceTotal = this.dataSource.length;
       },
@@ -732,79 +882,89 @@ export class StudentEvaluationBookComponent extends ComponentBaseAbstract {
         this.dataSourceTotal = 0;
         this.toastr.error(
           error?.error?.userMessage ??
-          error?.error?.message ??
-          'Không tải được bảng đánh giá',
+            error?.error?.message ??
+            'Không tải được bảng đánh giá',
           'Thất bại'
         );
       },
     });
   }
 
-  /** Handle inline cell edits – update dataSource in-place */
-  onCellChange(row: any, field: string, valueOrEvent: any): void {
-    let newValue = valueOrEvent;
-    if (valueOrEvent && valueOrEvent.target !== undefined) {
-      // It's an Event object (from textarea input)
-      newValue = valueOrEvent.target.value;
-    }
-
-    // Cập nhật row hiện tại trên giao diện
-    row[field] = newValue;
-
-    // Đảm bảo cập nhật chính xác vào dataSource gốc (tránh trường hợp table clone data)
-    if (this.dataSource) {
-      const dataRow = this.dataSource.find(item => item.id === row.id);
-      if (dataRow) {
-        dataRow[field] = newValue;
-      }
-    }
-  }
-
-  /** Handle quick keys T, H, C */
-  onTermKeydown(row: any, field: string, event: KeyboardEvent): void {
-    const key = event.key.toUpperCase();
-    let val = '';
-    if (key === 'T') val = 'T';
-    else if (key === 'H') val = 'H';
-    else if (key === 'C') val = 'C';
-
-    if (val) {
-      event.preventDefault();
-      row[field] = val;
-
-      if (this.dataSource) {
-        const dataRow = this.dataSource.find(item => item.id === row.id);
-        if (dataRow) {
-          dataRow[field] = val;
-        }
-      }
-    }
-  }
-
-  onScoreChange(row: any, field: string, score: any): void {
-    const numericScore = score !== null && score !== '' ? parseFloat(score) : null;
-    row[field] = numericScore;
-
-    if (numericScore !== null && !isNaN(numericScore)) {
-      const levelField = field === 'middleTermScore' ? 'middleTerm' : 'finalTerm';
-      row[levelField] = this.calculateLevelFromScore(numericScore);
-    }
-
-    if (this.dataSource) {
-      const dataRow = this.dataSource.find(item => item.id === row.id);
-      if (dataRow) {
-        dataRow[field] = numericScore;
-        if (numericScore !== null && !isNaN(numericScore)) {
-          const levelField = field === 'middleTermScore' ? 'middleTerm' : 'finalTerm';
-          dataRow[levelField] = this.calculateLevelFromScore(numericScore);
-        }
-      }
-    }
-  }
-
   private calculateLevelFromScore(score: number): string {
     if (score >= 9) return 'T';
     if (score >= 5) return 'H';
     return 'C';
+  }
+
+  private loadEditWindowConfig(): void {
+    const semesterId = this.form.get(this.key.SEMESTER_ID)?.value;
+
+    if (!semesterId) {
+      this.editWindowConfig = null;
+      this.editWindowMessage =
+        'Vui lòng chọn học kỳ để kiểm tra thời gian sửa điểm.';
+      return;
+    }
+
+    this.evaluationService.getEditWindow(semesterId).subscribe({
+      next: ({ data }) => {
+        this.editWindowConfig = data ?? null;
+        this.editWindowMessage = this.buildEditWindowMessage();
+      },
+      error: () => {
+        this.editWindowConfig = null;
+        this.editWindowMessage =
+          'Chưa cấu hình thời gian sửa điểm cho học kỳ này.';
+      },
+    });
+  }
+
+  private buildEditWindowMessage(): string {
+    if (!this.canEditBook) {
+      return 'Bạn không có quyền chỉnh sửa sổ đánh giá.';
+    }
+
+    const startDate = this.normalizeDateValue(this.editWindowConfig?.startDate);
+    const endDate = this.normalizeDateValue(this.editWindowConfig?.endDate);
+
+    if (!startDate || !endDate) {
+      return 'Chưa cấu hình thời gian sửa điểm cho học kỳ này.';
+    }
+
+    const rangeText = `${this.formatDate(startDate)} - ${this.formatDate(endDate)}`;
+    return this.isEditWindowOpen
+      ? `Đang trong thời gian được phép sửa điểm: ${rangeText}.`
+      : `Ngoài thời gian sửa điểm. Thời gian được phép: ${rangeText}.`;
+  }
+
+  private normalizeDateValue(value?: string | null): string {
+    if (!value) return '';
+    return value.slice(0, 10);
+  }
+
+  private getTodayKey(): string {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = `${now.getMonth() + 1}`.padStart(2, '0');
+    const day = `${now.getDate()}`.padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+
+  private formatDate(value?: string | null): string {
+    const raw = this.normalizeDateValue(value);
+    if (!raw) return '--';
+    const [year, month, day] = raw.split('-');
+    if (!year || !month || !day) return raw;
+    return `${day}/${month}/${year}`;
+  }
+
+  private normalizeVietnamese(value?: string | null): string {
+    return (value ?? '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/đ/g, 'd')
+      .replace(/Đ/g, 'D')
+      .toLowerCase()
+      .trim();
   }
 }

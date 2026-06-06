@@ -278,6 +278,12 @@
     color: #94a3b8;
     font-style: italic;
   }
+
+  &:disabled {
+    color: #64748b;
+    cursor: not-allowed;
+    resize: none;
+  }
 }
 
 .char-counter {
@@ -307,6 +313,25 @@
   font-size: 12px;
   line-height: 1.4;
   margin-top: 6px;
+}
+
+.evaluation-status-banner {
+  margin-top: 8px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: #ecf8fb;
+  border: 1px solid #b7dfe7;
+  color: #1b6574;
+  font-size: 12px;
+  line-height: 1.4;
+  width: fit-content;
+  max-width: 100%;
+
+  &.locked {
+    background: #fff4e5;
+    border-color: #f7c78a;
+    color: #9a5a14;
+  }
 }
 
 // ────────────────────────────────────────────────────────────────────────────

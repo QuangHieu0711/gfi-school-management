@@ -1,0 +1,16 @@
+.edit-window-caption {
+  margin: 0 0 12px;
+  color: #5f7982;
+  font-size: 13px;
+}
+
+.edit-window-fields {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+  overflow-x: hidden;
+}
+
+:host {
+  display: block;
+}

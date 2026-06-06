@@ -41,6 +41,12 @@
       [tableConfig]="tableConfig" [dataSource]="dataSource" [tableColumns]="columns" (queryChange)="filterData($event)">
       <ng-container custom-buttons>
         <div class="flex gap-2 items-center">
+          @if (canConfig) {
+          <button matButton="filled" color="primary" class="btn-tight" (click)="openConfig()">
+            <app-icon icon="tune"></app-icon>
+            Cấu hình
+          </button>
+          }
           <button matButton="filled" color="primary" class="btn-tight" (click)="openComment()">
             <app-icon icon="chat"></app-icon>
             Nhận xét
@@ -50,11 +56,11 @@
             Kết nạp
           </button>
           <button matButton="filled" color="primary" class="btn-tight" (click)="exportExcel()">
-            <app-icon icon="cloud_download"></app-icon>
+            <app-icon icon="file_download"></app-icon>
             Xuất Excel
           </button>
           <button matButton="filled" color="primary" class="btn-tight" (click)="exportPdf()">
-            <app-icon icon="picture_as_pdf"></app-icon>
+            <app-icon icon="file_download"></app-icon>
             Xuất PDF
           </button>
         </div>
@@ -93,6 +99,9 @@
           </div>
           }
           <!-- Hint / Gợi ý and Save/Cancel buttons -->
+          <div class="evaluation-status-banner" [class.locked]="!isEditWindowOpen">
+            {{ editWindowMessage }}
+          </div>
           <div class="flex justify-between items-center mt-2">
             <div class="evaluation-hint text-sm text-red-600 italic">
               Gợi ý: T = Hoàn thành tốt; H = Hoàn thành ; C = Chưa hoàn thành
@@ -120,7 +129,7 @@
       <!-- Điểm GK -->
       <ng-template #middleTermScoreTpl let-row>
         <mat-form-field appearance="outline" class="cell-input">
-          <input matInput type="number" step="0.1" min="0" max="10"
+          <input matInput type="number" step="0.1" min="0" max="10" [disabled]="!isEditWindowOpen"
             [ngModel]="row?.middleTermScore" (ngModelChange)="onScoreChange(row, 'middleTermScore', $event)">
         </mat-form-field>
       </ng-template>
@@ -130,6 +139,7 @@
       <ng-template #middleTermTpl let-row>
         <mat-form-field appearance="outline" class="w-full">
           <mtx-select class="cell-mtx-select" appearance="outline" [items]="termOptions" bindLabel="label" bindValue="value"
+            [disabled]="!isEditWindowOpen"
             [clearable]="true" [searchable]="true" [ngModel]="row?.middleTerm || null"
             (ngModelChange)="onCellChange(row, 'middleTerm', $event)"
             (keydown)="onTermKeydown(row, 'middleTerm', $event)">
@@ -149,7 +159,7 @@
       <!-- Điểm CK -->
       <ng-template #finalTermScoreTpl let-row>
         <mat-form-field appearance="outline" class="cell-input">
-          <input matInput type="number" step="0.1" min="0" max="10"
+          <input matInput type="number" step="0.1" min="0" max="10" [disabled]="!isEditWindowOpen"
             [ngModel]="row?.finalTermScore" (ngModelChange)="onScoreChange(row, 'finalTermScore', $event)">
         </mat-form-field>
       </ng-template>
@@ -159,6 +169,7 @@
       <ng-template #finalTermTpl let-row>
         <mat-form-field appearance="outline" class="w-full">
           <mtx-select class="cell-mtx-select" appearance="outline" [items]="termOptions" bindLabel="label" bindValue="value"
+            [disabled]="!isEditWindowOpen"
             [clearable]="true" [searchable]="true" [ngModel]="row?.finalTerm || null"
             (ngModelChange)="onCellChange(row, 'finalTerm', $event)"
             (keydown)="onTermKeydown(row, 'finalTerm', $event)">

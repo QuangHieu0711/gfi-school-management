@@ -1,0 +1,34 @@
+<app-dialog-container
+  [dialogTitle]="title"
+  [dialogActionTemplate]="actionTemplate">
+  <p class="edit-window-caption">Áp dụng cho {{ data.semesterName }}</p>
+
+  <app-form-control
+    #formTpl
+    [form]="form"
+    (submitEvent)="onSubmit()">
+    <div class="edit-window-fields">
+      <app-date-control
+        [item]="findFormControl($formItem, key.START_DATE)"
+        [form]="form"></app-date-control>
+      <app-date-control
+        [item]="findFormControl($formItem, key.END_DATE)"
+        [form]="form"></app-date-control>
+    </div>
+  </app-form-control>
+
+  <ng-template #actionTemplate>
+    <button
+      color="primary"
+      matButton="outlined"
+      mat-dialog-close>
+      Hủy
+    </button>
+    <button
+      color="primary"
+      matButton="filled"
+      (click)="formTpl.submit()">
+      Lưu
+    </button>
+  </ng-template>
+</app-dialog-container>
