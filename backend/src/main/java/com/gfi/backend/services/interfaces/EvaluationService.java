@@ -1,6 +1,8 @@
 package com.gfi.backend.services.interfaces;
 
 import com.gfi.backend.models.dtos.evaluation.EvaluationBulkUpsertRequest;
+import com.gfi.backend.models.dtos.evaluation.EvaluationEditWindowDto;
+import com.gfi.backend.models.dtos.evaluation.EvaluationEditWindowRequest;
 import com.gfi.backend.models.dtos.evaluation.EvaluationGenerateCommentRequest;
 import com.gfi.backend.models.dtos.evaluation.EvaluationSheetDto;
 
@@ -12,6 +14,8 @@ import java.util.Map;
 
 public interface EvaluationService {
     EvaluationSheetDto getSheet(Long classroomId, Long subjectId, Long semesterId);
+    EvaluationEditWindowDto getEditWindow(Long semesterId);
+    EvaluationEditWindowDto saveEditWindow(EvaluationEditWindowRequest request);
     void bulkUpsert(EvaluationBulkUpsertRequest request);
     String generateComment(EvaluationGenerateCommentRequest request);
     Map<Long, String> bulkGenerateComment(EvaluationBulkGenerateCommentRequest request);

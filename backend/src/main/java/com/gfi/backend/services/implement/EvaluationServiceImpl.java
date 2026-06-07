@@ -11,6 +11,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.ss.util.CellRangeAddress;
@@ -27,6 +28,8 @@ import com.gfi.backend.models.dtos.evaluation.EvaluationBulkGenerateCommentItemD
 
 import com.gfi.backend.controllers.exceptions.UserMessageException;
 import com.gfi.backend.models.dtos.evaluation.EvaluationBulkUpsertRequest;
+import com.gfi.backend.models.dtos.evaluation.EvaluationEditWindowDto;
+import com.gfi.backend.models.dtos.evaluation.EvaluationEditWindowRequest;
 import com.gfi.backend.models.dtos.evaluation.EvaluationSheetDto;
 import com.gfi.backend.models.dtos.evaluation.EvaluationSheetStudentDto;
 import com.gfi.backend.models.dtos.evaluation.EvaluationStudentUpsertItemDto;
@@ -48,10 +51,12 @@ import com.gfi.backend.utils.SecurityUtils;
 
 import com.gfi.backend.models.entities.ProgramDistribution;
 import com.gfi.backend.models.entities.AttendanceRecord;
+import com.gfi.backend.models.entities.EvaluationEditWindow;
 import com.gfi.backend.models.dtos.evaluation.AiGenerateCommentRequest;
 import com.gfi.backend.models.dtos.evaluation.AiGenerateCommentResponse;
 import com.gfi.backend.models.dtos.evaluation.EvaluationGenerateCommentRequest;
 import com.gfi.backend.repositories.AttendanceRecordRepository;
+import com.gfi.backend.repositories.EvaluationEditWindowRepository;
 import com.gfi.backend.repositories.ProgramDistributionRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.client.RestTemplate;
@@ -69,6 +74,7 @@ public class EvaluationServiceImpl implements EvaluationService {
     private final StudentRepository studentRepository;
     private final StudentEnrollmentRepository studentEnrollmentRepository;
     private final StudentEvaluationRepository studentEvaluationRepository;
+    private final EvaluationEditWindowRepository evaluationEditWindowRepository;
     private final AttendanceRecordRepository attendanceRecordRepository;
     private final ProgramDistributionRepository programDistributionRepository;
     private final RestTemplate restTemplate;
@@ -125,12 +131,45 @@ public class EvaluationServiceImpl implements EvaluationService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public EvaluationEditWindowDto getEditWindow(Long semesterId) {
+        Semester semester = findSemester(semesterId);
+
+        return evaluationEditWindowRepository.findBySemesterIdAndDeletedFlag(semester.getId(), 0)
+                .map(this::toEditWindowDto)
+                .orElse(null);
+    }
+
+    @Override
+    @Transactional
+    public EvaluationEditWindowDto saveEditWindow(EvaluationEditWindowRequest request) {
+        Semester semester = findSemester(request.getSemesterId());
+        validateEditWindowDates(request.getStartDate(), request.getEndDate());
+
+        EvaluationEditWindow window = evaluationEditWindowRepository
+                .findBySemesterIdAndDeletedFlag(semester.getId(), 0)
+                .orElseGet(EvaluationEditWindow::new);
+
+        if (window.getId() == null) {
+            window.setSemester(semester);
+            window.setCreatedBy(SecurityUtils.getCurrentUsername());
+        }
+
+        window.setStartDate(request.getStartDate());
+        window.setEndDate(request.getEndDate());
+        window.setUpdatedBy(SecurityUtils.getCurrentUsername());
+
+        return toEditWindowDto(evaluationEditWindowRepository.save(window));
+    }
+
+    @Override
     @Transactional
     public void bulkUpsert(EvaluationBulkUpsertRequest request) {
         Classroom classroom = findClassroom(request.getClassroomId());
         Subject subject = findSubject(request.getSubjectId());
         Semester semester = findSemester(request.getSemesterId());
         validateSemesterBelongsToClassroomSchoolYear(classroom, semester);
+        validateEditWindowOpen(semester);
 
         for (EvaluationStudentUpsertItemDto item : request.getItems()) {
             upsertStudentEvaluation(classroom, subject, semester, item);
@@ -401,6 +440,38 @@ public class EvaluationServiceImpl implements EvaluationService {
         return normalized;
     }
 
+    private void validateEditWindowDates(LocalDate startDate, LocalDate endDate) {
+        if (startDate.isAfter(endDate)) {
+            throw new UserMessageException(CommonErrorCode.INVALID_DATE_RANGE);
+        }
+    }
+
+    private void validateEditWindowOpen(Semester semester) {
+        EvaluationEditWindow window = evaluationEditWindowRepository
+                .findBySemesterIdAndDeletedFlag(semester.getId(), 0)
+                .orElseThrow(() -> new UserMessageException(
+                        CommonErrorCode.INVALID_REQUEST.getCode(),
+                        "Chưa cấu hình thời gian sửa điểm cho học kỳ này."));
+
+        LocalDate today = LocalDate.now();
+        if (today.isBefore(window.getStartDate()) || today.isAfter(window.getEndDate())) {
+            throw new UserMessageException(
+                    CommonErrorCode.INVALID_REQUEST.getCode(),
+                    "Hiện không nằm trong thời gian được phép sửa điểm.");
+        }
+    }
+
+    private EvaluationEditWindowDto toEditWindowDto(EvaluationEditWindow window) {
+        return EvaluationEditWindowDto.builder()
+                .id(window.getId())
+                .semesterId(window.getSemester().getId())
+                .startDate(window.getStartDate())
+                .endDate(window.getEndDate())
+                .createdAt(window.getCreatedAt())
+                .updatedAt(window.getUpdatedAt())
+                .build();
+    }
+
     private Classroom findClassroom(Long id) {
         return classroomRepository.findById(id)
                 .orElseThrow(() -> new UserMessageException(CommonErrorCode.CLASS_NOT_FOUND));
@@ -558,6 +629,8 @@ public class EvaluationServiceImpl implements EvaluationService {
         Classroom classroom = findClassroom(classroomId);
         Subject subject = findSubject(subjectId);
         Semester semester = findSemester(semesterId);
+        validateSemesterBelongsToClassroomSchoolYear(classroom, semester);
+        validateEditWindowOpen(semester);
 
         int successCount = 0;
         int failedCount = 0;

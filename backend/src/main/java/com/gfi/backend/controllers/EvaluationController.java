@@ -10,6 +10,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.gfi.backend.controllers.annotations.DataScoped;
 import com.gfi.backend.models.dtos.evaluation.EvaluationBulkUpsertRequest;
+import com.gfi.backend.models.dtos.evaluation.EvaluationEditWindowDto;
+import com.gfi.backend.models.dtos.evaluation.EvaluationEditWindowRequest;
 import com.gfi.backend.models.dtos.evaluation.EvaluationSheetDto;
 import com.gfi.backend.models.enums.ActionType;
 import com.gfi.backend.models.global.ApiResult;
@@ -65,6 +67,25 @@ public class EvaluationController extends ApiBaseController {
         return executeApiResult(() -> ApiResult.success(
                 evaluationService.getSheet(classroomId, subjectId, semesterId),
                 "Lấy bảng đánh giá thành công"));
+    }
+
+    @GetMapping("/edit-window")
+    @DataScoped(feature = "STUDENT_EVALUATION_BOOK", action = ActionType.CONFIGURE)
+    @Operation(summary = "Lấy cấu hình thời gian sửa điểm theo học kỳ")
+    public ResponseEntity<ApiResult<EvaluationEditWindowDto>> getEditWindow(@RequestParam Long semesterId) {
+        return executeApiResult(() -> ApiResult.success(
+                evaluationService.getEditWindow(semesterId),
+                "Lấy cấu hình thời gian sửa điểm thành công"));
+    }
+
+    @PutMapping("/edit-window")
+    @DataScoped(feature = "STUDENT_EVALUATION_BOOK", action = ActionType.CONFIGURE)
+    @Operation(summary = "Lưu cấu hình thời gian sửa điểm theo học kỳ")
+    public ResponseEntity<ApiResult<EvaluationEditWindowDto>> saveEditWindow(
+            @Valid @RequestBody EvaluationEditWindowRequest request) {
+        return executeApiResult(() -> ApiResult.success(
+                evaluationService.saveEditWindow(request),
+                "Lưu cấu hình thời gian sửa điểm thành công"));
     }
 
     @PutMapping("/bulk")
