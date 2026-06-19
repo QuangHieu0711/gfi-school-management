@@ -43,6 +43,7 @@ export const HOC_SINH_API_ENDPOINT = {
   IMPORT_EXCEL: 'import-excel',
   IMPORT_ERROR_FILE: 'import-error-file',
   EXCEL_TEMPLATE: 'excel-template',
+  TRANSFER_CLASS: 'transfer-class',
 };
 
 export interface HocSinhFilter {
@@ -282,6 +283,24 @@ export interface HocSinhFormRequest {
   addresses?: HocSinhFormAddressRequest[];
   guardians?: HocSinhFormGuardianRequest[];
   profile?: HocSinhFormProfileRequest;
+}
+
+export interface HocSinhTransferClassRequest {
+  studentIds: ID_TYPE[];
+  targetSchoolYearId: ID_TYPE;
+  targetClassId: ID_TYPE;
+  enrolledAt?: string;
+  isRepeater?: boolean;
+}
+
+export interface HocSinhTransferClassResult {
+  transferredCount?: number;
+  targetSchoolYearId?: ID_TYPE;
+  targetSchoolYearName?: string;
+  targetClassId?: ID_TYPE;
+  targetClassName?: string;
+  isRepeater?: boolean;
+  studentIds?: ID_TYPE[];
 }
 
 export const HOC_SINH_STATUS_OPTIONS = [

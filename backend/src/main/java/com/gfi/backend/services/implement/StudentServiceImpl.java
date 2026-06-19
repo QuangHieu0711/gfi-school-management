@@ -6,6 +6,7 @@ import java.text.Normalizer;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
@@ -53,6 +54,8 @@ import com.gfi.backend.models.dtos.student.StudentGuardianCreateRequest;
 import com.gfi.backend.models.dtos.student.StudentGuardianItemDto;
 import com.gfi.backend.models.dtos.student.StudentImportResultDto;
 import com.gfi.backend.models.dtos.student.StudentItemDto;
+import com.gfi.backend.models.dtos.student.StudentTransferClassRequest;
+import com.gfi.backend.models.dtos.student.StudentTransferClassResultDto;
 import com.gfi.backend.models.dtos.student.StudentProfileCreateRequest;
 import com.gfi.backend.models.dtos.student.StudentProfileItemDto;
 import com.gfi.backend.models.entities.Classroom;
@@ -338,6 +341,31 @@ public class StudentServiceImpl implements StudentService {
 
     @Override
     @Transactional
+    public StudentTransferClassResultDto transferClass(StudentTransferClassRequest request) {
+        List<Long> uniqueStudentIds = normalizeStudentIds(request.getStudentIds());
+        SchoolYear targetSchoolYear = findSchoolYear(request.getTargetSchoolYearId());
+        Classroom targetClassroom = findClassroom(request.getTargetClassId());
+        validateTransferTarget(targetSchoolYear, targetClassroom);
+
+        for (Long studentId : uniqueStudentIds) {
+            Student student = findStudent(studentId);
+            validateStudentScope(ActionType.EDIT, student);
+            transferStudentToClass(student, targetSchoolYear, targetClassroom, request);
+        }
+
+        return StudentTransferClassResultDto.builder()
+                .transferredCount(uniqueStudentIds.size())
+                .targetSchoolYearId(targetSchoolYear.getId())
+                .targetSchoolYearName(targetSchoolYear.getName())
+                .targetClassId(targetClassroom.getId())
+                .targetClassName(targetClassroom.getName())
+                .isRepeater(request.getIsRepeater())
+                .studentIds(uniqueStudentIds)
+                .build();
+    }
+
+    @Override
+    @Transactional
     public void delete(Long id) {
         Student student = findStudent(id);
         validateStudentScope(ActionType.DELETE, student);
@@ -612,6 +640,97 @@ public class StudentServiceImpl implements StudentService {
         if (classroom.getUnit() == null || !unit.getId().equals(classroom.getUnit().getId())) {
             throw new UserMessageException(CommonErrorCode.STUDENT_ENROLLMENT_UNIT_MISMATCH);
         }
+    }
+
+    private List<Long> normalizeStudentIds(List<Long> studentIds) {
+        LinkedHashSet<Long> normalized = new LinkedHashSet<>();
+        for (Long studentId : safeList(studentIds)) {
+            if (studentId != null) {
+                normalized.add(studentId);
+            }
+        }
+        if (normalized.isEmpty()) {
+            throw new UserMessageException("Danh sach hoc sinh khong duoc de trong");
+        }
+        return List.copyOf(normalized);
+    }
+
+    private void validateTransferTarget(SchoolYear targetSchoolYear, Classroom targetClassroom) {
+        if (targetClassroom.getSchoolYear() == null
+                || !targetSchoolYear.getId().equals(targetClassroom.getSchoolYear().getId())) {
+            throw new UserMessageException(CommonErrorCode.STUDENT_ENROLLMENT_SCHOOL_YEAR_MISMATCH);
+        }
+    }
+
+    private void transferStudentToClass(Student student, SchoolYear targetSchoolYear, Classroom targetClassroom,
+            StudentTransferClassRequest request) {
+        validateEnrollment(student.getUnit(), targetSchoolYear, targetClassroom);
+
+        StudentEnrollment sourceEnrollment = findLatestEnrollment(student.getId());
+        StudentEnrollment targetEnrollment = studentEnrollmentRepository
+                .findByStudentIdAndSchoolYearId(student.getId(), targetSchoolYear.getId())
+                .orElseGet(StudentEnrollment::new);
+
+        targetEnrollment.setStudent(student);
+        targetEnrollment.setSchoolYear(targetSchoolYear);
+        targetEnrollment.setClassroom(targetClassroom);
+        targetEnrollment.setEnrolledAt(resolveTransferEnrolledAt(request, sourceEnrollment));
+        targetEnrollment.setStatus(resolveTransferStatus(request, sourceEnrollment));
+        targetEnrollment.setIsRepeater(resolveTransferIsRepeater(request));
+        targetEnrollment.setSessionsPerWeek(resolveSessionsPerWeek(sourceEnrollment, targetEnrollment));
+        targetEnrollment.setStudyMode(resolveStudyMode(sourceEnrollment, targetEnrollment));
+        targetEnrollment.setIsBoarding(resolveBooleanFlag(
+                sourceEnrollment == null ? null : sourceEnrollment.getIsBoarding(),
+                targetEnrollment.getIsBoarding()));
+        targetEnrollment.setIsTwoSessionsPerDay(resolveBooleanFlag(
+                sourceEnrollment == null ? null : sourceEnrollment.getIsTwoSessionsPerDay(),
+                targetEnrollment.getIsTwoSessionsPerDay()));
+
+        if (targetEnrollment.getId() == null) {
+            targetEnrollment.setCreatedBy(getCurrentUsername());
+        } else {
+            targetEnrollment.setUpdatedBy(getCurrentUsername());
+        }
+
+        studentEnrollmentRepository.save(targetEnrollment);
+    }
+
+    private java.time.LocalDate resolveTransferEnrolledAt(StudentTransferClassRequest request,
+            StudentEnrollment sourceEnrollment) {
+        if (request.getEnrolledAt() != null) {
+            return request.getEnrolledAt();
+        }
+        return sourceEnrollment == null ? null : sourceEnrollment.getEnrolledAt();
+    }
+
+    private Integer resolveTransferStatus(StudentTransferClassRequest request, StudentEnrollment sourceEnrollment) {
+        if (request.getStatus() != null) {
+            return request.getStatus();
+        }
+        return sourceEnrollment == null ? 0 : sourceEnrollment.getStatus();
+    }
+
+    private Boolean resolveTransferIsRepeater(StudentTransferClassRequest request) {
+        return Boolean.TRUE.equals(request.getIsRepeater());
+    }
+
+    private Integer resolveSessionsPerWeek(StudentEnrollment sourceEnrollment, StudentEnrollment targetEnrollment) {
+        return sourceEnrollment != null && sourceEnrollment.getSessionsPerWeek() != null
+                ? sourceEnrollment.getSessionsPerWeek()
+                : targetEnrollment.getSessionsPerWeek();
+    }
+
+    private Integer resolveStudyMode(StudentEnrollment sourceEnrollment, StudentEnrollment targetEnrollment) {
+        return sourceEnrollment != null && sourceEnrollment.getStudyMode() != null
+                ? sourceEnrollment.getStudyMode()
+                : targetEnrollment.getStudyMode();
+    }
+
+    private Boolean resolveBooleanFlag(Boolean sourceValue, Boolean currentTargetValue) {
+        if (sourceValue != null) {
+            return sourceValue;
+        }
+        return currentTargetValue != null ? currentTargetValue : Boolean.FALSE;
     }
 
     private void validateAddressTypes(List<StudentAddressCreateRequest> addresses) {

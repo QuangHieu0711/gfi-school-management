@@ -28,6 +28,8 @@ import com.gfi.backend.models.dtos.student.StudentCreateRequest;
 import com.gfi.backend.models.dtos.student.StudentFilterDto;
 import com.gfi.backend.models.dtos.student.StudentImportResultDto;
 import com.gfi.backend.models.dtos.student.StudentItemDto;
+import com.gfi.backend.models.dtos.student.StudentTransferClassRequest;
+import com.gfi.backend.models.dtos.student.StudentTransferClassResultDto;
 import com.gfi.backend.models.enums.ActionType;
 import com.gfi.backend.models.enums.ExportType;
 import com.gfi.backend.models.global.ApiResult;
@@ -166,6 +168,16 @@ public class StudentController extends ApiBaseController {
             @Valid @RequestBody StudentCreateRequest request) {
         return executeApiResult(
                 () -> ApiResult.success(studentService.update(id, request), "Cập nhật học sinh thành công"));
+    }
+
+    @PostMapping("/transfer-class")
+    @DataScoped(feature = "STUDENT_PROFILE", action = ActionType.EDIT)
+    @Operation(summary = "Chuyển lớp học sinh")
+    public ResponseEntity<ApiResult<StudentTransferClassResultDto>> transferClass(
+            @Valid @RequestBody StudentTransferClassRequest request) {
+        return executeApiResult(() -> ApiResult.success(
+                studentService.transferClass(request),
+                "Chuyển lớp học sinh thành công"));
     }
 
     @DeleteMapping("/{id}")

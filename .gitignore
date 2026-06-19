@@ -1,0 +1,9 @@
+# Local database dumps
+dump-gfi_db-*.sql
+
+# JVM crash logs
+hs_err_pid*.log
+replay_pid*.log
+
+# Local AI workspace
+LLaMA-Factory/

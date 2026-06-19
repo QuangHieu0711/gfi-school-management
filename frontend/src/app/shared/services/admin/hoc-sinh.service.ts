@@ -18,6 +18,8 @@ import {
   HocSinhFormRequest,
   HocSinhImportResponseData,
   HocSinhResponse,
+  HocSinhTransferClassRequest,
+  HocSinhTransferClassResult,
 } from '@app/model/admin/hoc-sinh.model';
 
 @Injectable({ providedIn: 'root' })
@@ -123,5 +125,15 @@ export class HocSinhService {
       params: { unitId },
       context: this.silentContext,
     });
+  }
+
+  transferClass(payload: HocSinhTransferClassRequest) {
+    return this.http.post<IResponse<HocSinhTransferClassResult>>(
+      `${this.baseUrl}/${HOC_SINH_API_ENDPOINT.TRANSFER_CLASS}`,
+      payload,
+      {
+        context: this.silentContext,
+      }
+    );
   }
 }
