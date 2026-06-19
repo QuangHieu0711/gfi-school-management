@@ -62,28 +62,20 @@
         Xuất PDF
       </button>
       }
+      @if (canEdit) {
       <button
         type="button"
         color="primary"
         matButton="filled"
-        class="btn-tight">
+        class="btn-tight"
+        (click)="openTransferClass()">
         <app-icon
-          icon="swap_vert"
+          icon="swap_horiz"
           [size]="18"
           class="btn-icon" />
-        Sắp xếp
+        Chuyển lớp
       </button>
-      <button
-        type="button"
-        color="primary"
-        matButton="filled"
-        class="btn-tight">
-        <app-icon
-          icon="settings"
-          [size]="18"
-          class="btn-icon" />
-        Cấu hình
-      </button>
+      }
     </div>
   </div>
 
@@ -95,6 +87,13 @@
       <table class="student-table">
         <thead>
           <tr class="heading-row">
+            <th class="select-col">
+              <mat-checkbox
+                [checked]="isAllCurrentPageSelected()"
+                [indeterminate]="isSomeCurrentPageSelected()"
+                [disabled]="!dataSource.length"
+                (change)="toggleSelectAllCurrentPage($event.checked)"></mat-checkbox>
+            </th>
             <th class="stt-col">STT</th>
             <th class="action-col">Hành động</th>
             <th>Họ và tên</th>
@@ -115,6 +114,7 @@
           </tr>
 
           <tr class="filter-row">
+            <th class="select-col"></th>
             <th class="stt-col"></th>
             <th class="action-col"></th>
             <th class="filter-cell">
@@ -198,6 +198,11 @@
         <tbody>
           @for (row of dataSource; track row.id; let index = $index) {
             <tr>
+              <td class="select-col">
+                <mat-checkbox
+                  [checked]="isStudentSelected(row)"
+                  (change)="toggleStudentSelection(row, $event.checked)"></mat-checkbox>
+              </td>
               <td class="stt-col">{{ pageIndex * pageSize + index + 1 }}</td>
               <td class="action-col">
                 <button
@@ -255,7 +260,7 @@
             <tr>
               <td
                 class="empty-row"
-                colspan="17">
+                colspan="18">
                 Không có dữ liệu
               </td>
             </tr>

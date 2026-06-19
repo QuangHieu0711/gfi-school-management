@@ -1,0 +1,52 @@
+<app-dialog-container
+  [dialogTitle]="title"
+  [dialogActionTemplate]="actionTemplate">
+  <app-form-control
+    #formTpl
+    [form]="form"
+    (submitEvent)="onSubmit()">
+    <div class="transfer-dialog">
+      <div class="transfer-dialog__summary">
+        <div class="transfer-dialog__count">
+          Đã chọn {{ selectedStudents.length }} học sinh
+        </div>
+        <div class="transfer-dialog__names">
+          @for (student of selectedStudents; track student.id) {
+            <span class="student-chip">{{ student.fullName }}</span>
+          }
+        </div>
+      </div>
+
+      <div class="transfer-dialog__grid">
+        <app-select-control
+          [item]="findFormControl($formItem, formKey.TARGET_SCHOOL_YEAR_ID)"
+          [form]="form"></app-select-control>
+        <app-select-control
+          [item]="findFormControl($formItem, formKey.TARGET_CLASS_ID)"
+          [form]="form"></app-select-control>
+        <app-date-control
+          [item]="findFormControl($formItem, formKey.ENROLLED_AT)"
+          [form]="form"></app-date-control>
+        <app-checkbox-control
+          class="transfer-dialog__checkbox"
+          [item]="findFormControl($formItem, formKey.IS_REPEATER)"
+          [form]="form"></app-checkbox-control>
+      </div>
+    </div>
+  </app-form-control>
+
+  <ng-template #actionTemplate>
+    <button
+      color="primary"
+      matButton="outlined"
+      mat-dialog-close>
+      Hủy
+    </button>
+    <button
+      color="primary"
+      matButton="filled"
+      (click)="formTpl.submit()">
+      Chuyển lớp
+    </button>
+  </ng-template>
+</app-dialog-container>

@@ -29,6 +29,7 @@ import { LopService } from '@app/service/admin/lop.service';
 import { HocSinhService } from '@app/service/admin/hoc-sinh.service';
 import { AuthService, PermissionCheckService } from '@service';
 import { DialogImportHocSinhComponent } from './dialog-import/dialog-import.component';
+import { DialogTransferClassComponent } from './dialog-transfer-class/dialog-transfer-class.component';
 
 @Component({
   selector: 'hoc-sinh',
@@ -47,6 +48,7 @@ import { DialogImportHocSinhComponent } from './dialog-import/dialog-import.comp
 export class HocSinhComponent extends ComponentBaseAbstract {
   readonly menuCode = 'STUDENT_PROFILE';
   dataSource: HocSinhResponse[] = [];
+  selectedStudentIds = new Set<string>();
   key = HOC_SINH_KEY;
   $formItem: FormType[] = HOC_SINH_FILTER_FORM.map((item) => ({
     ...item,
@@ -80,6 +82,16 @@ export class HocSinhComponent extends ComponentBaseAbstract {
 
   get canDownload(): boolean {
     return this.permissionCheckService.canDownload(this.menuCode);
+  }
+
+  get selectedStudents(): HocSinhResponse[] {
+    return this.dataSource.filter((item) =>
+      this.selectedStudentIds.has(this.toSelectionKey(item.id))
+    );
+  }
+
+  get hasSelectedStudents(): boolean {
+    return this.selectedStudentIds.size > 0;
   }
 
   constructor(
@@ -153,6 +165,7 @@ export class HocSinhComponent extends ComponentBaseAbstract {
       .filter(this.buildFilterPayload(pageChangeEvent))
       .subscribe({
         next: ({ data }) => {
+          this.selectedStudentIds.clear();
           this.dataSource = (data.items ?? []).map((item) =>
             this.normalizeRow(item)
           );
@@ -164,6 +177,7 @@ export class HocSinhComponent extends ComponentBaseAbstract {
           }
         },
         error: () => {
+          this.selectedStudentIds.clear();
           this.dataSource = [this.normalizeRow(HOC_SINH_DETAIL_FALLBACK)];
           this.dataSourceTotal = 1;
         },
@@ -270,6 +284,55 @@ export class HocSinhComponent extends ComponentBaseAbstract {
     );
   }
 
+  openTransferClass(): void {
+    if (!this.canEdit) {
+      this.toastr.warning('Bạn không có quyền chuyển lớp', 'Cảnh báo');
+      return;
+    }
+
+    const students = this.selectedStudents;
+    if (!students.length) {
+      this.toastr.warning('Vui lòng chọn ít nhất một học sinh', 'Cảnh báo');
+      return;
+    }
+
+    const unitId = students[0]?.unitId;
+    if (!unitId) {
+      this.toastr.warning('Không xác định được đơn vị của học sinh đã chọn', 'Cảnh báo');
+      return;
+    }
+
+    const hasMixedUnit = students.some(
+      (student) => `${student.unitId ?? ''}` !== `${unitId}`
+    );
+    if (hasMixedUnit) {
+      this.toastr.warning(
+        'Chỉ có thể chuyển lớp cho các học sinh cùng đơn vị',
+        'Cảnh báo'
+      );
+      return;
+    }
+
+    this.dialog.componentDialog(
+      DialogTransferClassComponent,
+      {
+        width: '720px',
+        data: {
+          unitId,
+          students,
+        },
+      },
+      (result) => {
+        if (!result) return;
+        this.selectedStudentIds.clear();
+        this.filterData({
+          pageIndex: this.pageIndex,
+          pageSize: this.pageSize,
+        });
+      }
+    );
+  }
+
   exportExcel(): void {
     if (!this.canDownload) {
       this.toastr.warning('Bạn không có quyền tải xuống', 'Cảnh báo');
@@ -293,6 +356,48 @@ export class HocSinhComponent extends ComponentBaseAbstract {
       this.statusOptions.find((item) => item.value === status)?.label ??
       'Chưa cập nhật'
     );
+  }
+
+  isAllCurrentPageSelected(): boolean {
+    return (
+      this.dataSource.length > 0 &&
+      this.dataSource.every((item) =>
+        this.selectedStudentIds.has(this.toSelectionKey(item.id))
+      )
+    );
+  }
+
+  isSomeCurrentPageSelected(): boolean {
+    const selectedCount = this.dataSource.filter((item) =>
+      this.selectedStudentIds.has(this.toSelectionKey(item.id))
+    ).length;
+    return selectedCount > 0 && selectedCount < this.dataSource.length;
+  }
+
+  toggleSelectAllCurrentPage(checked: boolean): void {
+    if (checked) {
+      this.dataSource.forEach((item) =>
+        this.selectedStudentIds.add(this.toSelectionKey(item.id))
+      );
+      return;
+    }
+
+    this.dataSource.forEach((item) =>
+      this.selectedStudentIds.delete(this.toSelectionKey(item.id))
+    );
+  }
+
+  toggleStudentSelection(student: HocSinhResponse, checked: boolean): void {
+    const key = this.toSelectionKey(student.id);
+    if (checked) {
+      this.selectedStudentIds.add(key);
+      return;
+    }
+    this.selectedStudentIds.delete(key);
+  }
+
+  isStudentSelected(student: HocSinhResponse): boolean {
+    return this.selectedStudentIds.has(this.toSelectionKey(student.id));
   }
 
   private bindInlineFilter(): void {
@@ -546,5 +651,9 @@ export class HocSinhComponent extends ComponentBaseAbstract {
       return value === 'Nu' ? 'Nữ' : value;
     }
     return value ? `${value}` : '';
+  }
+
+  private toSelectionKey(value: string | number | undefined): string {
+    return `${value ?? ''}`;
   }
 }

@@ -59,7 +59,7 @@
 
 .student-table {
   width: 100%;
-  min-width: 1640px;
+  min-width: 1700px;
   border-collapse: collapse;
 }
 
@@ -165,6 +165,17 @@
 
 ::ng-deep .filter-cell .select-control .mat-mdc-form-field-infix {
   min-width: unset;
+}
+
+.select-col {
+  width: 52px;
+  min-width: 52px;
+  text-align: center;
+  padding: 0 !important;
+}
+
+.select-col .mat-mdc-checkbox {
+  margin: 0;
 }
 
 .stt-col {

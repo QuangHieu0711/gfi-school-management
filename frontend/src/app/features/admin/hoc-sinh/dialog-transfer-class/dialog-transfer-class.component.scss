@@ -1,0 +1,57 @@
+.transfer-dialog {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.transfer-dialog__summary {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 16px;
+  border: 1px solid #d7e5e8;
+  border-radius: 10px;
+  background: #f7fbfc;
+}
+
+.transfer-dialog__count {
+  font-size: 14px;
+  font-weight: 600;
+  color: #0f1720;
+}
+
+.transfer-dialog__names {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  max-height: 120px;
+  overflow: auto;
+}
+
+.student-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: #e8f4f6;
+  color: #165a67;
+  font-size: 13px;
+  line-height: 1.3;
+}
+
+.transfer-dialog__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.transfer-dialog__checkbox {
+  display: flex;
+  align-items: center;
+}
+
+@media (max-width: 768px) {
+  .transfer-dialog__grid {
+    grid-template-columns: 1fr;
+  }
+}
