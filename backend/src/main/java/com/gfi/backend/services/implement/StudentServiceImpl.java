@@ -3,10 +3,13 @@ package com.gfi.backend.services.implement;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.text.Normalizer;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.LinkedHashSet;
+import java.util.LinkedHashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
@@ -54,17 +57,23 @@ import com.gfi.backend.models.dtos.student.StudentGuardianCreateRequest;
 import com.gfi.backend.models.dtos.student.StudentGuardianItemDto;
 import com.gfi.backend.models.dtos.student.StudentImportResultDto;
 import com.gfi.backend.models.dtos.student.StudentItemDto;
+import com.gfi.backend.models.dtos.student.StudentReportCardExportRequest;
 import com.gfi.backend.models.dtos.student.StudentTransferClassRequest;
 import com.gfi.backend.models.dtos.student.StudentTransferClassResultDto;
 import com.gfi.backend.models.dtos.student.StudentProfileCreateRequest;
 import com.gfi.backend.models.dtos.student.StudentProfileItemDto;
 import com.gfi.backend.models.entities.Classroom;
+import com.gfi.backend.models.entities.ClassroomSubject;
+import com.gfi.backend.models.entities.AttendanceRecord;
 import com.gfi.backend.models.entities.SchoolYear;
+import com.gfi.backend.models.entities.Semester;
 import com.gfi.backend.models.entities.Student;
 import com.gfi.backend.models.entities.StudentAddress;
 import com.gfi.backend.models.entities.StudentEnrollment;
+import com.gfi.backend.models.entities.StudentEvaluation;
 import com.gfi.backend.models.entities.StudentGuardian;
 import com.gfi.backend.models.entities.StudentProfile;
+import com.gfi.backend.models.entities.Subject;
 import com.gfi.backend.models.entities.Unit;
 import com.gfi.backend.models.enums.ActionType;
 import com.gfi.backend.models.enums.ExportType;
@@ -73,9 +82,13 @@ import com.gfi.backend.models.global.CommonErrorCode;
 import com.gfi.backend.models.security.FeatureKey;
 import com.gfi.backend.models.security.ResolvedScope;
 import com.gfi.backend.repositories.ClassroomRepository;
+import com.gfi.backend.repositories.ClassroomSubjectRepository;
 import com.gfi.backend.repositories.SchoolYearRepository;
+import com.gfi.backend.repositories.SemesterRepository;
+import com.gfi.backend.repositories.AttendanceRecordRepository;
 import com.gfi.backend.repositories.StudentAddressRepository;
 import com.gfi.backend.repositories.StudentEnrollmentRepository;
+import com.gfi.backend.repositories.StudentEvaluationRepository;
 import com.gfi.backend.repositories.StudentGuardianRepository;
 import com.gfi.backend.repositories.StudentProfileRepository;
 import com.gfi.backend.repositories.StudentRepository;
@@ -195,6 +208,10 @@ public class StudentServiceImpl implements StudentService {
     private final DataScopeFilterService dataScopeFilterService;
     private final StudentCodeGeneratorService studentCodeGeneratorService;
     private final ImportErrorFileStorageService importErrorFileStorageService;
+    private final AttendanceRecordRepository attendanceRecordRepository;
+    private final StudentEvaluationRepository studentEvaluationRepository;
+    private final ClassroomSubjectRepository classroomSubjectRepository;
+    private final SemesterRepository semesterRepository;
 
     @Override
     @Transactional(readOnly = true)
@@ -1069,6 +1086,23 @@ public class StudentServiceImpl implements StudentService {
 
     @Override
     @Transactional(readOnly = true)
+    public byte[] exportReportCards(StudentReportCardExportRequest request, ExportType exportType) {
+        List<Long> studentIds = normalizeStudentIds(request == null ? null : request.getStudentIds());
+        List<StudentReportCardData> reportCards = new ArrayList<>();
+        for (Long studentId : studentIds) {
+            Student student = findStudent(studentId);
+            validateStudentScope(ActionType.DOWNLOAD, student);
+            reportCards.add(buildStudentReportCardData(student));
+        }
+
+        if (exportType == ExportType.PDF) {
+            return buildStudentReportCardPdf(reportCards);
+        }
+        return buildStudentReportCardWorkbook(reportCards);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public byte[] exportExcelTemplate(Long unitId) {
         Unit unit = findUnit(unitId);
         try (Workbook workbook = new XSSFWorkbook();
@@ -1591,6 +1625,421 @@ public class StudentServiceImpl implements StudentService {
         }
     }
 
+    private StudentReportCardData buildStudentReportCardData(Student student) {
+        StudentEnrollment latestEnrollment = findLatestEnrollment(student.getId());
+        if (latestEnrollment == null) {
+            throw new UserMessageException("Hoc sinh " + student.getFullName() + " chua co thong tin nhap hoc");
+        }
+
+        List<StudentEnrollment> histories = new ArrayList<>(
+                studentEnrollmentRepository.findByStudentIdOrderBySchoolYearIdDescIdDesc(student.getId()));
+        histories.sort(Comparator
+                .comparing((StudentEnrollment item) -> item.getSchoolYear() == null ? null : item.getSchoolYear().getStartDate(),
+                        Comparator.nullsLast(Comparator.naturalOrder()))
+                .thenComparing(StudentEnrollment::getId, Comparator.nullsLast(Comparator.naturalOrder())));
+
+        List<StudentAddress> addresses = studentAddressRepository.findByStudentIdOrderByIdAsc(student.getId());
+        List<StudentGuardian> guardians = studentGuardianRepository.findByStudentIdOrderByIdAsc(student.getId());
+        StudentProfile profile = studentProfileRepository.findByStudentId(student.getId()).orElse(null);
+
+        Long classroomId = latestEnrollment.getClassroom() == null ? null : latestEnrollment.getClassroom().getId();
+        List<ClassroomSubject> classroomSubjects = classroomId == null
+                ? List.of()
+                : classroomSubjectRepository.findByClassroomIdAndStatusAndDeletedFlagOrderBySubjectNameAsc(classroomId, 1, 0);
+        List<StudentEvaluation> evaluations = classroomId == null
+                ? List.of()
+                : studentEvaluationRepository
+                        .findByStudentIdAndClassroomIdAndDeletedFlagOrderBySemesterSemesterOrderAscSubjectNameAsc(
+                                student.getId(), classroomId, 0);
+        List<AttendanceRecord> attendanceRecords = classroomId == null
+                ? List.of()
+                : attendanceRecordRepository.findByClassroomIdAndStudentIdAndDeletedFlag(classroomId, student.getId(), 0);
+
+        return new StudentReportCardData(
+                student,
+                latestEnrollment,
+                histories,
+                findPermanentAddress(addresses),
+                findGuardianByType(guardians, GUARDIAN_TYPE_FATHER),
+                findGuardianByType(guardians, GUARDIAN_TYPE_MOTHER),
+                profile,
+                buildReportCardEvaluationRows(classroomSubjects, evaluations),
+                buildAttendanceSummary(attendanceRecords, latestEnrollment.getSchoolYear()),
+                buildReportCardConclusion(student, latestEnrollment));
+    }
+
+    private List<ReportCardEvaluationRow> buildReportCardEvaluationRows(List<ClassroomSubject> classroomSubjects,
+            List<StudentEvaluation> evaluations) {
+        Map<Long, Map<Integer, StudentEvaluation>> evaluationsBySubjectAndSemester = new LinkedHashMap<>();
+        Map<Long, String> subjectNames = new LinkedHashMap<>();
+
+        for (ClassroomSubject classroomSubject : safeList(classroomSubjects)) {
+            if (classroomSubject == null || classroomSubject.getSubject() == null
+                    || classroomSubject.getSubject().getId() == null) {
+                continue;
+            }
+            subjectNames.put(classroomSubject.getSubject().getId(), classroomSubject.getSubject().getName());
+        }
+
+        for (StudentEvaluation evaluation : safeList(evaluations)) {
+            if (evaluation == null || evaluation.getSubject() == null || evaluation.getSubject().getId() == null) {
+                continue;
+            }
+            Long subjectId = evaluation.getSubject().getId();
+            Integer semesterOrder = evaluation.getSemester() == null ? null : evaluation.getSemester().getSemesterOrder();
+            subjectNames.putIfAbsent(subjectId, evaluation.getSubject().getName());
+            if (semesterOrder == null) {
+                continue;
+            }
+            evaluationsBySubjectAndSemester
+                    .computeIfAbsent(subjectId, ignored -> new LinkedHashMap<>())
+                    .put(semesterOrder, evaluation);
+        }
+
+        List<ReportCardEvaluationRow> rows = new ArrayList<>();
+        for (Map.Entry<Long, String> subjectEntry : subjectNames.entrySet()) {
+            Map<Integer, StudentEvaluation> subjectEvaluations = evaluationsBySubjectAndSemester
+                    .getOrDefault(subjectEntry.getKey(), Map.of());
+            StudentEvaluation semesterOne = subjectEvaluations.get(1);
+            StudentEvaluation semesterTwo = subjectEvaluations.get(2);
+            rows.add(new ReportCardEvaluationRow(
+                    subjectEntry.getValue(),
+                    formatEvaluationValue(semesterOne, true),
+                    formatEvaluationValue(semesterOne, false),
+                    formatEvaluationValue(semesterTwo, true),
+                    formatEvaluationValue(semesterTwo, false),
+                    buildEvaluationRemark(semesterOne, semesterTwo)));
+        }
+        return rows;
+    }
+
+    private AttendanceSummary buildAttendanceSummary(List<AttendanceRecord> attendanceRecords, SchoolYear schoolYear) {
+        int excused = 0;
+        int unexcused = 0;
+        LocalDate startDate = schoolYear == null ? null : schoolYear.getStartDate();
+        LocalDate endDate = schoolYear == null ? null : schoolYear.getEndDate();
+
+        for (AttendanceRecord attendanceRecord : safeList(attendanceRecords)) {
+            if (attendanceRecord == null || attendanceRecord.getAttendanceDate() == null) {
+                continue;
+            }
+            if (startDate != null && attendanceRecord.getAttendanceDate().isBefore(startDate)) {
+                continue;
+            }
+            if (endDate != null && attendanceRecord.getAttendanceDate().isAfter(endDate)) {
+                continue;
+            }
+
+            String status = normalizeUpper(attendanceRecord.getAttendanceStatus());
+            if ("P".equals(status)) {
+                excused++;
+            } else if ("K".equals(status)) {
+                unexcused++;
+            }
+        }
+        return new AttendanceSummary(excused, unexcused);
+    }
+
+    private String buildReportCardConclusion(Student student, StudentEnrollment enrollment) {
+        if (Boolean.TRUE.equals(enrollment.getIsRepeater())) {
+            return "Luu ban";
+        }
+        if (student.getStudentStatus() == null) {
+            return "Dang hoc";
+        }
+        return switch (student.getStudentStatus()) {
+            case 0 -> "Hoan thanh chuong trinh lop hoc";
+            case 1 -> "Da chuyen truong";
+            case 2 -> "Tam nghi";
+            case 3 -> "Thoi hoc";
+            default -> "Trang thai: " + student.getStudentStatus();
+        };
+    }
+
+    private byte[] buildStudentReportCardWorkbook(List<StudentReportCardData> reportCards) {
+        try (Workbook workbook = new XSSFWorkbook();
+                ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
+            CellStyle infoStyle = createExcelInfoStyle(workbook);
+            CellStyle govHeaderStyle = createExcelGovHeaderStyle(workbook);
+            CellStyle govSubHeaderStyle = createExcelGovSubHeaderStyle(workbook);
+            CellStyle titleStyle = createExcelTitleStyle(workbook);
+            CellStyle sectionStyle = createExcelSectionStyle(workbook);
+            CellStyle headerStyle = createExcelHeaderStyle(workbook);
+            CellStyle labelStyle = createExcelLabelCellStyle(workbook);
+            CellStyle bodyStyle = createExcelBodyStyle(workbook);
+            CellStyle centerBodyStyle = createExcelCenteredBodyStyle(workbook);
+
+            int sheetIndex = 1;
+            for (StudentReportCardData reportCard : reportCards) {
+                Sheet sheet = workbook.createSheet(buildReportCardSheetName(reportCard.getStudent().getFullName(), sheetIndex++));
+                sheet.setDisplayGridlines(false);
+                for (int column = 0; column <= 5; column++) {
+                    sheet.setColumnWidth(column, switch (column) {
+                        case 0, 2, 4 -> 5200;
+                        case 1, 3, 5 -> 7800;
+                        default -> 6000;
+                    });
+                }
+
+                int rowIndex = 0;
+                Row infoRow = sheet.createRow(rowIndex++);
+                createCell(infoRow, 0, buildExportInfoLine(), infoStyle);
+                sheet.addMergedRegion(new CellRangeAddress(infoRow.getRowNum(), infoRow.getRowNum(), 0, 5));
+
+                Row govHeaderRow = sheet.createRow(rowIndex++);
+                createCell(govHeaderRow, 0, "BỘ GIÁO DỤC VÀ ĐÀO TẠO", govHeaderStyle);
+                createCell(govHeaderRow, 3, "CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM", govHeaderStyle);
+                sheet.addMergedRegion(new CellRangeAddress(govHeaderRow.getRowNum(), govHeaderRow.getRowNum(), 0, 2));
+                sheet.addMergedRegion(new CellRangeAddress(govHeaderRow.getRowNum(), govHeaderRow.getRowNum(), 3, 5));
+
+                Row govSubHeaderRow = sheet.createRow(rowIndex++);
+                createCell(govSubHeaderRow, 0, reportCard.getStudent().getUnit() == null ? "" : reportCard.getStudent().getUnit().getName(),
+                        govSubHeaderStyle);
+                createCell(govSubHeaderRow, 3, "Độc lập - Tự do - Hạnh phúc", govSubHeaderStyle);
+                sheet.addMergedRegion(new CellRangeAddress(govSubHeaderRow.getRowNum(), govSubHeaderRow.getRowNum(), 0, 2));
+                sheet.addMergedRegion(new CellRangeAddress(govSubHeaderRow.getRowNum(), govSubHeaderRow.getRowNum(), 3, 5));
+
+                rowIndex++;
+                Row titleRow = sheet.createRow(rowIndex++);
+                createCell(titleRow, 0, "HỌC BẠ TIỂU HỌC", titleStyle);
+                sheet.addMergedRegion(new CellRangeAddress(titleRow.getRowNum(), titleRow.getRowNum(), 0, 5));
+
+                Row nameRow = sheet.createRow(rowIndex++);
+                createCell(nameRow, 0, reportCard.getStudent().getFullName(), titleStyle);
+                sheet.addMergedRegion(new CellRangeAddress(nameRow.getRowNum(), nameRow.getRowNum(), 0, 5));
+
+                rowIndex++;
+                Row sectionInfoRow = sheet.createRow(rowIndex++);
+                createCell(sectionInfoRow, 0, "THÔNG TIN HỌC SINH", sectionStyle);
+                sheet.addMergedRegion(new CellRangeAddress(sectionInfoRow.getRowNum(), sectionInfoRow.getRowNum(), 0, 5));
+
+                rowIndex = writeInfoRow(sheet, rowIndex, labelStyle, bodyStyle,
+                        "Họ và tên", reportCard.getStudent().getFullName(),
+                        "Mã học sinh", reportCard.getStudent().getStudentCode(),
+                        "Ngày sinh", formatDate(reportCard.getStudent().getDateOfBirth()));
+                rowIndex = writeInfoRow(sheet, rowIndex, labelStyle, bodyStyle,
+                        "Giới tính", studentGenderLabel(reportCard.getStudent().getGender()),
+                        "Dân tộc", reportCard.getStudent().getEthnicity(),
+                        "Quốc tịch", reportCard.getStudent().getNationality());
+                rowIndex = writeInfoRow(sheet, rowIndex, labelStyle, bodyStyle,
+                        "Nơi sinh", reportCard.getStudent().getPlaceOfBirth(),
+                        "Địa chỉ", buildFullAddress(reportCard.getPermanentAddress()),
+                        "Mã MOET", reportCard.getStudent().getMoeCode());
+                rowIndex = writeInfoRow(sheet, rowIndex, labelStyle, bodyStyle,
+                        "Cha", guardianSummary(reportCard.getFather()),
+                        "Mẹ", guardianSummary(reportCard.getMother()),
+                        "Đơn vị", reportCard.getStudent().getUnit() == null ? null : reportCard.getStudent().getUnit().getName());
+
+                rowIndex++;
+                Row historySectionRow = sheet.createRow(rowIndex++);
+                createCell(historySectionRow, 0, "QUÁ TRÌNH HỌC TẬP", sectionStyle);
+                sheet.addMergedRegion(new CellRangeAddress(historySectionRow.getRowNum(), historySectionRow.getRowNum(), 0, 5));
+
+                Row historyHeaderRow = sheet.createRow(rowIndex++);
+                String[] historyHeaders = { "Năm học", "Lớp", "Trường", "Sổ đăng bộ", "Ngày vào học/chuyển đến", "Ghi chú" };
+                for (int i = 0; i < historyHeaders.length; i++) {
+                    createCell(historyHeaderRow, i, historyHeaders[i], headerStyle);
+                }
+                if (reportCard.getHistories().isEmpty()) {
+                    Row row = sheet.createRow(rowIndex++);
+                    for (int i = 0; i < historyHeaders.length; i++) {
+                        createCell(row, i, "", bodyStyle);
+                    }
+                } else {
+                    for (StudentEnrollment history : reportCard.getHistories()) {
+                        Row row = sheet.createRow(rowIndex++);
+                        createCell(row, 0, history.getSchoolYear() == null ? null : history.getSchoolYear().getName(), bodyStyle);
+                        createCell(row, 1, history.getClassroom() == null ? null : history.getClassroom().getName(), bodyStyle);
+                        createCell(row, 2, reportCard.getStudent().getUnit() == null ? null : reportCard.getStudent().getUnit().getName(),
+                                bodyStyle);
+                        createCell(row, 3, reportCard.getStudent().getBoardingBook(), bodyStyle);
+                        createCell(row, 4, formatDate(resolveEnrollmentDate(history, reportCard.getStudent())), centerBodyStyle);
+                        createCell(row, 5, Boolean.TRUE.equals(history.getIsRepeater()) ? "Lưu ban" : "", bodyStyle);
+                    }
+                }
+
+                rowIndex++;
+                Row evaluationSectionRow = sheet.createRow(rowIndex++);
+                createCell(evaluationSectionRow, 0, "ĐÁNH GIÁ NĂM HỌC", sectionStyle);
+                sheet.addMergedRegion(new CellRangeAddress(evaluationSectionRow.getRowNum(), evaluationSectionRow.getRowNum(), 0, 5));
+
+                Row evaluationHeaderRow = sheet.createRow(rowIndex++);
+                String[] evaluationHeaders = { "Môn học/Hoạt động", "Giữa kỳ I", "Cuối kỳ I", "Giữa kỳ II", "Cuối kỳ II", "Nhận xét" };
+                for (int i = 0; i < evaluationHeaders.length; i++) {
+                    createCell(evaluationHeaderRow, i, evaluationHeaders[i], headerStyle);
+                }
+                if (reportCard.getEvaluationRows().isEmpty()) {
+                    Row row = sheet.createRow(rowIndex++);
+                    for (int i = 0; i < evaluationHeaders.length; i++) {
+                        createCell(row, i, "", bodyStyle);
+                    }
+                } else {
+                    for (ReportCardEvaluationRow evaluationRow : reportCard.getEvaluationRows()) {
+                        Row row = sheet.createRow(rowIndex++);
+                        createCell(row, 0, evaluationRow.getSubjectName(), bodyStyle);
+                        createCell(row, 1, evaluationRow.getSemesterOneMidterm(), centerBodyStyle);
+                        createCell(row, 2, evaluationRow.getSemesterOneFinal(), centerBodyStyle);
+                        createCell(row, 3, evaluationRow.getSemesterTwoMidterm(), centerBodyStyle);
+                        createCell(row, 4, evaluationRow.getSemesterTwoFinal(), centerBodyStyle);
+                        createCell(row, 5, evaluationRow.getRemark(), bodyStyle);
+                    }
+                }
+
+                rowIndex++;
+                Row summarySectionRow = sheet.createRow(rowIndex++);
+                createCell(summarySectionRow, 0, "TỔNG HỢP", sectionStyle);
+                sheet.addMergedRegion(new CellRangeAddress(summarySectionRow.getRowNum(), summarySectionRow.getRowNum(), 0, 5));
+
+                rowIndex = writeInfoRow(sheet, rowIndex, labelStyle, bodyStyle,
+                        "Lớp hiện tại", reportCard.getLatestEnrollment().getClassroom() == null ? null
+                                : reportCard.getLatestEnrollment().getClassroom().getName(),
+                        "Ngày nhập học", formatDate(resolveEnrollmentDate(reportCard.getLatestEnrollment(), reportCard.getStudent())),
+                        "Số buổi nghỉ có phép", String.valueOf(reportCard.getAttendanceSummary().getExcusedAbsences()));
+                rowIndex = writeInfoRow(sheet, rowIndex, labelStyle, bodyStyle,
+                        "Số buổi nghỉ không phép", String.valueOf(reportCard.getAttendanceSummary().getUnexcusedAbsences()),
+                        "Kết luận", reportCard.getConclusion(),
+                        "Diện chính sách", reportCard.getProfile() == null ? null : reportCard.getProfile().getPolicyObject());
+
+                Row signRow = sheet.createRow(rowIndex + 1);
+                createCell(signRow, 3, "Giáo viên chủ nhiệm", centerBodyStyle);
+                createCell(signRow, 5, "Hiệu trưởng", centerBodyStyle);
+            }
+
+            workbook.write(outputStream);
+            return outputStream.toByteArray();
+        } catch (IOException ex) {
+            throw new UserMessageException("Khong the xuat hoc ba Excel");
+        }
+    }
+
+    private byte[] buildStudentReportCardPdf(List<StudentReportCardData> reportCards) {
+        try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
+            Document document = new Document(PageSize.A4, 28, 28, 24, 24);
+            PdfWriter.getInstance(document, outputStream);
+            document.open();
+
+            com.lowagie.text.Font govFont = createPdfFont(11, com.lowagie.text.Font.BOLD);
+            com.lowagie.text.Font titleFont = createPdfFont(16, com.lowagie.text.Font.BOLD);
+            com.lowagie.text.Font sectionFont = createPdfFont(11, com.lowagie.text.Font.BOLD);
+            com.lowagie.text.Font labelFont = createPdfFont(10, com.lowagie.text.Font.BOLD);
+            com.lowagie.text.Font bodyFont = createPdfFont(10, com.lowagie.text.Font.NORMAL);
+            com.lowagie.text.Font infoFont = createPdfFont(9, com.lowagie.text.Font.ITALIC);
+
+            boolean firstStudent = true;
+            for (StudentReportCardData reportCard : reportCards) {
+                if (!firstStudent) {
+                    document.newPage();
+                }
+                firstStudent = false;
+
+                Paragraph info = new Paragraph(buildExportInfoLine(), infoFont);
+                info.setAlignment(Element.ALIGN_RIGHT);
+                info.setSpacingAfter(8f);
+                document.add(info);
+
+                Paragraph gov = new Paragraph("BỘ GIÁO DỤC VÀ ĐÀO TẠO", govFont);
+                gov.setAlignment(Element.ALIGN_CENTER);
+                document.add(gov);
+
+                Paragraph school = new Paragraph(
+                        reportCard.getStudent().getUnit() == null ? "" : reportCard.getStudent().getUnit().getName(),
+                        bodyFont);
+                school.setAlignment(Element.ALIGN_CENTER);
+                school.setSpacingAfter(10f);
+                document.add(school);
+
+                Paragraph title = new Paragraph("HỌC BẠ TIỂU HỌC", titleFont);
+                title.setAlignment(Element.ALIGN_CENTER);
+                document.add(title);
+
+                Paragraph studentName = new Paragraph(reportCard.getStudent().getFullName(), titleFont);
+                studentName.setAlignment(Element.ALIGN_CENTER);
+                studentName.setSpacingAfter(12f);
+                document.add(studentName);
+
+                addPdfSectionTitle(document, "THÔNG TIN HỌC SINH", sectionFont);
+                PdfPTable infoTable = new PdfPTable(new float[] { 1.4f, 2.6f, 1.4f, 2.6f });
+                infoTable.setWidthPercentage(100);
+                addPdfInfoPair(infoTable, "Họ và tên", reportCard.getStudent().getFullName(), labelFont, bodyFont);
+                addPdfInfoPair(infoTable, "Mã học sinh", reportCard.getStudent().getStudentCode(), labelFont, bodyFont);
+                addPdfInfoPair(infoTable, "Ngày sinh", formatDate(reportCard.getStudent().getDateOfBirth()), labelFont, bodyFont);
+                addPdfInfoPair(infoTable, "Giới tính", studentGenderLabel(reportCard.getStudent().getGender()), labelFont, bodyFont);
+                addPdfInfoPair(infoTable, "Dân tộc", reportCard.getStudent().getEthnicity(), labelFont, bodyFont);
+                addPdfInfoPair(infoTable, "Quốc tịch", reportCard.getStudent().getNationality(), labelFont, bodyFont);
+                addPdfInfoPair(infoTable, "Nơi sinh", reportCard.getStudent().getPlaceOfBirth(), labelFont, bodyFont);
+                addPdfInfoPair(infoTable, "Địa chỉ", buildFullAddress(reportCard.getPermanentAddress()), labelFont, bodyFont);
+                addPdfInfoPair(infoTable, "Cha", guardianSummary(reportCard.getFather()), labelFont, bodyFont);
+                addPdfInfoPair(infoTable, "Mẹ", guardianSummary(reportCard.getMother()), labelFont, bodyFont);
+                document.add(infoTable);
+
+                addPdfSectionTitle(document, "QUÁ TRÌNH HỌC TẬP", sectionFont);
+                PdfPTable historyTable = new PdfPTable(new float[] { 1.6f, 1.0f, 2.1f, 1.3f, 1.6f, 1.2f });
+                historyTable.setWidthPercentage(100);
+                String[] historyHeaders = { "Năm học", "Lớp", "Trường", "Sổ đăng bộ", "Ngày vào học/chuyển đến", "Ghi chú" };
+                for (String header : historyHeaders) {
+                    addPdfHeaderCell(historyTable, header, labelFont);
+                }
+                for (StudentEnrollment history : reportCard.getHistories()) {
+                    addPdfBodyCell(historyTable, history.getSchoolYear() == null ? null : history.getSchoolYear().getName(), bodyFont,
+                            Element.ALIGN_LEFT);
+                    addPdfBodyCell(historyTable, history.getClassroom() == null ? null : history.getClassroom().getName(), bodyFont,
+                            Element.ALIGN_LEFT);
+                    addPdfBodyCell(historyTable,
+                            reportCard.getStudent().getUnit() == null ? null : reportCard.getStudent().getUnit().getName(),
+                            bodyFont, Element.ALIGN_LEFT);
+                    addPdfBodyCell(historyTable, reportCard.getStudent().getBoardingBook(), bodyFont, Element.ALIGN_LEFT);
+                    addPdfBodyCell(historyTable, formatDate(resolveEnrollmentDate(history, reportCard.getStudent())), bodyFont,
+                            Element.ALIGN_CENTER);
+                    addPdfBodyCell(historyTable, Boolean.TRUE.equals(history.getIsRepeater()) ? "Lưu ban" : "", bodyFont,
+                            Element.ALIGN_LEFT);
+                }
+                document.add(historyTable);
+
+                addPdfSectionTitle(document, "ĐÁNH GIÁ NĂM HỌC", sectionFont);
+                PdfPTable evaluationTable = new PdfPTable(new float[] { 2.4f, 1.1f, 1.1f, 1.1f, 1.1f, 2.2f });
+                evaluationTable.setWidthPercentage(100);
+                String[] evaluationHeaders = { "Môn học/Hoạt động", "GK I", "CK I", "GK II", "CK II", "Nhận xét" };
+                for (String header : evaluationHeaders) {
+                    addPdfHeaderCell(evaluationTable, header, labelFont);
+                }
+                if (reportCard.getEvaluationRows().isEmpty()) {
+                    for (int i = 0; i < evaluationHeaders.length; i++) {
+                        addPdfBodyCell(evaluationTable, "", bodyFont, Element.ALIGN_LEFT);
+                    }
+                } else {
+                    for (ReportCardEvaluationRow row : reportCard.getEvaluationRows()) {
+                        addPdfBodyCell(evaluationTable, row.getSubjectName(), bodyFont, Element.ALIGN_LEFT);
+                        addPdfBodyCell(evaluationTable, row.getSemesterOneMidterm(), bodyFont, Element.ALIGN_CENTER);
+                        addPdfBodyCell(evaluationTable, row.getSemesterOneFinal(), bodyFont, Element.ALIGN_CENTER);
+                        addPdfBodyCell(evaluationTable, row.getSemesterTwoMidterm(), bodyFont, Element.ALIGN_CENTER);
+                        addPdfBodyCell(evaluationTable, row.getSemesterTwoFinal(), bodyFont, Element.ALIGN_CENTER);
+                        addPdfBodyCell(evaluationTable, row.getRemark(), bodyFont, Element.ALIGN_LEFT);
+                    }
+                }
+                document.add(evaluationTable);
+
+                addPdfSectionTitle(document, "TỔNG HỢP", sectionFont);
+                Paragraph summary = new Paragraph(
+                        "Lớp hiện tại: "
+                                + safeText(reportCard.getLatestEnrollment().getClassroom() == null ? null
+                                        : reportCard.getLatestEnrollment().getClassroom().getName())
+                                + "\nNgày nhập học: " + safeText(formatDate(resolveEnrollmentDate(reportCard.getLatestEnrollment(),
+                                        reportCard.getStudent())))
+                                + "\nSố buổi nghỉ có phép: " + reportCard.getAttendanceSummary().getExcusedAbsences()
+                                + "\nSố buổi nghỉ không phép: " + reportCard.getAttendanceSummary().getUnexcusedAbsences()
+                                + "\nKết luận: " + safeText(reportCard.getConclusion()),
+                        bodyFont);
+                summary.setSpacingAfter(14f);
+                document.add(summary);
+            }
+
+            document.close();
+            return outputStream.toByteArray();
+        } catch (DocumentException | IOException ex) {
+            throw new UserMessageException("Khong the xuat hoc ba PDF");
+        }
+    }
+
     private void upsertStudentFromExcelRow(Long unitId, Row row, DataFormatter formatter) {
         String fullName = normalizeNullable(readCellText(row.getCell(STUDENT_COL_FULL_NAME), formatter));
         if (!StringUtils.hasText(fullName)) {
@@ -1962,6 +2411,153 @@ public class StudentServiceImpl implements StudentService {
         return hasData ? profile : null;
     }
 
+    private int writeInfoRow(Sheet sheet, int rowIndex, CellStyle labelStyle, CellStyle valueStyle,
+            String labelOne, String valueOne,
+            String labelTwo, String valueTwo,
+            String labelThree, String valueThree) {
+        Row row = sheet.createRow(rowIndex);
+        createCell(row, 0, labelOne, labelStyle);
+        createCell(row, 1, valueOne, valueStyle);
+        createCell(row, 2, labelTwo, labelStyle);
+        createCell(row, 3, valueTwo, valueStyle);
+        createCell(row, 4, labelThree, labelStyle);
+        createCell(row, 5, valueThree, valueStyle);
+        return rowIndex + 1;
+    }
+
+    private LocalDate resolveEnrollmentDate(StudentEnrollment enrollment, Student student) {
+        if (enrollment != null && enrollment.getEnrolledAt() != null) {
+            return enrollment.getEnrolledAt();
+        }
+        return student == null ? null : student.getAdmissionDate();
+    }
+
+    private StudentAddress findPermanentAddress(List<StudentAddress> addresses) {
+        for (StudentAddress address : safeList(addresses)) {
+            if (address != null && ADDRESS_TYPE_PERMANENT.equals(address.getAddressType())) {
+                return address;
+            }
+        }
+        return safeList(addresses).stream().findFirst().orElse(null);
+    }
+
+    private StudentGuardian findGuardianByType(List<StudentGuardian> guardians, String guardianType) {
+        for (StudentGuardian guardian : safeList(guardians)) {
+            if (guardian != null && guardianType.equals(guardian.getGuardianType())) {
+                return guardian;
+            }
+        }
+        return null;
+    }
+
+    private String buildFullAddress(StudentAddress address) {
+        if (address == null) {
+            return null;
+        }
+        List<String> parts = new ArrayList<>();
+        if (StringUtils.hasText(address.getDetailAddress())) {
+            parts.add(address.getDetailAddress().trim());
+        }
+        if (StringUtils.hasText(address.getHamletName())) {
+            parts.add(address.getHamletName().trim());
+        }
+        if (StringUtils.hasText(address.getWardName())) {
+            parts.add(address.getWardName().trim());
+        }
+        if (StringUtils.hasText(address.getProvinceName())) {
+            parts.add(address.getProvinceName().trim());
+        }
+        return parts.isEmpty() ? null : String.join(", ", parts);
+    }
+
+    private String guardianSummary(StudentGuardian guardian) {
+        if (guardian == null) {
+            return null;
+        }
+        List<String> parts = new ArrayList<>();
+        if (StringUtils.hasText(guardian.getFullName())) {
+            parts.add(guardian.getFullName().trim());
+        }
+        if (StringUtils.hasText(guardian.getPhone())) {
+            parts.add(guardian.getPhone().trim());
+        }
+        if (guardian.getBirthYear() != null) {
+            parts.add(String.valueOf(guardian.getBirthYear()));
+        }
+        return parts.isEmpty() ? null : String.join(" - ", parts);
+    }
+
+    private String formatEvaluationValue(StudentEvaluation evaluation, boolean midterm) {
+        if (evaluation == null) {
+            return null;
+        }
+        String level = midterm ? evaluation.getMidtermLevel() : evaluation.getFinalLevel();
+        if (StringUtils.hasText(level)) {
+            return level.trim();
+        }
+        Double score = midterm ? evaluation.getMidtermScore() : evaluation.getFinalScore();
+        if (score == null) {
+            return null;
+        }
+        if (score.doubleValue() == Math.rint(score.doubleValue())) {
+            return String.valueOf(score.intValue());
+        }
+        return String.format(Locale.ROOT, "%.1f", score);
+    }
+
+    private String buildEvaluationRemark(StudentEvaluation semesterOne, StudentEvaluation semesterTwo) {
+        LinkedHashSet<String> remarks = new LinkedHashSet<>();
+        if (semesterOne != null) {
+            if (StringUtils.hasText(semesterOne.getMidtermRemark())) {
+                remarks.add(semesterOne.getMidtermRemark().trim());
+            }
+            if (StringUtils.hasText(semesterOne.getFinalRemark())) {
+                remarks.add(semesterOne.getFinalRemark().trim());
+            }
+        }
+        if (semesterTwo != null) {
+            if (StringUtils.hasText(semesterTwo.getMidtermRemark())) {
+                remarks.add(semesterTwo.getMidtermRemark().trim());
+            }
+            if (StringUtils.hasText(semesterTwo.getFinalRemark())) {
+                remarks.add(semesterTwo.getFinalRemark().trim());
+            }
+        }
+        return remarks.isEmpty() ? null : String.join("; ", remarks);
+    }
+
+    private String buildReportCardSheetName(String fullName, int order) {
+        String rawName = StringUtils.hasText(fullName) ? fullName.trim() : "HocBa-" + order;
+        String sanitized = rawName.replaceAll("[\\\\/*?:\\[\\]]", "-");
+        if (sanitized.length() > 31) {
+            return sanitized.substring(0, 31);
+        }
+        return sanitized;
+    }
+
+    private void addPdfSectionTitle(Document document, String title, com.lowagie.text.Font font) throws DocumentException {
+        Paragraph paragraph = new Paragraph(title, font);
+        paragraph.setSpacingBefore(10f);
+        paragraph.setSpacingAfter(6f);
+        document.add(paragraph);
+    }
+
+    private void addPdfInfoPair(PdfPTable table, String label, String value, com.lowagie.text.Font labelFont,
+            com.lowagie.text.Font bodyFont) {
+        PdfPCell labelCell = new PdfPCell(new Phrase(safeText(label), labelFont));
+        labelCell.setPadding(5f);
+        labelCell.setBackgroundColor(new java.awt.Color(245, 247, 250));
+        table.addCell(labelCell);
+
+        PdfPCell valueCell = new PdfPCell(new Phrase(safeText(value), bodyFont));
+        valueCell.setPadding(5f);
+        table.addCell(valueCell);
+    }
+
+    private String safeText(String value) {
+        return value == null ? "" : value;
+    }
+
     private String formatDate(java.time.LocalDate value) {
         return value == null ? null : value.format(DATE_FORMATTER);
     }
@@ -2147,5 +2743,87 @@ public class StudentServiceImpl implements StudentService {
 
     private String booleanMark(Boolean value) {
         return Boolean.TRUE.equals(value) ? "X" : "";
+    }
+
+    private CellStyle createExcelSectionStyle(Workbook workbook) {
+        CellStyle style = workbook.createCellStyle();
+        style.setAlignment(HorizontalAlignment.LEFT);
+        style.setVerticalAlignment(VerticalAlignment.CENTER);
+        style.setFillForegroundColor((short) 22);
+        style.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+        Font font = workbook.createFont();
+        font.setBold(true);
+        font.setFontName(EXPORT_FONT_NAME);
+        style.setFont(font);
+        return style;
+    }
+
+    private CellStyle createExcelLabelCellStyle(Workbook workbook) {
+        CellStyle style = workbook.createCellStyle();
+        style.setAlignment(HorizontalAlignment.LEFT);
+        style.setVerticalAlignment(VerticalAlignment.CENTER);
+        style.setBorderTop(BorderStyle.THIN);
+        style.setBorderBottom(BorderStyle.THIN);
+        style.setBorderLeft(BorderStyle.THIN);
+        style.setBorderRight(BorderStyle.THIN);
+        style.setWrapText(true);
+        Font font = workbook.createFont();
+        font.setBold(true);
+        font.setFontName(EXPORT_FONT_NAME);
+        style.setFont(font);
+        return style;
+    }
+
+    private CellStyle createExcelCenteredBodyStyle(Workbook workbook) {
+        CellStyle style = createExcelBodyStyle(workbook);
+        style.setAlignment(HorizontalAlignment.CENTER);
+        return style;
+    }
+
+    // ─── Inner record types for Report Card export ───────────────────────────
+
+    private record StudentReportCardData(
+            Student student,
+            StudentEnrollment latestEnrollment,
+            List<StudentEnrollment> histories,
+            StudentAddress permanentAddress,
+            StudentGuardian father,
+            StudentGuardian mother,
+            StudentProfile profile,
+            List<ReportCardEvaluationRow> evaluationRows,
+            AttendanceSummary attendanceSummary,
+            String conclusion) {
+
+        public Student getStudent() { return student; }
+        public StudentEnrollment getLatestEnrollment() { return latestEnrollment; }
+        public List<StudentEnrollment> getHistories() { return histories; }
+        public StudentAddress getPermanentAddress() { return permanentAddress; }
+        public StudentGuardian getFather() { return father; }
+        public StudentGuardian getMother() { return mother; }
+        public StudentProfile getProfile() { return profile; }
+        public List<ReportCardEvaluationRow> getEvaluationRows() { return evaluationRows; }
+        public AttendanceSummary getAttendanceSummary() { return attendanceSummary; }
+        public String getConclusion() { return conclusion; }
+    }
+
+    private record ReportCardEvaluationRow(
+            String subjectName,
+            String semesterOneMidterm,
+            String semesterOneFinal,
+            String semesterTwoMidterm,
+            String semesterTwoFinal,
+            String remark) {
+
+        public String getSubjectName() { return subjectName; }
+        public String getSemesterOneMidterm() { return semesterOneMidterm; }
+        public String getSemesterOneFinal() { return semesterOneFinal; }
+        public String getSemesterTwoMidterm() { return semesterTwoMidterm; }
+        public String getSemesterTwoFinal() { return semesterTwoFinal; }
+        public String getRemark() { return remark; }
+    }
+
+    private record AttendanceSummary(int excusedAbsences, int unexcusedAbsences) {
+        public int getExcusedAbsences() { return excusedAbsences; }
+        public int getUnexcusedAbsences() { return unexcusedAbsences; }
     }
 }

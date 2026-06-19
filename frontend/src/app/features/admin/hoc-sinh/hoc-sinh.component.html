@@ -62,6 +62,23 @@
         Xuất PDF
       </button>
       }
+      <button
+        type="button"
+        color="accent"
+        matButton="filled"
+        class="btn-tight btn-hoc-ba"
+        [class.has-selection]="hasSelectedStudents"
+        (click)="openExportHocBa()"
+        [matTooltip]="hasSelectedStudents ? ('Xuất học bạ cho ' + selectedStudentIds.size + ' học sinh đã chọn') : 'Tích chọn học sinh để xuất học bạ'">
+        <app-icon
+          icon="menu_book"
+          [size]="18"
+          class="btn-icon" />
+        Xuất học bạ
+        @if (hasSelectedStudents) {
+          <span class="selection-badge">{{ selectedStudentIds.size }}</span>
+        }
+      </button>
       @if (canEdit) {
       <button
         type="button"
@@ -278,5 +295,3 @@
     (pageChange)="onPageChange($event)">
   </app-paginator>
 </section>
-
-

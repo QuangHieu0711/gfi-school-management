@@ -15,4 +15,9 @@ public interface StudentEvaluationRepository extends JpaRepository<StudentEvalua
 
     Optional<StudentEvaluation> findByClassroomIdAndSubjectIdAndSemesterIdAndStudentId(
             Long classroomId, Long subjectId, Long semesterId, Long studentId);
+
+    List<StudentEvaluation> findByStudentIdAndClassroomIdAndDeletedFlagOrderBySemesterSemesterOrderAscSubjectNameAsc(
+            Long studentId,
+            Long classroomId,
+            Integer deletedFlag);
 }

@@ -28,6 +28,7 @@ import com.gfi.backend.models.dtos.student.StudentCreateRequest;
 import com.gfi.backend.models.dtos.student.StudentFilterDto;
 import com.gfi.backend.models.dtos.student.StudentImportResultDto;
 import com.gfi.backend.models.dtos.student.StudentItemDto;
+import com.gfi.backend.models.dtos.student.StudentReportCardExportRequest;
 import com.gfi.backend.models.dtos.student.StudentTransferClassRequest;
 import com.gfi.backend.models.dtos.student.StudentTransferClassResultDto;
 import com.gfi.backend.models.enums.ActionType;
@@ -178,6 +179,27 @@ public class StudentController extends ApiBaseController {
         return executeApiResult(() -> ApiResult.success(
                 studentService.transferClass(request),
                 "Chuyển lớp học sinh thành công"));
+    }
+
+    @PostMapping("/export-report-cards")
+    @DataScoped(feature = "STUDENT_PROFILE", action = ActionType.DOWNLOAD)
+    @Operation(summary = "Xuat hoc ba hoc sinh")
+    public ResponseEntity<byte[]> exportReportCards(
+            @Valid @RequestBody StudentReportCardExportRequest request,
+            @RequestParam(defaultValue = "PDF") ExportType exportType) {
+        byte[] content = studentService.exportReportCards(request, exportType);
+        String extension = exportType == ExportType.PDF ? "pdf" : "xlsx";
+        String contentType = exportType == ExportType.PDF
+                ? MediaType.APPLICATION_PDF_VALUE
+                : "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, ContentDisposition.attachment()
+                        .filename("hoc-ba-hoc-sinh." + extension, StandardCharsets.UTF_8)
+                        .build()
+                        .toString())
+                .contentType(MediaType.parseMediaType(contentType))
+                .body(content);
     }
 
     @DeleteMapping("/{id}")

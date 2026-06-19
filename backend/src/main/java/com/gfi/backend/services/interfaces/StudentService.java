@@ -12,6 +12,7 @@ import com.gfi.backend.models.dtos.student.StudentCreateRequest;
 import com.gfi.backend.models.dtos.student.StudentFilterDto;
 import com.gfi.backend.models.dtos.student.StudentImportResultDto;
 import com.gfi.backend.models.dtos.student.StudentItemDto;
+import com.gfi.backend.models.dtos.student.StudentReportCardExportRequest;
 import com.gfi.backend.models.dtos.student.StudentTransferClassRequest;
 import com.gfi.backend.models.dtos.student.StudentTransferClassResultDto;
 import com.gfi.backend.models.enums.ExportType;
@@ -36,6 +37,8 @@ public interface StudentService {
     StudentItemDto update(Long id, StudentCreateRequest request);
 
     StudentTransferClassResultDto transferClass(StudentTransferClassRequest request);
+
+    byte[] exportReportCards(StudentReportCardExportRequest request, ExportType exportType);
 
     void delete(Long id);
 }

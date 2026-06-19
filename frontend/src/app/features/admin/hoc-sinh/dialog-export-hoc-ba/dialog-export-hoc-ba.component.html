@@ -1,0 +1,94 @@
+<app-dialog-container [dialogTitle]="title" [dialogActionTemplate]="Actions">
+  <div class="export-body">
+    <!-- Student count info -->
+    <div class="info-banner">
+      <mat-icon class="info-icon">school</mat-icon>
+      <span>
+        Xuất học bạ cho <strong>{{ studentCount }}</strong> học sinh đã chọn
+      </span>
+    </div>
+
+    <!-- Format selection -->
+    <div class="format-section">
+      <div class="format-label">Chọn định dạng xuất:</div>
+      <div class="format-cards">
+        <!-- PDF Card -->
+        <button
+          type="button"
+          class="format-card"
+          [class.active]="selectedType === 'PDF'"
+          (click)="selectType('PDF')"
+          id="export-format-pdf">
+          <div class="format-card-icon pdf-icon">
+            <mat-icon>picture_as_pdf</mat-icon>
+          </div>
+          <div class="format-card-content">
+            <div class="format-card-title">PDF</div>
+            <div class="format-card-desc">Xuất học bạ theo mẫu Bộ GD&amp;ĐT<br/>Font Times New Roman, in ấn chuẩn</div>
+          </div>
+          <div class="format-card-check" [class.visible]="selectedType === 'PDF'">
+            <mat-icon>check_circle</mat-icon>
+          </div>
+        </button>
+
+        <!-- Excel Card -->
+        <button
+          type="button"
+          class="format-card"
+          [class.active]="selectedType === 'EXCEL'"
+          (click)="selectType('EXCEL')"
+          id="export-format-excel">
+          <div class="format-card-icon excel-icon">
+            <mat-icon>table_view</mat-icon>
+          </div>
+          <div class="format-card-content">
+            <div class="format-card-title">Excel</div>
+            <div class="format-card-desc">Xuất học bạ dạng bảng tính<br/>Font Times New Roman, dễ chỉnh sửa</div>
+          </div>
+          <div class="format-card-check" [class.visible]="selectedType === 'EXCEL'">
+            <mat-icon>check_circle</mat-icon>
+          </div>
+        </button>
+      </div>
+    </div>
+
+    <!-- Preview note -->
+    <div class="preview-note">
+      <mat-icon class="note-icon">info_outline</mat-icon>
+      <span>
+        @if (selectedType === 'PDF') {
+          File PDF sẽ được mở trong tab mới để xem trước và lưu về máy. Mỗi học sinh chiếm 1 trang riêng.
+        } @else {
+          File Excel (.xls) sẽ được tải xuống tự động. Học bạ được trình bày đầy đủ theo mẫu chuẩn.
+        }
+      </span>
+    </div>
+  </div>
+</app-dialog-container>
+
+<ng-template #Actions>
+  <button
+    type="button"
+    matButton="outlined"
+    mat-dialog-close
+    id="btn-cancel-export">
+    Hủy
+  </button>
+  <button
+    type="button"
+    color="primary"
+    matButton="filled"
+    [disabled]="isExporting || !studentCount"
+    (click)="onExport()"
+    cdkFocusInitial
+    id="btn-confirm-export">
+    @if (isExporting) {
+      Đang xuất...
+    } @else {
+      <ng-container>
+        <mat-icon>download</mat-icon>
+      </ng-container>
+      Xuất học bạ
+    }
+  </button>
+</ng-template>

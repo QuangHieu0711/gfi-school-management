@@ -30,6 +30,7 @@ import { HocSinhService } from '@app/service/admin/hoc-sinh.service';
 import { AuthService, PermissionCheckService } from '@service';
 import { DialogImportHocSinhComponent } from './dialog-import/dialog-import.component';
 import { DialogTransferClassComponent } from './dialog-transfer-class/dialog-transfer-class.component';
+import { DialogExportHocBaComponent } from './dialog-export-hoc-ba/dialog-export-hoc-ba.component';
 
 @Component({
   selector: 'hoc-sinh',
@@ -330,6 +331,26 @@ export class HocSinhComponent extends ComponentBaseAbstract {
           pageSize: this.pageSize,
         });
       }
+    );
+  }
+
+  openExportHocBa(): void {
+    const students = this.selectedStudents;
+    if (!students.length) {
+      this.toastr.warning(
+        'Vui lòng tích chọn ít nhất một học sinh để xuất học bạ',
+        'Cảnh báo'
+      );
+      return;
+    }
+
+    this.dialog.componentDialog(
+      DialogExportHocBaComponent,
+      {
+        width: '520px',
+        data: { students },
+      },
+      () => {}
     );
   }
 
