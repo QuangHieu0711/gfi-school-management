@@ -450,12 +450,6 @@ public class TeacherAssignmentServiceImpl implements TeacherAssignmentService {
     private void replaceExistingAssignments(AssignmentBuildContext context) {
         // Chỉ xóa các bản ghi (class + subject) khớp với request của teacher này,
         // không xóa toàn bộ phân công của giáo viên trong học kỳ
-        Set<Long> requestClassIds = context.seeds().stream()
-                .map(seed -> seed.classroom().getId())
-                .collect(Collectors.toCollection(LinkedHashSet::new));
-        Set<Long> requestSubjectIds = context.seeds().stream()
-                .map(seed -> seed.subject().getId())
-                .collect(Collectors.toCollection(LinkedHashSet::new));
         Set<Long> requestPairKeys = context.seeds().stream()
                 .map(seed -> buildPairKey(seed.classroom().getId(), seed.subject().getId()))
                 .collect(Collectors.toCollection(LinkedHashSet::new));
@@ -490,45 +484,6 @@ public class TeacherAssignmentServiceImpl implements TeacherAssignmentService {
         return teacherAssignmentRepository.saveAll(assignments).stream()
                 .map(this::toItemDto)
                 .toList();
-    }
-
-    private void validateClassroomSubjectConflicts(Staff staff, SchoolYear schoolYear, Semester semester,
-            List<AssignmentSeed> seeds) {
-        if (seeds.isEmpty()) {
-            return;
-        }
-
-        // Kiểm tra xem (lớp + môn + học kỳ) đã được phân công cho giáo viên KHÁC chưa
-        Set<Long> requestPairKeys = seeds.stream()
-                .map(seed -> buildPairKey(seed.classroom().getId(), seed.subject().getId()))
-                .collect(Collectors.toCollection(LinkedHashSet::new));
-
-        List<TeacherAssignment> conflictingAssignments = teacherAssignmentRepository.findAll((root, query, cb) -> {
-            List<Predicate> predicates = new ArrayList<>();
-            predicates.add(cb.equal(root.get("schoolYear").get("id"), schoolYear.getId()));
-            predicates.add(cb.equal(root.get("semester").get("id"), semester.getId()));
-            predicates.add(cb.notEqual(root.get("staff").get("id"), staff.getId()));
-            return cb.and(predicates.toArray(new Predicate[0]));
-        });
-
-        Map<String, String> conflicts = new LinkedHashMap<>();
-        for (TeacherAssignment existing : conflictingAssignments) {
-            if (existing.getClassroom() == null || existing.getSubject() == null) continue;
-            Long pairKey = buildPairKey(existing.getClassroom().getId(), existing.getSubject().getId());
-            if (requestPairKeys.contains(pairKey)) {
-                String key = pairKey.toString();
-                String msg = "Lớp " + existing.getClassroom().getName()
-                        + " - Môn " + existing.getSubject().getName()
-                        + " đã được phân công cho giáo viên khác";
-                conflicts.put(key, msg);
-            }
-        }
-
-        if (!conflicts.isEmpty()) {
-            throw new UserMessageException(
-                    "Phân công bị trùng (1 lớp + 1 môn + 1 học kỳ chỉ được phân 1 lần): "
-                            + String.join("; ", conflicts.values()));
-        }
     }
 
     private void validateAssignmentConflicts(Staff staff, SchoolYear schoolYear, Semester semester,

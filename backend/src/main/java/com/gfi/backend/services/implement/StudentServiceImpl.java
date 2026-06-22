@@ -66,14 +66,12 @@ import com.gfi.backend.models.entities.Classroom;
 import com.gfi.backend.models.entities.ClassroomSubject;
 import com.gfi.backend.models.entities.AttendanceRecord;
 import com.gfi.backend.models.entities.SchoolYear;
-import com.gfi.backend.models.entities.Semester;
 import com.gfi.backend.models.entities.Student;
 import com.gfi.backend.models.entities.StudentAddress;
 import com.gfi.backend.models.entities.StudentEnrollment;
 import com.gfi.backend.models.entities.StudentEvaluation;
 import com.gfi.backend.models.entities.StudentGuardian;
 import com.gfi.backend.models.entities.StudentProfile;
-import com.gfi.backend.models.entities.Subject;
 import com.gfi.backend.models.entities.Unit;
 import com.gfi.backend.models.enums.ActionType;
 import com.gfi.backend.models.enums.ExportType;
@@ -84,7 +82,6 @@ import com.gfi.backend.models.security.ResolvedScope;
 import com.gfi.backend.repositories.ClassroomRepository;
 import com.gfi.backend.repositories.ClassroomSubjectRepository;
 import com.gfi.backend.repositories.SchoolYearRepository;
-import com.gfi.backend.repositories.SemesterRepository;
 import com.gfi.backend.repositories.AttendanceRecordRepository;
 import com.gfi.backend.repositories.StudentAddressRepository;
 import com.gfi.backend.repositories.StudentEnrollmentRepository;
@@ -211,7 +208,6 @@ public class StudentServiceImpl implements StudentService {
     private final AttendanceRecordRepository attendanceRecordRepository;
     private final StudentEvaluationRepository studentEvaluationRepository;
     private final ClassroomSubjectRepository classroomSubjectRepository;
-    private final SemesterRepository semesterRepository;
 
     @Override
     @Transactional(readOnly = true)
@@ -1641,6 +1637,10 @@ public class StudentServiceImpl implements StudentService {
         List<StudentAddress> addresses = studentAddressRepository.findByStudentIdOrderByIdAsc(student.getId());
         List<StudentGuardian> guardians = studentGuardianRepository.findByStudentIdOrderByIdAsc(student.getId());
         StudentProfile profile = studentProfileRepository.findByStudentId(student.getId()).orElse(null);
+        List<ReportCardClassPage> classPages = new ArrayList<>();
+        for (StudentEnrollment history : histories) {
+            classPages.add(buildReportCardClassPage(student, history, latestEnrollment));
+        }
 
         Long classroomId = latestEnrollment.getClassroom() == null ? null : latestEnrollment.getClassroom().getId();
         List<ClassroomSubject> classroomSubjects = classroomId == null
@@ -1665,7 +1665,35 @@ public class StudentServiceImpl implements StudentService {
                 profile,
                 buildReportCardEvaluationRows(classroomSubjects, evaluations),
                 buildAttendanceSummary(attendanceRecords, latestEnrollment.getSchoolYear()),
-                buildReportCardConclusion(student, latestEnrollment));
+                buildReportCardConclusion(student, latestEnrollment),
+                classPages);
+    }
+
+    private ReportCardClassPage buildReportCardClassPage(Student student, StudentEnrollment enrollment,
+            StudentEnrollment latestEnrollment) {
+        Long classroomId = enrollment.getClassroom() == null ? null : enrollment.getClassroom().getId();
+        List<ClassroomSubject> classroomSubjects = classroomId == null
+                ? List.of()
+                : classroomSubjectRepository.findByClassroomIdAndStatusAndDeletedFlagOrderBySubjectNameAsc(classroomId, 1, 0);
+        List<StudentEvaluation> evaluations = classroomId == null
+                ? List.of()
+                : studentEvaluationRepository
+                        .findByStudentIdAndClassroomIdAndDeletedFlagOrderBySemesterSemesterOrderAscSubjectNameAsc(
+                                student.getId(), classroomId, 0);
+        List<AttendanceRecord> attendanceRecords = classroomId == null
+                ? List.of()
+                : attendanceRecordRepository.findByClassroomIdAndStudentIdAndDeletedFlag(classroomId, student.getId(), 0);
+        boolean latestClassPage = latestEnrollment != null && latestEnrollment.getId() != null
+                && latestEnrollment.getId().equals(enrollment.getId());
+        String conclusion = latestClassPage
+                ? buildReportCardConclusion(student, enrollment)
+                : (Boolean.TRUE.equals(enrollment.getIsRepeater()) ? "Luu ban" : "");
+
+        return new ReportCardClassPage(
+                enrollment,
+                buildReportCardEvaluationRows(classroomSubjects, evaluations),
+                buildAttendanceSummary(attendanceRecords, enrollment.getSchoolYear()),
+                conclusion);
     }
 
     private List<ReportCardEvaluationRow> buildReportCardEvaluationRows(List<ClassroomSubject> classroomSubjects,
@@ -1956,6 +1984,8 @@ public class StudentServiceImpl implements StudentService {
                 studentName.setAlignment(Element.ALIGN_CENTER);
                 studentName.setSpacingAfter(12f);
                 document.add(studentName);
+                document.newPage();
+                addPdfExportInfo(document, infoFont);
 
                 addPdfSectionTitle(document, "THÔNG TIN HỌC SINH", sectionFont);
                 PdfPTable infoTable = new PdfPTable(new float[] { 1.4f, 2.6f, 1.4f, 2.6f });
@@ -1994,6 +2024,15 @@ public class StudentServiceImpl implements StudentService {
                             Element.ALIGN_LEFT);
                 }
                 document.add(historyTable);
+                boolean splitEvaluationByClassPage = true;
+                if (splitEvaluationByClassPage) {
+                    for (ReportCardClassPage classPage : reportCard.getClassPages()) {
+                        document.newPage();
+                        addPdfExportInfo(document, infoFont);
+                        addPdfClassEvaluationPage(document, reportCard, classPage, sectionFont, labelFont, bodyFont);
+                    }
+                    continue;
+                }
 
                 addPdfSectionTitle(document, "ĐÁNH GIÁ NĂM HỌC", sectionFont);
                 PdfPTable evaluationTable = new PdfPTable(new float[] { 2.4f, 1.1f, 1.1f, 1.1f, 1.1f, 2.2f });
@@ -2038,6 +2077,84 @@ public class StudentServiceImpl implements StudentService {
         } catch (DocumentException | IOException ex) {
             throw new UserMessageException("Khong the xuat hoc ba PDF");
         }
+    }
+
+    private void addPdfClassEvaluationPage(Document document, StudentReportCardData reportCard, ReportCardClassPage classPage,
+            com.lowagie.text.Font sectionFont, com.lowagie.text.Font labelFont, com.lowagie.text.Font bodyFont)
+            throws DocumentException {
+        addPdfSectionTitle(document, "DANH GIA NAM HOC", sectionFont);
+
+        PdfPTable metaTable = new PdfPTable(new float[] { 1.2f, 2.0f, 1.2f, 2.0f });
+        metaTable.setWidthPercentage(100);
+        addPdfInfoPair(metaTable, "Hoc sinh", reportCard.getStudent().getFullName(), labelFont, bodyFont);
+        addPdfInfoPair(metaTable, "Nam hoc", classPage.getEnrollment().getSchoolYear() == null ? null
+                : classPage.getEnrollment().getSchoolYear().getName(), labelFont, bodyFont);
+        addPdfInfoPair(metaTable, "Lop", classPage.getEnrollment().getClassroom() == null ? null
+                : classPage.getEnrollment().getClassroom().getName(), labelFont, bodyFont);
+        addPdfInfoPair(metaTable, "Ngay nhap hoc",
+                formatDate(resolveEnrollmentDate(classPage.getEnrollment(), reportCard.getStudent())), labelFont, bodyFont);
+        metaTable.setSpacingAfter(8f);
+        document.add(metaTable);
+
+        PdfPTable evaluationTable = new PdfPTable(new float[] { 2.4f, 1.1f, 1.1f, 1.1f, 1.1f, 2.2f });
+        evaluationTable.setWidthPercentage(100);
+        String[] evaluationHeaders = { "Mon hoc/Hoat dong", "GK I", "CK I", "GK II", "CK II", "Nhan xet" };
+        for (String header : evaluationHeaders) {
+            addPdfHeaderCell(evaluationTable, header, labelFont);
+        }
+        if (classPage.getEvaluationRows().isEmpty()) {
+            for (int i = 0; i < evaluationHeaders.length; i++) {
+                addPdfBodyCell(evaluationTable, "", bodyFont, Element.ALIGN_LEFT);
+            }
+        } else {
+            for (ReportCardEvaluationRow row : classPage.getEvaluationRows()) {
+                addPdfBodyCell(evaluationTable, row.getSubjectName(), bodyFont, Element.ALIGN_LEFT);
+                addPdfBodyCell(evaluationTable, row.getSemesterOneMidterm(), bodyFont, Element.ALIGN_CENTER);
+                addPdfBodyCell(evaluationTable, row.getSemesterOneFinal(), bodyFont, Element.ALIGN_CENTER);
+                addPdfBodyCell(evaluationTable, row.getSemesterTwoMidterm(), bodyFont, Element.ALIGN_CENTER);
+                addPdfBodyCell(evaluationTable, row.getSemesterTwoFinal(), bodyFont, Element.ALIGN_CENTER);
+                addPdfBodyCell(evaluationTable, row.getRemark(), bodyFont, Element.ALIGN_LEFT);
+            }
+        }
+        evaluationTable.setSpacingAfter(10f);
+        document.add(evaluationTable);
+
+        addPdfSectionTitle(document, "TONG HOP", sectionFont);
+        PdfPTable summaryTable = new PdfPTable(new float[] { 1.4f, 1.6f, 1.4f, 1.6f });
+        summaryTable.setWidthPercentage(100);
+        addPdfInfoPair(summaryTable, "So buoi nghi co phep",
+                String.valueOf(classPage.getAttendanceSummary().getExcusedAbsences()), labelFont, bodyFont);
+        addPdfInfoPair(summaryTable, "So buoi nghi khong phep",
+                String.valueOf(classPage.getAttendanceSummary().getUnexcusedAbsences()), labelFont, bodyFont);
+        addPdfInfoPair(summaryTable, "Ket luan", classPage.getConclusion(), labelFont, bodyFont);
+        addPdfInfoPair(summaryTable, "Dien chinh sach",
+                reportCard.getProfile() == null ? null : reportCard.getProfile().getPolicyObject(), labelFont, bodyFont);
+        summaryTable.setSpacingAfter(18f);
+        document.add(summaryTable);
+
+        PdfPTable signatureTable = new PdfPTable(2);
+        signatureTable.setWidthPercentage(100);
+        signatureTable.setWidths(new float[] { 1f, 1f });
+        addPdfSignatureCell(signatureTable, "Giao vien chu nhiem", bodyFont);
+        addPdfSignatureCell(signatureTable, "Hieu truong", bodyFont);
+        document.add(signatureTable);
+    }
+
+    private void addPdfExportInfo(Document document, com.lowagie.text.Font infoFont) throws DocumentException {
+        Paragraph info = new Paragraph(buildExportInfoLine(), infoFont);
+        info.setAlignment(Element.ALIGN_RIGHT);
+        info.setSpacingAfter(8f);
+        document.add(info);
+    }
+
+    private void addPdfSignatureCell(PdfPTable table, String title, com.lowagie.text.Font font) {
+        Paragraph text = new Paragraph(title + "\n\n\n(Ky va ghi ro ho ten)", font);
+        text.setAlignment(Element.ALIGN_CENTER);
+        PdfPCell cell = new PdfPCell(text);
+        cell.setBorder(PdfPCell.NO_BORDER);
+        cell.setPaddingTop(8f);
+        cell.setHorizontalAlignment(Element.ALIGN_CENTER);
+        table.addCell(cell);
     }
 
     private void upsertStudentFromExcelRow(Long unitId, Row row, DataFormatter formatter) {
@@ -2792,7 +2909,8 @@ public class StudentServiceImpl implements StudentService {
             StudentProfile profile,
             List<ReportCardEvaluationRow> evaluationRows,
             AttendanceSummary attendanceSummary,
-            String conclusion) {
+            String conclusion,
+            List<ReportCardClassPage> classPages) {
 
         public Student getStudent() { return student; }
         public StudentEnrollment getLatestEnrollment() { return latestEnrollment; }
@@ -2801,6 +2919,19 @@ public class StudentServiceImpl implements StudentService {
         public StudentGuardian getFather() { return father; }
         public StudentGuardian getMother() { return mother; }
         public StudentProfile getProfile() { return profile; }
+        public List<ReportCardEvaluationRow> getEvaluationRows() { return evaluationRows; }
+        public AttendanceSummary getAttendanceSummary() { return attendanceSummary; }
+        public String getConclusion() { return conclusion; }
+        public List<ReportCardClassPage> getClassPages() { return classPages; }
+    }
+
+    private record ReportCardClassPage(
+            StudentEnrollment enrollment,
+            List<ReportCardEvaluationRow> evaluationRows,
+            AttendanceSummary attendanceSummary,
+            String conclusion) {
+
+        public StudentEnrollment getEnrollment() { return enrollment; }
         public List<ReportCardEvaluationRow> getEvaluationRows() { return evaluationRows; }
         public AttendanceSummary getAttendanceSummary() { return attendanceSummary; }
         public String getConclusion() { return conclusion; }
