@@ -28,7 +28,7 @@
             "aot": true,
             "inlineStyleLanguage": "scss",
 
-            "allowedCommonJsDependencies": ["lodash"],
+            "allowedCommonJsDependencies": ["lodash", "js-sha256"],
 
             "assets": [
               "src/assets",
@@ -168,3 +168,4 @@
     "analytics": false
   }
 }
+

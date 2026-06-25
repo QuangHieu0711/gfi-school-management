@@ -1,4 +1,5 @@
 import { format } from 'date-fns';
+import { sha256 as sha256Hash } from 'js-sha256';
 import _ from 'lodash';
 import { Observable, take } from 'rxjs';
 
@@ -82,14 +83,7 @@ export const deAccent = (string: string): string => (string ? _.deburr(string.no
  * @param message The message to hash.
  * @returns A promise that resolves to the SHA-256 hash of the message as a hexadecimal string.
  */
-export const sha256 = async (message: string): Promise<string> => {
-  const encoder = new TextEncoder();
-  const data = encoder.encode(message);
-  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  const hashHex = hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
-  return hashHex;
-};
+export const sha256 = async (message: string): Promise<string> => sha256Hash(message);
 
 /**
  * Get the value from an observable.
@@ -116,3 +110,4 @@ export const copyToClipboard = async (text: string): Promise<void> => {
     console.error('Failed to copy: ', err);
   }
 };
+
