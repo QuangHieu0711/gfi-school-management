@@ -51,9 +51,19 @@ services:
     networks:
       - gfi-network
 
+  ai:
+    build:
+      context: ./ai
+    container_name: gfi-ai
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8001:8001"
+    networks:
+      - gfi-network
+
   backend:
     build:
-      context: .
+      context: ./backend
     container_name: gfi-backend
     restart: unless-stopped
     env_file:
@@ -70,12 +80,23 @@ services:
       SPRING_MAIL_PASSWORD: ${SPRING_MAIL_PASSWORD}
       AI_GENERATE_COMMENT_URL: ${AI_GENERATE_COMMENT_URL}
       SERVER_PORT: 8080
-    ports:
-      - "127.0.0.1:8080:8080"
     depends_on:
       - postgres
       - minio
       - minio-init
+      - ai
+    networks:
+      - gfi-network
+
+  frontend:
+    build:
+      context: ./frontend
+    container_name: gfi-frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
     networks:
       - gfi-network
 
