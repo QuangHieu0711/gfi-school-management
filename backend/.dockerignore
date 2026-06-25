@@ -1,0 +1,11 @@
+target
+*.log
+hs_err_pid*.log
+replay_pid*.log
+minio-data
+uploads
+.git
+.github
+.agents
+.codex
+.m2

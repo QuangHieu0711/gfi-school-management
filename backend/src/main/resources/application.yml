@@ -11,8 +11,9 @@ spring:
   # DATABASE (PostgreSQL)
   # ===============================
   datasource:
-    url: jdbc:postgresql://localhost:5432/gfi_db
-    username: postgres
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/gfi_db}
+    username: ${SPRING_DATASOURCE_USERNAME:postgres}
+    password: ${SPRING_DATASOURCE_PASSWORD:}
 
   # ===============================
   # JPA / HIBERNATE
@@ -34,15 +35,11 @@ spring:
   # ===============================
   # MAIL (Gmail SMTP)
   # ===============================
-  # Để gửi mail cần tạo App Password trên Google Account:
-  # 1. Bật 2FA tại https://myaccount.google.com/security
-  # 2. Tạo App Password tại https://myaccount.google.com/apppasswords
-  # 3. Thay thế username và password bên dưới
   mail:
     host: smtp.gmail.com
     port: 587
-    username: hieudoangpt04@gmail.com
-    password: mkee irvo fizm wsei
+    username: ${SPRING_MAIL_USERNAME:}
+    password: ${SPRING_MAIL_PASSWORD:}
     properties:
       mail:
         smtp:
@@ -53,25 +50,18 @@ spring:
 # ===============================
 # FILE UPLOAD (MinIO)
 # ===============================
-# MinIO cấu hình để upload file (student avatar, staff avatar, signature)
-# Phải match với docker-compose.yml MINIO_ROOT_USER và MINIO_ROOT_PASSWORD
 minio:
-  # URL của MinIO server
-  url: http://localhost:9000
-  # Access key (username) - PHẢI match docker-compose MINIO_ROOT_USER
-  accessKey: admin
-  # Secret key (password) - PHẢI match docker-compose MINIO_ROOT_PASSWORD
-  secretKey: admin12345
-  # Tên bucket để lưu file
-  bucketName: GIF
-  # Folder trong bucket
-  folderName: students
+  url: ${MINIO_URL:http://localhost:9000}
+  accessKey: ${MINIO_ACCESSKEY:admin}
+  secretKey: ${MINIO_SECRETKEY:admin12345}
+  bucketName: ${MINIO_BUCKETNAME:gif}
+  folderName: ${MINIO_FOLDERNAME:students}
 
 # ===============================
 # SERVER
 # ===============================
 server:
-  port: 8080
+  port: ${SERVER_PORT:8080}
 
 # ===============================
 # JWT CONFIGURATION
@@ -85,4 +75,8 @@ jwt:
 # ===============================
 app:
   mail:
-    from-name: "Hệ thống GFI"
+    from-name: "He thong GFI"
+
+ai:
+  generate-comment:
+    url: ${AI_GENERATE_COMMENT_URL:http://127.0.0.1:8001/generate-comment}

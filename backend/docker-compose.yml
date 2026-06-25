@@ -1,32 +1,88 @@
-version: "3.8"
-
 services:
+  postgres:
+    image: postgres:16
+    container_name: gfi-postgres
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - gfi-network
+
   minio:
     image: minio/minio
-    container_name: minio
+    container_name: gfi-minio
     restart: unless-stopped
+    env_file:
+      - .env
     ports:
-      - "9000:9000"   # API
-      - "9001:9001"   # Console UI
+      - "127.0.0.1:9001:9001"
     environment:
-      MINIO_ROOT_USER: admin
-      MINIO_ROOT_PASSWORD: admin12345
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
     volumes:
-      - ./minio-data:/data
+      - minio_data:/data
     command: server /data --console-address ":9001"
+    networks:
+      - gfi-network
 
-  mc:
+  minio-init:
     image: minio/mc
-    container_name: minio-mc
+    container_name: gfi-minio-init
     depends_on:
       - minio
+    env_file:
+      - .env
     entrypoint: >
       /bin/sh -c "
-      until /usr/bin/mc alias set local http://minio:9000 admin admin12345; do
-        echo 'MinIO chưa sẵn sàng, đợi tiếp...';
+      until /usr/bin/mc alias set local http://minio:9000 ${MINIO_ROOT_USER} ${MINIO_ROOT_PASSWORD}; do
+        echo 'Waiting for MinIO...';
         sleep 2;
       done;
-      /usr/bin/mc mb local/student-avatar --ignore-existing;
-      /usr/bin/mc anonymous set download local/student-avatar;
+      /usr/bin/mc mb local/${MINIO_BUCKET} --ignore-existing;
+      /usr/bin/mc anonymous set download local/${MINIO_BUCKET};
       exit 0;
       "
+    networks:
+      - gfi-network
+
+  backend:
+    build:
+      context: .
+    container_name: gfi-backend
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
+      MINIO_URL: http://minio:9000
+      MINIO_ACCESSKEY: ${MINIO_ROOT_USER}
+      MINIO_SECRETKEY: ${MINIO_ROOT_PASSWORD}
+      MINIO_BUCKETNAME: ${MINIO_BUCKET}
+      SPRING_MAIL_USERNAME: ${SPRING_MAIL_USERNAME}
+      SPRING_MAIL_PASSWORD: ${SPRING_MAIL_PASSWORD}
+      AI_GENERATE_COMMENT_URL: ${AI_GENERATE_COMMENT_URL}
+      SERVER_PORT: 8080
+    ports:
+      - "127.0.0.1:8080:8080"
+    depends_on:
+      - postgres
+      - minio
+      - minio-init
+    networks:
+      - gfi-network
+
+volumes:
+  postgres_data:
+  minio_data:
+
+networks:
+  gfi-network:
+    driver: bridge
