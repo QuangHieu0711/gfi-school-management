@@ -1,6 +1,5 @@
 <app-dialog-container [dialogTitle]="title" [dialogActionTemplate]="Actions">
   <div class="export-body">
-    <!-- Student count info -->
     <div class="info-banner">
       <mat-icon class="info-icon">school</mat-icon>
       <span>
@@ -8,11 +7,9 @@
       </span>
     </div>
 
-    <!-- Format selection -->
     <div class="format-section">
       <div class="format-label">Chọn định dạng xuất:</div>
       <div class="format-cards">
-        <!-- PDF Card -->
         <button
           type="button"
           class="format-card"
@@ -24,14 +21,16 @@
           </div>
           <div class="format-card-content">
             <div class="format-card-title">PDF</div>
-            <div class="format-card-desc">Xuất học bạ theo mẫu Bộ GD&amp;ĐT<br/>Font Times New Roman, in ấn chuẩn</div>
+            <div class="format-card-desc">
+              Xuất học bạ theo mẫu Bộ GD&ĐT<br />
+              Tải file PDF trực tiếp về máy
+            </div>
           </div>
           <div class="format-card-check" [class.visible]="selectedType === 'PDF'">
             <mat-icon>check_circle</mat-icon>
           </div>
         </button>
 
-        <!-- Excel Card -->
         <button
           type="button"
           class="format-card"
@@ -43,7 +42,10 @@
           </div>
           <div class="format-card-content">
             <div class="format-card-title">Excel</div>
-            <div class="format-card-desc">Xuất học bạ dạng bảng tính<br/>Font Times New Roman, dễ chỉnh sửa</div>
+            <div class="format-card-desc">
+              Xuất học bạ dạng bảng tính<br />
+              Tải file Excel trực tiếp về máy
+            </div>
           </div>
           <div class="format-card-check" [class.visible]="selectedType === 'EXCEL'">
             <mat-icon>check_circle</mat-icon>
@@ -52,14 +54,13 @@
       </div>
     </div>
 
-    <!-- Preview note -->
     <div class="preview-note">
       <mat-icon class="note-icon">info_outline</mat-icon>
       <span>
         @if (selectedType === 'PDF') {
-          File PDF sẽ được mở trong tab mới để xem trước và lưu về máy. Mỗi học sinh chiếm 1 trang riêng.
+          File PDF sẽ được tải trực tiếp về máy, không mở trang preview để in nữa.
         } @else {
-          File Excel (.xls) sẽ được tải xuống tự động. Học bạ được trình bày đầy đủ theo mẫu chuẩn.
+          File Excel sẽ được tải trực tiếp về máy theo danh sách học sinh đã chọn.
         }
       </span>
     </div>

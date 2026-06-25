@@ -40,6 +40,7 @@ export const HOC_SINH_API_ENDPOINT = {
   BASE_PATH: 'students',
   FILTER: 'search',
   EXPORT: 'export',
+  EXPORT_REPORT_CARDS: 'export-report-cards',
   IMPORT_EXCEL: 'import-excel',
   IMPORT_ERROR_FILE: 'import-error-file',
   EXCEL_TEMPLATE: 'excel-template',
@@ -70,6 +71,11 @@ export interface HocSinhFilterRequest extends TableRequest {
 }
 
 export interface HocSinhExportRequest extends HocSinhFilterRequest {
+  exportType?: 'EXCEL' | 'PDF';
+}
+
+export interface HocSinhReportCardExportRequest {
+  studentIds: ID_TYPE[];
   exportType?: 'EXCEL' | 'PDF';
 }
 

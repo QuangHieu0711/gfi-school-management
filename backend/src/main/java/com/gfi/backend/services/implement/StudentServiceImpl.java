@@ -123,6 +123,7 @@ public class StudentServiceImpl implements StudentService {
     private static final String ADDRESS_TYPE_PERMANENT = "PERMANENT";
     private static final String GUARDIAN_TYPE_FATHER = "FATHER";
     private static final String GUARDIAN_TYPE_MOTHER = "MOTHER";
+    private static final String GUARDIAN_TYPE_GUARDIAN = "GUARDIAN";
     private static final String FEATURE = FeatureKey.STUDENT_PROFILE.getCode();
     private static final String EXPORT_FONT_NAME = "Times New Roman";
     private static final String EXCEL_CONTENT_TYPE = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
@@ -131,6 +132,21 @@ public class StudentServiceImpl implements StudentService {
     private static final String TIMES_FONT_REGULAR_PATH = "C:/Windows/Fonts/times.ttf";
     private static final String TIMES_FONT_BOLD_PATH = "C:/Windows/Fonts/timesbd.ttf";
     private static final String TIMES_FONT_ITALIC_PATH = "C:/Windows/Fonts/timesi.ttf";
+    private static final List<String> REPORT_CARD_SUBJECT_TEMPLATE = List.of(
+            "Tiếng Việt",
+            "Toán",
+            "Ngoại ngữ 1",
+            "Lịch sử và Địa lý",
+            "Khoa học",
+            "Tin học và Công nghệ (Tin học)",
+            "Tin học và Công nghệ (Công nghệ)",
+            "Đạo đức",
+            "Tự nhiên và Xã hội",
+            "Giáo dục thể chất",
+            "Nghệ thuật (Âm nhạc)",
+            "Nghệ thuật (Mĩ thuật)",
+            "Hoạt động trải nghiệm",
+            "Tiếng dân tộc");
     private static final int STUDENT_TEMPLATE_GROUP_HEADER_ROW_INDEX = 7;
     private static final int STUDENT_IMPORT_HEADER_ROW_INDEX = 8;
     private static final int STUDENT_IMPORT_DATA_START_ROW_INDEX = 9;
@@ -1662,6 +1678,7 @@ public class StudentServiceImpl implements StudentService {
                 findPermanentAddress(addresses),
                 findGuardianByType(guardians, GUARDIAN_TYPE_FATHER),
                 findGuardianByType(guardians, GUARDIAN_TYPE_MOTHER),
+                findGuardianByType(guardians, GUARDIAN_TYPE_GUARDIAN),
                 profile,
                 buildReportCardEvaluationRows(classroomSubjects, evaluations),
                 buildAttendanceSummary(attendanceRecords, latestEnrollment.getSchoolYear()),
@@ -1960,6 +1977,24 @@ public class StudentServiceImpl implements StudentService {
                 }
                 firstStudent = false;
 
+                boolean renderSeparatedPages = true;
+                if (renderSeparatedPages) {
+                    addPdfCoverPageUtf8(document, reportCard, govFont, titleFont, labelFont, bodyFont, infoFont);
+
+                    document.newPage();
+                    addPdfStudentInfoPageUtf8(document, reportCard, sectionFont, labelFont, bodyFont, infoFont);
+
+                    document.newPage();
+                    addPdfLearningHistoryPageUtf8(document, reportCard, sectionFont, labelFont, bodyFont, infoFont);
+
+                    for (ReportCardClassPage classPage : reportCard.getClassPages()) {
+                        document.newPage();
+                        addPdfExportInfoUtf8(document, infoFont);
+                        addPdfClassEvaluationPageUtf8(document, reportCard, classPage, sectionFont, labelFont, bodyFont);
+                    }
+                    continue;
+                }
+
                 Paragraph info = new Paragraph(buildExportInfoLine(), infoFont);
                 info.setAlignment(Element.ALIGN_RIGHT);
                 info.setSpacingAfter(8f);
@@ -2079,64 +2114,190 @@ public class StudentServiceImpl implements StudentService {
         }
     }
 
+    private void addPdfCoverPage(Document document, StudentReportCardData reportCard, com.lowagie.text.Font govFont,
+            com.lowagie.text.Font titleFont, com.lowagie.text.Font labelFont, com.lowagie.text.Font bodyFont,
+            com.lowagie.text.Font infoFont) throws DocumentException {
+        addPdfExportInfo(document, infoFont);
+
+        PdfPTable coverTable = new PdfPTable(1);
+        coverTable.setWidthPercentage(72);
+        PdfPCell coverCell = new PdfPCell();
+        coverCell.setPaddingTop(20f);
+        coverCell.setPaddingBottom(28f);
+        coverCell.setPaddingLeft(26f);
+        coverCell.setPaddingRight(26f);
+        coverCell.setMinimumHeight(700f);
+
+        Paragraph gov = new Paragraph("BỘ GIÁO DỤC VÀ ĐÀO TẠO", govFont);
+        gov.setAlignment(Element.ALIGN_CENTER);
+        gov.setSpacingAfter(90f);
+        coverCell.addElement(gov);
+
+        Paragraph title = new Paragraph("HỌC BẠ\nTIỂU HỌC", titleFont);
+        title.setAlignment(Element.ALIGN_CENTER);
+        title.setSpacingAfter(180f);
+        coverCell.addElement(title);
+
+        PdfPTable metaTable = new PdfPTable(new float[] { 1.3f, 3.7f });
+        metaTable.setWidthPercentage(100);
+        addPdfInfoLine(metaTable, "Họ và tên học sinh", reportCard.getStudent().getFullName(), labelFont, bodyFont);
+        addPdfInfoLine(metaTable, "Trường",
+                reportCard.getStudent().getUnit() == null ? null : reportCard.getStudent().getUnit().getName(),
+                labelFont, bodyFont);
+        addPdfInfoLine(metaTable, "Xã (Phường, Thị trấn)", null, labelFont, bodyFont);
+        addPdfInfoLine(metaTable, "Huyện (Thành phố, Quận, Thị xã)", null, labelFont, bodyFont);
+        addPdfInfoLine(metaTable, "Tỉnh (Thành phố)", null, labelFont, bodyFont);
+        coverCell.addElement(metaTable);
+
+        coverTable.addCell(coverCell);
+        document.add(coverTable);
+    }
+
+    private void addPdfStudentInfoPage(Document document, StudentReportCardData reportCard, com.lowagie.text.Font sectionFont,
+            com.lowagie.text.Font labelFont, com.lowagie.text.Font bodyFont, com.lowagie.text.Font infoFont)
+            throws DocumentException {
+        addPdfExportInfo(document, infoFont);
+        Paragraph title = new Paragraph("HỌC BẠ", sectionFont);
+        title.setAlignment(Element.ALIGN_CENTER);
+        title.setSpacingAfter(12f);
+        document.add(title);
+
+        PdfPTable infoTable = new PdfPTable(new float[] { 1.3f, 2.2f, 1.0f, 1.5f });
+        infoTable.setWidthPercentage(100);
+        addPdfInfoPair(infoTable, "Họ và tên học sinh", reportCard.getStudent().getFullName(), labelFont, bodyFont);
+        addPdfInfoPair(infoTable, "Giới tính", studentGenderLabel(reportCard.getStudent().getGender()), labelFont, bodyFont);
+        addPdfInfoPair(infoTable, "Ngày, tháng, năm sinh", formatDate(reportCard.getStudent().getDateOfBirth()), labelFont, bodyFont);
+        addPdfInfoPair(infoTable, "Dân tộc", reportCard.getStudent().getEthnicity(), labelFont, bodyFont);
+        addPdfInfoPair(infoTable, "Nơi sinh", reportCard.getStudent().getPlaceOfBirth(), labelFont, bodyFont);
+        addPdfInfoPair(infoTable, "Quốc tịch", reportCard.getStudent().getNationality(), labelFont, bodyFont);
+        infoTable.setSpacingAfter(8f);
+        document.add(infoTable);
+
+        PdfPTable detailTable = new PdfPTable(1);
+        detailTable.setWidthPercentage(100);
+        addPdfInfoLine(detailTable, "Quê quán", buildHomeTown(reportCard.getPermanentAddress()), labelFont, bodyFont);
+        addPdfInfoLine(detailTable, "Nơi ở hiện nay", buildFullAddress(reportCard.getPermanentAddress()), labelFont, bodyFont);
+        addPdfInfoLine(detailTable, "Họ và tên cha", guardianName(reportCard.getFather()), labelFont, bodyFont);
+        addPdfInfoLine(detailTable, "Họ và tên mẹ", guardianName(reportCard.getMother()), labelFont, bodyFont);
+        addPdfInfoLine(detailTable, "Người giám hộ (nếu có)", guardianName(reportCard.getGuardian()), labelFont, bodyFont);
+        detailTable.setSpacingAfter(28f);
+        document.add(detailTable);
+
+        PdfPTable signatureTable = new PdfPTable(1);
+        signatureTable.setWidthPercentage(100);
+        PdfPCell signatureCell = new PdfPCell();
+        signatureCell.setBorder(PdfPCell.NO_BORDER);
+        signatureCell.setHorizontalAlignment(Element.ALIGN_RIGHT);
+        signatureCell.setPaddingTop(180f);
+
+        Paragraph signatureText = new Paragraph(
+                "......, ngày ...... tháng ...... năm 20....\nHIỆU TRƯỞNG\n(Ký, ghi rõ họ tên và đóng dấu)",
+                bodyFont);
+        signatureText.setAlignment(Element.ALIGN_RIGHT);
+        signatureCell.addElement(signatureText);
+        signatureTable.addCell(signatureCell);
+        document.add(signatureTable);
+    }
+
+    private void addPdfLearningHistoryPage(Document document, StudentReportCardData reportCard, com.lowagie.text.Font sectionFont,
+            com.lowagie.text.Font labelFont, com.lowagie.text.Font bodyFont, com.lowagie.text.Font infoFont)
+            throws DocumentException {
+        addPdfExportInfo(document, infoFont);
+        addPdfSectionTitle(document, "QUÁ TRÌNH HỌC TẬP", sectionFont);
+
+        PdfPTable historyTable = new PdfPTable(new float[] { 1.6f, 1.0f, 2.2f, 1.4f, 1.8f, 1.2f });
+        historyTable.setWidthPercentage(100);
+        historyTable.setHeaderRows(1);
+        String[] historyHeaders = { "Năm học", "Lớp", "Tên trường", "Số đăng bộ", "Ngày nhập học/chuyển đến", "Ghi chú" };
+        for (String header : historyHeaders) {
+            addPdfHeaderCell(historyTable, header, labelFont);
+        }
+
+        if (reportCard.getHistories().isEmpty()) {
+            for (int i = 0; i < historyHeaders.length; i++) {
+                addPdfBodyCell(historyTable, "", bodyFont, Element.ALIGN_LEFT);
+            }
+        } else {
+            for (StudentEnrollment history : reportCard.getHistories()) {
+                addPdfBodyCell(historyTable, history.getSchoolYear() == null ? null : history.getSchoolYear().getName(), bodyFont,
+                        Element.ALIGN_LEFT);
+                addPdfBodyCell(historyTable, history.getClassroom() == null ? null : history.getClassroom().getName(), bodyFont,
+                        Element.ALIGN_LEFT);
+                addPdfBodyCell(historyTable,
+                        reportCard.getStudent().getUnit() == null ? null : reportCard.getStudent().getUnit().getName(),
+                        bodyFont, Element.ALIGN_LEFT);
+                addPdfBodyCell(historyTable, reportCard.getStudent().getBoardingBook(), bodyFont, Element.ALIGN_LEFT);
+                addPdfBodyCell(historyTable, formatDate(resolveEnrollmentDate(history, reportCard.getStudent())), bodyFont,
+                        Element.ALIGN_CENTER);
+                addPdfBodyCell(historyTable, Boolean.TRUE.equals(history.getIsRepeater()) ? "Lưu ban" : "", bodyFont,
+                        Element.ALIGN_LEFT);
+            }
+        }
+        document.add(historyTable);
+    }
+
     private void addPdfClassEvaluationPage(Document document, StudentReportCardData reportCard, ReportCardClassPage classPage,
             com.lowagie.text.Font sectionFont, com.lowagie.text.Font labelFont, com.lowagie.text.Font bodyFont)
             throws DocumentException {
-        addPdfSectionTitle(document, "DANH GIA NAM HOC", sectionFont);
+        String className = classPage.getEnrollment().getClassroom() == null ? null
+                : classPage.getEnrollment().getClassroom().getName();
 
-        PdfPTable metaTable = new PdfPTable(new float[] { 1.2f, 2.0f, 1.2f, 2.0f });
+        PdfPTable metaTable = new PdfPTable(new float[] { 1.4f, 2.1f, 0.8f, 1.0f });
         metaTable.setWidthPercentage(100);
-        addPdfInfoPair(metaTable, "Hoc sinh", reportCard.getStudent().getFullName(), labelFont, bodyFont);
-        addPdfInfoPair(metaTable, "Nam hoc", classPage.getEnrollment().getSchoolYear() == null ? null
-                : classPage.getEnrollment().getSchoolYear().getName(), labelFont, bodyFont);
-        addPdfInfoPair(metaTable, "Lop", classPage.getEnrollment().getClassroom() == null ? null
-                : classPage.getEnrollment().getClassroom().getName(), labelFont, bodyFont);
-        addPdfInfoPair(metaTable, "Ngay nhap hoc",
-                formatDate(resolveEnrollmentDate(classPage.getEnrollment(), reportCard.getStudent())), labelFont, bodyFont);
+        addPdfInfoPair(metaTable, "Họ và tên học sinh", reportCard.getStudent().getFullName(), labelFont, bodyFont);
+        addPdfInfoPair(metaTable, "Lớp", className, labelFont, bodyFont);
+        addPdfInfoPair(metaTable, "Chiều cao", null, labelFont, bodyFont);
+        addPdfInfoPair(metaTable, "Cân nặng", null, labelFont, bodyFont);
+        addPdfInfoPair(metaTable, "Số ngày nghỉ có phép",
+                String.valueOf(classPage.getAttendanceSummary().getExcusedAbsences()), labelFont, bodyFont);
+        addPdfInfoPair(metaTable, "Số ngày nghỉ không phép",
+                String.valueOf(classPage.getAttendanceSummary().getUnexcusedAbsences()), labelFont, bodyFont);
         metaTable.setSpacingAfter(8f);
         document.add(metaTable);
 
-        PdfPTable evaluationTable = new PdfPTable(new float[] { 2.4f, 1.1f, 1.1f, 1.1f, 1.1f, 2.2f });
+        Paragraph subjectTitle = new Paragraph("1. Các môn học và hoạt động giáo dục", labelFont);
+        subjectTitle.setSpacingAfter(6f);
+        document.add(subjectTitle);
+
+        List<ReportCardEvaluationRow> orderedRows = orderReportCardRows(classPage.getEvaluationRows());
+        PdfPTable evaluationTable = new PdfPTable(new float[] { 2.7f, 1.2f, 1.3f, 3.2f });
         evaluationTable.setWidthPercentage(100);
-        String[] evaluationHeaders = { "Mon hoc/Hoat dong", "GK I", "CK I", "GK II", "CK II", "Nhan xet" };
+        String[] evaluationHeaders = { "Môn học và hoạt động giáo dục", "Mức đạt được", "Điểm KT ĐK", "Nhận xét" };
         for (String header : evaluationHeaders) {
             addPdfHeaderCell(evaluationTable, header, labelFont);
         }
-        if (classPage.getEvaluationRows().isEmpty()) {
-            for (int i = 0; i < evaluationHeaders.length; i++) {
-                addPdfBodyCell(evaluationTable, "", bodyFont, Element.ALIGN_LEFT);
-            }
-        } else {
-            for (ReportCardEvaluationRow row : classPage.getEvaluationRows()) {
-                addPdfBodyCell(evaluationTable, row.getSubjectName(), bodyFont, Element.ALIGN_LEFT);
-                addPdfBodyCell(evaluationTable, row.getSemesterOneMidterm(), bodyFont, Element.ALIGN_CENTER);
-                addPdfBodyCell(evaluationTable, row.getSemesterOneFinal(), bodyFont, Element.ALIGN_CENTER);
-                addPdfBodyCell(evaluationTable, row.getSemesterTwoMidterm(), bodyFont, Element.ALIGN_CENTER);
-                addPdfBodyCell(evaluationTable, row.getSemesterTwoFinal(), bodyFont, Element.ALIGN_CENTER);
-                addPdfBodyCell(evaluationTable, row.getRemark(), bodyFont, Element.ALIGN_LEFT);
-            }
+        for (ReportCardEvaluationRow row : orderedRows) {
+            addPdfBodyCell(evaluationTable, row.getSubjectName(), bodyFont, Element.ALIGN_LEFT);
+            addPdfBodyCell(evaluationTable, buildReportCardLevel(row), bodyFont, Element.ALIGN_CENTER);
+            addPdfBodyCell(evaluationTable, buildReportCardScore(row), bodyFont, Element.ALIGN_CENTER);
+            addPdfBodyCell(evaluationTable, row.getRemark(), bodyFont, Element.ALIGN_LEFT);
         }
         evaluationTable.setSpacingAfter(10f);
         document.add(evaluationTable);
 
-        addPdfSectionTitle(document, "TONG HOP", sectionFont);
-        PdfPTable summaryTable = new PdfPTable(new float[] { 1.4f, 1.6f, 1.4f, 1.6f });
-        summaryTable.setWidthPercentage(100);
-        addPdfInfoPair(summaryTable, "So buoi nghi co phep",
-                String.valueOf(classPage.getAttendanceSummary().getExcusedAbsences()), labelFont, bodyFont);
-        addPdfInfoPair(summaryTable, "So buoi nghi khong phep",
-                String.valueOf(classPage.getAttendanceSummary().getUnexcusedAbsences()), labelFont, bodyFont);
-        addPdfInfoPair(summaryTable, "Ket luan", classPage.getConclusion(), labelFont, bodyFont);
-        addPdfInfoPair(summaryTable, "Dien chinh sach",
-                reportCard.getProfile() == null ? null : reportCard.getProfile().getPolicyObject(), labelFont, bodyFont);
-        summaryTable.setSpacingAfter(18f);
-        document.add(summaryTable);
+        Paragraph completionTitle = new Paragraph(
+                "6. Hoàn thành chương trình lớp học/chương trình tiểu học: " + safeText(classPage.getConclusion()),
+                labelFont);
+        completionTitle.setSpacingAfter(8f);
+        document.add(completionTitle);
+
+        PdfPTable completionLines = new PdfPTable(1);
+        completionLines.setWidthPercentage(100);
+        addPdfBlankLine(completionLines, bodyFont);
+        addPdfBlankLine(completionLines, bodyFont);
+        completionLines.setSpacingAfter(8f);
+        document.add(completionLines);
+
+        Paragraph dateLine = new Paragraph(".........................., ngày .... tháng .... năm 20....", bodyFont);
+        dateLine.setAlignment(Element.ALIGN_RIGHT);
+        dateLine.setSpacingAfter(6f);
+        document.add(dateLine);
 
         PdfPTable signatureTable = new PdfPTable(2);
         signatureTable.setWidthPercentage(100);
         signatureTable.setWidths(new float[] { 1f, 1f });
-        addPdfSignatureCell(signatureTable, "Giao vien chu nhiem", bodyFont);
-        addPdfSignatureCell(signatureTable, "Hieu truong", bodyFont);
+        addPdfSignatureCell(signatureTable, "Xác nhận của Hiệu trưởng", bodyFont);
+        addPdfSignatureCell(signatureTable, "Giáo viên chủ nhiệm", bodyFont);
         document.add(signatureTable);
     }
 
@@ -2155,6 +2316,240 @@ public class StudentServiceImpl implements StudentService {
         cell.setPaddingTop(8f);
         cell.setHorizontalAlignment(Element.ALIGN_CENTER);
         table.addCell(cell);
+    }
+
+    private void addPdfInfoLine(PdfPTable table, String label, String value, com.lowagie.text.Font labelFont,
+            com.lowagie.text.Font bodyFont) {
+        PdfPCell labelCell = new PdfPCell(new Phrase(safeText(label) + ":", labelFont));
+        labelCell.setBorder(PdfPCell.NO_BORDER);
+        labelCell.setPaddingTop(8f);
+        labelCell.setPaddingBottom(6f);
+        table.addCell(labelCell);
+
+        PdfPCell valueCell = new PdfPCell(new Phrase(safeText(value), bodyFont));
+        valueCell.setBorder(PdfPCell.BOTTOM);
+        valueCell.setPaddingTop(8f);
+        valueCell.setPaddingBottom(6f);
+        table.addCell(valueCell);
+    }
+
+    private void addPdfBlankLine(PdfPTable table, com.lowagie.text.Font bodyFont) {
+        PdfPCell cell = new PdfPCell(new Phrase("", bodyFont));
+        cell.setBorder(PdfPCell.BOTTOM);
+        cell.setPaddingTop(8f);
+        cell.setPaddingBottom(8f);
+        table.addCell(cell);
+    }
+
+    private void addPdfCoverPageUtf8(Document document, StudentReportCardData reportCard, com.lowagie.text.Font govFont,
+            com.lowagie.text.Font titleFont, com.lowagie.text.Font labelFont, com.lowagie.text.Font bodyFont,
+            com.lowagie.text.Font infoFont) throws DocumentException {
+        addPdfExportInfoUtf8(document, infoFont);
+
+        PdfPTable coverTable = new PdfPTable(1);
+        coverTable.setWidthPercentage(72);
+        PdfPCell coverCell = new PdfPCell();
+        coverCell.setPaddingTop(20f);
+        coverCell.setPaddingBottom(28f);
+        coverCell.setPaddingLeft(26f);
+        coverCell.setPaddingRight(26f);
+        coverCell.setMinimumHeight(700f);
+
+        Paragraph gov = new Paragraph("BỘ GIÁO DỤC VÀ ĐÀO TẠO", govFont);
+        gov.setAlignment(Element.ALIGN_CENTER);
+        gov.setSpacingAfter(90f);
+        coverCell.addElement(gov);
+
+        Paragraph title = new Paragraph("HỌC BẠ\nTIỂU HỌC", titleFont);
+        title.setAlignment(Element.ALIGN_CENTER);
+        title.setSpacingAfter(180f);
+        coverCell.addElement(title);
+
+        PdfPTable metaTable = new PdfPTable(new float[] { 1.3f, 3.7f });
+        metaTable.setWidthPercentage(100);
+        addPdfInfoLine(metaTable, "Họ và tên học sinh", reportCard.getStudent().getFullName(), labelFont, bodyFont);
+        addPdfInfoLine(metaTable, "Trường",
+                reportCard.getStudent().getUnit() == null ? null : reportCard.getStudent().getUnit().getName(),
+                labelFont, bodyFont);
+        addPdfInfoLine(metaTable, "Xã (Phường, Thị trấn)", null, labelFont, bodyFont);
+        addPdfInfoLine(metaTable, "Huyện (Thành phố, Quận, Thị xã)", null, labelFont, bodyFont);
+        addPdfInfoLine(metaTable, "Tỉnh (Thành phố)", null, labelFont, bodyFont);
+        coverCell.addElement(metaTable);
+
+        coverTable.addCell(coverCell);
+        document.add(coverTable);
+    }
+
+    private void addPdfStudentInfoPageUtf8(Document document, StudentReportCardData reportCard,
+            com.lowagie.text.Font sectionFont, com.lowagie.text.Font labelFont, com.lowagie.text.Font bodyFont,
+            com.lowagie.text.Font infoFont) throws DocumentException {
+        addPdfExportInfoUtf8(document, infoFont);
+        Paragraph title = new Paragraph("HỌC BẠ", sectionFont);
+        title.setAlignment(Element.ALIGN_CENTER);
+        title.setSpacingAfter(12f);
+        document.add(title);
+
+        PdfPTable infoTable = new PdfPTable(new float[] { 1.3f, 2.2f, 1.0f, 1.5f });
+        infoTable.setWidthPercentage(100);
+        addPdfInfoPair(infoTable, "Họ và tên học sinh", reportCard.getStudent().getFullName(), labelFont, bodyFont);
+        addPdfInfoPair(infoTable, "Giới tính", studentGenderLabel(reportCard.getStudent().getGender()), labelFont, bodyFont);
+        addPdfInfoPair(infoTable, "Ngày, tháng, năm sinh", formatDate(reportCard.getStudent().getDateOfBirth()), labelFont,
+                bodyFont);
+        addPdfInfoPair(infoTable, "Dân tộc", reportCard.getStudent().getEthnicity(), labelFont, bodyFont);
+        addPdfInfoPair(infoTable, "Nơi sinh", reportCard.getStudent().getPlaceOfBirth(), labelFont, bodyFont);
+        addPdfInfoPair(infoTable, "Quốc tịch", reportCard.getStudent().getNationality(), labelFont, bodyFont);
+        infoTable.setSpacingAfter(8f);
+        document.add(infoTable);
+
+        PdfPTable detailTable = new PdfPTable(1);
+        detailTable.setWidthPercentage(100);
+        addPdfInfoLine(detailTable, "Quê quán", buildHomeTown(reportCard.getPermanentAddress()), labelFont, bodyFont);
+        addPdfInfoLine(detailTable, "Nơi ở hiện nay", buildFullAddress(reportCard.getPermanentAddress()), labelFont, bodyFont);
+        addPdfInfoLine(detailTable, "Họ và tên cha", guardianName(reportCard.getFather()), labelFont, bodyFont);
+        addPdfInfoLine(detailTable, "Họ và tên mẹ", guardianName(reportCard.getMother()), labelFont, bodyFont);
+        addPdfInfoLine(detailTable, "Người giám hộ (nếu có)", guardianName(reportCard.getGuardian()), labelFont, bodyFont);
+        detailTable.setSpacingAfter(28f);
+        document.add(detailTable);
+
+        PdfPTable signatureTable = new PdfPTable(1);
+        signatureTable.setWidthPercentage(100);
+        PdfPCell signatureCell = new PdfPCell();
+        signatureCell.setBorder(PdfPCell.NO_BORDER);
+        signatureCell.setHorizontalAlignment(Element.ALIGN_RIGHT);
+        signatureCell.setPaddingTop(180f);
+
+        Paragraph signatureText = new Paragraph(
+                "......, ngày ...... tháng ...... năm 20....\nHIỆU TRƯỞNG\n(Ký, ghi rõ họ tên và đóng dấu)",
+                bodyFont);
+        signatureText.setAlignment(Element.ALIGN_RIGHT);
+        signatureCell.addElement(signatureText);
+        signatureTable.addCell(signatureCell);
+        document.add(signatureTable);
+    }
+
+    private void addPdfLearningHistoryPageUtf8(Document document, StudentReportCardData reportCard,
+            com.lowagie.text.Font sectionFont, com.lowagie.text.Font labelFont, com.lowagie.text.Font bodyFont,
+            com.lowagie.text.Font infoFont) throws DocumentException {
+        addPdfExportInfoUtf8(document, infoFont);
+        addPdfSectionTitle(document, "QUÁ TRÌNH HỌC TẬP", sectionFont);
+
+        PdfPTable historyTable = new PdfPTable(new float[] { 1.6f, 1.0f, 2.2f, 1.4f, 1.8f, 1.2f });
+        historyTable.setWidthPercentage(100);
+        historyTable.setHeaderRows(1);
+        String[] historyHeaders = { "Năm học", "Lớp", "Tên trường", "Số đăng bộ", "Ngày nhập học/chuyển đến", "Ghi chú" };
+        for (String header : historyHeaders) {
+            addPdfHeaderCell(historyTable, header, labelFont);
+        }
+
+        if (reportCard.getHistories().isEmpty()) {
+            for (int i = 0; i < historyHeaders.length; i++) {
+                addPdfBodyCell(historyTable, "", bodyFont, Element.ALIGN_LEFT);
+            }
+        } else {
+            for (StudentEnrollment history : reportCard.getHistories()) {
+                addPdfBodyCell(historyTable, history.getSchoolYear() == null ? null : history.getSchoolYear().getName(), bodyFont,
+                        Element.ALIGN_LEFT);
+                addPdfBodyCell(historyTable, history.getClassroom() == null ? null : history.getClassroom().getName(), bodyFont,
+                        Element.ALIGN_LEFT);
+                addPdfBodyCell(historyTable,
+                        reportCard.getStudent().getUnit() == null ? null : reportCard.getStudent().getUnit().getName(),
+                        bodyFont, Element.ALIGN_LEFT);
+                addPdfBodyCell(historyTable, reportCard.getStudent().getBoardingBook(), bodyFont, Element.ALIGN_LEFT);
+                addPdfBodyCell(historyTable, formatDate(resolveEnrollmentDate(history, reportCard.getStudent())), bodyFont,
+                        Element.ALIGN_CENTER);
+                addPdfBodyCell(historyTable, Boolean.TRUE.equals(history.getIsRepeater()) ? "Lưu ban" : "", bodyFont,
+                        Element.ALIGN_LEFT);
+            }
+        }
+        document.add(historyTable);
+    }
+
+    private void addPdfClassEvaluationPageUtf8(Document document, StudentReportCardData reportCard,
+            ReportCardClassPage classPage, com.lowagie.text.Font sectionFont, com.lowagie.text.Font labelFont,
+            com.lowagie.text.Font bodyFont) throws DocumentException {
+        String className = classPage.getEnrollment().getClassroom() == null ? null
+                : classPage.getEnrollment().getClassroom().getName();
+
+        PdfPTable metaTable = new PdfPTable(new float[] { 1.4f, 2.1f, 0.8f, 1.0f });
+        metaTable.setWidthPercentage(100);
+        addPdfInfoPair(metaTable, "Họ và tên học sinh", reportCard.getStudent().getFullName(), labelFont, bodyFont);
+        addPdfInfoPair(metaTable, "Lớp", className, labelFont, bodyFont);
+        addPdfInfoPair(metaTable, "Chiều cao", null, labelFont, bodyFont);
+        addPdfInfoPair(metaTable, "Cân nặng", null, labelFont, bodyFont);
+        addPdfInfoPair(metaTable, "Số ngày nghỉ có phép",
+                String.valueOf(classPage.getAttendanceSummary().getExcusedAbsences()), labelFont, bodyFont);
+        addPdfInfoPair(metaTable, "Số ngày nghỉ không phép",
+                String.valueOf(classPage.getAttendanceSummary().getUnexcusedAbsences()), labelFont, bodyFont);
+        metaTable.setSpacingAfter(8f);
+        document.add(metaTable);
+
+        Paragraph subjectTitle = new Paragraph("1. Các môn học và hoạt động giáo dục", labelFont);
+        subjectTitle.setSpacingAfter(6f);
+        document.add(subjectTitle);
+
+        List<ReportCardEvaluationRow> orderedRows = orderReportCardRows(classPage.getEvaluationRows());
+        PdfPTable evaluationTable = new PdfPTable(new float[] { 2.7f, 1.2f, 1.3f, 3.2f });
+        evaluationTable.setWidthPercentage(100);
+        String[] evaluationHeaders = { "Môn học và hoạt động giáo dục", "Mức đạt được", "Điểm KT ĐK", "Nhận xét" };
+        for (String header : evaluationHeaders) {
+            addPdfHeaderCell(evaluationTable, header, labelFont);
+        }
+        for (ReportCardEvaluationRow row : orderedRows) {
+            addPdfBodyCell(evaluationTable, row.getSubjectName(), bodyFont, Element.ALIGN_LEFT);
+            addPdfBodyCell(evaluationTable, buildReportCardLevel(row), bodyFont, Element.ALIGN_CENTER);
+            addPdfBodyCell(evaluationTable, buildReportCardScore(row), bodyFont, Element.ALIGN_CENTER);
+            addPdfBodyCell(evaluationTable, row.getRemark(), bodyFont, Element.ALIGN_LEFT);
+        }
+        evaluationTable.setSpacingAfter(10f);
+        document.add(evaluationTable);
+
+        Paragraph completionTitle = new Paragraph(
+                "6. Hoàn thành chương trình lớp học/chương trình tiểu học: " + safeText(classPage.getConclusion()),
+                labelFont);
+        completionTitle.setSpacingAfter(8f);
+        document.add(completionTitle);
+
+        PdfPTable completionLines = new PdfPTable(1);
+        completionLines.setWidthPercentage(100);
+        addPdfBlankLine(completionLines, bodyFont);
+        addPdfBlankLine(completionLines, bodyFont);
+        completionLines.setSpacingAfter(8f);
+        document.add(completionLines);
+
+        Paragraph dateLine = new Paragraph(".........................., ngày .... tháng .... năm 20....", bodyFont);
+        dateLine.setAlignment(Element.ALIGN_RIGHT);
+        dateLine.setSpacingAfter(6f);
+        document.add(dateLine);
+
+        PdfPTable signatureTable = new PdfPTable(2);
+        signatureTable.setWidthPercentage(100);
+        signatureTable.setWidths(new float[] { 1f, 1f });
+        addPdfSignatureCellUtf8(signatureTable, "Xác nhận của Hiệu trưởng", bodyFont);
+        addPdfSignatureCellUtf8(signatureTable, "Giáo viên chủ nhiệm", bodyFont);
+        document.add(signatureTable);
+    }
+
+    private void addPdfExportInfoUtf8(Document document, com.lowagie.text.Font infoFont) throws DocumentException {
+        Paragraph info = new Paragraph(buildExportInfoLineUtf8(), infoFont);
+        info.setAlignment(Element.ALIGN_RIGHT);
+        info.setSpacingAfter(8f);
+        document.add(info);
+    }
+
+    private void addPdfSignatureCellUtf8(PdfPTable table, String title, com.lowagie.text.Font font) {
+        Paragraph text = new Paragraph(title + "\n\n\n(Ký và ghi rõ họ tên)", font);
+        text.setAlignment(Element.ALIGN_CENTER);
+        PdfPCell cell = new PdfPCell(text);
+        cell.setBorder(PdfPCell.NO_BORDER);
+        cell.setPaddingTop(8f);
+        cell.setHorizontalAlignment(Element.ALIGN_CENTER);
+        table.addCell(cell);
+    }
+
+    private String buildExportInfoLineUtf8() {
+        String exportTime = LocalDateTime.now().format(EXPORT_TIME_FORMATTER);
+        String username = SecurityUtils.getCurrentUsername();
+        return "Thời gian tải: " + exportTime + " | Người tải: " + username;
     }
 
     private void upsertStudentFromExcelRow(Long unitId, Row row, DataFormatter formatter) {
@@ -2604,6 +2999,27 @@ public class StudentServiceImpl implements StudentService {
         return parts.isEmpty() ? null : String.join(" - ", parts);
     }
 
+    private String guardianName(StudentGuardian guardian) {
+        if (guardian == null || !StringUtils.hasText(guardian.getFullName())) {
+            return null;
+        }
+        return guardian.getFullName().trim();
+    }
+
+    private String buildHomeTown(StudentAddress address) {
+        if (address == null) {
+            return null;
+        }
+        List<String> parts = new ArrayList<>();
+        if (StringUtils.hasText(address.getWardName())) {
+            parts.add(address.getWardName().trim());
+        }
+        if (StringUtils.hasText(address.getProvinceName())) {
+            parts.add(address.getProvinceName().trim());
+        }
+        return parts.isEmpty() ? null : String.join(", ", parts);
+    }
+
     private String formatEvaluationValue(StudentEvaluation evaluation, boolean midterm) {
         if (evaluation == null) {
             return null;
@@ -2641,6 +3057,94 @@ public class StudentServiceImpl implements StudentService {
             }
         }
         return remarks.isEmpty() ? null : String.join("; ", remarks);
+    }
+
+    private List<ReportCardEvaluationRow> orderReportCardRows(List<ReportCardEvaluationRow> rows) {
+        Map<String, ReportCardEvaluationRow> byNormalizedName = new LinkedHashMap<>();
+        for (ReportCardEvaluationRow row : safeList(rows)) {
+            if (row == null || !StringUtils.hasText(row.getSubjectName())) {
+                continue;
+            }
+            byNormalizedName.put(normalizeSubjectName(row.getSubjectName()), row);
+        }
+
+        List<ReportCardEvaluationRow> orderedRows = new ArrayList<>();
+        for (String templateSubject : REPORT_CARD_SUBJECT_TEMPLATE) {
+            ReportCardEvaluationRow matchedRow = byNormalizedName.remove(normalizeSubjectName(templateSubject));
+            orderedRows.add(matchedRow == null
+                    ? new ReportCardEvaluationRow(templateSubject, null, null, null, null, null)
+                    : new ReportCardEvaluationRow(
+                            templateSubject,
+                            matchedRow.getSemesterOneMidterm(),
+                            matchedRow.getSemesterOneFinal(),
+                            matchedRow.getSemesterTwoMidterm(),
+                            matchedRow.getSemesterTwoFinal(),
+                            matchedRow.getRemark()));
+        }
+        orderedRows.addAll(byNormalizedName.values());
+        return orderedRows;
+    }
+
+    private String normalizeSubjectName(String value) {
+        if (!StringUtils.hasText(value)) {
+            return "";
+        }
+        String normalized = Normalizer.normalize(value, Normalizer.Form.NFD)
+                .replaceAll("\\p{M}", "")
+                .toLowerCase(Locale.ROOT)
+                .replaceAll("[^a-z0-9]+", " ")
+                .trim();
+
+        if (normalized.startsWith("ngoai ngu")) {
+            return "ngoai ngu 1";
+        }
+        if (normalized.contains("tin hoc") && normalized.contains("cong nghe")) {
+            if (normalized.contains("tin hoc") && normalized.endsWith("tin hoc")) {
+                return "tin hoc va cong nghe tin hoc";
+            }
+            if (normalized.contains("cong nghe")) {
+                return "tin hoc va cong nghe cong nghe";
+            }
+        }
+        if (normalized.contains("nghe thuat") && normalized.contains("am nhac")) {
+            return "nghe thuat am nhac";
+        }
+        if (normalized.contains("nghe thuat") && (normalized.contains("mi thuat") || normalized.contains("my thuat"))) {
+            return "nghe thuat mi thuat";
+        }
+        return normalized;
+    }
+
+    private String buildReportCardLevel(ReportCardEvaluationRow row) {
+        return firstNonBlank(
+                row.getSemesterTwoFinal(),
+                row.getSemesterTwoMidterm(),
+                row.getSemesterOneFinal(),
+                row.getSemesterOneMidterm());
+    }
+
+    private String buildReportCardScore(ReportCardEvaluationRow row) {
+        List<String> parts = new ArrayList<>();
+        appendScorePart(parts, "GK I", row.getSemesterOneMidterm());
+        appendScorePart(parts, "CK I", row.getSemesterOneFinal());
+        appendScorePart(parts, "GK II", row.getSemesterTwoMidterm());
+        appendScorePart(parts, "CK II", row.getSemesterTwoFinal());
+        return parts.isEmpty() ? null : String.join(" | ", parts);
+    }
+
+    private void appendScorePart(List<String> parts, String label, String value) {
+        if (StringUtils.hasText(value)) {
+            parts.add(label + ": " + value.trim());
+        }
+    }
+
+    private String firstNonBlank(String... values) {
+        for (String value : values) {
+            if (StringUtils.hasText(value)) {
+                return value.trim();
+            }
+        }
+        return null;
     }
 
     private String buildReportCardSheetName(String fullName, int order) {
@@ -2804,7 +3308,7 @@ public class StudentServiceImpl implements StudentService {
         try {
             if (Files.exists(java.nio.file.Path.of(fontPath))) {
                 BaseFont baseFont = BaseFont.createFont(fontPath, BaseFont.IDENTITY_H, BaseFont.EMBEDDED);
-                return new com.lowagie.text.Font(baseFont, size, com.lowagie.text.Font.NORMAL);
+                return new com.lowagie.text.Font(baseFont, size, style);
             }
         } catch (Exception ignored) {
         }
@@ -2906,6 +3410,7 @@ public class StudentServiceImpl implements StudentService {
             StudentAddress permanentAddress,
             StudentGuardian father,
             StudentGuardian mother,
+            StudentGuardian guardian,
             StudentProfile profile,
             List<ReportCardEvaluationRow> evaluationRows,
             AttendanceSummary attendanceSummary,
@@ -2918,6 +3423,7 @@ public class StudentServiceImpl implements StudentService {
         public StudentAddress getPermanentAddress() { return permanentAddress; }
         public StudentGuardian getFather() { return father; }
         public StudentGuardian getMother() { return mother; }
+        public StudentGuardian getGuardian() { return guardian; }
         public StudentProfile getProfile() { return profile; }
         public List<ReportCardEvaluationRow> getEvaluationRows() { return evaluationRows; }
         public AttendanceSummary getAttendanceSummary() { return attendanceSummary; }

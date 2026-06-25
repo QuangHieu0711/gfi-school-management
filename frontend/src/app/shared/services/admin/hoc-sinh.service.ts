@@ -17,6 +17,7 @@ import {
   HocSinhFilterRequest,
   HocSinhFormRequest,
   HocSinhImportResponseData,
+  HocSinhReportCardExportRequest,
   HocSinhResponse,
   HocSinhTransferClassRequest,
   HocSinhTransferClassResult,
@@ -76,6 +77,27 @@ export class HocSinhService {
 
     return this.http.post(
       `${this.baseUrl}/${HOC_SINH_API_ENDPOINT.EXPORT}`,
+      body,
+      {
+        params,
+        observe: 'response',
+        responseType: 'blob',
+      }
+    );
+  }
+
+  exportReportCards(
+    payload: HocSinhReportCardExportRequest
+  ): Observable<HttpResponse<Blob>> {
+    const params = new HttpParams({
+      fromObject: {
+        exportType: payload.exportType ?? 'PDF',
+      },
+    });
+    const { exportType: _exportType, ...body } = payload;
+
+    return this.http.post(
+      `${this.baseUrl}/${HOC_SINH_API_ENDPOINT.EXPORT_REPORT_CARDS}`,
       body,
       {
         params,
