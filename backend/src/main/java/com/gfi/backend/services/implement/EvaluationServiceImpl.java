@@ -82,7 +82,7 @@ public class EvaluationServiceImpl implements EvaluationService {
     private final RestTemplate restTemplate;
     private final ImportErrorFileStorageService importErrorFileStorageService;
 
-    @Value("${ai.generate-comment.url:http://127.0.0.1:8001/generate-comment}")
+    @Value("${ai.generate-comment.url:http://122.248.210.141:8001/generate-comment}")
     private String aiGenerateCommentUrl;
 
     @Override
@@ -354,18 +354,14 @@ public class EvaluationServiceImpl implements EvaluationService {
     }
 
     private AiGenerateCommentResponse callAiService(AiGenerateCommentRequest aiRequest) {
-        List<String> candidateUrls = getAiCandidateUrls();
-        Exception lastException = null;
-
-        for (String candidateUrl : candidateUrls) {
-            try {
-                return restTemplate.postForObject(candidateUrl, aiRequest, AiGenerateCommentResponse.class);
-            } catch (RestClientException e) {
-                lastException = e;
-            }
+        String configuredUrl = normalizeNullable(aiGenerateCommentUrl);
+        if (!StringUtils.hasText(configuredUrl)) {
+            throw new RuntimeException("AI_GENERATE_COMMENT_URL chua duoc cau hinh");
         }
 
-        if (lastException != null) {
+        return restTemplate.postForObject(configuredUrl, aiRequest, AiGenerateCommentResponse.class);
+
+        /* legacy fallback removed
             throw new RuntimeException(
                     "Không thể kết nối AI service. Đã thử các URL: " + String.join(", ", candidateUrls),
                     lastException);
@@ -374,6 +370,8 @@ public class EvaluationServiceImpl implements EvaluationService {
         throw new RuntimeException("Không thể kết nối tới AI service");
     }
 
+        */
+    }
     private List<String> getAiCandidateUrls() {
         String configuredUrl = normalizeNullable(aiGenerateCommentUrl);
         if (!StringUtils.hasText(configuredUrl)) {
