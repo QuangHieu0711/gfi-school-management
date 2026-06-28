@@ -1,5 +1,6 @@
 package com.gfi.backend.services.implement;
 
+import java.net.URI;
 import java.time.LocalDateTime;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -23,6 +24,7 @@ import com.gfi.backend.services.interfaces.ImportErrorFileStorageService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
+import org.springframework.web.client.RestClientException;
 import com.gfi.backend.models.dtos.evaluation.EvaluationBulkGenerateCommentRequest;
 import com.gfi.backend.models.dtos.evaluation.EvaluationBulkGenerateCommentItemDto;
 
@@ -343,16 +345,68 @@ public class EvaluationServiceImpl implements EvaluationService {
                 .build();
 
         try {
-            AiGenerateCommentResponse response = restTemplate.postForObject(
-                    aiGenerateCommentUrl,
-                    aiRequest,
-                    AiGenerateCommentResponse.class
-            );
+            AiGenerateCommentResponse response = callAiService(aiRequest);
             return response != null && response.getComment() != null ? response.getComment() : "";
         } catch (Exception e) {
             e.printStackTrace();
             throw new UserMessageException(CommonErrorCode.INTERNAL_SERVER_ERROR.getCode(), "Lỗi khi gọi AI service: " + e.getMessage());
         }
+    }
+
+    private AiGenerateCommentResponse callAiService(AiGenerateCommentRequest aiRequest) {
+        List<String> candidateUrls = getAiCandidateUrls();
+        Exception lastException = null;
+
+        for (String candidateUrl : candidateUrls) {
+            try {
+                return restTemplate.postForObject(candidateUrl, aiRequest, AiGenerateCommentResponse.class);
+            } catch (RestClientException e) {
+                lastException = e;
+            }
+        }
+
+        if (lastException != null) {
+            throw new RuntimeException(
+                    "Không thể kết nối AI service. Đã thử các URL: " + String.join(", ", candidateUrls),
+                    lastException);
+        }
+
+        throw new RuntimeException("Không thể kết nối tới AI service");
+    }
+
+    private List<String> getAiCandidateUrls() {
+        String configuredUrl = normalizeNullable(aiGenerateCommentUrl);
+        if (!StringUtils.hasText(configuredUrl)) {
+            return List.of(
+                    "http://127.0.0.1:8001/generate-comment",
+                    "http://gfi-ai:8001/generate-comment");
+        }
+
+        List<String> candidates = new java.util.ArrayList<>();
+        candidates.add(configuredUrl);
+
+        try {
+            URI uri = URI.create(configuredUrl);
+            String host = uri.getHost();
+            if ("127.0.0.1".equals(host) || "localhost".equalsIgnoreCase(host)) {
+                candidates.add(replaceHost(uri, "gfi-ai"));
+            } else if ("gfi-ai".equalsIgnoreCase(host)) {
+                candidates.add(replaceHost(uri, "127.0.0.1"));
+            }
+        } catch (IllegalArgumentException ignored) {
+            // Keep only the configured URL when it cannot be parsed safely.
+        }
+
+        return candidates.stream().distinct().toList();
+    }
+
+    private String replaceHost(URI uri, String newHost) {
+        return URI.create(String.format("%s://%s%s%s",
+                uri.getScheme(),
+                newHost,
+                uri.getPort() >= 0 ? ":" + uri.getPort() : "",
+                uri.getRawPath() != null ? uri.getRawPath() : ""))
+                .toString();
     }
 
     @Override
