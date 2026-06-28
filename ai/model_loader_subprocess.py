@@ -20,6 +20,7 @@ def load_model_in_subprocess(base_model: str, adapter_path: str, device: str = "
     loader_script = """
 import sys
 import os
+import traceback
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from peft import PeftModel
@@ -38,16 +39,22 @@ try:
     base_model = sys.argv[1]
     adapter_path = sys.argv[2]
     device = sys.argv[3]
+
+    print(f"[loader] base_model={base_model}", file=sys.stderr)
+    print(f"[loader] adapter_path={adapter_path}", file=sys.stderr)
+    print(f"[loader] device={device}", file=sys.stderr)
     
     # Suppress HF warnings
     os.environ['HF_HUB_DISABLE_TELEMETRY'] = '1'
     
     # Try to load with conservative memory settings
+    print("[loader] loading tokenizer", file=sys.stderr)
     tokenizer = AutoTokenizer.from_pretrained(base_model, trust_remote_code=True)
     if tokenizer.pad_token_id is None:
         tokenizer.pad_token = tokenizer.eos_token
     
     # Load base model with CPU-friendly settings
+    print("[loader] loading base model", file=sys.stderr)
     base_model_obj = AutoModelForCausalLM.from_pretrained(
         base_model,
         trust_remote_code=True,
@@ -57,9 +64,11 @@ try:
     )
 
     if device == "cpu":
+        print("[loader] moving base model to cpu", file=sys.stderr)
         base_model_obj.to("cpu")
     
     # Load LoRA adapter
+    print("[loader] loading lora adapter", file=sys.stderr)
     model = PeftModel.from_pretrained(
         base_model_obj,
         adapter_path,
@@ -67,18 +76,22 @@ try:
         torch_dtype=torch.float16 if device == "cuda" else torch.float32,
     )
     if device == "cpu":
+        print("[loader] moving peft model to cpu", file=sys.stderr)
         model.to("cpu")
 
+    print("[loader] checking meta tensors", file=sys.stderr)
     if has_meta_tensors(model):
         raise RuntimeError("Model contains meta tensors after loading.")
 
+    print("[loader] switching to eval", file=sys.stderr)
     model.eval()
     
     # Success
     print("SUCCESS", file=sys.stderr)
     sys.exit(0)
 except Exception as e:
-    print(f"ERROR: {e}", file=sys.stderr)
+    print(f"ERROR: {type(e).__name__}: {e}", file=sys.stderr)
+    print(traceback.format_exc(), file=sys.stderr)
     sys.exit(1)
 """
     
@@ -100,8 +113,11 @@ except Exception as e:
                 return True
             else:
                 # Model failed to load (segfault, OOM, or other error)
+                print(f"[model_loader] Subprocess return code: {result.returncode}", file=sys.stderr)
+                if result.stdout:
+                    print(f"[model_loader] Subprocess stdout:\n{result.stdout}", file=sys.stderr)
                 if result.stderr:
-                    print(f"[model_loader] Subprocess stderr: {result.stderr[:200]}", file=sys.stderr)
+                    print(f"[model_loader] Subprocess stderr:\n{result.stderr}", file=sys.stderr)
                 return False
                 
         finally:
