@@ -182,6 +182,17 @@ def get_model_device():
     return next(model.parameters()).device
 
 
+def _has_meta_tensors(module) -> bool:
+    """Return True if any parameter or buffer is still a meta tensor."""
+    for param in module.parameters():
+        if getattr(param, "is_meta", False):
+            return True
+    for buffer in module.buffers():
+        if getattr(buffer, "is_meta", False):
+            return True
+    return False
+
+
 def build_bad_words_ids():
     """Build token ids that should be blocked during generation."""
     ids = []
@@ -207,7 +218,7 @@ def build_bad_words_ids():
     return ids
 
 
-def load_model(device: str = "cpu"):
+def load_model(device: Optional[str] = None):
     """Load tokenizer, base model, and LoRA adapter once at service startup."""
     global tokenizer, model, bad_words_ids, _model_load_failed
 
@@ -225,9 +236,19 @@ def load_model(device: str = "cpu"):
         raise FileNotFoundError(f"Adapter path does not exist: {adapter_path}")
 
     try:
+        if device is None:
+            requested_device = os.environ.get("MODEL_DEVICE", "").strip().lower()
+            if requested_device in {"cpu", "cuda"}:
+                device = requested_device
+            else:
+                device = "cuda" if torch.cuda.is_available() else "cpu"
+
+        if device != "cuda":
+            device = "cpu"
+
         # Pre-check: try loading in subprocess first to detect early failures
         from model_loader_subprocess import load_model_in_subprocess
-        if not load_model_in_subprocess(BASE_MODEL, adapter_path, timeout_sec=120):
+        if not load_model_in_subprocess(BASE_MODEL, adapter_path, device=device, timeout_sec=120):
             logger.error("Model loading failed in subprocess; using fallback comments.")
             _model_load_failed = True
             return
@@ -237,22 +258,37 @@ def load_model(device: str = "cpu"):
         if tokenizer.pad_token_id is None:
             tokenizer.pad_token = tokenizer.eos_token
 
-        kwargs = {"trust_remote_code": True}
+        kwargs = {
+            "trust_remote_code": True,
+            "device_map": None,
+            "low_cpu_mem_usage": False,
+        }
         if device == "cuda":
-            kwargs.update({"device_map": "auto", "torch_dtype": torch.float16})
+            kwargs.update({"torch_dtype": torch.float16})
         else:
-            kwargs.update({"low_cpu_mem_usage": False})  # Changed from True
+            kwargs.update({"torch_dtype": torch.float32})
 
         base_model = AutoModelForCausalLM.from_pretrained(BASE_MODEL, **kwargs)
-        model = PeftModel.from_pretrained(base_model, adapter_path)
+        if device == "cpu":
+            base_model.to("cpu")
+
+        model = PeftModel.from_pretrained(
+            base_model,
+            adapter_path,
+            device_map=None,
+            torch_dtype=torch.float16 if device == "cuda" else torch.float32,
+        )
 
         if device == "cpu":
             model.to("cpu")
 
+        if _has_meta_tensors(model):
+            raise RuntimeError("Model contains meta tensors after loading.")
+
         model.eval()
         bad_words_ids = build_bad_words_ids()
         
-        logger.info("Model loaded successfully.")
+        logger.info("Model loaded successfully on %s.", device)
         
     except Exception as e:
         logger.exception(f"Failed to load model: {e}")

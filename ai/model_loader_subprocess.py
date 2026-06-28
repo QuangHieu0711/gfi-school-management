@@ -10,7 +10,7 @@ import tempfile
 from pathlib import Path
 
 
-def load_model_in_subprocess(base_model: str, adapter_path: str, timeout_sec: int = 120) -> bool:
+def load_model_in_subprocess(base_model: str, adapter_path: str, device: str = "cpu", timeout_sec: int = 120) -> bool:
     """
     Attempt to load the model in a subprocess. Returns True if successful, False otherwise.
     If a segfault or any other error occurs, the subprocess dies cleanly and we return False.
@@ -24,9 +24,20 @@ import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from peft import PeftModel
 
+
+def has_meta_tensors(module):
+    for param in module.parameters():
+        if getattr(param, "is_meta", False):
+            return True
+    for buffer in module.buffers():
+        if getattr(buffer, "is_meta", False):
+            return True
+    return False
+
 try:
     base_model = sys.argv[1]
     adapter_path = sys.argv[2]
+    device = sys.argv[3]
     
     # Suppress HF warnings
     os.environ['HF_HUB_DISABLE_TELEMETRY'] = '1'
@@ -40,11 +51,27 @@ try:
     base_model_obj = AutoModelForCausalLM.from_pretrained(
         base_model,
         trust_remote_code=True,
-        low_cpu_mem_usage=False,  # Try False first since True was causing issues
+        device_map=None,
+        low_cpu_mem_usage=False,
+        torch_dtype=torch.float16 if device == "cuda" else torch.float32,
     )
+
+    if device == "cpu":
+        base_model_obj.to("cpu")
     
     # Load LoRA adapter
-    model = PeftModel.from_pretrained(base_model_obj, adapter_path)
+    model = PeftModel.from_pretrained(
+        base_model_obj,
+        adapter_path,
+        device_map=None,
+        torch_dtype=torch.float16 if device == "cuda" else torch.float32,
+    )
+    if device == "cpu":
+        model.to("cpu")
+
+    if has_meta_tensors(model):
+        raise RuntimeError("Model contains meta tensors after loading.")
+
     model.eval()
     
     # Success
@@ -62,7 +89,7 @@ except Exception as e:
         
         try:
             result = subprocess.run(
-                [sys.executable, temp_script, base_model, adapter_path],
+                [sys.executable, temp_script, base_model, adapter_path, device],
                 capture_output=True,
                 text=True,
                 timeout=timeout_sec,
