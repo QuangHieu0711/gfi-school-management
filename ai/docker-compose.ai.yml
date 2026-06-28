@@ -1,0 +1,17 @@
+services:
+  ai:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: gfi-ai
+    ports:
+      - "8001:8001"
+    environment:
+      MODEL_DEVICE: cpu
+      HF_HUB_DISABLE_TELEMETRY: "1"
+    volumes:
+      - hf_cache:/root/.cache/huggingface
+    restart: unless-stopped
+
+volumes:
+  hf_cache:
