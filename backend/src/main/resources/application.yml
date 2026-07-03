@@ -80,4 +80,4 @@ app:
 
 ai:
   generate-comment:
-    url: ${AI_GENERATE_COMMENT_URL:http://122.248.210.141:8001/generate-comment}
+    url: ${AI_GENERATE_COMMENT_URL:http://74.113.235.249:8001/generate-comment}

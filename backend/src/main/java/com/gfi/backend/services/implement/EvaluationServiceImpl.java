@@ -24,7 +24,6 @@ import com.gfi.backend.services.interfaces.ImportErrorFileStorageService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
-import org.springframework.web.client.RestClientException;
 import com.gfi.backend.models.dtos.evaluation.EvaluationBulkGenerateCommentRequest;
 import com.gfi.backend.models.dtos.evaluation.EvaluationBulkGenerateCommentItemDto;
 
@@ -82,7 +81,7 @@ public class EvaluationServiceImpl implements EvaluationService {
     private final RestTemplate restTemplate;
     private final ImportErrorFileStorageService importErrorFileStorageService;
 
-    @Value("${ai.generate-comment.url:http://122.248.210.141:8001/generate-comment}")
+    @Value("${ai.generate-comment.url:http://74.113.235.249:8001/generate-comment}")
     private String aiGenerateCommentUrl;
 
     @Override
@@ -376,6 +375,7 @@ public class EvaluationServiceImpl implements EvaluationService {
         String configuredUrl = normalizeNullable(aiGenerateCommentUrl);
         if (!StringUtils.hasText(configuredUrl)) {
             return List.of(
+                    "http://74.113.235.249:8001/generate-comment",
                     "http://127.0.0.1:8001/generate-comment",
                     "http://gfi-ai:8001/generate-comment");
         }
