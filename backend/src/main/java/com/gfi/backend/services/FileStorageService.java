@@ -2,6 +2,7 @@ package com.gfi.backend.services;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.net.URI;
 import java.util.Base64;
 import java.util.Locale;
 import java.util.Set;
@@ -149,7 +150,7 @@ public class FileStorageService {
                             .contentType(contentType)
                             .build());
             log.info("File uploaded to MinIO: {}/{}", bucket, objectName);
-            String fileUrl = minioProperties.getUrl() + "/" + bucket + "/" + objectName;
+            String fileUrl = buildPublicFileUrl(bucket, objectName);
             return FileUploadDto.builder()
                     .fileName(storedFileName)
                     .url(fileUrl)
@@ -219,5 +220,30 @@ public class FileStorageService {
             case "image/jpg" -> "image/jpeg";
             default -> contentType.toLowerCase();
         };
+    }
+
+    private String buildPublicFileUrl(String bucket, String objectName) {
+        String configuredPublicUrl = normalizeUrl(minioProperties.getPublicUrl());
+        String baseUrl = configuredPublicUrl != null ? configuredPublicUrl : normalizeUrl(minioProperties.getUrl());
+        if (baseUrl == null) {
+            throw new UserMessageException(CommonErrorCode.BAD_REQUEST);
+        }
+        return baseUrl + "/" + bucket + "/" + objectName;
+    }
+
+    private String normalizeUrl(String url) {
+        if (url == null || url.isBlank()) {
+            return null;
+        }
+        String trimmed = url.trim();
+        if (trimmed.endsWith("/")) {
+            trimmed = trimmed.substring(0, trimmed.length() - 1);
+        }
+        try {
+            return URI.create(trimmed).toString();
+        } catch (IllegalArgumentException ex) {
+            log.warn("Invalid MinIO URL configured: {}", trimmed, ex);
+            return trimmed;
+        }
     }
 }

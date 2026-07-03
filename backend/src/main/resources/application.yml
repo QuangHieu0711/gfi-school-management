@@ -52,6 +52,7 @@ spring:
 # ===============================
 minio:
   url: ${MINIO_URL:http://localhost:9000}
+  publicUrl: ${MINIO_PUBLIC_URL:${MINIO_URL:http://localhost:9000}}
   accessKey: ${MINIO_ACCESSKEY:admin}
   secretKey: ${MINIO_SECRETKEY:admin12345}
   bucketName: ${MINIO_BUCKETNAME:gif}

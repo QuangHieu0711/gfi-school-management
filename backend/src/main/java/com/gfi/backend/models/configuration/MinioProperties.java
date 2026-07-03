@@ -27,6 +27,12 @@ public class MinioProperties {
      * Ví dụ: http://localhost:9000 hoặc https://minio.example.com
      */
     private String url;
+
+    /**
+     * URL public để frontend/browser truy cập file đã upload.
+     * Nếu không cấu hình riêng, hệ thống sẽ fallback về url nội bộ.
+     */
+    private String publicUrl;
     
     /**
      * Access key (username) để authenticate với MinIO

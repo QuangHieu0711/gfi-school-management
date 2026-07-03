@@ -21,6 +21,7 @@ services:
     env_file:
       - .env
     ports:
+      - "9000:9000"
       - "127.0.0.1:9001:9001"
     environment:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER}
@@ -74,6 +75,7 @@ services:
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
       JWT_SECRET: ${JWT_SECRET}
       MINIO_URL: http://minio:9000
+      MINIO_PUBLIC_URL: ${MINIO_PUBLIC_URL:-http://206.189.81.84:9000}
       MINIO_ACCESSKEY: ${MINIO_ROOT_USER}
       MINIO_SECRETKEY: ${MINIO_ROOT_PASSWORD}
       MINIO_BUCKETNAME: ${MINIO_BUCKET}
