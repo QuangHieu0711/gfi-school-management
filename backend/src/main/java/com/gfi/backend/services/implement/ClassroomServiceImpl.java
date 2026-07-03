@@ -541,12 +541,20 @@ public class ClassroomServiceImpl implements ClassroomService {
         return normalized.replaceAll("\\s+", " ").trim();
     }
 
+    private String normalizeImportHeader(String value) {
+        String normalized = normalizeImportText(value);
+        if (!StringUtils.hasText(normalized)) {
+            return normalized;
+        }
+        return normalized.replace("(*)", "").replace("*", "").replaceAll("\\s+", " ").trim();
+    }
+
     private int findClassroomImportDataStartRow(Sheet sheet, DataFormatter formatter) {
         for (int rowIndex = 0; rowIndex <= sheet.getLastRowNum(); rowIndex++) {
             org.apache.poi.ss.usermodel.Row row = sheet.getRow(rowIndex);
             if (row == null) continue;
-            String codeHeader = normalizeImportText(readCellText(row.getCell(1), formatter));
-            String nameHeader = normalizeImportText(readCellText(row.getCell(2), formatter));
+            String codeHeader = normalizeImportHeader(readCellText(row.getCell(1), formatter));
+            String nameHeader = normalizeImportHeader(readCellText(row.getCell(2), formatter));
             if ("ma lop".equals(codeHeader) && "ten lop".equals(nameHeader)) {
                 return rowIndex + 1;
             }
