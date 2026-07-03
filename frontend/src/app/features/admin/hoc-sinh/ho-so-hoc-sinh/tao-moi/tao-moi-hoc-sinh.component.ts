@@ -161,6 +161,9 @@ export class TaoMoiHocSinhComponent extends ComponentBaseAbstract {
 
     this.initForm();
     this.loadInitialData();
+    if (this.pathType === this.TYPE_FORM.UPDATE && this.studentId) {
+      this.loadStudentDetail(this.studentId);
+    }
     this.bindEvents();
   }
 
@@ -303,9 +306,6 @@ export class TaoMoiHocSinhComponent extends ComponentBaseAbstract {
         this.items.permanentProvinceItem.options = this.provinceOptions;
         this.items.temporaryProvinceItem.options = this.provinceOptions;
 
-        if (isUpdate && this.studentId) {
-          this.loadStudentDetail(this.studentId);
-        }
       }
     );
   }
